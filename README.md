@@ -21,7 +21,7 @@ built as:
 ```
 Emhip.slnx
 ├── src/
-│   ├── Emhip.Api/             ASP.NET Core Web API — controllers, SignalR hub, dev-auth, Program.cs, Dockerfile
+│   ├── Emhip.Api/             ASP.NET Core Web API — controllers, SignalR hub, ASP.NET Core Identity + JWT auth, Program.cs, Dockerfile
 │   ├── Emhip.Application/     CQRS commands/queries (MediatR), DTOs, FluentValidation
 │   ├── Emhip.Domain/          Entities, enums, domain events
 │   ├── Emhip.Infrastructure/  EF Core DbContext + migrations, Dapper read services, outbox/audit interceptors
@@ -153,22 +153,43 @@ dotnet run --project tools/Emhip.Seeder -- --connection "<your connection string
 dotnet test
 ```
 
-### Authentication (dev mode — read before deploying anywhere real)
+### Authentication, roles & permissions
 
-There's no real identity provider wired up yet. `Emhip.Api.Auth.DevCurrentUser` reads the
-signed-in staff member from `X-Dev-Staff-Id` / `X-Dev-Hub-Id` / `X-Dev-Display-Name` /
-`X-Dev-Role` request headers (defaulting to a fixed demo CMHW if absent) — mirroring the
-original prototype's role/screen switcher. **Do not expose this as-is on a public network** —
-swap `ICurrentUser`'s registration for a claims-based implementation backed by Entra ID /
-OpenID Connect first; nothing else in the app depends on how `ICurrentUser` is implemented, so
-this is a contained change in `src/Emhip.Api/Program.cs` + a new `ICurrentUser` implementation.
+Sign-in is real: ASP.NET Core Identity (`ApplicationUser`/`ApplicationRole`, local accounts —
+no Entra ID/OIDC) backs `POST /auth/login`, which issues a JWT bearer token. There's no
+self-registration by design — clinical-data access is admin-provisioned. On first boot (when
+`ApplyMigrationsOnStartup=true`, e.g. under Docker Compose), `IdentitySeeder` creates the three
+built-in roles (`Cmhw`, `HubManager`, `Admin`) and bootstraps a first Admin account from the
+`Bootstrap:AdminEmail` / `Bootstrap:AdminPassword` config (see `.env.example`) — sign in with
+that account and use the **Hub Workers** / **Roles & Permissions** screens (under the sidebar's
+Admin section) to create real staff accounts and roles from there.
+
+Authorization is claims-based and granular: every permission in `Emhip.Domain.Authorization.
+Permissions` (e.g. `guests.clinical.edit`, `admin.manageusers`) is registered as its own ASP.NET
+Core authorization policy and enforced with `[Authorize(Policy = Permissions.X.Y)]` on
+controller actions. Permissions are stored as claims on `ApplicationRole` and flattened onto
+the user's JWT at login, so the same role name can be re-scoped by an admin (via the role
+editor) without a deploy. The Angular app mirrors this: `AuthService.hasPermission(...)` drives
+route guards (`permissionGuard`) and sidebar nav visibility, so a user without
+`admin.manageusers`/`admin.manageroles` never sees the Admin section at all — but the real
+enforcement is server-side, not just hidden UI.
+
+Forgot/reset password (`POST /auth/forgot-password` / `/auth/reset-password`) uses ASP.NET
+Core Identity's token-based reset flow; `IEmailSender`'s default implementation
+(`LoggingEmailSender`) just logs the reset link instead of sending real email — **replace it
+with a real provider (SendGrid, SES, etc.) before relying on the forgot-password flow in
+production.**
 
 ## Production considerations
 
 Whichever deployment path you use, before treating this as production-ready:
 
-- **Real auth**: replace `DevCurrentUser` (see above) — the `X-Dev-*` headers are trusted as-is
-  today, which is fine for local/demo use only.
+- **Real email**: replace `LoggingEmailSender` (see "Authentication, roles & permissions" above)
+  with a real provider before relying on the forgot-password flow.
+- **JWT signing key / bootstrap admin password / internal shared secret**: `Jwt__Key`,
+  `Bootstrap__AdminPassword`, and `Internal__SharedSecret` all have placeholder values in
+  `appsettings.json` — set real random values via `.env` (Docker Compose) or your secrets
+  manager, never the checked-in placeholders.
 - **Migrations as an explicit step**: `ApplyMigrationsOnStartup` (Docker Compose only) is a demo
   convenience. For a real environment, run `dotnet ef database update` (or
   `dotnet ef migrations bundle` — see `ARCHITECTURE.md`) as a controlled deploy step instead of
@@ -179,11 +200,13 @@ Whichever deployment path you use, before treating this as production-ready:
 - **TLS**: terminate HTTPS in front of the API and client (a real reverse proxy/load balancer,
   not the containers themselves) and turn `UseHttpsRedirection` back on for whatever environment
   name you use in that setup.
-- **The escalation worker → API notification path**: `Emhip.Workers` calls
-  `Emhip.Api`'s `POST /internal/urgent-cases/notify` over plain HTTP with no authentication (see
+- **The escalation worker → API notification path**: `Emhip.Workers` calls `Emhip.Api`'s
+  `POST /internal/urgent-cases/notify` over plain HTTP, authenticated with a shared secret
+  (`Internal__SharedSecret`, checked against the `X-Internal-Secret` header in
   `InternalNotificationsController`) because only the API process holds the live SignalR
-  connections. Put this behind the internal network boundary, add a shared secret, or replace it
-  with Azure SignalR Service before exposing either service publicly.
+  connections. Still put this behind the internal network boundary (it's a shared secret, not
+  full service-to-service auth), or replace it with Azure SignalR Service before exposing either
+  service publicly.
 - **Scale-up steps already called out in `project/design_handoff_emhip/ARCHITECTURE.md`**: SQL
   table partitioning by month for `Contacts`/`AuditEvents`, columnstore indexes for the reporting
   tables, and moving the in-process outbox `Channel<T>` to Azure Service Bus/RabbitMQ once hubs
@@ -193,13 +216,23 @@ Whichever deployment path you use, before treating this as production-ready:
 
 | Route | Screen |
 |---|---|
-| `/dashboard` | Dashboard (CMHW) or Service Overview (Hub Manager) — role-driven |
+| `/login`, `/forgot-password`, `/reset-password` | Sign-in and password recovery (public, outside the shell) |
+| `/dashboard` | Dashboard (CMHW) or Service Overview (Hub Manager) — driven by the `dashboard.hubmanager.view` permission |
 | `/guests` | Guest Data Sheet — keyset-paginated, virtual-scrolled guest list |
 | `/guests/new` | Register New Guest (Demographics → Initial Conversation wizard) |
 | `/guests/:guestId` | Guest Workspace (Overview / Demographics / Clinical / Pathway / Follow-up / Notes tabs) |
 | `/followups` | Global Follow-up queue |
 | `/urgent-cases` | Urgent Cases — live via SignalR |
 | `/reports` | Pathway reporting + CSV export |
+| `/hub-workers` | Admin: staff accounts (create/edit/deactivate, assign roles, reset passwords) |
+| `/hub-workers/roles` | Admin: role editor (create/edit roles as named sets of permissions) |
+
+Every route except the auth pages requires a signed-in session (`authGuard`); `/hub-workers*`,
+`/reports`, `/urgent-cases`, `/guests*`, and `/followups` additionally require the matching
+permission (`permissionGuard`) — see "Authentication, roles & permissions" above. The whole app
+is responsive down to phone width: the sidebar becomes an off-canvas drawer behind a hamburger
+toggle below 1024px, and dense tables (guest list, hub workers) either scroll horizontally or
+collapse into stacked cards on narrow screens.
 
 ## Architecture highlights (large-dataset orientation)
 
@@ -225,11 +258,10 @@ See `project/design_handoff_emhip/ARCHITECTURE.md` for the full original design 
 
 ## Known gaps / next steps
 
-- Real authentication (Entra ID / OIDC) in place of `DevCurrentUser` — see "Production
-  considerations" above.
-- Secure the `Emhip.Workers` → `Emhip.Api` internal notification call before any non-local
-  deployment — see "Production considerations" above.
+- Real email delivery for the forgot-password flow — see "Authentication, roles & permissions"
+  above.
+- No dedicated Hubs CRUD API/UI yet — the admin "Hub ID" field on the Hub Workers form is a
+  plain GUID text input rather than a picker, since there's no `HubsController` to list them
+  from. Hub rows themselves are created by `tools/Emhip.Seeder` or directly in SQL today.
 - SQL partitioning/columnstore indexes and moving off the in-process outbox channel, once real
   data volumes are known — see `project/design_handoff_emhip/ARCHITECTURE.md`.
-- `Hub Workers` sidebar item is a placeholder (redirects to Dashboard) — staff management wasn't
-  one of the nine extracted screens.

@@ -11,7 +11,6 @@ namespace Emhip.Application.Abstractions;
 public interface IAppDbContext
 {
     DbSet<Hub> Hubs { get; }
-    DbSet<StaffMember> StaffMembers { get; }
     DbSet<Guest> Guests { get; }
     DbSet<GuestDemographics> GuestDemographics { get; }
     DbSet<InitialConversationRecord> InitialConversationRecords { get; }

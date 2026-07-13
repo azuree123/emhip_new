@@ -412,3 +412,37 @@ $col-actions: 110px;
     background: rgb(250, 250, 250);
   }
 }
+
+// The data table's columns have a combined min-width well beyond a phone viewport — rather than
+// stacking each virtual-scrolled row into a card (which would fight cdk-virtual-scroll's fixed
+// itemSize), scroll the whole card horizontally on narrow screens so header and rows move together.
+@media (max-width: 1023px) {
+  .page {
+    padding: 16px 16px 24px;
+  }
+
+  .card {
+    overflow-x: auto;
+  }
+
+  .table-head,
+  .row {
+    min-width: 780px;
+  }
+
+  .toolbar {
+    margin-bottom: 16px;
+  }
+
+  .result-count {
+    margin-left: 0;
+    flex-basis: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .search-box {
+    flex-basis: 100%;
+    max-width: none;
+  }
+}

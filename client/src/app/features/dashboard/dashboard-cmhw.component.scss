@@ -232,3 +232,39 @@
   font-size: 13px;
   flex-shrink: 0;
 }
+
+@media (max-width: 1023px) {
+  .kpi-row {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+}
+
+@media (max-width: 767px) {
+  .dashboard {
+    padding: 16px;
+  }
+
+  .kpi-row {
+    grid-template-columns: 1fr;
+    margin-bottom: 16px;
+  }
+
+  .banner__body {
+    flex-wrap: wrap;
+  }
+
+  .active-guests {
+    padding: 16px 0;
+
+    &__header {
+      padding: 0 16px;
+    }
+
+    &__table {
+      display: block;
+      overflow-x: auto;
+      white-space: nowrap;
+    }
+  }
+}

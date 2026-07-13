@@ -373,3 +373,13 @@
     resize: vertical;
   }
 }
+
+@media (max-width: 767px) {
+  .page {
+    padding: 16px;
+  }
+
+  .row {
+    padding: 14px 16px;
+  }
+}

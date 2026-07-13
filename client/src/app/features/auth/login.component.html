@@ -1,0 +1,32 @@
+<div class="auth-page">
+  <div class="auth-card">
+    <div class="auth-card__logo">EMHIP</div>
+    <h1 class="auth-card__title">Sign in</h1>
+    <p class="auth-card__subtitle">Enter your account details to access the hub.</p>
+
+    <form [formGroup]="form" (ngSubmit)="submit()" class="auth-form">
+      <label class="auth-field">
+        <span class="auth-field__label">Email</span>
+        <input class="auth-field__input" type="email" formControlName="email" autocomplete="username" placeholder="you@emhip.local" />
+        @if (form.controls.email.invalid && form.controls.email.touched) {
+          <span class="auth-field__error">Enter a valid email address.</span>
+        }
+      </label>
+
+      <label class="auth-field">
+        <span class="auth-field__label">Password</span>
+        <input class="auth-field__input" type="password" formControlName="password" autocomplete="current-password" placeholder="••••••••" />
+      </label>
+
+      <a class="auth-link auth-link--end" routerLink="/forgot-password">Forgot password?</a>
+
+      @if (errorMessage(); as message) {
+        <div class="auth-error">{{ message }}</div>
+      }
+
+      <button class="auth-submit" type="submit" [disabled]="submitting()">
+        {{ submitting() ? 'Signing in…' : 'Sign in' }}
+      </button>
+    </form>
+  </div>
+</div>

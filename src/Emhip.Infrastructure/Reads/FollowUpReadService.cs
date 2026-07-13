@@ -22,7 +22,7 @@ public sealed class FollowUpReadService(ISqlConnectionFactory connectionFactory)
                 CASE WHEN f.Status = 'Scheduled' AND f.DueDate < CAST(SYSUTCDATETIME() AS date) THEN 1 ELSE 0 END AS IsOverdue
             FROM FollowUps f
             JOIN Guests g ON g.Id = f.GuestId
-            JOIN StaffMembers s ON s.Id = f.AssigneeStaffId
+            JOIN AspNetUsers s ON s.Id = f.AssigneeStaffId
             WHERE g.HubId = @HubId
                 AND (@AssigneeStaffId IS NULL OR f.AssigneeStaffId = @AssigneeStaffId)
                 AND (

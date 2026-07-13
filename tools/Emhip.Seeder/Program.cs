@@ -9,9 +9,14 @@
 //   dotnet ef database update --project src/Emhip.Infrastructure --startup-project src/Emhip.Infrastructure
 
 using Bogus;
-using Emhip.Domain.Enums;
+using Emhip.Domain.Authorization;
+using Emhip.Infrastructure.Identity;
+using Emhip.Infrastructure.Persistence;
 using Emhip.Seeder;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 var options = SeedOptions.Parse(args);
 Console.WriteLine($"Seeding {options.GuestsPerHub:N0} guests x {options.HubCount} hub(s) -> {options.ConnectionString}");
@@ -19,6 +24,31 @@ Console.WriteLine($"Seeding {options.GuestsPerHub:N0} guests x {options.HubCount
 var stopwatch = System.Diagnostics.Stopwatch.StartNew();
 var random = new Random(42);
 var faker = new Faker("en");
+
+// Staff accounts go through ASP.NET Core Identity's UserManager (password hashing can't go
+// through SqlBulkCopy) — cheap here since staff counts are small (~8/hub) unlike guest volume.
+var services = new ServiceCollection();
+services.AddDbContext<EmhipDbContext>(o => o.UseSqlServer(options.ConnectionString));
+services.AddIdentityCore<ApplicationUser>(o => o.Password.RequiredLength = 8)
+    .AddRoles<ApplicationRole>()
+    .AddEntityFrameworkStores<EmhipDbContext>();
+await using var serviceProvider = services.BuildServiceProvider();
+await using var identityScope = serviceProvider.CreateAsyncScope();
+var userManager = identityScope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+var roleManager = identityScope.ServiceProvider.GetRequiredService<RoleManager<ApplicationRole>>();
+
+// Roles are normally seeded (with permission claims) by the API on startup; create them bare
+// here as a fallback so staff creation doesn't fail if the seeder runs first — the API's
+// IdentitySeeder backfills permission claims onto existing roles idempotently.
+foreach (var roleName in new[] { RoleNames.Cmhw, RoleNames.HubManager })
+{
+    if (!await roleManager.RoleExistsAsync(roleName))
+    {
+        await roleManager.CreateAsync(new ApplicationRole(roleName));
+    }
+}
+
+const string temporaryPassword = "Ch4ngeMe!2026";
 
 await using var connection = new SqlConnection(options.ConnectionString);
 await connection.OpenAsync();
@@ -32,17 +62,34 @@ Console.WriteLine($"Inserted {hubs.Count} hubs.");
 
 foreach (var hub in hubs)
 {
-    var staff = Enumerable.Range(0, options.StaffPerHub)
-        .Select(i => (
-            Id: Guid.NewGuid(), HubId: hub.Id, DisplayName: faker.Name.FullName(),
-            Email: faker.Internet.Email().ToLowerInvariant(),
-            Role: i == 0 ? StaffRole.HubManager : StaffRole.Cmhw))
-        .ToList();
+    var staffIds = new List<Guid>();
 
-    await BulkCopyHelper.WriteAsync(connection, "StaffMembers", SeedGenerator.BuildStaffTable(staff));
-    var staffIds = staff.Select(s => s.Id).ToList();
+    for (var i = 0; i < options.StaffPerHub; i++)
+    {
+        var email = faker.Internet.Email().ToLowerInvariant();
+        var user = new ApplicationUser
+        {
+            Id = Guid.NewGuid(),
+            UserName = email,
+            Email = email,
+            EmailConfirmed = true,
+            DisplayName = faker.Name.FullName(),
+            HubId = hub.Id,
+            IsActive = true,
+        };
 
-    Console.WriteLine($"[{hub.Code}] Inserted {staff.Count} staff members.");
+        var result = await userManager.CreateAsync(user, temporaryPassword);
+        if (!result.Succeeded)
+        {
+            Console.WriteLine($"[{hub.Code}] Skipped staff user {email}: {string.Join(", ", result.Errors.Select(e => e.Description))}");
+            continue;
+        }
+
+        await userManager.AddToRoleAsync(user, i == 0 ? RoleNames.HubManager : RoleNames.Cmhw);
+        staffIds.Add(user.Id);
+    }
+
+    Console.WriteLine($"[{hub.Code}] Created {staffIds.Count} staff accounts (temporary password: {temporaryPassword}).");
 
     var remaining = options.GuestsPerHub;
     var batchNumber = 0;

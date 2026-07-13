@@ -45,7 +45,7 @@ public sealed class EscalationWorker(IServiceScopeFactory scopeFactory, IOutboxE
 
         var assignedCmhwName = guest.AssignedCmhwId is null
             ? null
-            : await db.StaffMembers.AsNoTracking().Where(s => s.Id == guest.AssignedCmhwId).Select(s => s.DisplayName).FirstOrDefaultAsync(cancellationToken);
+            : await db.Users.AsNoTracking().Where(s => s.Id == guest.AssignedCmhwId).Select(s => s.DisplayName).FirstOrDefaultAsync(cancellationToken);
 
         var readModel = await db.UrgentCases.FirstOrDefaultAsync(u => u.GuestId == evt.GuestId, cancellationToken);
         if (readModel is null)

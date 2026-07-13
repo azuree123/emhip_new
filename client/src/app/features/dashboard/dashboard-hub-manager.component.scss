@@ -182,3 +182,29 @@
     color: #8c8c8c;
   }
 }
+
+@media (max-width: 1023px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 767px) {
+  .dashboard {
+    padding: 16px;
+  }
+
+  .card {
+    padding: 16px;
+  }
+
+  .total-stat__number {
+    font-size: 32px;
+  }
+
+  .monthly-table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+}

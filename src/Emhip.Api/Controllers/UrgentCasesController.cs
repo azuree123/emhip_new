@@ -1,6 +1,8 @@
 using Emhip.Application.Abstractions;
 using Emhip.Application.UrgentCases;
+using Emhip.Domain.Authorization;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Emhip.Api.Controllers;
@@ -11,6 +13,7 @@ namespace Emhip.Api.Controllers;
 /// </summary>
 [ApiController]
 [Route("urgent-cases")]
+[Authorize(Policy = Permissions.UrgentCases.View)]
 public sealed class UrgentCasesController(IMediator mediator, ICurrentUser currentUser) : ControllerBase
 {
     [HttpGet]

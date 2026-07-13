@@ -59,7 +59,7 @@ public sealed class DashboardReadService(EmhipDbContext db, IUrgentCaseReadServi
             .Take(15)
             .Select(a => new RecentActivityDto(
                 a.Action.ToString() + " " + a.EntityName,
-                db.StaffMembers.Where(s => s.Id == a.ActorStaffId).Select(s => s.DisplayName).FirstOrDefault() ?? "Unknown",
+                db.Users.Where(s => s.Id == a.ActorStaffId).Select(s => s.DisplayName).FirstOrDefault() ?? "Unknown",
                 a.OccurredAt))
             .ToListAsync(cancellationToken);
 

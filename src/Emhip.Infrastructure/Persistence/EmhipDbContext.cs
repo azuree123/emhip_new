@@ -1,14 +1,16 @@
 using Emhip.Application.Abstractions;
 using Emhip.Domain.Entities;
+using Emhip.Infrastructure.Identity;
 using Emhip.Infrastructure.ReadModels;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
 namespace Emhip.Infrastructure.Persistence;
 
-public class EmhipDbContext(DbContextOptions<EmhipDbContext> options) : DbContext(options), IAppDbContext
+public class EmhipDbContext(DbContextOptions<EmhipDbContext> options)
+    : IdentityDbContext<ApplicationUser, ApplicationRole, Guid>(options), IAppDbContext
 {
     public DbSet<Hub> Hubs => Set<Hub>();
-    public DbSet<StaffMember> StaffMembers => Set<StaffMember>();
     public DbSet<Guest> Guests => Set<Guest>();
     public DbSet<GuestDemographics> GuestDemographics => Set<GuestDemographics>();
     public DbSet<InitialConversationRecord> InitialConversationRecords => Set<InitialConversationRecord>();

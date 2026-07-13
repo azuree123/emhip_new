@@ -22,19 +22,6 @@ internal static class SeedGenerator
         return table;
     }
 
-    public static DataTable BuildStaffTable(IReadOnlyList<(Guid Id, Guid HubId, string DisplayName, string Email, StaffRole Role)> staff)
-    {
-        var table = new DataTable();
-        table.Columns.Add("Id", typeof(Guid));
-        table.Columns.Add("HubId", typeof(Guid));
-        table.Columns.Add("DisplayName", typeof(string));
-        table.Columns.Add("Email", typeof(string));
-        table.Columns.Add("Role", typeof(string));
-
-        foreach (var s in staff) table.Rows.Add(s.Id, s.HubId, s.DisplayName, s.Email, s.Role.ToString());
-        return table;
-    }
-
     public static (DataTable Table, List<(Guid Id, Guid HubId)> Guests) BuildGuestsTable(
         int count, Guid hubId, IReadOnlyList<Guid> staffIds, Faker faker, Random random)
     {

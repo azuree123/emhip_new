@@ -30,6 +30,13 @@ services:
       ApplyMigrationsOnStartup: "true"
       ConnectionStrings__Emhip: "Server=sqlserver;Database=Emhip;User Id=sa;Password=${MSSQL_SA_PASSWORD};TrustServerCertificate=True;"
       Cors__AllowedOrigins__0: "http://localhost:8080"
+      Frontend__BaseUrl: "http://localhost:8080"
+      Jwt__Key: "${JWT_KEY:?Set JWT_KEY in .env (32+ random chars)}"
+      Jwt__Issuer: "Emhip.Api"
+      Jwt__Audience: "Emhip.Client"
+      Internal__SharedSecret: "${INTERNAL_SHARED_SECRET:?Set INTERNAL_SHARED_SECRET in .env}"
+      Bootstrap__AdminEmail: "${BOOTSTRAP_ADMIN_EMAIL:-admin@emhip.local}"
+      Bootstrap__AdminPassword: "${BOOTSTRAP_ADMIN_PASSWORD:?Set BOOTSTRAP_ADMIN_PASSWORD in .env}"
     ports:
       - "5299:8080"
 
@@ -45,6 +52,7 @@ services:
     environment:
       ConnectionStrings__Emhip: "Server=sqlserver;Database=Emhip;User Id=sa;Password=${MSSQL_SA_PASSWORD};TrustServerCertificate=True;"
       Api__BaseUrl: "http://api:8080/"
+      Internal__SharedSecret: "${INTERNAL_SHARED_SECRET:?Set INTERNAL_SHARED_SECRET in .env}"
 
   client:
     build:

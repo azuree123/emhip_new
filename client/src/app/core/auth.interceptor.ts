@@ -1,19 +1,24 @@
-import { HttpInterceptorFn } from '@angular/common/http';
+import { HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
 import { inject } from '@angular/core';
+import { Router } from '@angular/router';
+import { catchError, throwError } from 'rxjs';
 import { AuthService } from './auth.service';
 
-/** Attaches the X-Dev-* headers Emhip.Api's DevCurrentUser reads instead of a real bearer token. */
+/** Attaches the bearer token issued at login; a 401 means the token is missing/expired, so sign out and bounce to /login. */
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
-  const auth = inject(AuthService).current();
+  const auth = inject(AuthService);
+  const router = inject(Router);
+  const token = auth.token;
 
-  return next(
-    req.clone({
-      setHeaders: {
-        'X-Dev-Staff-Id': auth.staffId,
-        'X-Dev-Hub-Id': auth.hubId,
-        'X-Dev-Display-Name': auth.displayName,
-        'X-Dev-Role': auth.role,
-      },
+  const authedReq = token ? req.clone({ setHeaders: { Authorization: `Bearer ${token}` } }) : req;
+
+  return next(authedReq).pipe(
+    catchError((error: unknown) => {
+      if (error instanceof HttpErrorResponse && error.status === 401 && auth.isAuthenticated()) {
+        auth.logout();
+        router.navigate(['/login']);
+      }
+      return throwError(() => error);
     }),
   );
 };

@@ -419,3 +419,17 @@
     justify-content: space-between;
   }
 }
+
+@media (max-width: 767px) {
+  .page {
+    padding: 16px;
+  }
+
+  .row {
+    padding: 14px 16px;
+  }
+
+  .filter-bar {
+    padding: 12px 16px;
+  }
+}

@@ -28,7 +28,7 @@ public sealed class GuestReadService(ISqlConnectionFactory connectionFactory, Em
                 g.Id, g.FirstName, g.LastName, g.DateOfBirth, g.Status,
                 s.DisplayName AS AssignedCmhwName, g.RegisteredAt, lc.OccurredAt AS LastContactAt
             FROM Guests g
-            LEFT JOIN StaffMembers s ON s.Id = g.AssignedCmhwId
+            LEFT JOIN AspNetUsers s ON s.Id = g.AssignedCmhwId
             OUTER APPLY (
                 SELECT TOP 1 c.OccurredAt FROM Contacts c WHERE c.GuestId = g.Id ORDER BY c.OccurredAt DESC
             ) lc
@@ -80,7 +80,7 @@ public sealed class GuestReadService(ISqlConnectionFactory connectionFactory, Em
             .Select(g => new
             {
                 g.Id, g.FirstName, g.LastName, g.DateOfBirth, g.Status, g.ContactPhone, g.ContactEmail, g.RegisteredAt,
-                AssignedCmhwName = db.StaffMembers.Where(s => s.Id == g.AssignedCmhwId).Select(s => s.DisplayName).FirstOrDefault(),
+                AssignedCmhwName = db.Users.Where(s => s.Id == g.AssignedCmhwId).Select(s => s.DisplayName).FirstOrDefault(),
             })
             .FirstOrDefaultAsync(cancellationToken);
 
@@ -100,7 +100,7 @@ public sealed class GuestReadService(ISqlConnectionFactory connectionFactory, Em
             .OrderByDescending(n => n.CreatedAt)
             .Take(10)
             .Select(n => new GuestNoteDto(n.Id, n.Body, n.Color.ToString(), n.IsPinned,
-                db.StaffMembers.Where(s => s.Id == n.AuthorStaffId).Select(s => s.DisplayName).FirstOrDefault() ?? "Unknown", n.CreatedAt))
+                db.Users.Where(s => s.Id == n.AuthorStaffId).Select(s => s.DisplayName).FirstOrDefault() ?? "Unknown", n.CreatedAt))
             .ToListAsync(cancellationToken);
 
         var recentContacts = await db.Contacts.AsNoTracking()
@@ -108,7 +108,7 @@ public sealed class GuestReadService(ISqlConnectionFactory connectionFactory, Em
             .OrderByDescending(c => c.OccurredAt)
             .Take(10)
             .Select(c => new GuestContactSummaryDto(c.Id, c.Type.ToString(), c.Outcome.ToString(), c.OccurredAt,
-                db.StaffMembers.Where(s => s.Id == c.CreatedByStaffId).Select(s => s.DisplayName).FirstOrDefault() ?? "Unknown"))
+                db.Users.Where(s => s.Id == c.CreatedByStaffId).Select(s => s.DisplayName).FirstOrDefault() ?? "Unknown"))
             .ToListAsync(cancellationToken);
 
         return new GuestOverviewDto(
@@ -136,7 +136,7 @@ public sealed class GuestReadService(ISqlConnectionFactory connectionFactory, Em
             .OrderByDescending(r => r.Version)
             .Select(r => new RiskAssessmentDto(
                 r.Id, r.Version, r.SuicidalIdeation, r.SelfHarm, r.RiskToOthers, r.SevereDeterioration, r.SafeguardingConcern,
-                r.Notes, db.StaffMembers.Where(s => s.Id == r.AssessedByStaffId).Select(s => s.DisplayName).FirstOrDefault() ?? "Unknown",
+                r.Notes, db.Users.Where(s => s.Id == r.AssessedByStaffId).Select(s => s.DisplayName).FirstOrDefault() ?? "Unknown",
                 r.AssessedAt))
             .ToListAsync(cancellationToken);
 
@@ -153,7 +153,7 @@ public sealed class GuestReadService(ISqlConnectionFactory connectionFactory, Em
             .OrderByDescending(p => p.ReferredAt)
             .Select(p => new PathwayReferralDto(
                 p.Id, p.Category.ToString(), p.Detail, p.Status.ToString(),
-                db.StaffMembers.Where(s => s.Id == p.ReferredByStaffId).Select(s => s.DisplayName).FirstOrDefault() ?? "Unknown", p.ReferredAt))
+                db.Users.Where(s => s.Id == p.ReferredByStaffId).Select(s => s.DisplayName).FirstOrDefault() ?? "Unknown", p.ReferredAt))
             .ToListAsync(cancellationToken);
 
         return new GuestPathwayDto(guestId, referrals);
@@ -169,7 +169,7 @@ public sealed class GuestReadService(ISqlConnectionFactory connectionFactory, Em
             .OrderByDescending(f => f.DueDate)
             .Select(f => new FollowUpItemDto(
                 f.Id, f.DueDate, f.Status.ToString(),
-                db.StaffMembers.Where(s => s.Id == f.AssigneeStaffId).Select(s => s.DisplayName).FirstOrDefault() ?? "Unknown",
+                db.Users.Where(s => s.Id == f.AssigneeStaffId).Select(s => s.DisplayName).FirstOrDefault() ?? "Unknown",
                 f.Notes, f.CompletedAt))
             .ToListAsync(cancellationToken);
 
@@ -181,7 +181,7 @@ public sealed class GuestReadService(ISqlConnectionFactory connectionFactory, Em
             .Where(r => r.GuestId == guestId)
             .Select(r => new GuestInitialConversationDto(
                 r.GuestId, r.PresentingIssues, r.Notes, r.ConsentConfirmed,
-                db.StaffMembers.Where(s => s.Id == r.ConductedByStaffId).Select(s => s.DisplayName).FirstOrDefault() ?? "Unknown", r.ConductedAt))
+                db.Users.Where(s => s.Id == r.ConductedByStaffId).Select(s => s.DisplayName).FirstOrDefault() ?? "Unknown", r.ConductedAt))
             .FirstOrDefaultAsync(cancellationToken);
 
     private sealed class GuestListRow

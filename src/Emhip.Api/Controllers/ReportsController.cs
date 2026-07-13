@@ -2,7 +2,9 @@ using System.Globalization;
 using System.Text;
 using Emhip.Application.Abstractions;
 using Emhip.Application.Reports;
+using Emhip.Domain.Authorization;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Emhip.Api.Controllers;
@@ -10,9 +12,11 @@ namespace Emhip.Api.Controllers;
 /// <summary>Reports screen: pathway category aggregates plus a streaming CSV export.</summary>
 [ApiController]
 [Route("reports")]
+[Authorize]
 public sealed class ReportsController(IMediator mediator, IReportReadService reportReads, ICurrentUser currentUser) : ControllerBase
 {
     [HttpGet("pathways")]
+    [Authorize(Policy = Permissions.Reports.View)]
     public async Task<IActionResult> GetPathwayReport([FromQuery] DateOnly from, [FromQuery] DateOnly to, CancellationToken cancellationToken)
     {
         var result = await mediator.Send(new GetPathwayReportQuery(currentUser.HubId, from, to), cancellationToken);
@@ -24,6 +28,7 @@ public sealed class ReportsController(IMediator mediator, IReportReadService rep
     /// memory, per ARCHITECTURE.md "Streaming for exports/reports".
     /// </summary>
     [HttpGet("export")]
+    [Authorize(Policy = Permissions.Reports.Export)]
     public async Task Export([FromQuery] DateOnly from, [FromQuery] DateOnly to, CancellationToken cancellationToken)
     {
         Response.ContentType = "text/csv";

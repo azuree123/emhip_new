@@ -262,3 +262,13 @@
   flex-direction: column;
   gap: 10px;
 }
+
+@media (max-width: 640px) {
+  .field-row {
+    grid-template-columns: 1fr;
+  }
+
+  .risk-choice {
+    flex-direction: column;
+  }
+}
