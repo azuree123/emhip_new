@@ -1,0 +1,60 @@
+<div class="shell">
+  <aside class="sidebar">
+    <div class="logo">EMHIP</div>
+
+    @for (section of sections; track section.label) {
+      <div class="nav-section">
+        <div class="nav-section__label">{{ section.label }}</div>
+        @for (item of section.items; track item.route) {
+          <a
+            class="nav-item"
+            [routerLink]="item.route"
+            routerLinkActive="nav-item--active"
+            [routerLinkActiveOptions]="{ exact: false }"
+          >
+            <svg width="20" height="20" [attr.viewBox]="item.iconViewBox" fill="none" class="nav-item__icon">
+              <path [attr.d]="item.iconPath" fill="currentColor" fill-rule="nonzero" />
+            </svg>
+            <span class="nav-item__label">{{ item.label }}</span>
+            @if (item.badge && item.badge(); as count) {
+              <span class="nav-item__badge">{{ count }}</span>
+            }
+          </a>
+        }
+      </div>
+    }
+  </aside>
+
+  <div class="main">
+    <header class="header">
+      <div>
+        <div class="header__greeting">Good Morning, {{ currentUser().displayName }}!</div>
+        <div class="header__meta">{{ today }} — Wandsworth Hub</div>
+      </div>
+      <div class="header__actions">
+        <button class="header__icon-btn" type="button" aria-label="Search">
+          <svg width="16" height="16" viewBox="0 0 13.333 13.333" fill="none">
+            <path
+              d="M 1 6.667 C 1 3.537 3.537 1 6.667 1 C 9.796 1 12.333 3.537 12.333 6.667 C 12.333 9.796 9.796 12.333 6.667 12.333 C 3.537 12.333 1 9.796 1 6.667 Z M 6.667 0 C 2.985 0 0 2.985 0 6.667 C 0 10.349 2.985 13.333 6.667 13.333 C 10.349 13.333 13.333 10.349 13.333 6.667 C 13.333 2.985 10.349 0 6.667 0 Z"
+              fill="currentColor"
+            />
+          </svg>
+        </button>
+        <button class="header__icon-btn" type="button" aria-label="Notifications">
+          <svg width="16" height="18" viewBox="0 0 14.967 16.254" fill="none">
+            <path
+              d="M 7.48 0 C 10.854 0 13.61 2.662 13.726 6.041 L 13.73 6.25 L 13.73 9.664 L 14.88 12.294 C 14.937 12.426 14.967 12.568 14.967 12.712 C 14.967 13.287 14.5 13.753 13.925 13.753 L 9.98 13.754 C 9.98 15.135 8.86 16.254 7.48 16.254 C 6.148 16.254 5.06 15.214 4.984 13.901 L 4.979 13.753 L 1.042 13.753 C 0.899 13.753 0.758 13.724 0.627 13.667 C 0.099 13.438 -0.143 12.824 0.087 12.297 L 1.23 9.665 L 1.23 6.25 C 1.23 2.788 4.023 0 7.48 0 Z"
+              fill="currentColor"
+            />
+          </svg>
+          <span class="header__icon-btn__dot"></span>
+        </button>
+        <div class="header__avatar">{{ currentUser().displayName.charAt(0) }}</div>
+      </div>
+    </header>
+
+    <main class="content">
+      <router-outlet></router-outlet>
+    </main>
+  </div>
+</div>

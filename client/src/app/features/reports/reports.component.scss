@@ -1,0 +1,318 @@
+// Colors/fonts/radii below are taken verbatim from the "Reports & Analytics"
+// screen (Desktop50, project/screens/Components.bundle.js lines ~32976-36575).
+// Layout is recreated with flexbox/grid rather than the source's absolute
+// positioning, per the translation guidance for this screen.
+
+:host {
+  display: block;
+  padding: 24px 32px 48px;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+.reports-page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 1176px;
+}
+
+// ---- Header card -----------------------------------------------------
+
+.header-card {
+  background: rgb(255, 255, 255);
+  border-radius: 12px;
+  padding: 22px 24px 20px;
+
+  &__top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+
+  &__title {
+    margin: 0;
+    font-weight: 600;
+    font-size: 20px;
+    line-height: 24px;
+    color: rgb(42, 42, 42);
+  }
+
+  &__subtitle {
+    margin: 6px 0 0;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 24px;
+    color: rgb(42, 42, 42);
+  }
+
+  &__actions {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  &__today {
+    font-weight: 500;
+    font-size: 12px;
+    line-height: 18px;
+    color: rgb(140, 140, 140);
+    white-space: nowrap;
+  }
+
+  &__divider {
+    height: 1px;
+    background: rgb(232, 232, 232);
+    margin: 20px 0 16px;
+  }
+}
+
+// ---- Filters -----------------------------------------------------------
+
+.filters {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+
+  &__label {
+    font-weight: 600;
+    font-size: 14px;
+    line-height: 24px;
+    letter-spacing: -0.005em;
+    color: rgb(42, 42, 42);
+  }
+
+  &__field {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 500;
+    font-size: 12px;
+    color: rgb(42, 42, 42);
+
+    input[type='date'] {
+      height: 32px;
+      padding: 0 10px;
+      border-radius: 4px;
+      border: none;
+      background: rgb(246, 246, 246);
+      font-family: inherit;
+      font-weight: 500;
+      font-size: 12px;
+      color: rgb(42, 42, 42);
+    }
+  }
+
+  &__presets {
+    display: flex;
+    gap: 8px;
+    margin-left: auto;
+  }
+}
+
+// ---- Buttons -------------------------------------------------------------
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 16px;
+  border: none;
+  border-radius: 4px;
+  font-family: inherit;
+  font-weight: 500;
+  font-size: 14px;
+  letter-spacing: -0.005em;
+  cursor: pointer;
+
+  &__icon {
+    display: inline-flex;
+    width: 14px;
+    height: 14px;
+  }
+
+  &--primary {
+    background: rgb(225, 38, 40);
+    color: rgb(255, 255, 255);
+
+    &:hover {
+      background: rgb(200, 30, 32);
+    }
+  }
+
+  &--ghost {
+    height: 32px;
+    padding: 0 12px;
+    background: rgb(255, 255, 255);
+    color: rgb(42, 42, 42);
+    box-shadow: inset 0 0 0 1px rgb(217, 217, 217);
+    font-size: 12px;
+
+    &:hover {
+      background: rgb(246, 246, 246);
+    }
+  }
+}
+
+// ---- Error banner ----------------------------------------------------
+
+.error-banner {
+  padding: 14px 18px;
+  border-radius: 8px;
+  background: rgb(255, 234, 236);
+  color: rgb(148, 28, 60);
+  font-weight: 500;
+  font-size: 14px;
+}
+
+// ---- Stat cards --------------------------------------------------------
+
+.stat-row {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.stat-card {
+  flex: 1 1 220px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: rgb(255, 255, 255);
+  border-radius: 12px;
+  padding: 20px;
+  min-height: 92px;
+
+  &__label {
+    font-family: 'Wix Madefor Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    font-weight: 600;
+    font-size: 10px;
+    letter-spacing: -0.005em;
+    color: rgb(42, 42, 42);
+    text-transform: uppercase;
+  }
+
+  &__value {
+    font-weight: 600;
+    font-size: 32px;
+    line-height: 1.2;
+    color: rgb(42, 42, 42);
+
+    &--text {
+      font-size: 20px;
+    }
+  }
+
+  &__meta {
+    font-weight: 500;
+    font-size: 12px;
+    color: rgb(114, 114, 114);
+  }
+}
+
+// ---- Pathway distribution card ------------------------------------------
+
+.distribution-card {
+  background: rgb(255, 255, 255);
+  border-radius: 12px;
+  padding: 24px;
+
+  &__title {
+    margin: 0;
+    font-weight: 600;
+    font-size: 20px;
+    line-height: 24px;
+    color: rgb(42, 42, 42);
+  }
+
+  &__subtitle {
+    margin: 4px 0 20px;
+    font-weight: 500;
+    font-size: 12px;
+    color: rgb(140, 140, 140);
+  }
+
+  &__state {
+    padding: 32px 0;
+    text-align: center;
+    font-weight: 500;
+    font-size: 14px;
+    color: rgb(140, 140, 140);
+  }
+}
+
+.pathway-row {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 0;
+
+  & + & {
+    border-top: 1px solid rgb(237, 237, 237);
+  }
+
+  &__top {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  &__label {
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 24px;
+    color: rgb(42, 42, 42);
+    flex: 1 1 auto;
+  }
+
+  &__count {
+    font-weight: 600;
+    font-size: 12px;
+    color: rgb(42, 42, 42);
+  }
+
+  &__unit {
+    font-weight: 500;
+    font-size: 12px;
+    color: rgb(42, 42, 42);
+  }
+
+  &__percentage {
+    font-weight: 600;
+    font-size: 12px;
+    min-width: 42px;
+    text-align: right;
+  }
+
+  &__track {
+    width: 100%;
+    height: 6px;
+    border-radius: 444px;
+    background: rgb(237, 237, 237);
+    overflow: hidden;
+  }
+
+  &__fill {
+    height: 100%;
+    border-radius: 444px;
+    transition: width 0.2s ease;
+  }
+}
+
+@media (max-width: 720px) {
+  :host {
+    padding: 16px;
+  }
+
+  .header-card__top {
+    flex-direction: column;
+  }
+
+  .filters__presets {
+    margin-left: 0;
+  }
+}

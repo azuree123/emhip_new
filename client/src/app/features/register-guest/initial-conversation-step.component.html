@@ -1,0 +1,174 @@
+<div [formGroup]="form" class="steps-form">
+  <div class="info-banner">
+    <svg width="18" height="18" viewBox="0 0 15 15" fill="none" class="info-banner__icon">
+      <path
+        d="M 7.5 0 C 11.642 0 15 3.359 15 7.5 C 15 11.641 11.642 15 7.5 15 C 3.358 15 0 11.641 0 7.5 C 0 3.359 3.358 0 7.5 0 Z M 7.501 9.753 C 7.088 9.753 6.752 10.088 6.752 10.502 C 6.752 10.915 7.088 11.251 7.501 11.251 C 7.915 11.251 8.25 10.915 8.25 10.502 C 8.25 10.088 7.915 9.753 7.501 9.753 Z M 7.5 3.75 C 7.115 3.75 6.798 4.04 6.755 4.413 L 6.75 4.5 L 6.751 8.251 L 6.756 8.338 C 6.8 8.711 7.117 9.001 7.502 9.001 C 7.886 9.001 8.203 8.711 8.246 8.338 L 8.251 8.25 L 8.25 4.5 L 8.245 4.412 C 8.201 4.039 7.884 3.75 7.5 3.75 Z"
+        fill="currentColor"
+      />
+    </svg>
+    <p>
+      This step can be saved as draft and completed later if the guest cannot continue — they will remain in "New" status until
+      this is submitted.
+    </p>
+  </div>
+
+  <div class="section">
+    <h3 class="section__title">Hub worker conducting the conversation</h3>
+
+    <div class="field-row">
+      <label class="field">
+        <span class="field__label">Hub worker&nbsp;*</span>
+        <input class="field__input" type="text" [value]="hubWorkerName" disabled />
+        <span class="field__hint">pre filled from your login</span>
+      </label>
+      <label class="field">
+        <span class="field__label">Place of interview&nbsp;*</span>
+        <input class="field__input" type="text" formControlName="placeOfInterview" placeholder="Wandsworth Hub" />
+        @if (form.get('placeOfInterview')?.invalid && form.get('placeOfInterview')?.touched) {
+          <span class="field__error">Place of interview is required.</span>
+        }
+      </label>
+    </div>
+  </div>
+
+  <div class="section">
+    <h3 class="section__title">Presenting problem</h3>
+
+    <div class="field-row field-row--single">
+      <label class="field">
+        <span class="field__label">Description of problem&nbsp;*</span>
+        <textarea
+          class="field__textarea"
+          formControlName="presentingIssues"
+          placeholder="Describe in the guest own words if possible..."
+          rows="3"
+        ></textarea>
+        @if (form.get('presentingIssues')?.invalid && form.get('presentingIssues')?.touched) {
+          <span class="field__error">Description of problem is required.</span>
+        }
+      </label>
+    </div>
+
+    <div class="field-row field-row--single">
+      <label class="field">
+        <span class="field__label">Past mental health difficulties &amp; treatment</span>
+        <textarea
+          class="field__textarea"
+          formControlName="pastMentalHealth"
+          placeholder="No prior treatment history reported"
+          rows="3"
+        ></textarea>
+      </label>
+    </div>
+
+    <div class="field-row field-row--single">
+      <label class="field">
+        <span class="field__label">Family mental health history</span>
+        <textarea
+          class="field__textarea"
+          formControlName="familyMentalHealth"
+          placeholder="Mother reported history of depression"
+          rows="3"
+        ></textarea>
+      </label>
+    </div>
+
+    <div class="field-row">
+      <div class="field">
+        <span class="field__label">Long-term health condition?</span>
+        <label class="toggle">
+          <input class="toggle__input" type="checkbox" formControlName="longTermHealthCondition" />
+          <span class="toggle__track"><span class="toggle__thumb"></span></span>
+          <span class="toggle__label">No/Yes</span>
+        </label>
+      </div>
+      <div></div>
+    </div>
+
+    <div class="field">
+      <span class="field__label">Immediate Risk Identified?&nbsp;*</span>
+      <div class="risk-choice">
+        <div
+          class="risk-pill"
+          [class.risk-pill--selected]="form.get('immediateRisk')?.value === false"
+          (click)="form.get('immediateRisk')?.setValue(false)"
+        >
+          <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+            <path
+              d="M 7.5 0 C 11.642 0 15 3.358 15 7.5 C 15 11.642 11.642 15 7.5 15 C 3.358 15 0 11.642 0 7.5 C 0 3.358 3.358 0 7.5 0 Z M 7.5 1.125 C 3.979 1.125 1.125 3.979 1.125 7.5 C 1.125 11.021 3.979 13.875 7.5 13.875 C 11.021 13.875 13.875 11.021 13.875 7.5 C 13.875 3.979 11.021 1.125 7.5 1.125 Z M 6.563 8.579 L 9.915 5.227 C 10.134 5.008 10.491 5.008 10.71 5.227 C 10.91 5.427 10.928 5.739 10.765 5.96 L 10.71 6.023 L 6.96 9.773 C 6.761 9.972 6.448 9.991 6.228 9.827 L 6.165 9.773 L 4.29 7.898 C 4.07 7.678 4.07 7.322 4.29 7.102 C 4.489 6.903 4.802 6.884 5.022 7.048 L 5.085 7.102 L 6.563 8.579 Z"
+              fill="currentColor"
+            />
+          </svg>
+          <span>NO RISK DETECTED</span>
+        </div>
+        <div
+          class="risk-pill risk-pill--danger"
+          [class.risk-pill--selected]="form.get('immediateRisk')?.value === true"
+          (click)="form.get('immediateRisk')?.setValue(true)"
+        >
+          <svg width="14" height="15" viewBox="0 0 13.5 15" fill="none">
+            <path
+              d="M 12.938 2.25 C 10.94 2.25 8.994 1.542 7.087 0.113 C 6.887 -0.037 6.613 -0.037 6.413 0.113 C 4.506 1.542 2.56 2.25 0.563 2.25 C 0.252 2.25 0 2.502 0 2.813 L 0 6.75 C 0 10.501 2.218 13.257 6.544 14.961 C 6.676 15.013 6.824 15.013 6.956 14.961 C 11.282 13.257 13.5 10.501 13.5 6.75 L 13.5 2.813 C 13.5 2.502 13.248 2.25 12.938 2.25 Z"
+              fill="currentColor"
+            />
+          </svg>
+          <span>YES, <span class="risk-pill__danger-text">HIGH RISK</span></span>
+        </div>
+      </div>
+      @if (form.get('immediateRisk')?.touched && form.get('immediateRisk')?.invalid) {
+        <span class="field__error">Please indicate whether an immediate risk was identified.</span>
+      }
+
+      @if (form.get('immediateRisk')?.value === true) {
+        <div class="risk-flags" formGroupName="riskFlags">
+          <span class="risk-flags__title">Select the risk flags identified during this conversation:</span>
+          <label class="checkbox-field">
+            <input class="checkbox-field__input" type="checkbox" formControlName="suicidalIdeation" />
+            <span class="checkbox-field__box"><ng-container *ngTemplateOutlet="check" /></span>
+            <span class="checkbox-field__label">Suicidal ideation</span>
+          </label>
+          <label class="checkbox-field">
+            <input class="checkbox-field__input" type="checkbox" formControlName="selfHarm" />
+            <span class="checkbox-field__box"><ng-container *ngTemplateOutlet="check" /></span>
+            <span class="checkbox-field__label">Self-harm</span>
+          </label>
+          <label class="checkbox-field">
+            <input class="checkbox-field__input" type="checkbox" formControlName="riskToOthers" />
+            <span class="checkbox-field__box"><ng-container *ngTemplateOutlet="check" /></span>
+            <span class="checkbox-field__label">Risk to others</span>
+          </label>
+          <label class="checkbox-field">
+            <input class="checkbox-field__input" type="checkbox" formControlName="severeDeterioration" />
+            <span class="checkbox-field__box"><ng-container *ngTemplateOutlet="check" /></span>
+            <span class="checkbox-field__label">Severe deterioration</span>
+          </label>
+          <label class="checkbox-field">
+            <input class="checkbox-field__input" type="checkbox" formControlName="safeguardingConcern" />
+            <span class="checkbox-field__box"><ng-container *ngTemplateOutlet="check" /></span>
+            <span class="checkbox-field__label">Safeguarding concern</span>
+          </label>
+        </div>
+      }
+    </div>
+  </div>
+
+  <div class="section">
+    <label class="checkbox-field">
+      <input class="checkbox-field__input" type="checkbox" formControlName="consentConfirmed" />
+      <span class="checkbox-field__box"><ng-container *ngTemplateOutlet="check" /></span>
+      <span class="checkbox-field__label">The guest's consent for this conversation to be recorded has been confirmed.</span>
+    </label>
+    @if (form.get('consentConfirmed')?.invalid && form.get('consentConfirmed')?.touched) {
+      <span class="field__error">Consent confirmation is required.</span>
+    }
+  </div>
+</div>
+
+<ng-template #check>
+  <svg width="11" height="8" viewBox="0 0 10.5 7.5" fill="none">
+    <path
+      d="M 0.53 3.47 C 0.237 3.177 -0.237 3.177 -0.53 3.47 C -0.823 3.763 -0.823 4.237 -0.53 4.53 L 0 4 L 0.53 3.47 Z M 3.5 7.5 L 2.97 8.03 C 3.113 8.174 3.31 8.253 3.513 8.25 C 3.716 8.246 3.91 8.16 4.048 8.012 L 3.5 7.5 Z M 11.048 0.512 C 11.331 0.209 11.315 -0.266 11.012 -0.548 C 10.709 -0.831 10.234 -0.815 9.952 -0.512 L 10.5 0 L 11.048 0.512 Z M 0 4 L -0.53 4.53 L 2.97 8.03 L 3.5 7.5 L 4.03 6.97 L 0.53 3.47 L 0 4 Z M 3.5 7.5 L 4.048 8.012 L 11.048 0.512 L 10.5 0 L 9.952 -0.512 L 2.952 6.988 L 3.5 7.5 Z"
+      fill="currentColor"
+    />
+  </svg>
+</ng-template>

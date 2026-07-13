@@ -1,0 +1,265 @@
+// Shared layout for the simpler, non-pixel-sourced tabs (Demographics, Clinical, Pathway,
+// Follow-up, Notes) — same card/type tokens as the Overview tab, simpler content.
+@use './guest-workspace.tokens' as t;
+
+.tab-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.state-card {
+  background: #fff;
+  border-radius: t.$radius-card;
+  padding: 40px 24px;
+  text-align: center;
+  font-family: t.$font-primary;
+  font-size: 14px;
+  color: t.$color-text-meta;
+
+  &--error {
+    color: t.$color-brand-red;
+  }
+}
+
+.card {
+  background: #fff;
+  border-radius: t.$radius-card;
+  padding: 24px;
+}
+
+.card__title {
+  margin: 0;
+  font-family: t.$font-primary;
+  font-weight: 600;
+  font-size: 20px;
+  color: t.$color-text-primary;
+}
+
+.card__header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.field-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px 16px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+
+  &__label {
+    font-family: t.$font-primary;
+    font-weight: 600;
+    font-size: 14px;
+    color: t.$color-text-primary;
+  }
+
+  &__value {
+    font-family: t.$font-primary;
+    font-weight: 400;
+    font-size: 14px;
+    color: t.$color-text-body;
+    overflow-wrap: anywhere;
+  }
+}
+
+.empty-state {
+  margin: 0;
+  font-family: t.$font-primary;
+  font-size: 14px;
+  color: t.$color-text-meta;
+}
+
+.btn-link {
+  border: none;
+  background: transparent;
+  font-family: t.$font-primary;
+  font-weight: 600;
+  font-size: 14px;
+  color: t.$color-link-red;
+  cursor: pointer;
+  padding: 0;
+}
+
+.btn-primary {
+  height: 36px;
+  padding: 0 20px;
+  border: none;
+  border-radius: 4px;
+  background: t.$color-brand-red;
+  color: #fff;
+  font-family: t.$font-primary;
+  font-weight: 500;
+  font-size: 14px;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+}
+
+.btn-ghost {
+  height: 36px;
+  padding: 0 20px;
+  border-radius: 4px;
+  border: none;
+  background: #fff;
+  box-shadow: inset 0 0 0 1px t.$color-border-strong;
+  color: t.$color-text-primary;
+  font-family: t.$font-primary;
+  font-weight: 500;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.form-error {
+  margin: 0;
+  font-family: t.$font-primary;
+  font-size: 12px;
+  color: t.$color-brand-red;
+}
+
+.chip {
+  border-radius: t.$radius-pill;
+  padding: 4px 8px;
+  font-family: t.$font-primary;
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 16px;
+  white-space: nowrap;
+}
+
+.edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+
+  &__grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+
+  &__field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-family: t.$font-primary;
+    font-weight: 600;
+    font-size: 12px;
+    color: t.$color-text-primary;
+
+    &--checkbox {
+      flex-direction: row;
+      align-items: center;
+      gap: 8px;
+    }
+
+    &--full {
+      grid-column: 1 / -1;
+    }
+
+    input,
+    select,
+    textarea {
+      font-family: t.$font-primary;
+      font-size: 14px;
+      font-weight: 400;
+      color: t.$color-text-primary;
+      padding: 8px 10px;
+      border-radius: 4px;
+      border: 1px solid t.$color-border-strong;
+      background: #fff;
+    }
+
+    textarea {
+      resize: vertical;
+    }
+  }
+
+  &__actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+}
+
+.entry-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.entry {
+  padding: 16px;
+  border-radius: 8px;
+  box-shadow: inset 0 0 0 1px t.$color-divider;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  &__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  &__title {
+    font-family: t.$font-primary;
+    font-weight: 600;
+    font-size: 14px;
+    color: t.$color-text-primary;
+  }
+
+  &__body {
+    margin: 0;
+    font-family: t.$font-primary;
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 22px;
+    color: t.$color-text-body;
+  }
+
+  &__meta {
+    display: flex;
+    gap: 16px;
+    font-family: t.$font-primary;
+    font-weight: 500;
+    font-size: 12px;
+    color: t.$color-text-meta;
+  }
+
+  &__flags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+}
+
+@media (max-width: 960px) {
+  .field-grid,
+  .edit-form__grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .field-grid,
+  .edit-form__grid {
+    grid-template-columns: 1fr;
+  }
+}

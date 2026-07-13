@@ -1,0 +1,86 @@
+<div class="tab-panel">
+  @if (loading()) {
+    <div class="state-card">Loading clinical history…</div>
+  } @else if (error()) {
+    <div class="state-card state-card--error">{{ error() }}</div>
+  } @else if (clinical(); as c) {
+    <section class="card">
+      <div class="card__header-row">
+        <h2 class="card__title">Risk assessment history</h2>
+        <button type="button" class="btn-link" (click)="toggleForm()">
+          {{ showForm() ? 'Cancel' : '+ Record assessment' }}
+        </button>
+      </div>
+
+      @if (showForm()) {
+        <form class="edit-form" (ngSubmit)="submit()">
+          <div class="risk-flags">
+            <label class="risk-flag">
+              <input type="checkbox" name="suicidalIdeation" [(ngModel)]="form.suicidalIdeation" />
+              <span>Suicidal ideation</span>
+            </label>
+            <label class="risk-flag">
+              <input type="checkbox" name="selfHarm" [(ngModel)]="form.selfHarm" />
+              <span>Self-harm</span>
+            </label>
+            <label class="risk-flag">
+              <input type="checkbox" name="riskToOthers" [(ngModel)]="form.riskToOthers" />
+              <span>Risk to others</span>
+            </label>
+            <label class="risk-flag">
+              <input type="checkbox" name="severeDeterioration" [(ngModel)]="form.severeDeterioration" />
+              <span>Severe deterioration</span>
+            </label>
+            <label class="risk-flag">
+              <input type="checkbox" name="safeguardingConcern" [(ngModel)]="form.safeguardingConcern" />
+              <span>Safeguarding concern</span>
+            </label>
+          </div>
+          <label class="edit-form__field edit-form__field--full">
+            <span>Notes</span>
+            <textarea name="notes" rows="3" [(ngModel)]="form.notes" placeholder="Assessment notes…"></textarea>
+          </label>
+          @if (submitError()) {
+            <p class="form-error">{{ submitError() }}</p>
+          }
+          <div class="edit-form__actions">
+            <button type="submit" class="btn-primary" [disabled]="submitting()">{{ submitting() ? 'Saving…' : 'Save assessment' }}</button>
+          </div>
+        </form>
+      }
+
+      @if (c.history.length) {
+        <ul class="entry-list">
+          @for (a of c.history; track a.id) {
+            <li class="entry">
+              <div class="entry__head">
+                <span class="entry__title">Assessment v{{ a.version }}</span>
+                @if (!hasAnyFlag(a)) {
+                  <span class="chip chip--ok">No active flags</span>
+                }
+              </div>
+              @if (hasAnyFlag(a)) {
+                <div class="entry__flags">
+                  @if (a.suicidalIdeation) { <span class="chip chip--risk">Suicidal ideation</span> }
+                  @if (a.selfHarm) { <span class="chip chip--risk">Self-harm</span> }
+                  @if (a.riskToOthers) { <span class="chip chip--risk">Risk to others</span> }
+                  @if (a.severeDeterioration) { <span class="chip chip--risk">Severe deterioration</span> }
+                  @if (a.safeguardingConcern) { <span class="chip chip--risk">Safeguarding concern</span> }
+                </div>
+              }
+              @if (a.notes) {
+                <p class="entry__body">{{ a.notes }}</p>
+              }
+              <div class="entry__meta">
+                <span>{{ a.assessedByName }}</span>
+                <span>{{ formatDateTime(a.assessedAt) }}</span>
+              </div>
+            </li>
+          }
+        </ul>
+      } @else {
+        <p class="empty-state">No risk assessments recorded yet.</p>
+      }
+    </section>
+  }
+</div>

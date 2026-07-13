@@ -1,25 +1,235 @@
-# CODING AGENTS: READ THIS FIRST
+# EMHIP — Mental Health Hub Case Management
 
-This is a **handoff bundle** from Claude Design (claude.ai/design).
+EMHIP is a case-management application for community mental-health hubs. Staff (CMHWs —
+Community Mental Health Workers — and Hub Managers) register and track "guests", run casework
+sessions, record follow-up contacts, flag urgent/safeguarding cases, and produce service-level
+reports.
 
-A user mocked up designs in HTML/CSS/JS using an AI design tool, then exported this bundle so a coding agent can implement the designs for real.
+This repository is an implementation of the design handoff in `project/` (see
+`project/design_handoff_emhip/README.md` and `ARCHITECTURE.md` for the original design brief),
+built as:
 
-## What you should do — IMPORTANT
+- **Backend**: ASP.NET Core Web API on .NET 10, CQRS (EF Core for writes, Dapper for
+  high-volume reads), SQL Server, keyset pagination, transactional outbox, SignalR, background
+  workers — see `project/design_handoff_emhip/ARCHITECTURE.md` for the architecture this
+  follows.
+- **Frontend**: Angular 22 (standalone components, signals), pixel-matched to the Figma export
+  in `project/screens/Components.bundle.js`.
 
-**Read the chat transcripts first.** There are 1 chat transcript(s) in `chats/`. The transcripts show the full back-and-forth between the user and the design assistant — they tell you **what the user actually wants** and **where they landed** after iterating. Don't skip them. The final HTML files are the output, but the chat is where the intent lives.
+## Solution layout
 
-**Read `project/EMHIP Prototype.dc.html` in full.** The user had this file open when they triggered the handoff, so it's almost certainly the primary design they want built. Read it top to bottom — don't skim. Then **follow its imports**: open every file it pulls in (shared components, CSS, scripts) so you understand how the pieces fit together before you start implementing.
+```
+Emhip.slnx
+├── src/
+│   ├── Emhip.Api/             ASP.NET Core Web API — controllers, SignalR hub, dev-auth, Program.cs, Dockerfile
+│   ├── Emhip.Application/     CQRS commands/queries (MediatR), DTOs, FluentValidation
+│   ├── Emhip.Domain/          Entities, enums, domain events
+│   ├── Emhip.Infrastructure/  EF Core DbContext + migrations, Dapper read services, outbox/audit interceptors
+│   └── Emhip.Workers/         BackgroundService host — outbox relay, escalation, report materializer, follow-up scheduler, Dockerfile
+├── tools/
+│   └── Emhip.Seeder/          Console app — SqlBulkCopy-based large synthetic dataset generator, Dockerfile
+├── tests/
+│   ├── Emhip.UnitTests/       Domain + Application unit tests
+│   └── Emhip.IntegrationTests/  WebApplicationFactory-based API tests
+├── client/                    Angular 22 frontend — Dockerfile + nginx.conf for the production image
+├── docker-compose.yml         SQL Server + API + Workers + client, wired together
+└── .env.example                Copy to .env before running docker compose
+```
 
-**If anything is ambiguous, ask the user to confirm before you start implementing.** It's much cheaper to clarify scope up front than to build the wrong thing.
+## Quick start with Docker Compose (recommended)
 
-## About the design files
+Requires Docker + the Compose plugin (`docker compose version`). This brings up SQL Server, the
+API, the background workers, and the Angular app together, with migrations applied
+automatically on first boot.
 
-The design medium is **HTML/CSS/JS** — these are prototypes, not production code. Your job is to **recreate them pixel-perfectly** in whatever technology makes sense for the target codebase (React, Vue, native, whatever fits). Match the visual output; don't copy the prototype's internal structure unless it happens to fit.
+```bash
+cp .env.example .env        # then edit MSSQL_SA_PASSWORD to a real password
+docker compose up --build
+```
 
-**Don't render these files in a browser or take screenshots unless the user asks you to.** Everything you need — dimensions, colors, layout rules — is spelled out in the source. Read the HTML and CSS directly; a screenshot won't tell you anything they don't.
+- App: http://localhost:8080
+- API directly (Swagger, for debugging): http://localhost:5299/swagger
+- SQL Server: `localhost:1433` (user `sa`, password from `.env`)
 
-## Bundle contents
+Seed a large synthetic dataset once the stack is healthy (optional, demonstrates the
+`SqlBulkCopy`-based large-dataset seeder — see `tools/Emhip.Seeder`):
 
-- `README.md` — this file
-- `chats/` — conversation transcripts (read these!)
-- `project/` — the `C# large-dataset architecture` project files (HTML prototypes, assets, components)
+```bash
+docker compose --profile seed run --rm seeder --guests 100000 --hubs 3
+```
+
+Stop everything (add `-v` to also drop the SQL Server data volume):
+
+```bash
+docker compose down
+```
+
+### How the pieces talk to each other in Docker
+
+- `client` is nginx serving the built Angular app and reverse-proxying `/api/*` → `api:8080` and
+  `/hubs/*` → `api:8080` (WebSocket-upgraded, for SignalR) — see `client/nginx.conf`. This means
+  the browser only ever talks to one origin, so there's no CORS to configure for this path.
+- `api` applies EF Core migrations on startup in this mode (`ApplyMigrationsOnStartup=true`,
+  set only in `docker-compose.yml`) so there's no separate migration step — **this convenience
+  is for the Compose demo path only**; see "Production considerations" below before using it
+  for a real rollout.
+- `workers` talks to `sqlserver` directly and to `api`'s internal notification endpoint over the
+  Compose network (`http://api:8080/`) to relay live urgent-case escalations over SignalR.
+
+### Rebuilding after code changes
+
+```bash
+docker compose up --build          # rebuild whatever changed
+docker compose up --build api      # just one service
+```
+
+## Manual deployment (without Docker)
+
+Requires the .NET 10 SDK, Node.js ≥ 22.22.3, and a SQL Server instance (SQL Server on
+Windows/Linux, Azure SQL, or SQL Server on a VM all work — Docker for *just* the database is
+also fine even if you're running the app itself without containers).
+
+### 1. Database
+
+```bash
+dotnet tool install --global dotnet-ef   # once
+dotnet ef database update --project src/Emhip.Infrastructure --startup-project src/Emhip.Infrastructure
+```
+
+Set the real connection string via the `ConnectionStrings__Emhip` environment variable (don't
+edit `appsettings.json` in place on a shared server — see "Production considerations"). Locally,
+`src/Emhip.Api/appsettings.Development.json` / `src/Emhip.Workers/appsettings.json` already point
+at `Server=(local);Database=Emhip;Trusted_Connection=True;TrustServerCertificate=True;`.
+
+### 2. API
+
+```bash
+dotnet publish src/Emhip.Api -c Release -o /path/to/publish/api
+cd /path/to/publish/api
+ASPNETCORE_URLS=http://0.0.0.0:5000 \
+ConnectionStrings__Emhip="<your connection string>" \
+Cors__AllowedOrigins__0="https://your-app-domain" \
+dotnet Emhip.Api.dll
+```
+
+Run it behind a real reverse proxy (nginx, IIS, Azure App Service, etc.) that terminates TLS —
+the app itself expects to sit behind one (see `UseHttpsRedirection` guarded off for the `Docker`
+environment in `Program.cs`; for a bare-metal/VM deployment either terminate TLS in front of it
+or set `ASPNETCORE_ENVIRONMENT` so that guard doesn't apply to you).
+
+### 3. Background workers
+
+```bash
+dotnet publish src/Emhip.Workers -c Release -o /path/to/publish/workers
+cd /path/to/publish/workers
+ConnectionStrings__Emhip="<your connection string>" \
+Api__BaseUrl="https://your-api-domain/" \
+dotnet Emhip.Workers.dll
+```
+
+Run this as a long-lived service (systemd unit, Windows Service, container, etc.) — it's a
+`BackgroundService` host, not a web server, so there's nothing to reverse-proxy.
+
+### 4. Frontend
+
+```bash
+cd client
+npm ci
+npx ng build   # production build by default; outputs to client/dist/client/browser
+```
+
+Before building, point `src/environments/environment.prod.ts` at wherever you're hosting the API
+(either a relative path behind your own reverse-proxy setup, mirroring `client/nginx.conf`'s
+`/api` and `/hubs` proxying, or an absolute URL if the API is on a different origin — in which
+case also set real CORS origins on the API via `Cors__AllowedOrigins__0`). Serve the contents of
+`client/dist/client/browser` as static files from any web server (nginx, Apache, a CDN/static
+host) with SPA fallback to `index.html` for unmatched paths — `client/nginx.conf` is a working
+reference for that if you're using nginx.
+
+### 5. Seed data / tests
+
+```bash
+dotnet run --project tools/Emhip.Seeder -- --connection "<your connection string>" --guests 100000 --hubs 3
+dotnet test
+```
+
+### Authentication (dev mode — read before deploying anywhere real)
+
+There's no real identity provider wired up yet. `Emhip.Api.Auth.DevCurrentUser` reads the
+signed-in staff member from `X-Dev-Staff-Id` / `X-Dev-Hub-Id` / `X-Dev-Display-Name` /
+`X-Dev-Role` request headers (defaulting to a fixed demo CMHW if absent) — mirroring the
+original prototype's role/screen switcher. **Do not expose this as-is on a public network** —
+swap `ICurrentUser`'s registration for a claims-based implementation backed by Entra ID /
+OpenID Connect first; nothing else in the app depends on how `ICurrentUser` is implemented, so
+this is a contained change in `src/Emhip.Api/Program.cs` + a new `ICurrentUser` implementation.
+
+## Production considerations
+
+Whichever deployment path you use, before treating this as production-ready:
+
+- **Real auth**: replace `DevCurrentUser` (see above) — the `X-Dev-*` headers are trusted as-is
+  today, which is fine for local/demo use only.
+- **Migrations as an explicit step**: `ApplyMigrationsOnStartup` (Docker Compose only) is a demo
+  convenience. For a real environment, run `dotnet ef database update` (or
+  `dotnet ef migrations bundle` — see `ARCHITECTURE.md`) as a controlled deploy step instead of
+  auto-applying on every container start.
+- **Secrets**: don't commit real connection strings/passwords. Use environment variables, a
+  secrets manager, or `dotnet user-secrets` locally — the connection strings checked into
+  `appsettings.json` are placeholders pointing at `(local)`/Trusted_Connection.
+- **TLS**: terminate HTTPS in front of the API and client (a real reverse proxy/load balancer,
+  not the containers themselves) and turn `UseHttpsRedirection` back on for whatever environment
+  name you use in that setup.
+- **The escalation worker → API notification path**: `Emhip.Workers` calls
+  `Emhip.Api`'s `POST /internal/urgent-cases/notify` over plain HTTP with no authentication (see
+  `InternalNotificationsController`) because only the API process holds the live SignalR
+  connections. Put this behind the internal network boundary, add a shared secret, or replace it
+  with Azure SignalR Service before exposing either service publicly.
+- **Scale-up steps already called out in `project/design_handoff_emhip/ARCHITECTURE.md`**: SQL
+  table partitioning by month for `Contacts`/`AuditEvents`, columnstore indexes for the reporting
+  tables, and moving the in-process outbox `Channel<T>` to Azure Service Bus/RabbitMQ once hubs
+  scale out — apply these once real data volumes are known.
+
+## Screens
+
+| Route | Screen |
+|---|---|
+| `/dashboard` | Dashboard (CMHW) or Service Overview (Hub Manager) — role-driven |
+| `/guests` | Guest Data Sheet — keyset-paginated, virtual-scrolled guest list |
+| `/guests/new` | Register New Guest (Demographics → Initial Conversation wizard) |
+| `/guests/:guestId` | Guest Workspace (Overview / Demographics / Clinical / Pathway / Follow-up / Notes tabs) |
+| `/followups` | Global Follow-up queue |
+| `/urgent-cases` | Urgent Cases — live via SignalR |
+| `/reports` | Pathway reporting + CSV export |
+
+## Architecture highlights (large-dataset orientation)
+
+- **CQRS**: writes go through EF Core (`IAppDbContext`); list/read endpoints use Dapper with
+  hand-written SQL (`Emhip.Infrastructure/Reads/*ReadService.cs`).
+- **Keyset (cursor) pagination**: the Guest List and Follow-up queue never use OFFSET/skip —
+  see `Emhip.Application.Common.KeysetPage`/`KeysetCursor` and their Dapper implementations.
+- **Transactional outbox**: domain events (e.g. a risk flag being raised) are written to an
+  `OutboxMessages` table in the same transaction as the triggering change
+  (`OutboxSaveChangesInterceptor`), then relayed by `Emhip.Workers.OutboxRelayWorker` to an
+  in-process `Channel<T>` consumed by `EscalationWorker`.
+- **Read models**: `UrgentCases_ReadModel`, `DashboardSnapshots_ReadModel`,
+  `PathwayReportAggregates_ReadModel` are denormalized tables maintained by
+  `Emhip.Workers.ReportMaterializerWorker` / `EscalationWorker` — dashboards and reports never
+  run a live `GROUP BY` over full history.
+- **Streaming export**: `GET /reports/export` streams CSV rows via `IAsyncEnumerable`, never
+  buffering the full result set.
+- **Audit trail**: every write is logged via `AuditSaveChangesInterceptor`; every guest-scoped
+  read is logged via `AuditReadLoggingMiddleware` — both append-only, per the clinical-data
+  compliance requirement in `ARCHITECTURE.md`.
+
+See `project/design_handoff_emhip/ARCHITECTURE.md` for the full original design rationale.
+
+## Known gaps / next steps
+
+- Real authentication (Entra ID / OIDC) in place of `DevCurrentUser` — see "Production
+  considerations" above.
+- Secure the `Emhip.Workers` → `Emhip.Api` internal notification call before any non-local
+  deployment — see "Production considerations" above.
+- SQL partitioning/columnstore indexes and moving off the in-process outbox channel, once real
+  data volumes are known — see `project/design_handoff_emhip/ARCHITECTURE.md`.
+- `Hub Workers` sidebar item is a placeholder (redirects to Dashboard) — staff management wasn't
+  one of the nine extracted screens.

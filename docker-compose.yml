@@ -1,0 +1,74 @@
+name: emhip
+
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "${MSSQL_SA_PASSWORD:?Set MSSQL_SA_PASSWORD in .env}"
+      MSSQL_PID: Developer
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlserver-data:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -Q 'SELECT 1' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  api:
+    build:
+      context: .
+      dockerfile: src/Emhip.Api/Dockerfile
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Docker
+      ApplyMigrationsOnStartup: "true"
+      ConnectionStrings__Emhip: "Server=sqlserver;Database=Emhip;User Id=sa;Password=${MSSQL_SA_PASSWORD};TrustServerCertificate=True;"
+      Cors__AllowedOrigins__0: "http://localhost:8080"
+    ports:
+      - "5299:8080"
+
+  workers:
+    build:
+      context: .
+      dockerfile: src/Emhip.Workers/Dockerfile
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+      api:
+        condition: service_started
+    environment:
+      ConnectionStrings__Emhip: "Server=sqlserver;Database=Emhip;User Id=sa;Password=${MSSQL_SA_PASSWORD};TrustServerCertificate=True;"
+      Api__BaseUrl: "http://api:8080/"
+
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    depends_on:
+      - api
+    ports:
+      - "8080:80"
+
+  # Optional: generates a large synthetic dataset. Not started by `docker compose up`; run
+  # explicitly with `docker compose --profile seed run --rm seeder [-- --guests N --hubs N]`.
+  seeder:
+    build:
+      context: .
+      dockerfile: tools/Emhip.Seeder/Dockerfile
+    profiles: ["seed"]
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+      api:
+        condition: service_started
+    environment:
+      EMHIP_CONNECTION: "Server=sqlserver;Database=Emhip;User Id=sa;Password=${MSSQL_SA_PASSWORD};TrustServerCertificate=True;"
+
+volumes:
+  sqlserver-data:

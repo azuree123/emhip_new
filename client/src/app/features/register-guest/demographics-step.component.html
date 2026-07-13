@@ -1,0 +1,209 @@
+<div [formGroup]="form" class="steps-form">
+  <div class="section" formGroupName="personal">
+    <h3 class="section__title">Personal details</h3>
+    <p class="section__desc">Please enter the personal details of the guest.</p>
+
+    <div class="field-row">
+      <label class="field">
+        <span class="field__label">First Name *</span>
+        <input class="field__input" type="text" formControlName="firstName" placeholder="Emma" />
+        @if (form.get('personal.firstName')?.invalid && form.get('personal.firstName')?.touched) {
+          <span class="field__error">First name is required.</span>
+        }
+      </label>
+      <label class="field">
+        <span class="field__label">Last Name *</span>
+        <input class="field__input" type="text" formControlName="lastName" placeholder="Thomson" />
+        @if (form.get('personal.lastName')?.invalid && form.get('personal.lastName')?.touched) {
+          <span class="field__error">Last name is required.</span>
+        }
+      </label>
+    </div>
+
+    <div class="field-row">
+      <label class="field">
+        <span class="field__label">Date of Birth *</span>
+        <input class="field__input" type="date" formControlName="dateOfBirth" />
+        @if (form.get('personal.dateOfBirth')?.touched && form.get('personal.dateOfBirth')?.hasError('required')) {
+          <span class="field__error">Date of birth is required.</span>
+        }
+        @if (form.get('personal.dateOfBirth')?.hasError('futureDate')) {
+          <span class="field__error">Date of birth must be in the past.</span>
+        }
+      </label>
+      <label class="field">
+        <span class="field__label">Phone Number *</span>
+        <input class="field__input" type="tel" formControlName="phoneNumber" placeholder="077 1734 6784" />
+        @if (form.get('personal.phoneNumber')?.invalid && form.get('personal.phoneNumber')?.touched) {
+          <span class="field__error">Phone number is required.</span>
+        }
+      </label>
+    </div>
+
+    <div class="field-row">
+      <label class="field">
+        <span class="field__label">Ethnicity&nbsp;*</span>
+        <input class="field__input" type="text" formControlName="ethnicity" placeholder="Black African" />
+        @if (form.get('personal.ethnicity')?.invalid && form.get('personal.ethnicity')?.touched) {
+          <span class="field__error">Ethnicity is required.</span>
+        }
+      </label>
+      <label class="field">
+        <span class="field__label">Gender</span>
+        <select class="field__select" formControlName="gender">
+          <option value="">Select gender</option>
+          @for (option of genderOptions; track option) {
+            <option [value]="option">{{ option }}</option>
+          }
+        </select>
+      </label>
+    </div>
+  </div>
+
+  <div class="section" formGroupName="contact">
+    <h3 class="section__title">Contact & housing</h3>
+    <p class="section__desc">Please enter the contact &amp; housing details of the guest.</p>
+
+    <div class="field-row field-row--single">
+      <label class="field">
+        <span class="field__label">Address</span>
+        <input class="field__input" type="text" formControlName="address" placeholder="Enter street, city" />
+      </label>
+    </div>
+
+    <div class="field-row">
+      <label class="field">
+        <span class="field__label">Post Code</span>
+        <input class="field__input" type="text" formControlName="postCode" placeholder="E1 6AN" />
+      </label>
+      <label class="field">
+        <span class="field__label">Contact email</span>
+        <input class="field__input" type="email" formControlName="contactEmail" placeholder="name@gmail.com" />
+        @if (form.get('contact.contactEmail')?.hasError('email')) {
+          <span class="field__error">Enter a valid email address.</span>
+        }
+      </label>
+    </div>
+
+    <div class="field-row">
+      <label class="field">
+        <span class="field__label">Housing status</span>
+        <select class="field__select" formControlName="housingStatus">
+          <option value="">Select housing status</option>
+          @for (option of housingStatusOptions; track option) {
+            <option [value]="option">{{ option }}</option>
+          }
+        </select>
+      </label>
+      <label class="field">
+        <span class="field__label">Nationality</span>
+        <input class="field__input" type="text" formControlName="nationality" placeholder="British" />
+      </label>
+    </div>
+
+    <div class="field-row">
+      <label class="field">
+        <span class="field__label">Employment status</span>
+        <select class="field__select" formControlName="employmentStatus">
+          <option value="">Select employment status</option>
+          @for (option of employmentStatusOptions; track option) {
+            <option [value]="option">{{ option }}</option>
+          }
+        </select>
+      </label>
+      <div></div>
+    </div>
+  </div>
+
+  <div class="section" formGroupName="additional">
+    <h3 class="section__title">Additional details</h3>
+    <p class="section__desc">Optional details used for care coordination (interpreter, emergency contact, GP).</p>
+
+    <div class="field-row">
+      <label class="field">
+        <span class="field__label">Preferred language</span>
+        <input class="field__input" type="text" formControlName="preferredLanguage" placeholder="English" />
+      </label>
+      <label class="checkbox-field" style="align-self: end; padding-bottom: 8px;">
+        <input class="checkbox-field__input" type="checkbox" formControlName="interpreterNeeded" />
+        <span class="checkbox-field__box">
+          <svg width="11" height="8" viewBox="0 0 10.5 7.5" fill="none">
+            <path
+              d="M 0.53 3.47 C 0.237 3.177 -0.237 3.177 -0.53 3.47 C -0.823 3.763 -0.823 4.237 -0.53 4.53 L 0 4 L 0.53 3.47 Z M 3.5 7.5 L 2.97 8.03 C 3.113 8.174 3.31 8.253 3.513 8.25 C 3.716 8.246 3.91 8.16 4.048 8.012 L 3.5 7.5 Z M 11.048 0.512 C 11.331 0.209 11.315 -0.266 11.012 -0.548 C 10.709 -0.831 10.234 -0.815 9.952 -0.512 L 10.5 0 L 11.048 0.512 Z M 0 4 L -0.53 4.53 L 2.97 8.03 L 3.5 7.5 L 4.03 6.97 L 0.53 3.47 L 0 4 Z M 3.5 7.5 L 4.048 8.012 L 11.048 0.512 L 10.5 0 L 9.952 -0.512 L 2.952 6.988 L 3.5 7.5 Z"
+              fill="currentColor"
+            />
+          </svg>
+        </span>
+        <span class="checkbox-field__label">Interpreter needed</span>
+      </label>
+    </div>
+
+    <div class="field-row">
+      <label class="field">
+        <span class="field__label">Emergency contact name</span>
+        <input class="field__input" type="text" formControlName="emergencyContactName" placeholder="Contact name" />
+      </label>
+      <label class="field">
+        <span class="field__label">Emergency contact phone</span>
+        <input class="field__input" type="tel" formControlName="emergencyContactPhone" placeholder="077 1734 6784" />
+      </label>
+    </div>
+
+    <div class="field-row">
+      <label class="field">
+        <span class="field__label">Emergency contact relationship</span>
+        <input class="field__input" type="text" formControlName="emergencyContactRelationship" placeholder="e.g. Sister" />
+      </label>
+      <label class="field">
+        <span class="field__label">NHS number</span>
+        <input class="field__input" type="text" formControlName="nhsNumber" placeholder="000 000 0000" />
+      </label>
+    </div>
+
+    <div class="field-row">
+      <label class="field">
+        <span class="field__label">GP name</span>
+        <input class="field__input" type="text" formControlName="gpName" placeholder="Dr. Smith" />
+      </label>
+      <label class="field">
+        <span class="field__label">GP practice</span>
+        <input class="field__input" type="text" formControlName="gpPractice" placeholder="Riverside Practice" />
+      </label>
+    </div>
+  </div>
+
+  <div class="section" formGroupName="referral">
+    <h3 class="section__title">Referral information</h3>
+    <p class="section__desc">Please enter the referral information of the guest.</p>
+
+    <div class="field-row">
+      <label class="field">
+        <span class="field__label">Referral type&nbsp;*</span>
+        <select class="field__select" formControlName="referralType">
+          @for (option of referralTypeOptions; track option) {
+            <option [value]="option">{{ option }}</option>
+          }
+        </select>
+      </label>
+      <div></div>
+    </div>
+  </div>
+
+  <div class="section" formGroupName="consent">
+    <label class="checkbox-field">
+      <input class="checkbox-field__input" type="checkbox" formControlName="consentGiven" />
+      <span class="checkbox-field__box">
+        <svg width="11" height="8" viewBox="0 0 10.5 7.5" fill="none">
+          <path
+            d="M 0.53 3.47 C 0.237 3.177 -0.237 3.177 -0.53 3.47 C -0.823 3.763 -0.823 4.237 -0.53 4.53 L 0 4 L 0.53 3.47 Z M 3.5 7.5 L 2.97 8.03 C 3.113 8.174 3.31 8.253 3.513 8.25 C 3.716 8.246 3.91 8.16 4.048 8.012 L 3.5 7.5 Z M 11.048 0.512 C 11.331 0.209 11.315 -0.266 11.012 -0.548 C 10.709 -0.831 10.234 -0.815 9.952 -0.512 L 10.5 0 L 11.048 0.512 Z M 0 4 L -0.53 4.53 L 2.97 8.03 L 3.5 7.5 L 4.03 6.97 L 0.53 3.47 L 0 4 Z M 3.5 7.5 L 4.048 8.012 L 11.048 0.512 L 10.5 0 L 9.952 -0.512 L 2.952 6.988 L 3.5 7.5 Z"
+            fill="currentColor"
+          />
+        </svg>
+      </span>
+      <span class="checkbox-field__label">The guest has given consent for their data to be recorded and processed by the service.</span>
+    </label>
+    @if (form.get('consent.consentGiven')?.invalid && form.get('consent.consentGiven')?.touched) {
+      <span class="field__error">Consent is required to register a guest.</span>
+    }
+  </div>
+</div>

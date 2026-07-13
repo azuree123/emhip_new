@@ -1,0 +1,5 @@
+// Component-specific overrides for the demographics step. Shared field/section styles live in
+// _form-shared.scss (imported alongside this file via styleUrls).
+.steps-form {
+  display: block;
+}

@@ -1,0 +1,85 @@
+<div class="dashboard">
+  @if (data(); as d) {
+    <h1 class="page-title">Guest Overview</h1>
+    <div class="total-stat">
+      <span class="total-stat__number">{{ d.totalGuestsAcrossHub }}</span>
+      <span class="total-stat__label">total guests across hub</span>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <div class="card__title">Pathway distribution</div>
+        <div class="card__subtitle">Active guest only</div>
+
+        <div class="pathway-rows">
+          @for (row of pathwayRows(d); track row.category) {
+            <div class="pathway-row">
+              <div class="pathway-row__top">
+                <span class="pathway-row__label">{{ row.label }}</span>
+                <span class="pathway-row__meta">
+                  {{ row.count }} guests
+                  <span class="dot"></span>
+                  <span [style.color]="row.color">{{ row.percentage }}%</span>
+                </span>
+              </div>
+              <div class="pathway-row__track">
+                <div class="pathway-row__fill" [style.width.%]="row.percentage" [style.background]="row.color"></div>
+              </div>
+            </div>
+          } @empty {
+            <div class="empty">No pathway referrals recorded yet.</div>
+          }
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card__title">Monthly stats</div>
+        <table class="monthly-table">
+          <thead>
+            <tr>
+              <th>Month</th>
+              <th>New</th>
+              <th>Closed</th>
+              <th>Contacts</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (m of d.monthlyStats; track m.year + '-' + m.month) {
+              <tr>
+                <td>{{ monthLabel(m.year, m.month) }}</td>
+                <td>{{ m.newGuests }}</td>
+                <td>{{ m.closedGuests }}</td>
+                <td>{{ m.contacts }}</td>
+              </tr>
+            } @empty {
+              <tr><td colspan="4" class="empty">No monthly data yet.</td></tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card activity-card">
+      <div class="card__title">Recent activity</div>
+      <div class="card__subtitle">Latest events across the hub</div>
+
+      <div class="timeline">
+        @for (item of d.recentActivity; track $index) {
+          <div class="timeline__item">
+            <div class="timeline__icon" [class.timeline__icon--alt]="$index % 2 === 1"></div>
+            <div class="timeline__content">
+              <div class="timeline__description">{{ item.description }}</div>
+              <div class="timeline__meta">{{ item.actorName }} · {{ formatDateTime(item.occurredAt) }}</div>
+            </div>
+          </div>
+        } @empty {
+          <div class="empty">No recent activity.</div>
+        }
+      </div>
+    </div>
+  } @else if (loading()) {
+    <div class="state-message">Loading service overview…</div>
+  } @else if (error()) {
+    <div class="state-message state-message--error">{{ error() }}</div>
+  }
+</div>

@@ -1,0 +1,93 @@
+<div class="tab-panel">
+  @if (loading()) {
+    <div class="state-card">Loading demographics…</div>
+  } @else if (error()) {
+    <div class="state-card state-card--error">{{ error() }}</div>
+  } @else if (demographics(); as d) {
+    <section class="card">
+      <div class="card__header-row">
+        <h2 class="card__title">Demographics</h2>
+        @if (!editing()) {
+          <button type="button" class="btn-link" (click)="startEdit()">Edit</button>
+        }
+      </div>
+
+      @if (!editing()) {
+        <div class="field-grid">
+          <div class="field"><span class="field__label">Ethnicity</span><span class="field__value">{{ d.ethnicity || '—' }}</span></div>
+          <div class="field"><span class="field__label">Nationality</span><span class="field__value">{{ d.nationality || '—' }}</span></div>
+          <div class="field"><span class="field__label">Preferred language</span><span class="field__value">{{ d.preferredLanguage || '—' }}</span></div>
+          <div class="field"><span class="field__label">Interpreter needed</span><span class="field__value">{{ d.interpreterNeeded ? 'Yes' : 'No' }}</span></div>
+          <div class="field"><span class="field__label">Housing status</span><span class="field__value">{{ d.housingStatus || '—' }}</span></div>
+          <div class="field"><span class="field__label">Employment status</span><span class="field__value">{{ d.employmentStatus || '—' }}</span></div>
+          <div class="field"><span class="field__label">Emergency contact</span><span class="field__value">{{ d.emergencyContactName || '—' }}</span></div>
+          <div class="field"><span class="field__label">Emergency phone</span><span class="field__value">{{ d.emergencyContactPhone || '—' }}</span></div>
+          <div class="field"><span class="field__label">Relationship</span><span class="field__value">{{ d.emergencyContactRelationship || '—' }}</span></div>
+          <div class="field"><span class="field__label">GP name</span><span class="field__value">{{ d.gpName || '—' }}</span></div>
+          <div class="field"><span class="field__label">GP practice</span><span class="field__value">{{ d.gpPractice || '—' }}</span></div>
+          <div class="field"><span class="field__label">NHS number</span><span class="field__value">{{ d.nhsNumber || '—' }}</span></div>
+        </div>
+      } @else {
+        <form class="edit-form" (ngSubmit)="save()">
+          <div class="edit-form__grid">
+            <label class="edit-form__field">
+              <span>Ethnicity</span>
+              <input type="text" name="ethnicity" [(ngModel)]="form.ethnicity" />
+            </label>
+            <label class="edit-form__field">
+              <span>Nationality</span>
+              <input type="text" name="nationality" [(ngModel)]="form.nationality" />
+            </label>
+            <label class="edit-form__field">
+              <span>Preferred language</span>
+              <input type="text" name="preferredLanguage" [(ngModel)]="form.preferredLanguage" />
+            </label>
+            <label class="edit-form__field edit-form__field--checkbox">
+              <input type="checkbox" name="interpreterNeeded" [(ngModel)]="form.interpreterNeeded" />
+              <span>Interpreter needed</span>
+            </label>
+            <label class="edit-form__field">
+              <span>Housing status</span>
+              <input type="text" name="housingStatus" [(ngModel)]="form.housingStatus" />
+            </label>
+            <label class="edit-form__field">
+              <span>Employment status</span>
+              <input type="text" name="employmentStatus" [(ngModel)]="form.employmentStatus" />
+            </label>
+            <label class="edit-form__field">
+              <span>Emergency contact name</span>
+              <input type="text" name="emergencyContactName" [(ngModel)]="form.emergencyContactName" />
+            </label>
+            <label class="edit-form__field">
+              <span>Emergency contact phone</span>
+              <input type="text" name="emergencyContactPhone" [(ngModel)]="form.emergencyContactPhone" />
+            </label>
+            <label class="edit-form__field">
+              <span>Relationship</span>
+              <input type="text" name="emergencyContactRelationship" [(ngModel)]="form.emergencyContactRelationship" />
+            </label>
+            <label class="edit-form__field">
+              <span>GP name</span>
+              <input type="text" name="gpName" [(ngModel)]="form.gpName" />
+            </label>
+            <label class="edit-form__field">
+              <span>GP practice</span>
+              <input type="text" name="gpPractice" [(ngModel)]="form.gpPractice" />
+            </label>
+            <label class="edit-form__field">
+              <span>NHS number</span>
+              <input type="text" name="nhsNumber" [(ngModel)]="form.nhsNumber" />
+            </label>
+          </div>
+          @if (saveError()) {
+            <p class="form-error">{{ saveError() }}</p>
+          }
+          <div class="edit-form__actions">
+            <button type="button" class="btn-ghost" (click)="cancelEdit()">Cancel</button>
+            <button type="submit" class="btn-primary" [disabled]="saving()">{{ saving() ? 'Saving…' : 'Save changes' }}</button>
+          </div>
+        </form>
+      }
+    </section>
+  }
+</div>

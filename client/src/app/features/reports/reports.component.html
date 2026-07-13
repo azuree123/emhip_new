@@ -1,0 +1,97 @@
+<div class="reports-page">
+  <section class="header-card">
+    <div class="header-card__top">
+      <div class="header-card__intro">
+        <h1 class="header-card__title">Reports &amp; Analytics</h1>
+        <p class="header-card__subtitle">Service-level reporting across pathway categories for the selected period.</p>
+      </div>
+      <div class="header-card__actions">
+        <span class="header-card__today">Today:&nbsp;{{ todayLabel }}</span>
+        <button type="button" class="btn btn--primary" (click)="exportCsv()">
+          <span class="btn__icon" aria-hidden="true">
+            <svg width="12" height="14" viewBox="0 0 12.375 14.625" fill="none">
+              <path
+                d="M 12.375 6.75 L 12.375 13.5 C 12.375 13.799 12.256 14.085 12.045 14.296 C 11.835 14.507 11.548 14.625 11.25 14.625 L 1.125 14.625 C 0.827 14.625 0.54 14.507 0.33 14.296 C 0.119 14.085 0 13.799 0 13.5 L 0 6.75 C 0 6.452 0.119 6.166 0.33 5.955 C 0.54 5.744 0.827 5.625 1.125 5.625 L 2.813 5.625 C 2.962 5.625 3.105 5.685 3.21 5.79 C 3.316 5.896 3.375 6.039 3.375 6.188 C 3.375 6.337 3.316 6.48 3.21 6.586 C 3.105 6.691 2.962 6.75 2.813 6.75 L 1.125 6.75 L 1.125 13.5 L 11.25 13.5 L 11.25 6.75 L 9.563 6.75 C 9.413 6.75 9.27 6.691 9.165 6.586 C 9.059 6.48 9 6.337 9 6.188 C 9 6.039 9.059 5.896 9.165 5.79 C 9.27 5.685 9.413 5.625 9.563 5.625 L 11.25 5.625 C 11.548 5.625 11.835 5.744 12.045 5.955 C 12.256 6.166 12.375 6.452 12.375 6.75 Z M 3.773 3.773 L 5.625 1.921 L 5.625 8.438 C 5.625 8.587 5.684 8.73 5.79 8.836 C 5.895 8.941 6.038 9 6.188 9 C 6.337 9 6.48 8.941 6.585 8.836 C 6.691 8.73 6.75 8.587 6.75 8.438 L 6.75 1.921 L 8.602 3.773 C 8.708 3.879 8.851 3.938 9 3.938 C 9.149 3.938 9.292 3.879 9.398 3.773 C 9.504 3.668 9.563 3.525 9.563 3.375 C 9.563 3.226 9.504 3.083 9.398 2.977 L 6.585 0.165 C 6.533 0.113 6.471 0.071 6.403 0.043 C 6.335 0.015 6.261 0 6.188 0 C 6.114 0 6.04 0.015 5.972 0.043 C 5.904 0.071 5.842 0.113 5.79 0.165 L 2.977 2.977 C 2.871 3.083 2.812 3.226 2.812 3.375 C 2.812 3.525 2.871 3.668 2.977 3.773 C 3.083 3.879 3.226 3.938 3.375 3.938 C 3.524 3.938 3.667 3.879 3.773 3.773 Z"
+                fill="currentColor"
+                fill-rule="nonzero"
+              />
+            </svg>
+          </span>
+          Export CSV
+        </button>
+      </div>
+    </div>
+
+    <div class="header-card__divider"></div>
+
+    <div class="filters">
+      <span class="filters__label">Filters</span>
+
+      <label class="filters__field">
+        <span>From</span>
+        <input type="date" [value]="from()" [max]="to()" (change)="onFromChange($event)" />
+      </label>
+
+      <label class="filters__field">
+        <span>To</span>
+        <input type="date" [value]="to()" [min]="from()" [max]="maxDate" (change)="onToChange($event)" />
+      </label>
+
+      <div class="filters__presets">
+        <button type="button" class="btn btn--ghost" (click)="applyPreset(6)">Last 6 months</button>
+        <button type="button" class="btn btn--ghost" (click)="applyPreset(12)">Last 12 months</button>
+      </div>
+    </div>
+  </section>
+
+  @if (error()) {
+    <div class="error-banner">Couldn't load report data — {{ error() }}</div>
+  }
+
+  <section class="stat-row">
+    <div class="stat-card">
+      <span class="stat-card__label">TOTAL REFERRALS</span>
+      <span class="stat-card__value">{{ totalReferrals() ?? '—' }}</span>
+    </div>
+
+    <div class="stat-card">
+      <span class="stat-card__label">CATEGORIES TRACKED</span>
+      <span class="stat-card__value">{{ categoryRows().length || '—' }}</span>
+    </div>
+
+    <div class="stat-card">
+      <span class="stat-card__label">TOP CATEGORY</span>
+      @if (topCategory(); as top) {
+        <span class="stat-card__value stat-card__value--text" [style.color]="top.color">{{ top.label }}</span>
+        <span class="stat-card__meta">{{ top.percentage }}% of referrals</span>
+      } @else {
+        <span class="stat-card__value">—</span>
+      }
+    </div>
+  </section>
+
+  <section class="distribution-card">
+    <h2 class="distribution-card__title">Pathway distribution</h2>
+    <p class="distribution-card__subtitle">{{ from() }} to {{ to() }}</p>
+
+    @if (loading()) {
+      <div class="distribution-card__state">Loading pathway report…</div>
+    } @else if (categoryRows().length === 0) {
+      <div class="distribution-card__state">No pathway referrals recorded for this period.</div>
+    } @else {
+      @for (row of categoryRows(); track row.category) {
+        <div class="pathway-row">
+          <div class="pathway-row__top">
+            <span class="pathway-row__label">{{ row.label }}</span>
+            <span class="pathway-row__count">{{ row.count }}</span>
+            <span class="pathway-row__unit">REFERRALS</span>
+            <span class="pathway-row__percentage" [style.color]="row.color">{{ row.percentage }}%</span>
+          </div>
+          <div class="pathway-row__track">
+            <div class="pathway-row__fill" [style.width.%]="row.percentage" [style.background]="row.color"></div>
+          </div>
+        </div>
+      }
+    }
+  </section>
+</div>

@@ -1,0 +1,65 @@
+<div class="tab-panel">
+  @if (loading()) {
+    <div class="state-card">Loading pathway history…</div>
+  } @else if (error()) {
+    <div class="state-card state-card--error">{{ error() }}</div>
+  } @else if (pathway(); as p) {
+    <section class="card">
+      <div class="card__header-row">
+        <h2 class="card__title">Pathway referrals</h2>
+        <button type="button" class="btn-link" (click)="toggleForm()">
+          {{ showForm() ? 'Cancel' : '+ New referral' }}
+        </button>
+      </div>
+
+      @if (showForm()) {
+        <form class="edit-form" (ngSubmit)="submit()">
+          <div class="edit-form__grid">
+            <label class="edit-form__field">
+              <span>Category</span>
+              <select name="category" [(ngModel)]="form.category">
+                @for (cat of categories; track cat) {
+                  <option [value]="cat">{{ humanize(cat) }}</option>
+                }
+              </select>
+            </label>
+          </div>
+          <label class="edit-form__field edit-form__field--full">
+            <span>Detail</span>
+            <textarea name="detail" rows="2" [(ngModel)]="form.detail" placeholder="Optional detail…"></textarea>
+          </label>
+          @if (submitError()) {
+            <p class="form-error">{{ submitError() }}</p>
+          }
+          <div class="edit-form__actions">
+            <button type="submit" class="btn-primary" [disabled]="submitting()">{{ submitting() ? 'Saving…' : 'Create referral' }}</button>
+          </div>
+        </form>
+      }
+
+      @if (p.referrals.length) {
+        <ul class="entry-list">
+          @for (r of p.referrals; track r.id) {
+            <li class="entry">
+              <div class="entry__head">
+                <span class="entry__title">{{ humanize(r.category) }}</span>
+                <span class="chip" [style.background]="pathwayStatusChip(r.status).bg" [style.color]="pathwayStatusChip(r.status).fg">
+                  {{ pathwayStatusChip(r.status).label }}
+                </span>
+              </div>
+              @if (r.detail) {
+                <p class="entry__body">{{ r.detail }}</p>
+              }
+              <div class="entry__meta">
+                <span>{{ r.referredByName }}</span>
+                <span>{{ formatDate(r.referredAt) }}</span>
+              </div>
+            </li>
+          }
+        </ul>
+      } @else {
+        <p class="empty-state">No pathway referrals recorded yet.</p>
+      }
+    </section>
+  }
+</div>

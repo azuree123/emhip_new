@@ -1,0 +1,50 @@
+<div class="tab-panel">
+  <section class="card">
+    <h2 class="card__title">Add a note</h2>
+    <form class="edit-form note-form" (ngSubmit)="submit()">
+      <label class="edit-form__field edit-form__field--full">
+        <span>Note</span>
+        <textarea name="body" rows="3" [(ngModel)]="form.body" placeholder="Write a note about this guest…"></textarea>
+      </label>
+      <div class="edit-form__grid">
+        <label class="edit-form__field">
+          <span>Color</span>
+          <select name="color" [(ngModel)]="form.color">
+            @for (c of colors; track c) {
+              <option [value]="c">{{ c }}</option>
+            }
+          </select>
+        </label>
+        <label class="edit-form__field edit-form__field--checkbox">
+          <input type="checkbox" name="isPinned" [(ngModel)]="form.isPinned" />
+          <span>Pin to Overview</span>
+        </label>
+      </div>
+      @if (submitError()) {
+        <p class="form-error">{{ submitError() }}</p>
+      }
+      <div class="edit-form__actions">
+        <button type="submit" class="btn-primary" [disabled]="submitting()">{{ submitting() ? 'Saving…' : 'Add note' }}</button>
+      </div>
+    </form>
+  </section>
+
+  <section class="card">
+    <h2 class="card__title">Pinned notes</h2>
+    @if (overview().pinnedNotes.length) {
+      <ul class="notes-list">
+        @for (note of overview().pinnedNotes; track note.id) {
+          <li class="note-item">
+            <span class="note-item__dot" [style.background]="noteColorDot(note.color)"></span>
+            <div class="note-item__body">
+              <p class="note-item__text">{{ note.body }}</p>
+              <span class="note-item__meta">{{ note.authorName }} · {{ formatDate(note.createdAt) }}</span>
+            </div>
+          </li>
+        }
+      </ul>
+    } @else {
+      <p class="empty-state">No pinned notes yet.</p>
+    }
+  </section>
+</div>

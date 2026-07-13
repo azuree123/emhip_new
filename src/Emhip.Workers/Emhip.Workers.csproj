@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk.Worker">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>dotnet-Emhip.Workers-6a44e6ec-1de7-4af3-92d3-7cc5012a0297</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.9" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.9" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.9" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Emhip.Application\Emhip.Application.csproj" />
+    <ProjectReference Include="..\Emhip.Infrastructure\Emhip.Infrastructure.csproj" />
+    <ProjectReference Include="..\Emhip.Domain\Emhip.Domain.csproj" />
+  </ItemGroup>
+</Project>

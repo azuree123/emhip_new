@@ -1,0 +1,214 @@
+<div class="page">
+  <header class="page-header">
+    <div>
+      <h1 class="page-header__title">Follow-up log</h1>
+      <p class="page-header__subtitle">All entries across all guests — most recent first</p>
+    </div>
+    <div class="page-header__actions">
+      <button type="button" class="btn btn--ghost" (click)="exportCsv()" [disabled]="!items().length">
+        <svg width="14" height="15" viewBox="0 0 12.375 14.625" fill="none">
+          <path
+            d="M 12.375 6.75 L 12.375 13.5 C 12.375 13.799 12.256 14.085 12.045 14.296 C 11.835 14.507 11.548 14.625 11.25 14.625 L 1.125 14.625 C 0.827 14.625 0.54 14.507 0.33 14.296 C 0.119 14.085 0 13.799 0 13.5 L 0 6.75 C 0 6.452 0.119 6.166 0.33 5.955 C 0.54 5.744 0.827 5.625 1.125 5.625 L 2.813 5.625 C 2.962 5.625 3.105 5.685 3.21 5.79 C 3.316 5.896 3.375 6.039 3.375 6.188 C 3.375 6.337 3.316 6.48 3.21 6.586 C 3.105 6.691 2.962 6.75 2.813 6.75 L 1.125 6.75 L 1.125 13.5 L 11.25 13.5 L 11.25 6.75 L 9.563 6.75 C 9.413 6.75 9.27 6.691 9.165 6.586 C 9.059 6.48 9 6.337 9 6.188 C 9 6.039 9.059 5.896 9.165 5.79 C 9.27 5.685 9.413 5.625 9.563 5.625 L 11.25 5.625 C 11.548 5.625 11.835 5.744 12.045 5.955 C 12.256 6.166 12.375 6.452 12.375 6.75 Z M 3.773 3.773 L 5.625 1.921 L 5.625 8.438 C 5.625 8.587 5.684 8.73 5.79 8.836 C 5.895 8.941 6.038 9 6.188 9 C 6.337 9 6.48 8.941 6.585 8.836 C 6.691 8.73 6.75 8.587 6.75 8.438 L 6.75 1.921 L 8.602 3.773 C 8.708 3.879 8.851 3.938 9 3.938 C 9.149 3.938 9.292 3.879 9.398 3.773 C 9.504 3.668 9.563 3.525 9.563 3.375 C 9.563 3.226 9.504 3.083 9.398 2.977 L 6.585 0.165 C 6.533 0.113 6.471 0.071 6.403 0.043 C 6.335 0.015 6.261 0 6.188 0 C 6.114 0 6.04 0.015 5.972 0.043 C 5.904 0.071 5.842 0.113 5.79 0.165 L 2.977 2.977 C 2.871 3.083 2.812 3.226 2.812 3.375 C 2.812 3.525 2.871 3.668 2.977 3.773 C 3.083 3.879 3.226 3.938 3.375 3.938 C 3.524 3.938 3.667 3.879 3.773 3.773 Z"
+            fill="currentColor" />
+        </svg>
+        Export
+      </button>
+      <button type="button" class="btn btn--primary" (click)="openAddNew()">
+        <app-icon name="IconOutlinePlusLg" [size]="16" />
+        Add follow-up
+      </button>
+    </div>
+  </header>
+
+  <section class="stat-cards">
+    <div class="stat-card">
+      <span class="stat-card__label">Loaded entries</span>
+      <span class="stat-card__value">{{ totalLoaded() }}</span>
+      <span class="pill pill--muted">Across this page</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-card__label">Overdue</span>
+      <span class="stat-card__value stat-card__value--danger">{{ overdueLoaded() }}</span>
+      <span class="pill pill--muted">Needs action</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-card__label">Scheduled</span>
+      <span class="stat-card__value">{{ scheduledLoaded() }}</span>
+      <span class="pill pill--muted">Upcoming</span>
+    </div>
+  </section>
+
+  <section class="filter-bar">
+    <label class="filter-bar__checkbox">
+      <input type="checkbox" [ngModel]="overdueOnly()" (ngModelChange)="overdueOnly.set($event)" />
+      Overdue only
+    </label>
+    <label class="filter-bar__field">
+      <span>Assignee ID</span>
+      <input type="text" [ngModel]="assigneeFilter()" (ngModelChange)="assigneeFilter.set($event)" placeholder="Filter by staff ID" />
+    </label>
+    <button type="button" class="btn btn--outline" (click)="loadFirstPage()">Apply filters</button>
+  </section>
+
+  <section class="queue-card">
+    @if (loadError()) {
+      <div class="banner banner--error">{{ loadError() }}</div>
+    }
+
+    @for (item of items(); track item.id) {
+      <article class="row">
+        <div class="row__top">
+          <div class="row__badges">
+            <span class="due-label" [class.due-label--overdue]="item.isOverdue">
+              {{ item.isOverdue ? 'Overdue' : 'Due' }} {{ item.dueDate | date: 'd MMM y' }}
+            </span>
+            <span class="pill" [style.background]="statusColor(item.status).bg" [style.color]="statusColor(item.status).fg">
+              {{ item.status }}
+            </span>
+          </div>
+          <span class="row__time">{{ item.dueDate | date: 'shortTime' }}</span>
+        </div>
+
+        <a class="row__guest" [routerLink]="['/guests', item.guestId]">{{ item.guestName }}</a>
+
+        <div class="row__bottom">
+          <span class="pill pill--assignee">
+            <svg width="16" height="16" viewBox="0 0 10.666 13.331" fill="none">
+              <path
+                d="M 9.167 7.997 C 9.995 7.997 10.666 8.668 10.666 9.496 L 10.666 9.88 C 10.666 10.476 10.453 11.052 10.066 11.505 C 9.019 12.728 7.428 13.331 5.331 13.331 C 3.234 13.331 1.643 12.728 0.599 11.505 C 0.212 11.052 0 10.476 0 9.881 L 0 9.496 C 0 8.668 0.671 7.997 1.499 7.997 L 9.167 7.997 Z M 9.167 8.997 L 1.499 8.997 C 1.224 8.997 1 9.22 1 9.496 L 1 9.881 C 1 10.238 1.127 10.584 1.359 10.855 C 2.195 11.834 3.505 12.331 5.331 12.331 C 7.157 12.331 8.468 11.834 9.306 10.855 C 9.539 10.583 9.666 10.237 9.666 9.88 L 9.666 9.496 C 9.666 9.22 9.443 8.997 9.167 8.997 Z M 5.331 0 C 7.172 0 8.664 1.492 8.664 3.333 C 8.664 5.174 7.172 6.667 5.331 6.667 C 3.49 6.667 1.998 5.174 1.998 3.333 C 1.998 1.492 3.49 0 5.331 0 Z M 5.331 1 C 4.042 1 2.998 2.045 2.998 3.333 C 2.998 4.622 4.042 5.667 5.331 5.667 C 6.62 5.667 7.664 4.622 7.664 3.333 C 7.664 2.045 6.62 1 5.331 1 Z"
+                fill="currentColor" />
+            </svg>
+            {{ item.assigneeName }}
+          </span>
+
+          <div class="row__actions">
+            @if (item.status === 'Scheduled' || item.status === 'Overdue') {
+              <button type="button" class="icon-btn" title="Mark complete" (click)="complete(item)">
+                <app-icon name="IconsNameCheckColorDefault" [size]="16" />
+              </button>
+            }
+            <button type="button" class="btn btn--outline btn--sm" (click)="openAddForGuest(item.guestId, item.guestName)">
+              <app-icon name="IconOutlinePlusLg" [size]="14" />
+              Add follow-up entry
+            </button>
+            <a class="btn btn--primary btn--sm" [routerLink]="['/guests', item.guestId]">
+              <svg width="14" height="14" viewBox="0 0 13.5 13.5" fill="none">
+                <path
+                  d="M 2.437 1.125 C 1.713 1.125 1.125 1.713 1.125 2.438 L 1.125 11.063 C 1.125 11.787 1.713 12.375 2.437 12.375 L 11.062 12.375 C 11.787 12.375 12.375 11.787 12.375 11.063 L 12.375 8.063 C 12.375 7.752 12.627 7.5 12.937 7.5 C 13.248 7.5 13.5 7.752 13.5 8.063 L 13.5 11.063 C 13.5 12.409 12.408 13.5 11.062 13.5 L 2.437 13.5 C 1.091 13.5 0 12.409 0 11.063 L 0 2.438 C 0 1.091 1.091 0 2.437 0 L 5.437 0 C 5.748 0 6 0.252 6 0.563 C 6 0.873 5.748 1.125 5.437 1.125 L 2.437 1.125 Z M 7.5 0.563 C 7.5 0.252 7.752 0 8.062 0 L 12.938 0 C 13.248 0 13.5 0.252 13.5 0.563 L 13.5 5.438 C 13.5 5.748 13.248 6 12.938 6 C 12.627 6 12.375 5.748 12.375 5.438 L 12.375 1.921 L 8.46 5.835 C 8.24 6.055 7.884 6.055 7.665 5.835 C 7.445 5.616 7.445 5.259 7.665 5.04 L 11.58 1.125 L 8.062 1.125 C 7.752 1.125 7.5 0.873 7.5 0.563 Z"
+                  fill="currentColor" />
+              </svg>
+              Open Guest
+            </a>
+          </div>
+        </div>
+      </article>
+    }
+
+    @if (loading()) {
+      <div class="loading-row">Loading…</div>
+    }
+
+    @if (!loading() && items().length === 0 && !loadError()) {
+      <div class="empty-state">No follow-up entries match these filters.</div>
+    }
+
+    @if (hasMore()) {
+      <div class="load-more">
+        <button type="button" class="btn btn--outline" (click)="loadMore()" [disabled]="loading()">
+          {{ loading() ? 'Loading…' : 'Load more' }}
+        </button>
+      </div>
+    }
+  </section>
+</div>
+
+@if (modalOpen()) {
+  <div class="modal-overlay" (click)="closeModal()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal__header">
+        <h2>Add follow-up entry</h2>
+        <button type="button" class="modal__close" (click)="closeModal()" aria-label="Close">
+          <svg width="14" height="14" viewBox="0 0 10 10" fill="none">
+            <path
+              d="M 0 4.25 C -0.414 4.25 -0.75 4.586 -0.75 5 C -0.75 5.414 -0.414 5.75 0 5.75 L 0 5 L 0 4.25 Z M 10 5.75 C 10.414 5.75 10.75 5.414 10.75 5 C 10.75 4.586 10.414 4.25 10 4.25 L 10 5 L 10 5.75 Z M 5.75 0 C 5.75 -0.414 5.414 -0.75 5 -0.75 C 4.586 -0.75 4.25 -0.414 4.25 0 L 5 0 L 5.75 0 Z M 4.25 10 C 4.25 10.414 4.586 10.75 5 10.75 C 5.414 10.75 5.75 10.414 5.75 10 L 5 10 L 4.25 10 Z M 0 5 L 0 5.75 L 5 5.75 L 5 5 L 5 4.25 L 0 4.25 L 0 5 Z M 10 5 L 10 4.25 L 5 4.25 L 5 5 L 5 5.75 L 10 5.75 L 10 5 Z M 5 5 L 5.75 5 L 5.75 0 L 5 0 L 4.25 0 L 4.25 5 L 5 5 Z M 5 5 L 4.25 5 L 4.25 10 L 5 10 L 5.75 10 L 5.75 5 L 5 5 Z"
+              fill="currentColor" transform="rotate(45 5 5)" />
+          </svg>
+        </button>
+      </div>
+
+      <div class="modal__tabs">
+        <button type="button" [class.active]="modalMode() === 'schedule'" (click)="modalMode.set('schedule')">
+          Schedule follow-up
+        </button>
+        <button type="button" [class.active]="modalMode() === 'contact'" (click)="modalMode.set('contact')">
+          Log completed contact
+        </button>
+      </div>
+
+      <div class="modal__body">
+        @if (modalGuestName()) {
+          <div class="field field--readonly">
+            <span>Guest</span>
+            <strong>{{ modalGuestName() }}</strong>
+          </div>
+        } @else {
+          <label class="field">
+            <span>Guest ID</span>
+            <input type="text" [ngModel]="modalGuestId()" (ngModelChange)="modalGuestId.set($event)" placeholder="Paste a guest ID" />
+          </label>
+        }
+
+        @if (modalMode() === 'schedule') {
+          <label class="field">
+            <span>Due date</span>
+            <input type="datetime-local" [(ngModel)]="scheduleForm.dueDate" />
+          </label>
+          <label class="field">
+            <span>Assignee staff ID</span>
+            <input type="text" [(ngModel)]="scheduleForm.assigneeStaffId" />
+          </label>
+          <label class="field">
+            <span>Notes</span>
+            <textarea rows="3" [(ngModel)]="scheduleForm.notes"></textarea>
+          </label>
+        } @else {
+          <label class="field">
+            <span>Contact type</span>
+            <select [(ngModel)]="contactForm.type">
+              @for (t of contactTypes; track t) {
+                <option [value]="t">{{ t }}</option>
+              }
+            </select>
+          </label>
+          <label class="field">
+            <span>Outcome</span>
+            <select [(ngModel)]="contactForm.outcome">
+              @for (o of contactOutcomes; track o) {
+                <option [value]="o">{{ o }}</option>
+              }
+            </select>
+          </label>
+          <label class="field">
+            <span>Occurred at</span>
+            <input type="datetime-local" [(ngModel)]="contactForm.occurredAt" />
+          </label>
+          <label class="field">
+            <span>Notes</span>
+            <textarea rows="3" [(ngModel)]="contactForm.notes"></textarea>
+          </label>
+        }
+
+        @if (saveError()) {
+          <div class="banner banner--error">{{ saveError() }}</div>
+        }
+      </div>
+
+      <div class="modal__footer">
+        <button type="button" class="btn btn--ghost" (click)="closeModal()">Cancel</button>
+        <button type="button" class="btn btn--primary" [disabled]="saving()" (click)="submitModal()">
+          {{ saving() ? 'Saving…' : 'Save' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}

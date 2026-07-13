@@ -1,0 +1,67 @@
+<div class="tab-panel">
+  @if (loading()) {
+    <div class="state-card">Loading follow-up log…</div>
+  } @else if (error()) {
+    <div class="state-card state-card--error">{{ error() }}</div>
+  } @else if (followUps(); as f) {
+    <section class="card">
+      <div class="card__header-row">
+        <h2 class="card__title">Follow-up log</h2>
+        <button type="button" class="btn-link" (click)="toggleForm()">
+          {{ showForm() ? 'Cancel' : '+ Schedule follow-up' }}
+        </button>
+      </div>
+
+      @if (showForm()) {
+        <form class="edit-form" (ngSubmit)="submit()">
+          <div class="edit-form__grid">
+            <label class="edit-form__field">
+              <span>Due date</span>
+              <input type="date" name="dueDate" [(ngModel)]="form.dueDate" />
+            </label>
+            <label class="edit-form__field">
+              <span>Assignee staff ID</span>
+              <input type="text" name="assigneeStaffId" [(ngModel)]="form.assigneeStaffId" placeholder="Staff GUID" />
+            </label>
+          </div>
+          <label class="edit-form__field edit-form__field--full">
+            <span>Notes</span>
+            <textarea name="notes" rows="2" [(ngModel)]="form.notes" placeholder="Optional notes…"></textarea>
+          </label>
+          @if (submitError()) {
+            <p class="form-error">{{ submitError() }}</p>
+          }
+          <div class="edit-form__actions">
+            <button type="submit" class="btn-primary" [disabled]="submitting()">{{ submitting() ? 'Saving…' : 'Schedule' }}</button>
+          </div>
+        </form>
+      }
+
+      @if (f.followUps.length) {
+        <ul class="entry-list">
+          @for (item of f.followUps; track item.id) {
+            <li class="entry">
+              <div class="entry__head">
+                <span class="entry__title">Due {{ formatDate(item.dueDate) }}</span>
+                <span class="chip" [style.background]="followUpStatusChip(item.status).bg" [style.color]="followUpStatusChip(item.status).fg">
+                  {{ followUpStatusChip(item.status).label }}
+                </span>
+              </div>
+              @if (item.notes) {
+                <p class="entry__body">{{ item.notes }}</p>
+              }
+              <div class="entry__meta">
+                <span>{{ item.assigneeName }}</span>
+                @if (item.completedAt) {
+                  <span>Completed {{ formatDateTime(item.completedAt) }}</span>
+                }
+              </div>
+            </li>
+          }
+        </ul>
+      } @else {
+        <p class="empty-state">No follow-ups scheduled yet.</p>
+      }
+    </section>
+  }
+</div>

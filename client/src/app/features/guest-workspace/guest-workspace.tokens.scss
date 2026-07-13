@@ -1,0 +1,44 @@
+// Shared literal design tokens for the Guest Workspace screen, lifted directly from
+// project/screens/Components.bundle.js (GuestOverviewTab) so every tab component stays
+// visually consistent. Trust these literal values over design-system/fig-tokens.css —
+// the bundle is the pixel-accurate source of truth for this screen.
+
+$font-primary: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+$font-eyebrow: 'Wix Madefor Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+
+$color-text-primary: #2a2a2a;
+$color-text-body: #323232;
+$color-text-meta: #8c8c8c;
+$color-text-eyebrow: #8f8f8f;
+
+$color-border: #e8e8e8;
+$color-border-strong: #d9d9d9;
+$color-divider: #e5e5e5;
+$color-tile-bg: #f0f0f0;
+$color-segment-bg: #f6f6f6;
+$color-page-bg: #ececec;
+
+$color-brand: #941c3c;
+$color-brand-red: #e12628;
+$color-brand-red-bright: #eb3c2c;
+$color-danger-dot: #dc2626;
+$color-link-red: #d02537;
+$color-chip-red-bg: #ffeaec;
+
+$color-success-bg: #eafdee;
+$color-success-text: #147129;
+
+$color-gold-bg: #fff9e4;
+$color-gold-text: #9d852d;
+
+$color-neutral-bg: #f0f0f0;
+$color-neutral-text: #646464;
+
+$color-amber-banner-bg: #fefbea;
+$color-amber-banner-bar: #9d852d;
+
+$radius-card: 12px;
+$radius-pill: 200px;
+$radius-control: 6px;
+
+$shadow-card: 0 1px 4px 0 rgba(0, 0, 0, 0.06);

@@ -1,0 +1,171 @@
+<div class="overview">
+  <div class="stat-row">
+    <div class="stat-tile">
+      <span class="stat-tile__label">Days since last contact</span>
+      <span class="stat-tile__value">{{ lastContactDaysAgo() ?? '—' }}</span>
+      <span class="stat-tile__foot">
+        <svg width="16" height="16" viewBox="0 0 13.333 13.333" fill="none">
+          <path
+            d="M 1 6.667 C 1 3.537 3.537 1 6.667 1 C 9.796 1 12.333 3.537 12.333 6.667 C 12.333 9.796 9.796 12.333 6.667 12.333 C 3.537 12.333 1 9.796 1 6.667 Z M 6.667 0 C 2.985 0 0 2.985 0 6.667 C 0 10.349 2.985 13.333 6.667 13.333 C 10.349 13.333 13.333 10.349 13.333 6.667 C 13.333 2.985 10.349 0 6.667 0 Z M 6.662 3.099 C 6.629 2.855 6.42 2.667 6.167 2.667 C 5.891 2.667 5.667 2.891 5.667 3.167 L 5.667 7.167 L 5.671 7.234 C 5.704 7.478 5.914 7.667 6.167 7.667 L 8.833 7.667 L 8.901 7.662 C 9.145 7.629 9.333 7.42 9.333 7.167 C 9.333 6.891 9.109 6.667 8.833 6.667 L 6.667 6.667 L 6.667 3.167 L 6.662 3.099 Z"
+            fill="currentColor"
+          />
+        </svg>
+        {{ overview().recentContacts.length ? formatDate(overview().recentContacts[0].occurredAt) : 'No contacts yet' }}
+      </span>
+    </div>
+    <div class="stat-tile">
+      <span class="stat-tile__label">Open follow-up entries</span>
+      <span class="stat-tile__value">{{ overview().openFollowUpCount }}</span>
+      <span class="stat-tile__foot">
+        <svg width="16" height="16" viewBox="0 0 13.333 13.333" fill="none">
+          <path
+            d="M 1 6.667 C 1 3.537 3.537 1 6.667 1 C 9.796 1 12.333 3.537 12.333 6.667 C 12.333 9.796 9.796 12.333 6.667 12.333 C 3.537 12.333 1 9.796 1 6.667 Z M 6.667 0 C 2.985 0 0 2.985 0 6.667 C 0 10.349 2.985 13.333 6.667 13.333 C 10.349 13.333 13.333 10.349 13.333 6.667 C 13.333 2.985 10.349 0 6.667 0 Z M 6.662 3.099 C 6.629 2.855 6.42 2.667 6.167 2.667 C 5.891 2.667 5.667 2.891 5.667 3.167 L 5.667 7.167 L 5.671 7.234 C 5.704 7.478 5.914 7.667 6.167 7.667 L 8.833 7.667 L 8.901 7.662 C 9.145 7.629 9.333 7.42 9.333 7.167 C 9.333 6.891 9.109 6.667 8.833 6.667 L 6.667 6.667 L 6.667 3.167 L 6.662 3.099 Z"
+            fill="currentColor"
+          />
+        </svg>
+        See Follow-up tab
+      </span>
+    </div>
+    <div class="stat-tile">
+      <span class="stat-tile__label">Pinned notes</span>
+      <span class="stat-tile__value">{{ overview().pinnedNotes.length }}</span>
+      <span class="stat-tile__foot">
+        <svg width="16" height="16" viewBox="0 0 13.333 13.333" fill="none">
+          <path
+            d="M 1 6.667 C 1 3.537 3.537 1 6.667 1 C 9.796 1 12.333 3.537 12.333 6.667 C 12.333 9.796 9.796 12.333 6.667 12.333 C 3.537 12.333 1 9.796 1 6.667 Z M 6.667 0 C 2.985 0 0 2.985 0 6.667 C 0 10.349 2.985 13.333 6.667 13.333 C 10.349 13.333 13.333 10.349 13.333 6.667 C 13.333 2.985 10.349 0 6.667 0 Z M 6.662 3.099 C 6.629 2.855 6.42 2.667 6.167 2.667 C 5.891 2.667 5.667 2.891 5.667 3.167 L 5.667 7.167 L 5.671 7.234 C 5.704 7.478 5.914 7.667 6.167 7.667 L 8.833 7.667 L 8.901 7.662 C 9.145 7.629 9.333 7.42 9.333 7.167 C 9.333 6.891 9.109 6.667 8.833 6.667 L 6.667 6.667 L 6.667 3.167 L 6.662 3.099 Z"
+            fill="currentColor"
+          />
+        </svg>
+        See Notes tab
+      </span>
+    </div>
+  </div>
+
+  <div class="columns">
+    <div class="column">
+      <section class="card">
+        <h2 class="card__title">Personal snapshot</h2>
+        <div class="field-grid">
+          <div class="field">
+            <span class="field__label">Date of birth</span>
+            <span class="field__value">{{ formatDate(overview().dateOfBirth) }}</span>
+          </div>
+          <div class="field">
+            <span class="field__label">Contact phone</span>
+            <span class="field__value">{{ overview().contactPhone || '—' }}</span>
+          </div>
+          <div class="field">
+            <span class="field__label">Contact email</span>
+            <span class="field__value">{{ overview().contactEmail || '—' }}</span>
+          </div>
+          <div class="field">
+            <span class="field__label">Assigned CMHW</span>
+            <span class="field__value">{{ overview().assignedCmhwName || 'Unassigned' }}</span>
+          </div>
+          <div class="field">
+            <span class="field__label">Registered</span>
+            <span class="field__value">{{ formatDate(overview().registeredAt) }}</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2 class="card__title">Pinned notes</h2>
+        @if (overview().pinnedNotes.length) {
+          <ul class="notes-list">
+            @for (note of overview().pinnedNotes; track note.id) {
+              <li class="note-item">
+                <span class="note-item__dot" [style.background]="noteColorDot(note.color)"></span>
+                <div class="note-item__body">
+                  <p class="note-item__text">{{ note.body }}</p>
+                  <span class="note-item__meta">{{ note.authorName }} · {{ formatDate(note.createdAt) }}</span>
+                </div>
+              </li>
+            }
+          </ul>
+        } @else {
+          <p class="empty-state">No pinned notes yet — pin an important note from the Notes tab.</p>
+        }
+      </section>
+    </div>
+
+    <div class="column column--wide">
+      <section class="card">
+        <div class="card__header-row">
+          <h2 class="card__title">Recent contacts</h2>
+          <button type="button" class="btn-link" (click)="toggleAddContact()">
+            {{ showAddContact() ? 'Cancel' : '+ Add contact' }}
+          </button>
+        </div>
+
+        @if (showAddContact()) {
+          <form class="add-contact-form" (ngSubmit)="submitContact()">
+            <div class="add-contact-form__row">
+              <label class="add-contact-form__field">
+                <span>Type</span>
+                <select name="type" [(ngModel)]="contactType">
+                  @for (t of contactTypes; track t) {
+                    <option [value]="t">{{ humanize(t) }}</option>
+                  }
+                </select>
+              </label>
+              <label class="add-contact-form__field">
+                <span>Outcome</span>
+                <select name="outcome" [(ngModel)]="contactOutcome">
+                  @for (o of contactOutcomes; track o) {
+                    <option [value]="o">{{ humanize(o) }}</option>
+                  }
+                </select>
+              </label>
+              <label class="add-contact-form__field">
+                <span>When</span>
+                <input type="datetime-local" name="occurredAt" [(ngModel)]="contactOccurredAt" />
+              </label>
+            </div>
+            <label class="add-contact-form__field add-contact-form__field--full">
+              <span>Notes</span>
+              <textarea name="notes" rows="2" [(ngModel)]="contactNotes" placeholder="Optional notes about this contact…"></textarea>
+            </label>
+            @if (submitError()) {
+              <p class="form-error">{{ submitError() }}</p>
+            }
+            <div class="add-contact-form__actions">
+              <button type="submit" class="btn-primary" [disabled]="submitting()">
+                {{ submitting() ? 'Saving…' : 'Save contact' }}
+              </button>
+            </div>
+          </form>
+        }
+
+        @if (overview().recentContacts.length) {
+          <ul class="timeline">
+            @for (contact of overview().recentContacts; track contact.id; let last = $last) {
+              <li class="timeline-item">
+                <div class="timeline-item__rail">
+                  <span class="timeline-item__dot"></span>
+                  @if (!last) {
+                    <span class="timeline-item__line"></span>
+                  }
+                </div>
+                <div class="timeline-item__content">
+                  <div class="timeline-item__head">
+                    <span class="timeline-item__type">{{ humanize(contact.type) }}</span>
+                    <span class="chip" [style.background]="outcomeChip(contact.outcome).bg" [style.color]="outcomeChip(contact.outcome).fg">
+                      {{ outcomeChip(contact.outcome).label }}
+                    </span>
+                  </div>
+                  <div class="timeline-item__meta">
+                    <span>{{ contact.createdByName }}</span>
+                    <span>{{ formatDateTime(contact.occurredAt) }}</span>
+                  </div>
+                </div>
+              </li>
+            }
+          </ul>
+        } @else {
+          <p class="empty-state">No contacts logged yet for this guest.</p>
+        }
+      </section>
+    </div>
+  </div>
+</div>
