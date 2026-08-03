@@ -22,7 +22,11 @@ export class UrgentCasesHubService implements OnDestroy {
 
     const hubId = this.auth.current().hubId;
     this.connection = new signalR.HubConnectionBuilder()
-      .withUrl(`${environment.signalRHubUrl}?hubId=${hubId}`)
+      .withUrl(`${environment.signalRHubUrl}?hubId=${hubId}`, {
+        // The hub requires authentication; SignalR sends this on the negotiate request and, for
+        // the WebSocket transport (which can't set headers), as an `access_token` query param.
+        accessTokenFactory: () => this.auth.token ?? '',
+      })
       .withAutomaticReconnect()
       .build();
 
