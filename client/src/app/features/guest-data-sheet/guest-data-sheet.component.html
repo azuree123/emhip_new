@@ -79,7 +79,7 @@
       <div class="state-banner">No guests match your search.</div>
     } @else {
       <cdk-virtual-scroll-viewport
-        itemSize="72"
+        [itemSize]="rowHeight()"
         class="viewport"
         (scrolledIndexChange)="onScrolledIndexChange($event)"
       >

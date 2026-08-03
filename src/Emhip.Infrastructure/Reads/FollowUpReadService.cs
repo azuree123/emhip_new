@@ -1,3 +1,4 @@
+using System.Data.SqlTypes;
 using Dapper;
 using Emhip.Application.Common;
 using Emhip.Application.FollowUps;
@@ -45,7 +46,11 @@ public sealed class FollowUpReadService(ISqlConnectionFactory connectionFactory)
             AssigneeStaffId = assigneeStaffId,
             OverdueOnly = overdueOnly,
             HasCursor = decodedCursor is not null,
-            DueDate = decodedCursor?.DueDate.ToDateTime(TimeOnly.MinValue) ?? DateTime.MinValue,
+            // On the first page there's no cursor and @DueDate is unused (guarded by @HasCursor = 0),
+            // but the value is still bound — so it must be inside SQL Server's datetime range. Dapper
+            // maps DateTime.MinValue (0001-01-01) to a datetime that overflows (min 1753-01-01), which
+            // 500'd the whole queue; use the SQL-safe minimum instead.
+            DueDate = decodedCursor?.DueDate.ToDateTime(TimeOnly.MinValue) ?? SqlDateTime.MinValue.Value,
             Id = decodedCursor?.Id ?? Guid.Empty,
             FetchSize = pageSize + 1,
         })).ToList();

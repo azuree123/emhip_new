@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, HostListener, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ScrollingModule } from '@angular/cdk/scrolling';
 import { Router } from '@angular/router';
@@ -52,6 +52,32 @@ export class GuestDataSheetComponent {
   protected readonly statusFilter = signal<StatusFilterValue>('All');
 
   protected readonly statusOptions = STATUS_OPTIONS;
+
+  /**
+   * Row height fed to cdk-virtual-scroll's fixed-size strategy. Below the sidebar's drawer
+   * breakpoint the six-column table collapses into a stacked card (see the component SCSS), which
+   * is taller — so the itemSize has to switch with it, otherwise virtual scroll would position
+   * rows using the wrong height and they'd overlap.
+   */
+  private static readonly CARD_BREAKPOINT = 1023;
+  private static readonly ROW_DESKTOP = 72;
+  private static readonly ROW_CARD = 188;
+  protected readonly rowHeight = signal(GuestDataSheetComponent.computeRowHeight());
+
+  @HostListener('window:resize')
+  protected onWindowResize(): void {
+    const next = GuestDataSheetComponent.computeRowHeight();
+    if (next !== this.rowHeight()) {
+      this.rowHeight.set(next);
+    }
+  }
+
+  private static computeRowHeight(): number {
+    const width = typeof window === 'undefined' ? 1280 : window.innerWidth;
+    return width <= GuestDataSheetComponent.CARD_BREAKPOINT
+      ? GuestDataSheetComponent.ROW_CARD
+      : GuestDataSheetComponent.ROW_DESKTOP;
+  }
 
   private searchTerm = '';
   private nextCursor: string | null = null;

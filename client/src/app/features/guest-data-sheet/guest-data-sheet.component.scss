@@ -413,30 +413,120 @@ $col-actions: 110px;
   }
 }
 
-// The data table's columns have a combined min-width well beyond a phone viewport — rather than
-// stacking each virtual-scrolled row into a card (which would fight cdk-virtual-scroll's fixed
-// itemSize), scroll the whole card horizontally on narrow screens so header and rows move together.
+// Below the sidebar's drawer breakpoint the six-column table is wider than the viewport. Instead
+// of scrolling it sideways (undiscoverable on touch, and it squeezes names down to their initials),
+// each virtual-scrolled row collapses into a stacked card. The card is a fixed height so it still
+// matches cdk-virtual-scroll's itemSize — the component swaps itemSize to ROW_CARD at exactly this
+// breakpoint (see rowHeight()).
 @media (max-width: 1023px) {
   .page {
     padding: 16px 16px 24px;
   }
 
-  .card {
-    overflow-x: auto;
-  }
-
-  .table-head,
-  .row {
-    min-width: 780px;
-  }
-
   .toolbar {
-    margin-bottom: 16px;
+    margin-bottom: 8px;
   }
 
   .result-count {
     margin-left: 0;
     flex-basis: 100%;
+  }
+
+  .table-head {
+    display: none;
+  }
+
+  .row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      'name    status'
+      'cmhw    cmhw'
+      'reg     con'
+      'actions actions';
+    align-content: center;
+    row-gap: 5px;
+    column-gap: 12px;
+    height: 188px;
+    padding: 14px 16px;
+
+    .col {
+      padding-right: 0;
+    }
+
+    .col--status {
+      grid-area: status;
+      justify-self: end;
+      align-self: start;
+    }
+
+    .col--name {
+      grid-area: name;
+      align-self: start;
+    }
+
+    .col--cmhw {
+      grid-area: cmhw;
+    }
+
+    .col--registered {
+      grid-area: reg;
+    }
+
+    .col--contact {
+      grid-area: con;
+      justify-self: end;
+      text-align: right;
+    }
+
+    .col--actions {
+      grid-area: actions;
+      margin-top: 4px;
+    }
+
+    // The table header is hidden on this layout, so each meta cell carries its own small label.
+    .col--cmhw::before,
+    .col--registered::before,
+    .col--contact::before {
+      display: block;
+      font-weight: 600;
+      font-size: 10px;
+      line-height: 14px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: rgb(140, 140, 140);
+    }
+
+    .col--cmhw::before {
+      content: 'Assigned CMHW';
+    }
+
+    .col--registered::before {
+      content: 'Registered';
+    }
+
+    .col--contact::before {
+      content: 'Last contact';
+    }
+  }
+
+  .name-block__name {
+    font-size: 14px;
+  }
+
+  .name-block__id {
+    font-size: 11px;
+  }
+
+  .col--cmhw,
+  .col--registered,
+  .col--contact {
+    font-size: 13px;
+  }
+
+  .open-btn {
+    width: 100%;
+    justify-content: center;
+    height: 40px;
   }
 }
 
