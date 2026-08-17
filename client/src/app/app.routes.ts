@@ -28,12 +28,17 @@ export const routes: Routes = [
         loadComponent: () => import('./features/guest-data-sheet/guest-data-sheet.component').then((m) => m.GuestDataSheetComponent),
         data: { permission: Permissions.Guests.View },
         canActivate: [permissionGuard],
-      },
-      {
-        path: 'guests/new',
-        loadComponent: () => import('./features/register-guest/register-guest.component').then((m) => m.RegisterGuestComponent),
-        data: { permission: Permissions.Guests.Register },
-        canActivate: [permissionGuard],
+        children: [
+          // Renders into the <router-outlet /> inside GuestDataSheetComponent so the register
+          // flow presents as a right-side drawer OVER the guest list (per the Figma drawer
+          // design). The URL is still /guests/new.
+          {
+            path: 'new',
+            loadComponent: () => import('./features/register-guest/register-guest.component').then((m) => m.RegisterGuestComponent),
+            data: { permission: Permissions.Guests.Register },
+            canActivate: [permissionGuard],
+          },
+        ],
       },
       {
         path: 'guests/:guestId',

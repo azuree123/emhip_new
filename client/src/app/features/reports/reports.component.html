@@ -58,51 +58,154 @@
     <div class="error-banner">Couldn't load report data — {{ error() }}</div>
   }
 
+  <!-- KPI tile row (source: 4 tiles 277x114 at top 428) driven by statusCounts. -->
   <section class="stat-row">
-    <div class="stat-card">
-      <span class="stat-card__label">TOTAL REFERRALS</span>
-      <span class="stat-card__value">{{ totalReferrals() ?? '—' }}</span>
-    </div>
-
-    <div class="stat-card">
-      <span class="stat-card__label">CATEGORIES TRACKED</span>
-      <span class="stat-card__value">{{ categoryRows().length || '—' }}</span>
-    </div>
-
-    <div class="stat-card">
-      <span class="stat-card__label">TOP CATEGORY</span>
-      @if (topCategory(); as top) {
-        <span class="stat-card__value stat-card__value--text" [style.color]="top.color">{{ top.label }}</span>
-        <span class="stat-card__meta">{{ top.percentage }}% of referrals</span>
-      } @else {
-        <span class="stat-card__value">—</span>
-      }
-    </div>
-  </section>
-
-  <section class="distribution-card">
-    <h2 class="distribution-card__title">Pathway distribution</h2>
-    <p class="distribution-card__subtitle">{{ from() }} to {{ to() }}</p>
-
-    @if (loading()) {
-      <div class="distribution-card__state">Loading pathway report…</div>
-    } @else if (categoryRows().length === 0) {
-      <div class="distribution-card__state">No pathway referrals recorded for this period.</div>
-    } @else {
-      @for (row of categoryRows(); track row.category) {
-        <div class="pathway-row">
-          <div class="pathway-row__top">
-            <span class="pathway-row__label">{{ row.label }}</span>
-            <span class="pathway-row__count">{{ row.count }}</span>
-            <span class="pathway-row__unit">REFERRALS</span>
-            <span class="pathway-row__dot" aria-hidden="true"></span>
-            <span class="pathway-row__percentage" [style.color]="row.color">{{ row.percentage }}%</span>
-          </div>
-          <div class="pathway-row__track">
-            <div class="pathway-row__fill" [style.width.%]="row.percentage" [style.background]="row.color"></div>
-          </div>
-        </div>
-      }
+    @for (tile of kpiTiles(); track tile.label) {
+      <div class="stat-card">
+        <span class="stat-card__label">{{ tile.label }}</span>
+        <span class="stat-card__value">{{ tile.value ?? '—' }}</span>
+      </div>
     }
   </section>
+
+  <!-- Two-column card grid per Desktop50: 687px main column + 466px side column. -->
+  <div class="report-grid">
+    <div class="report-grid__main">
+      <section class="report-card">
+        <h2 class="report-card__title">Pathway distribution</h2>
+        <p class="report-card__subtitle">{{ from() }} to {{ to() }}</p>
+
+        @if (loading()) {
+          <div class="report-card__state">Loading pathway report…</div>
+        } @else if (categoryRows().length === 0) {
+          <div class="report-card__state">No pathway referrals recorded for this period.</div>
+        } @else {
+          @for (row of categoryRows(); track row.category) {
+            <div class="pathway-row">
+              <div class="pathway-row__top">
+                <span class="pathway-row__label">{{ row.label }}</span>
+                <span class="pathway-row__count">{{ row.count }}</span>
+                <span class="pathway-row__unit">REFERRALS</span>
+                <span class="pathway-row__dot" aria-hidden="true"></span>
+                <span class="pathway-row__percentage" [style.color]="row.color">{{ row.percentage }}%</span>
+              </div>
+              <div class="pathway-row__track">
+                <div class="pathway-row__fill" [style.width.%]="row.percentage" [style.background]="row.color"></div>
+              </div>
+            </div>
+          }
+        }
+      </section>
+
+      <section class="report-card">
+        <div class="report-card__head">
+          <div>
+            <h2 class="report-card__title">Guest registrations over time</h2>
+            <p class="report-card__subtitle">Monthly &middot; {{ rangeLabel() }}</p>
+          </div>
+          <div class="chart-legend">
+            <span class="chart-legend__swatch" aria-hidden="true"></span>
+            <span class="chart-legend__label">New registrations</span>
+          </div>
+        </div>
+
+        @if (loading()) {
+          <div class="report-card__state">Loading registrations…</div>
+        } @else {
+          @if (regChart(); as chart) {
+          <svg
+            class="reg-chart"
+            [attr.viewBox]="chartViewBox"
+            preserveAspectRatio="xMidYMid meet"
+            role="img"
+            aria-label="Guest registrations per month"
+          >
+            @for (tick of chart.ticks; track tick.y) {
+              <line class="reg-chart__grid" x1="56" x2="628" [attr.y1]="tick.y" [attr.y2]="tick.y" />
+              <text class="reg-chart__tick" x="48" [attr.y]="tick.y + 4">{{ tick.label }}</text>
+            }
+
+            <path class="reg-chart__line" [attr.d]="chart.linePath" />
+
+            @for (p of chart.points; track p.x) {
+              <circle class="reg-chart__dot" [attr.cx]="p.x" [attr.cy]="p.y" r="7" />
+            }
+
+            @for (m of chart.monthLabels; track m.x) {
+              <text class="reg-chart__month" [attr.x]="m.x" y="244">{{ m.text }}</text>
+            }
+
+            @for (p of chart.points; track p.x; let i = $index) {
+              <rect
+                class="reg-chart__hit"
+                [attr.x]="p.hitX"
+                [attr.width]="p.hitW"
+                y="8"
+                height="220"
+                (mouseenter)="hoveredPoint.set(i)"
+                (mouseleave)="hoveredPoint.set(null)"
+              />
+            }
+
+            @if (regChartTip(); as tip) {
+              <g class="reg-chart__tip" aria-hidden="true">
+                <rect class="reg-chart__tip-box" [attr.x]="tip.x - 48" [attr.y]="tip.top" width="96" height="50" rx="8" />
+                <path class="reg-chart__tip-notch" [attr.d]="tip.notchFill" />
+                <path class="reg-chart__tip-notch-edge" [attr.d]="tip.notchEdge" />
+                <text class="reg-chart__tip-caption" [attr.x]="tip.x" [attr.y]="tip.top + 20">New reg.</text>
+                <text class="reg-chart__tip-value" [attr.x]="tip.x" [attr.y]="tip.top + 40">Total: {{ tip.count }}</text>
+              </g>
+            }
+          </svg>
+          } @else {
+            <div class="report-card__state">No guest registrations recorded for this period.</div>
+          }
+        }
+      </section>
+
+      <section class="report-card">
+        <h2 class="report-card__title">Guest demographics</h2>
+        <p class="report-card__subtitle">Ethnicity breakdown</p>
+
+        @if (loading()) {
+          <div class="report-card__state">Loading demographics…</div>
+        } @else if (ethnicityRows().length === 0) {
+          <div class="report-card__state">No demographic data recorded for this period.</div>
+        } @else {
+          @for (row of ethnicityRows(); track row.label) {
+            <div class="ethnic-row">
+              <div class="ethnic-row__top">
+                <span class="ethnic-row__label">{{ row.label }}</span>
+                <span class="ethnic-row__percentage">{{ row.percentage }}%</span>
+              </div>
+              <div class="ethnic-row__track">
+                <div class="ethnic-row__fill" [style.width.%]="row.barPct"></div>
+              </div>
+            </div>
+          }
+        }
+      </section>
+    </div>
+
+    <div class="report-grid__side">
+      <section class="report-card">
+        <h2 class="report-card__title">Activity this period</h2>
+
+        @if (loading()) {
+          <div class="report-card__state">Loading activity…</div>
+        } @else if (activityRows().length === 0) {
+          <div class="report-card__state">No activity recorded for this period.</div>
+        } @else {
+          <div class="activity-list">
+            @for (row of activityRows(); track row.label) {
+              <div class="activity-row">
+                <span class="activity-row__label">{{ row.label }}</span>
+                <span class="activity-row__value">{{ row.value }}</span>
+              </div>
+            }
+          </div>
+        }
+      </section>
+    </div>
+  </div>
 </div>

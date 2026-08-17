@@ -1,4 +1,14 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  DestroyRef,
+  DOCUMENT,
+  ElementRef,
+  inject,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, ValidatorFn, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { catchError, map, of, switchMap } from 'rxjs';
@@ -38,10 +48,13 @@ function pastDateValidator(): ValidatorFn {
  * per the design handoff README ("Risk flags ... escalate a guest onto the Urgent Cases
  * queue"). On success it navigates to /guests/:id (Guest Workspace).
  *
- * Sidebar/header are rendered by the shared shell; this component is the content area only —
- * ported from the "Register New Guest" panel inside DmegographicsTab /
- * InitialConversationTab (project/screens/Components.bundle.js), reflowed from the source's
- * absolute-positioned 1440px canvas into a normal centered card layout.
+ * Presentation: this component renders as a right-anchored drawer overlay — an 858px panel
+ * sliding in over the Guest Data Sheet (which stays visible behind a dimmed backdrop), per the
+ * "Register New Guest" drawer in DmegographicsTab / InitialConversationTab
+ * (project/screens/Components.bundle.js). The route is a child of `/guests`, rendering into
+ * the guest list's `<router-outlet />`. Backdrop click, the close/Cancel actions, and Escape
+ * all navigate back to `/guests` (preserving query params). While open, the page behind is
+ * scroll-locked; the drawer body scrolls internally.
  */
 @Component({
   selector: 'app-register-guest',
@@ -50,12 +63,29 @@ function pastDateValidator(): ValidatorFn {
   templateUrl: './register-guest.component.html',
   styleUrl: './register-guest.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: {
+    '(document:keydown.escape)': 'cancel()',
+  },
 })
 export class RegisterGuestComponent {
   private readonly fb = inject(FormBuilder);
   private readonly guestsApi = inject(GuestsApiService);
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly document = inject(DOCUMENT);
+
+  /** Scrollable drawer body — step changes reset its scroll position (not the window's). */
+  private readonly panelBody = viewChild<ElementRef<HTMLElement>>('panelBody');
+
+  constructor() {
+    // Lock the page behind the drawer while it is open; restore on close/destroy.
+    const body = this.document.body;
+    const previousOverflow = body.style.overflow;
+    body.style.overflow = 'hidden';
+    inject(DestroyRef).onDestroy(() => {
+      body.style.overflow = previousOverflow;
+    });
+  }
 
   protected readonly currentUser = this.auth.current;
 
@@ -142,12 +172,16 @@ export class RegisterGuestComponent {
       return;
     }
     this.step.set(2);
-    window.scrollTo({ top: 0 });
+    this.scrollToTop();
   }
 
   protected goBack(): void {
     this.step.set(1);
-    window.scrollTo({ top: 0 });
+    this.scrollToTop();
+  }
+
+  private scrollToTop(): void {
+    this.panelBody()?.nativeElement.scrollTo({ top: 0 });
   }
 
   protected saveDraft(): void {
@@ -158,7 +192,9 @@ export class RegisterGuestComponent {
   }
 
   protected cancel(): void {
-    this.router.navigate(['/guests']);
+    // Close the drawer: back to the guest list underneath, keeping its query params
+    // (search/filter/pagination state) intact.
+    this.router.navigate(['/guests'], { queryParamsHandling: 'preserve' });
   }
 
   protected submit(): void {

@@ -175,23 +175,31 @@ $pager-font-stack: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
   }
 }
 
-// Design shows a right-aligned filter cluster; only the Status filter is backed by the API,
-// so it sits at the design's right edge.
-.status-filter {
+// Right-aligned filter cluster — design chips at x 802 (Pathway 106), 914 (Status 89),
+// 1009 (Risk 74), 1089 (Assigned CMHW 163), 1258 (Last Activity 137), all 36 tall with
+// 6px gaps. Each chip: 4px radius, inset 1px rgb(229,229,229), 14px/500 label at ~+16,
+// 14px chevron box inset 10 from the right edge.
+.filter-cluster {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  flex-wrap: wrap;
+}
+
+.filter {
   position: relative;
   height: 36px;
-  margin-left: auto;
 
   &__select {
     width: 100%;
     height: 100%;
-    min-width: 89px; // design Status chip: 89×36
     appearance: none;
     border: none;
     border-radius: 4px;
     box-shadow: inset 0 0 0 1px rgb(229, 229, 229);
     background: rgb(255, 255, 255);
-    padding: 0 30px 0 15px; // label at +15, chevron box at +65
+    padding: 0 30px 0 15px; // label at +15…+18 across chips, chevron box on the right
     font-family: $font-stack;
     font-weight: 500;
     font-size: 14px;
@@ -202,11 +210,32 @@ $pager-font-stack: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
 
   &__chevron {
     position: absolute;
-    right: 13px;
+    right: 13px; // chevron box right-inset 10 + 2.6 glyph inset
     top: 50%;
     transform: translateY(-50%);
     color: rgb(114, 114, 114);
     pointer-events: none;
+  }
+
+  // Closed-state chip widths from the design frame.
+  &--pathway .filter__select {
+    min-width: 106px;
+  }
+
+  &--status .filter__select {
+    min-width: 89px;
+  }
+
+  &--risk .filter__select {
+    min-width: 74px;
+  }
+
+  &--cmhw .filter__select {
+    min-width: 163px;
+  }
+
+  &--activity .filter__select {
+    min-width: 137px;
   }
 }
 
@@ -216,16 +245,18 @@ $pager-font-stack: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
 // Design columns (x offsets in the 1128px-wide table, first cell at +23):
 //   Guest Name 290 | Status 466 | Pathway 574 | Risk 724 | CMHW 824 | Last Activity 964
 //   | Next Contact 1125 | Actions 1285.
-// Pathway/Risk/Next Contact have no GuestListItemDto backing, so the real columns keep the
-// design's order and widths: Registered takes the Pathway slot; Risk and Next Contact are
-// omitted and their width folds into the flexible Guest Name column.
+// All eight columns are now backed by GuestListItemDto, so the grid mirrors the design
+// one-to-one (the former Registered stand-in column moved out of the table; registeredAt
+// still ships in the CSV export).
 
 $col-status: 108px; // 574 − 466
-$col-registered: 150px; // 724 − 574 (design Pathway slot)
+$col-pathway: 150px; // 724 − 574
+$col-risk: 100px; // 824 − 724
 $col-cmhw: 140px; // 964 − 824
 $col-activity: 161px; // 1125 − 964
+$col-next: 160px; // 1285 − 1125
 $col-actions: 110px; // 1395 − 1285
-$table-columns: minmax(0, 1fr) $col-status $col-registered $col-cmhw $col-activity $col-actions;
+$table-columns: minmax(0, 1fr) $col-status $col-pathway $col-risk $col-cmhw $col-activity $col-next $col-actions;
 
 .table-head {
   display: grid;
@@ -362,6 +393,19 @@ $table-columns: minmax(0, 1fr) $col-status $col-registered $col-cmhw $col-activi
     background: rgb(255, 237, 237);
     color: rgb(225, 38, 40);
   }
+
+  // Risk column pill — the design renders "LOW" with the same green chip as Active
+  // (bg rgb(234,253,238), text rgb(20,113,41)); the frame's sample rows are all low-risk,
+  // so the high-risk chip reuses the design's red (Urgent) palette.
+  &[data-risk='low'] {
+    background: rgb(234, 253, 238);
+    color: rgb(20, 113, 41);
+  }
+
+  &[data-risk='high'] {
+    background: rgb(255, 237, 237);
+    color: rgb(225, 38, 40);
+  }
 }
 
 // "Open" action: 93×36 outlined button, label at +16, external-link icon after.
@@ -491,7 +535,7 @@ $table-columns: minmax(0, 1fr) $col-status $col-registered $col-cmhw $col-activi
 
   .table-head,
   .row {
-    min-width: 940px;
+    min-width: 1180px; // 929px of fixed columns + padding + a usable Guest Name column
   }
 
   .toolbar {
@@ -504,7 +548,7 @@ $table-columns: minmax(0, 1fr) $col-status $col-registered $col-cmhw $col-activi
     max-width: 390px;
   }
 
-  .status-filter {
+  .filter-cluster {
     margin-left: 0;
   }
 }

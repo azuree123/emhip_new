@@ -1,14 +1,19 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ScrollingModule } from '@angular/cdk/scrolling';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterOutlet } from '@angular/router';
 import { Subject, firstValueFrom, of } from 'rxjs';
 import { catchError, debounceTime, distinctUntilChanged } from 'rxjs/operators';
 
 import { GuestsApiService } from '../../core/guests-api.service';
-import { GuestListItemDto, GuestStatus } from '../../core/api-models';
+import { CmhwOptionDto, GuestListItemDto, GuestStatus, PathwayCategory } from '../../core/api-models';
 
 type StatusFilterValue = GuestStatus | 'All';
+type PathwayFilterValue = PathwayCategory | 'All';
+/** 'High' → risk=true (has flags), 'Low' → risk=false (no flags). */
+type RiskFilterValue = 'All' | 'High' | 'Low';
+/** Number of days sent as lastActivityDays, or 'All' for no filter. */
+type ActivityFilterValue = 'All' | '1' | '7' | '30';
 
 const PAGE_SIZE = 50;
 /** How close (in rendered rows) to the bottom of the loaded set before we fetch the next page. */
@@ -29,6 +34,29 @@ const STATUS_OPTIONS: { value: StatusFilterValue; label: string }[] = [
   { value: 'Urgent', label: 'Urgent' },
 ];
 
+const PATHWAY_OPTIONS: { value: PathwayFilterValue; label: string }[] = [
+  { value: 'All', label: 'All Pathways' },
+  { value: 'HousingAdvice', label: 'Housing Advice' },
+  { value: 'EmploymentSupport', label: 'Employment Support' },
+  { value: 'BenefitsFinancialSupport', label: 'Benefits & Financial Support' },
+  { value: 'FoodEssentials', label: 'Food Essentials' },
+  { value: 'ImmigrationLegalAdvice', label: 'Immigration & Legal Advice' },
+  { value: 'OtherPracticalAdvice', label: 'Other Practical Advice' },
+];
+
+const RISK_OPTIONS: { value: RiskFilterValue; label: string }[] = [
+  { value: 'All', label: 'All Risk Levels' },
+  { value: 'High', label: 'High Risk' },
+  { value: 'Low', label: 'Low Risk' },
+];
+
+const ACTIVITY_OPTIONS: { value: ActivityFilterValue; label: string }[] = [
+  { value: 'All', label: 'All Activity' },
+  { value: '1', label: 'Today' },
+  { value: '7', label: 'Last 7 days' },
+  { value: '30', label: 'Last 30 days' },
+];
+
 /**
  * Guest Data Sheet — the searchable/filterable guest list.
  *
@@ -38,11 +66,14 @@ const STATUS_OPTIONS: { value: StatusFilterValue; label: string }[] = [
  * through a CDK virtual-scroll viewport so the DOM only ever holds the rows currently on
  * screen. Scrolling near the bottom of what's loaded — or pressing "Load more" — fetches the
  * next page by passing the opaque `nextCursor` straight back to the API.
+ *
+ * All filters (search, status, pathway, risk, assigned CMHW, last activity) are applied
+ * server-side; changing any of them resets the keyset list and reloads page one.
  */
 @Component({
   selector: 'app-guest-data-sheet',
   standalone: true,
-  imports: [ScrollingModule],
+  imports: [ScrollingModule, RouterOutlet],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './guest-data-sheet.component.html',
   styleUrl: './guest-data-sheet.component.scss',
@@ -58,10 +89,18 @@ export class GuestDataSheetComponent {
   protected readonly hasMore = signal(true);
   protected readonly error = signal<string | null>(null);
   protected readonly statusFilter = signal<StatusFilterValue>('All');
+  protected readonly pathwayFilter = signal<PathwayFilterValue>('All');
+  protected readonly riskFilter = signal<RiskFilterValue>('All');
+  protected readonly cmhwFilter = signal<string>('All');
+  protected readonly activityFilter = signal<ActivityFilterValue>('All');
+  protected readonly cmhwOptions = signal<CmhwOptionDto[]>([]);
   protected readonly exporting = signal(false);
   protected readonly exportError = signal<string | null>(null);
 
   protected readonly statusOptions = STATUS_OPTIONS;
+  protected readonly pathwayOptions = PATHWAY_OPTIONS;
+  protected readonly riskOptions = RISK_OPTIONS;
+  protected readonly activityOptions = ACTIVITY_OPTIONS;
 
   protected searchTerm = '';
   private nextCursor: string | null = null;
@@ -93,6 +132,16 @@ export class GuestDataSheetComponent {
         this.resetAndLoad();
       }
     });
+
+    // "Assigned CMHW" options load once per visit; a failure just leaves the dropdown with
+    // its "All CMHWs" default rather than blocking the list.
+    this.guestsApi
+      .getCmhwOptions()
+      .pipe(
+        catchError(() => of([] as CmhwOptionDto[])),
+        takeUntilDestroyed(),
+      )
+      .subscribe((options) => this.cmhwOptions.set(options));
   }
 
   protected onSearchInput(value: string): void {
@@ -101,6 +150,26 @@ export class GuestDataSheetComponent {
 
   protected onStatusChange(value: string): void {
     this.statusFilter.set(value as StatusFilterValue);
+    this.resetAndLoad();
+  }
+
+  protected onPathwayChange(value: string): void {
+    this.pathwayFilter.set(value as PathwayFilterValue);
+    this.resetAndLoad();
+  }
+
+  protected onRiskChange(value: string): void {
+    this.riskFilter.set(value as RiskFilterValue);
+    this.resetAndLoad();
+  }
+
+  protected onCmhwChange(value: string): void {
+    this.cmhwFilter.set(value);
+    this.resetAndLoad();
+  }
+
+  protected onActivityChange(value: string): void {
+    this.activityFilter.set(value as ActivityFilterValue);
     this.resetAndLoad();
   }
 
@@ -127,6 +196,30 @@ export class GuestDataSheetComponent {
     }
   }
 
+  /** The server-side filter set currently shown — shared by paging and the CSV export. */
+  private listFilters(): {
+    q?: string;
+    status?: GuestStatus;
+    pathway?: PathwayCategory;
+    risk?: boolean;
+    cmhw?: string;
+    lastActivityDays?: number;
+  } {
+    const status = this.statusFilter();
+    const pathway = this.pathwayFilter();
+    const risk = this.riskFilter();
+    const cmhw = this.cmhwFilter();
+    const activity = this.activityFilter();
+    return {
+      q: this.searchTerm || undefined,
+      status: status === 'All' ? undefined : status,
+      pathway: pathway === 'All' ? undefined : pathway,
+      risk: risk === 'All' ? undefined : risk === 'High',
+      cmhw: cmhw === 'All' ? undefined : cmhw,
+      lastActivityDays: activity === 'All' ? undefined : Number(activity),
+    };
+  }
+
   private fetchPage(append: boolean): void {
     if (append) {
       this.loadingMore.set(true);
@@ -134,12 +227,9 @@ export class GuestDataSheetComponent {
       this.loading.set(true);
     }
 
-    const status = this.statusFilter();
-
     this.guestsApi
       .getGuestList({
-        q: this.searchTerm || undefined,
-        status: status === 'All' ? undefined : status,
+        ...this.listFilters(),
         cursor: append ? (this.nextCursor ?? undefined) : undefined,
         pageSize: PAGE_SIZE,
       })
@@ -162,7 +252,7 @@ export class GuestDataSheetComponent {
   }
 
   /**
-   * "Export Guest" — walks the current filter's keyset pages (same q/status the table is
+   * "Export Guest" — walks the current filter's keyset pages (same filters the table is
    * showing), caps at EXPORT_ROW_CAP rows, and downloads the result as a CSV. If the cap is
    * hit — or a later page fails after some rows were fetched — what was fetched still
    * downloads.
@@ -174,7 +264,6 @@ export class GuestDataSheetComponent {
     this.exporting.set(true);
     this.exportError.set(null);
 
-    const status = this.statusFilter();
     const rows: GuestListItemDto[] = [];
     let cursor: string | undefined;
 
@@ -182,8 +271,7 @@ export class GuestDataSheetComponent {
       for (;;) {
         const page = await firstValueFrom(
           this.guestsApi.getGuestList({
-            q: this.searchTerm || undefined,
-            status: status === 'All' ? undefined : status,
+            ...this.listFilters(),
             cursor,
             pageSize: EXPORT_PAGE_SIZE,
           }),
@@ -214,9 +302,12 @@ export class GuestDataSheetComponent {
       'Last Name',
       'Date of Birth',
       'Status',
+      'Pathway',
+      'Risk',
       'Assigned CMHW',
       'Registered At',
       'Last Contact At',
+      'Next Contact Due',
     ];
     const escape = (value: string | null): string => {
       const s = value ?? '';
@@ -231,9 +322,12 @@ export class GuestDataSheetComponent {
           guest.lastName,
           guest.dateOfBirth,
           this.statusLabel(guest.status),
+          guest.pathwayCategory ? this.pathwayLabel(guest.pathwayCategory) : '',
+          guest.hasRiskFlags ? 'High' : 'Low',
           guest.assignedCmhwName ?? '',
           guest.registeredAt,
           guest.lastContactAt ?? '',
+          guest.nextContactDue ?? '',
         ]
           .map(escape)
           .join(','),
@@ -260,6 +354,20 @@ export class GuestDataSheetComponent {
 
   protected statusLabel(status: GuestStatus): string {
     return status === 'PendingConversation' ? 'Pending Conversation' : status;
+  }
+
+  /** Humanizes a PathwayCategory enum name — "HousingAdvice" → "Housing Advice". */
+  protected pathwayLabel(category: string | null): string {
+    if (!category) {
+      return '—';
+    }
+    const curated = PATHWAY_OPTIONS.find((o) => o.value === category);
+    return curated ? curated.label : category.replace(/([a-z0-9])([A-Z])/g, '$1 $2');
+  }
+
+  /** Risk chip text — the design renders it uppercase ("LOW"/"HIGH"). */
+  protected riskLabel(guest: GuestListItemDto): string {
+    return guest.hasRiskFlags ? 'HIGH' : 'LOW';
   }
 
   protected formatDate(value: string | null): string {

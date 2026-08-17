@@ -5,11 +5,23 @@ using MediatR;
 
 namespace Emhip.Application.Guests.Queries;
 
-public sealed record GetGuestListQuery(Guid HubId, string? SearchText, GuestStatus? Status, string? Cursor, int PageSize)
+public sealed record GetGuestListQuery(
+    Guid HubId, string? SearchText, GuestStatus? Status, string? Cursor, int PageSize,
+    PathwayCategory? Pathway = null, bool? HasRiskFlags = null, Guid? AssignedCmhwId = null, int? LastActivityWithinDays = null)
     : IRequest<KeysetPage<GuestListItemDto>>;
 
 public sealed class GetGuestListQueryHandler(IGuestReadService reads) : IRequestHandler<GetGuestListQuery, KeysetPage<GuestListItemDto>>
 {
     public Task<KeysetPage<GuestListItemDto>> Handle(GetGuestListQuery request, CancellationToken cancellationToken) =>
-        reads.GetGuestListAsync(request.HubId, request.SearchText, request.Status, request.Cursor, request.PageSize, cancellationToken);
+        reads.GetGuestListAsync(
+            request.HubId, request.SearchText, request.Status, request.Cursor, request.PageSize,
+            request.Pathway, request.HasRiskFlags, request.AssignedCmhwId, request.LastActivityWithinDays, cancellationToken);
+}
+
+public sealed record GetHubCmhwsQuery(Guid HubId) : IRequest<IReadOnlyList<CmhwOptionDto>>;
+
+public sealed class GetHubCmhwsQueryHandler(IGuestReadService reads) : IRequestHandler<GetHubCmhwsQuery, IReadOnlyList<CmhwOptionDto>>
+{
+    public Task<IReadOnlyList<CmhwOptionDto>> Handle(GetHubCmhwsQuery request, CancellationToken cancellationToken) =>
+        reads.GetHubCmhwsAsync(request.HubId, cancellationToken);
 }

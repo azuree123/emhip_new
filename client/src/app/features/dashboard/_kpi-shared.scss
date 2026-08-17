@@ -135,6 +135,44 @@
   background: #ffffff;
   box-shadow: inset 0 0 0 1px #e5e5e5;
 
+  // Design: 48px red (#eb3c2c) icon square with a white people glyph top-left,
+  // 36px chevron box (inset 1px #dbdbdb) top-right of each tile.
+  &__top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: auto;
+  }
+
+  &__glyph {
+    width: 48px;
+    height: 48px;
+    border-radius: 6px;
+    background: #eb3c2c;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  &__expand {
+    width: 36px;
+    height: 36px;
+    border-radius: 6px;
+    box-shadow: inset 0 0 0 1px #dbdbdb;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #000000;
+    flex-shrink: 0;
+
+    // Design rotates the chevron to point down (matrix(0,1,1,0,…)).
+    svg {
+      transform: rotate(90deg);
+    }
+  }
+
   &__label {
     font-family: 'Wix Madefor Display', sans-serif;
     font-weight: 600;

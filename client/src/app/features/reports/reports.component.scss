@@ -2,10 +2,13 @@
 // screen (Desktop50, project/screens/Components.bundle.js lines ~32976-36586).
 // Layout is recreated with flexbox/grid rather than the source's absolute positioning.
 
+$font-body: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+$font-display: 'Wix Madefor Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+
 :host {
   display: block;
   padding: 24px 32px 48px;
-  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-family: $font-body;
 }
 
 .reports-page {
@@ -28,6 +31,11 @@
     justify-content: space-between;
     gap: 24px;
     flex-wrap: wrap;
+  }
+
+  &__intro {
+    flex: 1 1 320px;
+    min-width: 0;
   }
 
   &__title {
@@ -240,16 +248,16 @@
   font-size: 14px;
 }
 
-// ---- Stat cards (source: 4 KPI tiles ~287x114, r12, white) --------------
+// ---- KPI tiles (source: 4 tiles 277x114 r12 white; Wix Madefor 600/10 label
+// at inset 19/8, Plus Jakarta 600/32 value below) --------------------------
 
 .stat-row {
-  display: flex;
-  gap: 13px;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 23px;
 }
 
 .stat-card {
-  flex: 1 1 220px;
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
@@ -259,13 +267,14 @@
   min-height: 114px;
 
   &__label {
-    font-family: 'Wix Madefor Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    font-family: $font-display;
     font-weight: 600;
     font-size: 10px;
     line-height: 24px;
     letter-spacing: -0.005em;
     color: rgb(42, 42, 42);
     text-transform: uppercase;
+    white-space: nowrap;
   }
 
   &__value {
@@ -274,32 +283,41 @@
     font-size: 32px;
     line-height: 1;
     color: rgb(42, 42, 42);
-
-    &--text {
-      font-size: 20px;
-      line-height: 24px;
-    }
-  }
-
-  &__meta {
-    margin-top: 13px;
-    font-family: 'Wix Madefor Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-    font-weight: 600;
-    font-size: 12px;
-    line-height: 24px;
-    letter-spacing: -0.005em;
-    color: rgb(114, 114, 114);
   }
 }
 
-// ---- Pathway distribution card (687 wide, r12, white) --------------------
+// ---- Card grid (source columns: main 687px, side 466px, 23px gutters) ----
 
-.distribution-card {
+.report-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 687fr) minmax(0, 466fr);
+  gap: 23px;
+  align-items: start;
+
+  &__main,
+  &__side {
+    display: flex;
+    flex-direction: column;
+    gap: 23px;
+    min-width: 0;
+  }
+}
+
+// ---- Shared card shell (r12 white, title 20/600, subtitle 12/500) --------
+
+.report-card {
   box-sizing: border-box;
-  max-width: 687px;
   background: rgb(255, 255, 255);
   border-radius: 12px;
-  padding: 24px 26px 26px 19px;
+  padding: 24px 25px 26px 19px;
+
+  &__head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
 
   &__title {
     margin: 0;
@@ -310,7 +328,7 @@
   }
 
   &__subtitle {
-    margin: 2px 0 27px;
+    margin: 2px 0 0;
     font-weight: 500;
     font-size: 12px;
     line-height: 24px;
@@ -326,8 +344,14 @@
   }
 }
 
+// ---- Pathway distribution rows ------------------------------------------
+
 .pathway-row {
   margin-bottom: 24px;
+
+  &:first-of-type {
+    margin-top: 27px;
+  }
 
   &:last-child {
     margin-bottom: 0;
@@ -393,6 +417,216 @@
   }
 }
 
+// ---- "Guest registrations over time" chart -------------------------------
+// Legend: 45x6 r444 maroon swatch + 10/400 rgb(50,50,50) label (source y 939).
+// Plot: dashed 1px rgb(232,232,232) gridlines, 12/500 rgb(114,114,114) axis
+// text, 2px maroon rgb(148,28,60) line with 14px dots, white r8 tooltip with
+// rgb(228,228,231) border ("New reg." 12/500 gray + "Total:n" 13/700 dark).
+
+.chart-legend {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-top: 6px;
+
+  &__swatch {
+    width: 45px;
+    height: 6px;
+    border-radius: 444px;
+    background: rgb(148, 28, 60);
+  }
+
+  &__label {
+    font-weight: 400;
+    font-size: 10px;
+    line-height: 24px;
+    color: rgb(50, 50, 50);
+    white-space: nowrap;
+  }
+}
+
+.reg-chart {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin-top: 18px;
+
+  &__grid {
+    stroke: rgb(232, 232, 232);
+    stroke-width: 1;
+    stroke-dasharray: 2 2;
+  }
+
+  &__tick {
+    font-family: $font-body;
+    font-weight: 500;
+    font-size: 12px;
+    letter-spacing: -0.005em;
+    fill: rgb(114, 114, 114);
+    text-anchor: end;
+  }
+
+  &__month {
+    font-family: $font-display;
+    font-weight: 500;
+    font-size: 12px;
+    letter-spacing: -0.005em;
+    fill: rgb(114, 114, 114);
+    text-anchor: middle;
+  }
+
+  &__line {
+    fill: none;
+    stroke: rgb(148, 28, 60);
+    stroke-width: 2;
+    stroke-linejoin: round;
+    stroke-linecap: round;
+  }
+
+  &__dot {
+    fill: rgb(148, 28, 60);
+  }
+
+  &__hit {
+    fill: transparent;
+  }
+
+  &__tip {
+    pointer-events: none;
+  }
+
+  &__tip-box {
+    fill: rgb(255, 255, 255);
+    stroke: rgb(228, 228, 231);
+    stroke-width: 1;
+    filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.08));
+  }
+
+  &__tip-notch {
+    fill: rgb(255, 255, 255);
+  }
+
+  &__tip-notch-edge {
+    fill: none;
+    stroke: rgb(228, 228, 231);
+    stroke-width: 1;
+  }
+
+  &__tip-caption {
+    font-family: $font-body;
+    font-weight: 500;
+    font-size: 12px;
+    fill: rgb(113, 113, 122);
+    text-anchor: middle;
+  }
+
+  &__tip-value {
+    font-family: $font-body;
+    font-weight: 700;
+    font-size: 13px;
+    fill: rgb(24, 24, 27);
+    text-anchor: middle;
+  }
+}
+
+// ---- "Activity this period" rows (label 14/600, value 14/400, 1px
+// rgb(232,232,232) separators; source rows every ~43px) --------------------
+
+.activity-list {
+  margin-top: 30px;
+}
+
+.activity-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0 9px;
+
+  & + & {
+    border-top: 1px solid rgb(232, 232, 232);
+  }
+
+  &__label {
+    font-weight: 600;
+    font-size: 14px;
+    line-height: 24px;
+    color: rgb(42, 42, 42);
+  }
+
+  &__value {
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 24px;
+    color: rgb(50, 50, 50);
+  }
+}
+
+// ---- "Guest demographics / Ethnicity breakdown" rows ---------------------
+// Label 14/500, percentage 12/600 rgb(42,42,42), 6px r444 track
+// rgb(237,237,237) with rgb(235,60,44) fill; rows every 60px in the source.
+
+.ethnic-row {
+  margin-bottom: 20px;
+
+  &:first-of-type {
+    margin-top: 27px;
+  }
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+
+  &__top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  &__label {
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 24px;
+    color: rgb(42, 42, 42);
+  }
+
+  &__percentage {
+    font-weight: 600;
+    font-size: 12px;
+    line-height: 24px;
+    color: rgb(42, 42, 42);
+  }
+
+  &__track {
+    margin-top: 10px;
+    width: 100%;
+    height: 6px;
+    border-radius: 444px;
+    background: rgb(237, 237, 237);
+    overflow: hidden;
+  }
+
+  &__fill {
+    height: 100%;
+    border-radius: 444px;
+    background: rgb(235, 60, 44);
+    transition: width 0.2s ease;
+  }
+}
+
+// ---- Responsive ----------------------------------------------------------
+
+@media (max-width: 1100px) {
+  .report-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .stat-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 720px) {
   :host {
     padding: 16px;
@@ -408,5 +642,13 @@
 
   .filters__presets {
     margin-left: 0;
+  }
+
+  .stat-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .stat-card__label {
+    white-space: normal;
   }
 }

@@ -31,6 +31,18 @@ export interface GuestListItemDto {
   assignedCmhwName: string | null;
   registeredAt: string;
   lastContactAt: string | null;
+  /** Latest pathway referral category (PathwayCategory name), or null if never referred. */
+  pathwayCategory: string | null;
+  /** True when the guest's latest risk assessment carries any flag. */
+  hasRiskFlags: boolean;
+  /** Due date (yyyy-MM-dd) of the next scheduled follow-up, or null. */
+  nextContactDue: string | null;
+}
+
+/** Option for the guest list's "Assigned CMHW" filter — GET /guests/cmhws. */
+export interface CmhwOptionDto {
+  id: string;
+  displayName: string;
 }
 
 export interface GuestNoteDto {
@@ -226,6 +238,41 @@ export interface PathwayReportDto {
   to: string;
   categoryTotals: PathwayCategoryTotalDto[];
   totalReferrals: number;
+  /** Current hub-wide counts (point-in-time) — the report header KPI tiles. */
+  statusCounts: GuestStatusCountsDto;
+  /** Registrations per calendar month inside the range — "Guest registrations over time". */
+  monthlyRegistrations: MonthlyCountDto[];
+  /** Event counts inside the range — "Activity this period". */
+  activity: ReportActivityDto;
+  /** From recorded guest demographics — "Ethnicity breakdown". */
+  ethnicityBreakdown: BreakdownSliceDto[];
+}
+
+export interface GuestStatusCountsDto {
+  total: number;
+  active: number;
+  pendingConversation: number;
+  inactive: number;
+  urgent: number;
+}
+
+export interface MonthlyCountDto {
+  year: number;
+  month: number;
+  count: number;
+}
+
+export interface ReportActivityDto {
+  guestsSeen: number;
+  urgentFlagsRaised: number;
+  followUpEntries: number;
+  contactsRecorded: number;
+}
+
+export interface BreakdownSliceDto {
+  label: string;
+  count: number;
+  percentage: number;
 }
 
 export interface RegisterGuestRequest {

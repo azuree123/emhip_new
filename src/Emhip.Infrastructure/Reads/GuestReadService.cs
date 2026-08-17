@@ -19,22 +19,41 @@ public sealed class GuestReadService(ISqlConnectionFactory connectionFactory, Em
     private sealed record GuestCursor(string LastName, string FirstName, Guid Id);
 
     public async Task<KeysetPage<GuestListItemDto>> GetGuestListAsync(
-        Guid hubId, string? searchText, GuestStatus? status, string? cursor, int pageSize, CancellationToken cancellationToken = default)
+        Guid hubId, string? searchText, GuestStatus? status, string? cursor, int pageSize,
+        PathwayCategory? pathway = null, bool? hasRiskFlags = null, Guid? assignedCmhwId = null,
+        int? lastActivityWithinDays = null, CancellationToken cancellationToken = default)
     {
         var decodedCursor = KeysetCursor.Decode<GuestCursor>(cursor);
 
         const string sql = """
             SELECT TOP (@FetchSize)
                 g.Id, g.FirstName, g.LastName, g.DateOfBirth, g.Status,
-                s.DisplayName AS AssignedCmhwName, g.RegisteredAt, lc.OccurredAt AS LastContactAt
+                s.DisplayName AS AssignedCmhwName, g.RegisteredAt, lc.OccurredAt AS LastContactAt,
+                pw.Category AS PathwayCategory, ISNULL(rk.HasFlags, 0) AS HasRiskFlags, nf.DueDate AS NextContactDue
             FROM Guests g
             LEFT JOIN AspNetUsers s ON s.Id = g.AssignedCmhwId
             OUTER APPLY (
                 SELECT TOP 1 c.OccurredAt FROM Contacts c WHERE c.GuestId = g.Id ORDER BY c.OccurredAt DESC
             ) lc
+            OUTER APPLY (
+                SELECT TOP 1 p.Category FROM PathwayReferrals p WHERE p.GuestId = g.Id ORDER BY p.ReferredAt DESC
+            ) pw
+            OUTER APPLY (
+                SELECT TOP 1 CAST(CASE WHEN r.SuicidalIdeation = 1 OR r.SelfHarm = 1 OR r.RiskToOthers = 1
+                    OR r.SevereDeterioration = 1 OR r.SafeguardingConcern = 1 THEN 1 ELSE 0 END AS bit) AS HasFlags
+                FROM RiskAssessments r WHERE r.GuestId = g.Id ORDER BY r.Version DESC
+            ) rk
+            OUTER APPLY (
+                SELECT TOP 1 f.DueDate FROM FollowUps f
+                WHERE f.GuestId = g.Id AND f.Status = 'Scheduled' ORDER BY f.DueDate
+            ) nf
             WHERE g.HubId = @HubId AND g.IsDeleted = 0
                 AND (@Status IS NULL OR g.Status = @Status)
                 AND (@SearchPattern IS NULL OR g.FirstName LIKE @SearchPattern OR g.LastName LIKE @SearchPattern)
+                AND (@Pathway IS NULL OR pw.Category = @Pathway)
+                AND (@HasRiskFlags IS NULL OR ISNULL(rk.HasFlags, 0) = @HasRiskFlags)
+                AND (@AssignedCmhwId IS NULL OR g.AssignedCmhwId = @AssignedCmhwId)
+                AND (@LastContactAfter IS NULL OR lc.OccurredAt >= @LastContactAfter)
                 AND (
                     @HasCursor = 0
                     OR g.LastName > @LastName
@@ -50,6 +69,12 @@ public sealed class GuestReadService(ISqlConnectionFactory connectionFactory, Em
             HubId = hubId,
             Status = status?.ToString(),
             SearchPattern = string.IsNullOrWhiteSpace(searchText) ? null : $"%{searchText}%",
+            Pathway = pathway?.ToString(),
+            HasRiskFlags = hasRiskFlags,
+            AssignedCmhwId = assignedCmhwId,
+            LastContactAfter = lastActivityWithinDays.HasValue
+                ? (DateTimeOffset?)DateTimeOffset.UtcNow.AddDays(-lastActivityWithinDays.Value)
+                : null,
             HasCursor = decodedCursor is not null,
             LastName = decodedCursor?.LastName ?? string.Empty,
             FirstName = decodedCursor?.FirstName ?? string.Empty,
@@ -67,7 +92,9 @@ public sealed class GuestReadService(ISqlConnectionFactory connectionFactory, Em
         {
             Items = page.Select(r => new GuestListItemDto(
                 r.Id, r.FirstName, r.LastName, DateOnly.FromDateTime(r.DateOfBirth),
-                Enum.Parse<GuestStatus>(r.Status), r.AssignedCmhwName, r.RegisteredAt, r.LastContactAt)).ToList(),
+                Enum.Parse<GuestStatus>(r.Status), r.AssignedCmhwName, r.RegisteredAt, r.LastContactAt,
+                r.PathwayCategory, r.HasRiskFlags,
+                r.NextContactDue.HasValue ? DateOnly.FromDateTime(r.NextContactDue.Value) : null)).ToList(),
             NextCursor = nextCursor,
             HasMore = hasMore,
         };
@@ -194,6 +221,13 @@ public sealed class GuestReadService(ISqlConnectionFactory connectionFactory, Em
                 db.Users.Where(s => s.Id == r.ConductedByStaffId).Select(s => s.DisplayName).FirstOrDefault() ?? "Unknown", r.ConductedAt))
             .FirstOrDefaultAsync(cancellationToken);
 
+    public async Task<IReadOnlyList<CmhwOptionDto>> GetHubCmhwsAsync(Guid hubId, CancellationToken cancellationToken = default) =>
+        await db.Users.AsNoTracking()
+            .Where(u => u.HubId == hubId && u.IsActive)
+            .OrderBy(u => u.DisplayName)
+            .Select(u => new CmhwOptionDto(u.Id, u.DisplayName))
+            .ToListAsync(cancellationToken);
+
     private sealed class GuestListRow
     {
         public Guid Id { get; set; }
@@ -204,5 +238,8 @@ public sealed class GuestReadService(ISqlConnectionFactory connectionFactory, Em
         public string? AssignedCmhwName { get; set; }
         public DateTimeOffset RegisteredAt { get; set; }
         public DateTimeOffset? LastContactAt { get; set; }
+        public string? PathwayCategory { get; set; }
+        public bool HasRiskFlags { get; set; }
+        public DateTime? NextContactDue { get; set; }
     }
 }

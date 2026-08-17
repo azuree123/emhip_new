@@ -14,4 +14,10 @@ public sealed record GuestListItemDto(
     GuestStatus Status,
     string? AssignedCmhwName,
     DateTimeOffset RegisteredAt,
-    DateTimeOffset? LastContactAt);
+    DateTimeOffset? LastContactAt,
+    string? PathwayCategory,
+    bool HasRiskFlags,
+    DateOnly? NextContactDue);
+
+/// <summary>Option for the guest list's "Assigned CMHW" filter dropdown.</summary>
+public sealed record CmhwOptionDto(Guid Id, string DisplayName);

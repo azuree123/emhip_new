@@ -12,7 +12,11 @@ namespace Emhip.Application.Guests;
 public interface IGuestReadService
 {
     Task<KeysetPage<GuestListItemDto>> GetGuestListAsync(
-        Guid hubId, string? searchText, GuestStatus? status, string? cursor, int pageSize, CancellationToken cancellationToken = default);
+        Guid hubId, string? searchText, GuestStatus? status, string? cursor, int pageSize,
+        PathwayCategory? pathway = null, bool? hasRiskFlags = null, Guid? assignedCmhwId = null,
+        int? lastActivityWithinDays = null, CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<CmhwOptionDto>> GetHubCmhwsAsync(Guid hubId, CancellationToken cancellationToken = default);
 
     Task<GuestOverviewDto?> GetOverviewAsync(Guid guestId, CancellationToken cancellationToken = default);
     Task<GuestDemographicsDto?> GetDemographicsAsync(Guid guestId, CancellationToken cancellationToken = default);

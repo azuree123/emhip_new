@@ -49,32 +49,114 @@
         />
       </div>
 
-      <div class="status-filter">
-        <select
-          class="status-filter__select"
-          aria-label="Filter by status"
-          [value]="statusFilter()"
-          (change)="onStatusChange($any($event.target).value)"
-        >
-          @for (option of statusOptions; track option.value) {
-            <option [value]="option.value">{{ option.label }}</option>
-          }
-        </select>
-        <svg width="9" height="5" viewBox="0 0 8.75 4.375" fill="none" class="status-filter__chevron">
-          <path
-            d="M 9.28 0.53 C 9.573 0.237 9.573 -0.237 9.28 -0.53 C 8.987 -0.823 8.513 -0.823 8.22 -0.53 L 8.75 0 L 9.28 0.53 Z M 4.375 4.375 L 3.845 4.905 C 4.138 5.198 4.612 5.198 4.905 4.905 L 4.375 4.375 Z M 0.53 -0.53 C 0.237 -0.823 -0.237 -0.823 -0.53 -0.53 C -0.823 -0.237 -0.823 0.237 -0.53 0.53 L 0 0 L 0.53 -0.53 Z M 8.75 0 L 8.22 -0.53 L 3.845 3.845 L 4.375 4.375 L 4.905 4.905 L 9.28 0.53 L 8.75 0 Z M 4.375 4.375 L 4.905 3.845 L 0.53 -0.53 L 0 0 L -0.53 0.53 L 3.845 4.905 L 4.375 4.375 Z"
-            fill="currentColor"
-          />
-        </svg>
+      <!-- Design filter cluster, left→right: Pathway | Status | Risk | Assigned CMHW | Last Activity. -->
+      <div class="filter-cluster">
+        <div class="filter filter--pathway">
+          <select
+            class="filter__select"
+            aria-label="Filter by pathway"
+            [value]="pathwayFilter()"
+            (change)="onPathwayChange($any($event.target).value)"
+          >
+            @for (option of pathwayOptions; track option.value) {
+              <option [value]="option.value">{{ option.label }}</option>
+            }
+          </select>
+          <svg width="9" height="5" viewBox="0 0 8.75 4.375" fill="none" class="filter__chevron">
+            <path
+              d="M 9.28 0.53 C 9.573 0.237 9.573 -0.237 9.28 -0.53 C 8.987 -0.823 8.513 -0.823 8.22 -0.53 L 8.75 0 L 9.28 0.53 Z M 4.375 4.375 L 3.845 4.905 C 4.138 5.198 4.612 5.198 4.905 4.905 L 4.375 4.375 Z M 0.53 -0.53 C 0.237 -0.823 -0.237 -0.823 -0.53 -0.53 C -0.823 -0.237 -0.823 0.237 -0.53 0.53 L 0 0 L 0.53 -0.53 Z M 8.75 0 L 8.22 -0.53 L 3.845 3.845 L 4.375 4.375 L 4.905 4.905 L 9.28 0.53 L 8.75 0 Z M 4.375 4.375 L 4.905 3.845 L 0.53 -0.53 L 0 0 L -0.53 0.53 L 3.845 4.905 L 4.375 4.375 Z"
+              fill="currentColor"
+            />
+          </svg>
+        </div>
+
+        <div class="filter filter--status">
+          <select
+            class="filter__select"
+            aria-label="Filter by status"
+            [value]="statusFilter()"
+            (change)="onStatusChange($any($event.target).value)"
+          >
+            @for (option of statusOptions; track option.value) {
+              <option [value]="option.value">{{ option.label }}</option>
+            }
+          </select>
+          <svg width="9" height="5" viewBox="0 0 8.75 4.375" fill="none" class="filter__chevron">
+            <path
+              d="M 9.28 0.53 C 9.573 0.237 9.573 -0.237 9.28 -0.53 C 8.987 -0.823 8.513 -0.823 8.22 -0.53 L 8.75 0 L 9.28 0.53 Z M 4.375 4.375 L 3.845 4.905 C 4.138 5.198 4.612 5.198 4.905 4.905 L 4.375 4.375 Z M 0.53 -0.53 C 0.237 -0.823 -0.237 -0.823 -0.53 -0.53 C -0.823 -0.237 -0.823 0.237 -0.53 0.53 L 0 0 L 0.53 -0.53 Z M 8.75 0 L 8.22 -0.53 L 3.845 3.845 L 4.375 4.375 L 4.905 4.905 L 9.28 0.53 L 8.75 0 Z M 4.375 4.375 L 4.905 3.845 L 0.53 -0.53 L 0 0 L -0.53 0.53 L 3.845 4.905 L 4.375 4.375 Z"
+              fill="currentColor"
+            />
+          </svg>
+        </div>
+
+        <div class="filter filter--risk">
+          <select
+            class="filter__select"
+            aria-label="Filter by risk"
+            [value]="riskFilter()"
+            (change)="onRiskChange($any($event.target).value)"
+          >
+            @for (option of riskOptions; track option.value) {
+              <option [value]="option.value">{{ option.label }}</option>
+            }
+          </select>
+          <svg width="9" height="5" viewBox="0 0 8.75 4.375" fill="none" class="filter__chevron">
+            <path
+              d="M 9.28 0.53 C 9.573 0.237 9.573 -0.237 9.28 -0.53 C 8.987 -0.823 8.513 -0.823 8.22 -0.53 L 8.75 0 L 9.28 0.53 Z M 4.375 4.375 L 3.845 4.905 C 4.138 5.198 4.612 5.198 4.905 4.905 L 4.375 4.375 Z M 0.53 -0.53 C 0.237 -0.823 -0.237 -0.823 -0.53 -0.53 C -0.823 -0.237 -0.823 0.237 -0.53 0.53 L 0 0 L 0.53 -0.53 Z M 8.75 0 L 8.22 -0.53 L 3.845 3.845 L 4.375 4.375 L 4.905 4.905 L 9.28 0.53 L 8.75 0 Z M 4.375 4.375 L 4.905 3.845 L 0.53 -0.53 L 0 0 L -0.53 0.53 L 3.845 4.905 L 4.375 4.375 Z"
+              fill="currentColor"
+            />
+          </svg>
+        </div>
+
+        <div class="filter filter--cmhw">
+          <select
+            class="filter__select"
+            aria-label="Filter by assigned CMHW"
+            [value]="cmhwFilter()"
+            (change)="onCmhwChange($any($event.target).value)"
+          >
+            <option value="All">All CMHWs</option>
+            @for (option of cmhwOptions(); track option.id) {
+              <option [value]="option.id">{{ option.displayName }}</option>
+            }
+          </select>
+          <svg width="9" height="5" viewBox="0 0 8.75 4.375" fill="none" class="filter__chevron">
+            <path
+              d="M 9.28 0.53 C 9.573 0.237 9.573 -0.237 9.28 -0.53 C 8.987 -0.823 8.513 -0.823 8.22 -0.53 L 8.75 0 L 9.28 0.53 Z M 4.375 4.375 L 3.845 4.905 C 4.138 5.198 4.612 5.198 4.905 4.905 L 4.375 4.375 Z M 0.53 -0.53 C 0.237 -0.823 -0.237 -0.823 -0.53 -0.53 C -0.823 -0.237 -0.823 0.237 -0.53 0.53 L 0 0 L 0.53 -0.53 Z M 8.75 0 L 8.22 -0.53 L 3.845 3.845 L 4.375 4.375 L 4.905 4.905 L 9.28 0.53 L 8.75 0 Z M 4.375 4.375 L 4.905 3.845 L 0.53 -0.53 L 0 0 L -0.53 0.53 L 3.845 4.905 L 4.375 4.375 Z"
+              fill="currentColor"
+            />
+          </svg>
+        </div>
+
+        <div class="filter filter--activity">
+          <select
+            class="filter__select"
+            aria-label="Filter by last activity"
+            [value]="activityFilter()"
+            (change)="onActivityChange($any($event.target).value)"
+          >
+            @for (option of activityOptions; track option.value) {
+              <option [value]="option.value">{{ option.label }}</option>
+            }
+          </select>
+          <svg width="9" height="5" viewBox="0 0 8.75 4.375" fill="none" class="filter__chevron">
+            <path
+              d="M 9.28 0.53 C 9.573 0.237 9.573 -0.237 9.28 -0.53 C 8.987 -0.823 8.513 -0.823 8.22 -0.53 L 8.75 0 L 9.28 0.53 Z M 4.375 4.375 L 3.845 4.905 C 4.138 5.198 4.612 5.198 4.905 4.905 L 4.375 4.375 Z M 0.53 -0.53 C 0.237 -0.823 -0.237 -0.823 -0.53 -0.53 C -0.823 -0.237 -0.823 0.237 -0.53 0.53 L 0 0 L 0.53 -0.53 Z M 8.75 0 L 8.22 -0.53 L 3.845 3.845 L 4.375 4.375 L 4.905 4.905 L 9.28 0.53 L 8.75 0 Z M 4.375 4.375 L 4.905 3.845 L 0.53 -0.53 L 0 0 L -0.53 0.53 L 3.845 4.905 L 4.375 4.375 Z"
+              fill="currentColor"
+            />
+          </svg>
+        </div>
       </div>
     </div>
 
     <div class="table-head">
       <span class="col col--name">Guest Name</span>
       <span class="col col--status">Status</span>
-      <span class="col col--registered">Registered</span>
+      <span class="col col--pathway">Pathway</span>
+      <span class="col col--risk">Risk</span>
       <span class="col col--cmhw">CMHW</span>
       <span class="col col--activity">Last Activity</span>
+      <span class="col col--next">Next Contact</span>
       <span class="col col--actions">Actions</span>
     </div>
 
@@ -110,9 +192,15 @@
             <span class="badge" [attr.data-status]="guest.status">{{ statusLabel(guest.status) }}</span>
           </span>
 
-          <span class="col col--registered">{{ formatDate(guest.registeredAt) }}</span>
+          <span class="col col--pathway">{{ pathwayLabel(guest.pathwayCategory) }}</span>
+
+          <span class="col col--risk">
+            <span class="badge" [attr.data-risk]="guest.hasRiskFlags ? 'high' : 'low'">{{ riskLabel(guest) }}</span>
+          </span>
+
           <span class="col col--cmhw">{{ guest.assignedCmhwName ?? '—' }}</span>
           <span class="col col--activity">{{ formatActivity(guest.lastContactAt) }}</span>
+          <span class="col col--next">{{ formatDate(guest.nextContactDue) }}</span>
 
           <span class="col col--actions">
             <button type="button" class="open-btn" (click)="$event.stopPropagation(); openGuest(guest.id)">
@@ -145,3 +233,5 @@
     }
   </section>
 </div>
+
+<router-outlet />

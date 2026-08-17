@@ -22,9 +22,22 @@ public sealed class GuestsController(IMediator mediator, ICurrentUser currentUse
     [HttpGet]
     [Authorize(Policy = Permissions.Guests.View)]
     public async Task<IActionResult> GetGuestList(
-        [FromQuery] string? q, [FromQuery] GuestStatus? status, [FromQuery] string? cursor, [FromQuery] int pageSize = 50, CancellationToken cancellationToken = default)
+        [FromQuery] string? q, [FromQuery] GuestStatus? status, [FromQuery] string? cursor, [FromQuery] int pageSize = 50,
+        [FromQuery] PathwayCategory? pathway = null, [FromQuery] bool? risk = null, [FromQuery] Guid? cmhw = null,
+        [FromQuery] int? lastActivityDays = null, CancellationToken cancellationToken = default)
     {
-        var result = await mediator.Send(new GetGuestListQuery(currentUser.HubId, q, status, cursor, Math.Clamp(pageSize, 1, 200)), cancellationToken);
+        var result = await mediator.Send(
+            new GetGuestListQuery(currentUser.HubId, q, status, cursor, Math.Clamp(pageSize, 1, 200), pathway, risk, cmhw, lastActivityDays),
+            cancellationToken);
+        return Ok(result);
+    }
+
+    /// <summary>Options for the guest list's "Assigned CMHW" filter — active staff in the caller's hub.</summary>
+    [HttpGet("cmhws")]
+    [Authorize(Policy = Permissions.Guests.View)]
+    public async Task<IActionResult> GetCmhws(CancellationToken cancellationToken)
+    {
+        var result = await mediator.Send(new GetHubCmhwsQuery(currentUser.HubId), cancellationToken);
         return Ok(result);
     }
 

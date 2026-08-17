@@ -1,8 +1,9 @@
-<div class="page">
-  <div class="panel">
+<div class="drawer">
+  <div class="drawer__backdrop" (click)="cancel()" aria-hidden="true"></div>
+  <div class="panel" role="dialog" aria-modal="true" aria-labelledby="register-guest-title">
     <header class="panel__header">
       <div class="panel__header-text">
-        <h1 class="panel__title">Register New Guest</h1>
+        <h1 class="panel__title" id="register-guest-title">Register New Guest</h1>
         @if (draftSavedLabel()) {
           <div class="panel__draft-row">
             <span class="draft-badge">DRAFT SAVED</span>
@@ -20,7 +21,7 @@
       </button>
     </header>
 
-    <div class="panel__body">
+    <div class="panel__body" #panelBody>
       <ol class="stepper" aria-label="Registration steps">
         @for (s of steps; track s.index; let last = $last) {
           <li class="stepper__item">
