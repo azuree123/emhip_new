@@ -1,9 +1,15 @@
 # EMHIP production deployment
 
-Production runs on `81.0.221.206` (Ubuntu 24.04) at `/opt/emhip`, using
-`docker-compose.yml` + `docker-compose.prod.yml`. Only port 80 (the Angular
-client's nginx, which proxies `/api/` and `/hubs/` to the API) is public; SQL
-Server and the API are bound to loopback.
+Production runs at **https://emhip.brainshub.co.uk** on `81.0.221.206`
+(Ubuntu 24.04) at `/opt/emhip`, using `docker-compose.yml` +
+`docker-compose.prod.yml`.
+
+Traffic flow: host nginx terminates TLS on 80/443 (Let's Encrypt, auto-renewed
+by `certbot.timer`; site config in `/etc/nginx/sites-available/emhip`) and
+proxies to the client container on `127.0.0.1:8080`, whose nginx serves the
+SPA and proxies `/api/` and `/hubs/` to the API container. SQL Server
+(`127.0.0.1:1433`) and the API (`127.0.0.1:5299`) are loopback-only — reach
+SQL from a workstation via an SSH tunnel.
 
 ## Pipeline: push to deploy
 
