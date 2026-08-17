@@ -48,3 +48,5 @@ Docker with log rotation + `live-restore`; UFW (22 rate-limited/80/443) +
 fail2ban; 4G swap with `vm.swappiness=10`; BBR congestion control and larger
 accept queues; unattended security upgrades; SQL Server capped at 4GB RAM via
 `MSSQL_MEMORY_LIMIT_MB` in the prod override.
+
+_Deployed to production 2026-08-17._
