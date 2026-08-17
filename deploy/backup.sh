@@ -18,6 +18,10 @@ FILE="emhip-${TAG}-${STAMP}.bak"
 cd "$REPO_DIR"
 set -a; source .env; set +a
 
+# SQL Server runs as UID 10001 (mssql) inside the container and must be able to
+# write into the bind-mounted backup dir.
+install -d -o 10001 -g 0 -m 770 "$BACKUP_DIR"
+
 # COMPRESSION is unavailable on Express edition, so back up plain and gzip on the host.
 docker compose exec -T sqlserver /opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa \
     -P "$MSSQL_SA_PASSWORD" -b \
