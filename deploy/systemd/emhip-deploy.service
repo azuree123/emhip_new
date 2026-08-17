@@ -1,0 +1,10 @@
+[Unit]
+Description=EMHIP deploy (pull origin/main and redeploy if changed)
+After=docker.service network-online.target
+Requires=docker.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/emhip
+ExecStart=/opt/emhip/deploy/deploy.sh
+TimeoutStartSec=45min

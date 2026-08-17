@@ -1,0 +1,46 @@
+# Production overrides — layered on top of docker-compose.yml on the server:
+#
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+#
+# Key differences from the dev compose file:
+#   - Only the client (port 80) is published publicly. SQL Server and the API are
+#     bound to loopback — the SPA reaches the API same-origin through the client's
+#     nginx proxy, so nothing else needs to be exposed. (Docker-published ports
+#     bypass UFW, so this binding IS the firewall for these services.)
+#   - restart policies so everything comes back after reboots/crashes.
+#   - SQL Server runs Express edition (licensed for production, unlike Developer)
+#     with a memory cap so it can't starve the API/workers.
+#   - Database backups land in /opt/emhip-backups on the host via a bind mount.
+name: emhip
+
+services:
+  sqlserver:
+    restart: unless-stopped
+    environment:
+      # Developer edition is not licensed for production. Express is free for
+      # production (10GB/db, 1.4GB buffer pool). Set MSSQL_PID in .env to a paid
+      # edition/license key if the dataset outgrows Express.
+      MSSQL_PID: "${MSSQL_PID:-Express}"
+      MSSQL_MEMORY_LIMIT_MB: "4096"
+    ports: !override
+      - "127.0.0.1:1433:1433"
+    volumes:
+      - sqlserver-data:/var/opt/mssql
+      - /opt/emhip-backups:/var/opt/mssql/backup
+
+  api:
+    restart: unless-stopped
+    ports: !override
+      - "127.0.0.1:5299:8080"
+    environment:
+      # Same-origin via the client's nginx proxy — the public origin is the client.
+      Cors__AllowedOrigins__0: "${PUBLIC_ORIGIN:?Set PUBLIC_ORIGIN in .env, e.g. http://81.0.221.206}"
+      Frontend__BaseUrl: "${PUBLIC_ORIGIN}"
+
+  workers:
+    restart: unless-stopped
+
+  client:
+    restart: unless-stopped
+    ports: !override
+      - "80:80"

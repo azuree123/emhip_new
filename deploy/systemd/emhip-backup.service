@@ -1,0 +1,9 @@
+[Unit]
+Description=EMHIP nightly database backup
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/emhip
+ExecStart=/opt/emhip/deploy/backup.sh scheduled
