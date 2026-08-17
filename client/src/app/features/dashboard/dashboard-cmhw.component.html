@@ -4,7 +4,7 @@
       <div class="banner">
         <div class="banner__accent"></div>
         <div class="banner__body">
-          <svg width="18" height="18" viewBox="0 0 15.201 13.465" fill="none" class="banner__icon">
+          <svg width="18" height="16" viewBox="0 0 15.201 13.465" fill="none" class="banner__icon">
             <path
               d="M 8.575 0.563 L 15.05 11.778 C 15.149 11.949 15.201 12.143 15.201 12.34 C 15.201 12.538 15.149 12.732 15.05 12.903 C 14.951 13.074 14.809 13.216 14.638 13.315 C 14.467 13.414 14.273 13.465 14.076 13.465 L 1.125 13.465 C 0.927 13.465 0.733 13.414 0.562 13.315 C 0.391 13.216 0.249 13.074 0.151 12.903 C 0.052 12.732 0 12.538 0 12.34 C 0 12.143 0.052 11.949 0.151 11.778 L 6.626 0.563 C 7.059 -0.188 8.141 -0.188 8.575 0.563 Z M 7.6 9.451 C 7.402 9.451 7.211 9.531 7.07 9.671 C 6.929 9.812 6.85 10.003 6.85 10.201 C 6.85 10.4 6.929 10.591 7.07 10.732 C 7.211 10.872 7.402 10.951 7.6 10.951 C 7.799 10.951 7.99 10.872 8.131 10.732 C 8.271 10.591 8.35 10.4 8.35 10.201 C 8.35 10.003 8.271 9.812 8.131 9.671 C 7.99 9.531 7.799 9.451 7.6 9.451 Z M 7.6 4.201 C 7.417 4.202 7.239 4.269 7.102 4.391 C 6.965 4.513 6.877 4.681 6.856 4.864 L 6.85 4.951 L 6.85 7.951 C 6.851 8.143 6.924 8.327 7.055 8.466 C 7.186 8.605 7.366 8.688 7.557 8.699 C 7.747 8.711 7.935 8.648 8.082 8.526 C 8.228 8.403 8.323 8.229 8.345 8.039 L 8.35 7.951 L 8.35 4.951 C 8.35 4.753 8.271 4.562 8.131 4.421 C 7.99 4.281 7.799 4.201 7.6 4.201 Z"
               fill="currentColor"
@@ -12,10 +12,10 @@
           </svg>
           <div class="banner__text">
             <div class="banner__heading">
-              {{ d.urgentBanner.length }} urgent case{{ d.urgentBanner.length === 1 ? '' : 's' }} need attention
+              {{ d.urgentBanner.length }} urgent case{{ d.urgentBanner.length === 1 ? ' needs' : 's need' }} attention — review the follow-up window
             </div>
             <div class="banner__detail">
-              {{ d.urgentBanner[0].guestName }} · flagged {{ formatDate(d.urgentBanner[0].escalatedAt) }}
+              {{ d.urgentBanner[0].guestName }} · Flag raised {{ formatDate(d.urgentBanner[0].escalatedAt) }}
             </div>
           </div>
           <button class="banner__cta" type="button" (click)="goToUrgentCases()">
@@ -34,25 +34,70 @@
     <h1 class="page-title">Guest Overview</h1>
 
     <div class="kpi-row">
-      <div class="kpi-card kpi-card--green">
+      <div class="kpi-card">
+        <div class="kpi-card__expand kpi-card__expand--up" aria-hidden="true">
+          <svg width="8" height="13" viewBox="0 0 7.364 12.728" fill="none">
+            <path
+              d="M 7.071 7.071 L 1.414 12.728 L 0 11.314 L 4.95 6.364 L 0 1.414 L 1.414 0 L 7.071 5.657 C 7.258 5.845 7.364 6.099 7.364 6.364 C 7.364 6.629 7.258 6.883 7.071 7.071 Z"
+              fill="currentColor"
+              fill-rule="evenodd"
+            />
+          </svg>
+        </div>
         <div class="kpi-card__label">Total active</div>
         <div class="kpi-card__number">{{ d.totalActiveGuests }}</div>
-        <div class="kpi-card__pill">Active guests</div>
+        <div class="kpi-card__pill kpi-card__pill--green">Active guests</div>
       </div>
-      <div class="kpi-card kpi-card--yellow">
+      <div class="kpi-card">
+        <div class="kpi-card__expand" aria-hidden="true">
+          <svg width="8" height="13" viewBox="0 0 7.364 12.728" fill="none">
+            <path
+              d="M 7.071 7.071 L 1.414 12.728 L 0 11.314 L 4.95 6.364 L 0 1.414 L 1.414 0 L 7.071 5.657 C 7.258 5.845 7.364 6.099 7.364 6.364 C 7.364 6.629 7.258 6.883 7.071 7.071 Z"
+              fill="currentColor"
+              fill-rule="evenodd"
+            />
+          </svg>
+        </div>
         <div class="kpi-card__label">New (pending conversation)</div>
         <div class="kpi-card__number">{{ d.pendingConversationGuests }}</div>
-        <div class="kpi-card__pill">Awaiting initial conversation</div>
+        <div class="kpi-card__pill kpi-card__pill--yellow">
+          <svg width="13" height="13" viewBox="0 0 13.333 13.333" fill="none">
+            <path
+              d="M 1 6.667 C 1 3.537 3.537 1 6.667 1 C 9.796 1 12.333 3.537 12.333 6.667 C 12.333 9.796 9.796 12.333 6.667 12.333 C 3.537 12.333 1 9.796 1 6.667 Z M 6.667 0 C 2.985 0 0 2.985 0 6.667 C 0 10.349 2.985 13.333 6.667 13.333 C 10.349 13.333 13.333 10.349 13.333 6.667 C 13.333 2.985 10.349 0 6.667 0 Z M 6.662 3.099 C 6.629 2.855 6.42 2.667 6.167 2.667 C 5.891 2.667 5.667 2.891 5.667 3.167 L 5.667 7.167 L 5.671 7.234 C 5.704 7.478 5.914 7.667 6.167 7.667 L 8.833 7.667 L 8.901 7.662 C 9.145 7.629 9.333 7.42 9.333 7.167 C 9.333 6.891 9.109 6.667 8.833 6.667 L 6.667 6.667 L 6.667 3.167 L 6.662 3.099 Z"
+              fill="currentColor"
+            />
+          </svg>
+          Awaiting initial conversation
+        </div>
       </div>
-      <div class="kpi-card kpi-card--pink">
-        <div class="kpi-card__label">Inactive</div>
+      <div class="kpi-card">
+        <div class="kpi-card__expand" aria-hidden="true">
+          <svg width="8" height="13" viewBox="0 0 7.364 12.728" fill="none">
+            <path
+              d="M 7.071 7.071 L 1.414 12.728 L 0 11.314 L 4.95 6.364 L 0 1.414 L 1.414 0 L 7.071 5.657 C 7.258 5.845 7.364 6.099 7.364 6.364 C 7.364 6.629 7.258 6.883 7.071 7.071 Z"
+              fill="currentColor"
+              fill-rule="evenodd"
+            />
+          </svg>
+        </div>
+        <!-- "IN ACTIVE" is the design file's exact (typo'd) label for the inactive-guests KPI. -->
+        <div class="kpi-card__label">IN ACTIVE</div>
         <div class="kpi-card__number">{{ d.inactiveGuests }}</div>
-        <div class="kpi-card__pill">Inactive guests</div>
+        <div class="kpi-card__pill kpi-card__pill--pink">Inactive guests</div>
       </div>
-      <div class="kpi-card kpi-card--pink">
+      <div class="kpi-card">
+        <div class="kpi-card__expand" aria-hidden="true">
+          <svg width="8" height="13" viewBox="0 0 7.364 12.728" fill="none">
+            <path
+              d="M 7.071 7.071 L 1.414 12.728 L 0 11.314 L 4.95 6.364 L 0 1.414 L 1.414 0 L 7.071 5.657 C 7.258 5.845 7.364 6.099 7.364 6.364 C 7.364 6.629 7.258 6.883 7.071 7.071 Z"
+              fill="currentColor"
+              fill-rule="evenodd"
+            />
+          </svg>
+        </div>
         <div class="kpi-card__label">Urgent Cases</div>
         <div class="kpi-card__number">{{ d.urgentGuests }}</div>
-        <div class="kpi-card__pill">
+        <div class="kpi-card__pill kpi-card__pill--pink">
           <span class="dot"></span>
           Needs follow-up
         </div>
@@ -62,6 +107,50 @@
     <div class="active-guests">
       <div class="active-guests__header">
         <div class="active-guests__title">Active guests <span>({{ d.totalActiveGuests }})</span></div>
+        <div class="active-guests__tools">
+          <div class="table-search">
+            <svg width="15" height="15" viewBox="0 0 15.001 15.001" fill="none">
+              <path
+                d="M 14.506 15.496 C 14.779 15.769 15.222 15.769 15.496 15.496 C 15.769 15.222 15.769 14.779 15.496 14.506 L 15.001 15.001 L 14.506 15.496 Z M 15.001 15.001 L 15.496 14.506 L 11.165 10.175 L 10.67 10.67 L 10.175 11.165 L 14.506 15.496 L 15.001 15.001 Z M 10.67 10.67 L 11.165 11.165 C 12.468 9.861 13.2 8.094 13.2 6.25 L 12.5 6.25 L 11.8 6.25 C 11.8 7.722 11.216 9.134 10.175 10.175 L 10.67 10.67 Z M 12.5 6.25 L 13.2 6.25 C 13.2 4.407 12.468 2.639 11.165 1.336 L 10.67 1.831 L 10.175 2.326 C 11.216 3.366 11.8 4.778 11.8 6.25 L 12.5 6.25 Z M 10.67 1.831 L 11.165 1.336 C 9.861 0.032 8.094 -0.7 6.25 -0.7 L 6.25 0 L 6.25 0.7 C 7.722 0.7 9.134 1.285 10.175 2.326 L 10.67 1.831 Z M 6.25 0 L 6.25 -0.7 C 4.407 -0.7 2.639 0.032 1.336 1.336 L 1.831 1.831 L 2.326 2.326 C 3.366 1.285 4.778 0.7 6.25 0.7 L 6.25 0 Z M 1.831 1.831 L 1.336 1.336 C 0.032 2.639 -0.7 4.407 -0.7 6.25 L 0 6.25 L 0.7 6.25 C 0.7 4.778 1.285 3.366 2.326 2.326 L 1.831 1.831 Z M 0 6.25 L -0.7 6.25 C -0.7 8.094 0.032 9.861 1.336 11.165 L 1.831 10.67 L 2.326 10.175 C 1.285 9.134 0.7 7.722 0.7 6.25 L 0 6.25 Z M 1.831 10.67 L 1.336 11.165 C 2.639 12.468 4.407 13.2 6.25 13.2 L 6.25 12.5 L 6.25 11.8 C 4.778 11.8 3.366 11.216 2.326 10.175 L 1.831 10.67 Z M 6.25 12.5 L 6.25 13.2 C 8.094 13.2 9.861 12.468 11.165 11.165 L 10.67 10.67 L 10.175 10.175 C 9.134 11.216 7.722 11.8 6.25 11.8 L 6.25 12.5 Z"
+                fill="currentColor"
+              />
+            </svg>
+            <input
+              type="text"
+              placeholder="Search guest by name, ID, phone, CMHW..."
+              aria-label="Filter active guests"
+              [value]="guestFilter()"
+              (input)="guestFilter.set($any($event.target).value)"
+            />
+          </div>
+          <div class="filter-chip" aria-hidden="true">
+            Pathway
+            <svg width="14" height="14" viewBox="0 0 8.75 4.375" fill="none">
+              <path
+                d="M 9.28 0.53 C 9.573 0.237 9.573 -0.237 9.28 -0.53 C 8.987 -0.823 8.513 -0.823 8.22 -0.53 L 8.75 0 L 9.28 0.53 Z M 4.375 4.375 L 3.845 4.905 C 4.138 5.198 4.612 5.198 4.905 4.905 L 4.375 4.375 Z M 0.53 -0.53 C 0.237 -0.823 -0.237 -0.823 -0.53 -0.53 C -0.823 -0.237 -0.823 0.237 -0.53 0.53 L 0 0 L 0.53 -0.53 Z M 8.75 0 L 8.22 -0.53 L 3.845 3.845 L 4.375 4.375 L 4.905 4.905 L 9.28 0.53 L 8.75 0 Z M 4.375 4.375 L 4.905 3.845 L 0.53 -0.53 L 0 0 L -0.53 0.53 L 3.845 4.905 L 4.375 4.375 Z"
+                fill="currentColor"
+              />
+            </svg>
+          </div>
+          <div class="filter-chip" aria-hidden="true">
+            Assigned CMHW
+            <svg width="14" height="14" viewBox="0 0 8.75 4.375" fill="none">
+              <path
+                d="M 9.28 0.53 C 9.573 0.237 9.573 -0.237 9.28 -0.53 C 8.987 -0.823 8.513 -0.823 8.22 -0.53 L 8.75 0 L 9.28 0.53 Z M 4.375 4.375 L 3.845 4.905 C 4.138 5.198 4.612 5.198 4.905 4.905 L 4.375 4.375 Z M 0.53 -0.53 C 0.237 -0.823 -0.237 -0.823 -0.53 -0.53 C -0.823 -0.237 -0.823 0.237 -0.53 0.53 L 0 0 L 0.53 -0.53 Z M 8.75 0 L 8.22 -0.53 L 3.845 3.845 L 4.375 4.375 L 4.905 4.905 L 9.28 0.53 L 8.75 0 Z M 4.375 4.375 L 4.905 3.845 L 0.53 -0.53 L 0 0 L -0.53 0.53 L 3.845 4.905 L 4.375 4.375 Z"
+                fill="currentColor"
+              />
+            </svg>
+          </div>
+          <div class="filter-chip" aria-hidden="true">
+            Last Activity
+            <svg width="14" height="14" viewBox="0 0 8.75 4.375" fill="none">
+              <path
+                d="M 9.28 0.53 C 9.573 0.237 9.573 -0.237 9.28 -0.53 C 8.987 -0.823 8.513 -0.823 8.22 -0.53 L 8.75 0 L 9.28 0.53 Z M 4.375 4.375 L 3.845 4.905 C 4.138 5.198 4.612 5.198 4.905 4.905 L 4.375 4.375 Z M 0.53 -0.53 C 0.237 -0.823 -0.237 -0.823 -0.53 -0.53 C -0.823 -0.237 -0.823 0.237 -0.53 0.53 L 0 0 L 0.53 -0.53 Z M 8.75 0 L 8.22 -0.53 L 3.845 3.845 L 4.375 4.375 L 4.905 4.905 L 9.28 0.53 L 8.75 0 Z M 4.375 4.375 L 4.905 3.845 L 0.53 -0.53 L 0 0 L -0.53 0.53 L 3.845 4.905 L 4.375 4.375 Z"
+                fill="currentColor"
+              />
+            </svg>
+          </div>
+        </div>
       </div>
       <table class="active-guests__table">
         <thead>
@@ -73,11 +162,11 @@
           </tr>
         </thead>
         <tbody>
-          @for (guest of d.activeGuests; track guest.guestId) {
+          @for (guest of filteredGuests(); track guest.guestId) {
             <tr (click)="openGuest(guest.guestId)">
               <td class="guest-cell">
                 <div class="avatar">{{ initials(guest.name) }}</div>
-                <span>{{ guest.name }}</span>
+                <span class="guest-cell__name">{{ guest.name }}</span>
               </td>
               <td>{{ guest.status }}</td>
               <td>{{ formatDate(guest.lastContactAt) }}</td>
@@ -88,6 +177,18 @@
           }
         </tbody>
       </table>
+      <div class="active-guests__footer">
+        <div class="active-guests__count">Showing {{ filteredGuests().length }} of {{ d.totalActiveGuests }} active guests</div>
+        <a class="link-red" routerLink="/guests">
+          View guest list
+          <svg width="14" height="14" viewBox="0 0 13.5 13.5" fill="none">
+            <path
+              d="M 2.437 1.125 C 1.713 1.125 1.125 1.713 1.125 2.438 L 1.125 11.063 C 1.125 11.787 1.713 12.375 2.437 12.375 L 11.062 12.375 C 11.787 12.375 12.375 11.787 12.375 11.063 L 12.375 8.063 C 12.375 7.752 12.627 7.5 12.937 7.5 C 13.248 7.5 13.5 7.752 13.5 8.063 L 13.5 11.063 C 13.5 12.409 12.408 13.5 11.062 13.5 L 2.437 13.5 C 1.091 13.5 0 12.409 0 11.063 L 0 2.438 C 0 1.091 1.091 0 2.437 0 L 5.437 0 C 5.748 0 6 0.252 6 0.563 C 6 0.873 5.748 1.125 5.437 1.125 L 2.437 1.125 Z M 7.5 0.563 C 7.5 0.252 7.752 0 8.062 0 L 12.938 0 C 13.248 0 13.5 0.252 13.5 0.563 L 13.5 5.438 C 13.5 5.748 13.248 6 12.938 6 C 12.627 6 12.375 5.748 12.375 5.438 L 12.375 1.921 L 8.46 5.835 C 8.24 6.055 7.884 6.055 7.665 5.835 C 7.445 5.616 7.445 5.259 7.665 5.04 L 11.58 1.125 L 8.062 1.125 C 7.752 1.125 7.5 0.873 7.5 0.563 Z"
+              fill="currentColor"
+            />
+          </svg>
+        </a>
+      </div>
     </div>
   } @else if (loading()) {
     <div class="state-message">Loading dashboard…</div>

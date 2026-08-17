@@ -1,7 +1,11 @@
+// Shared chrome — geometry/colors lifted from the Dashboard/Dashboard2 sections of
+// project/screens/Components.bundle.js (sidebar x0 w224 white, header h86 #941c3c,
+// content bg rgb(237,237,237)).
+
 .shell {
   display: flex;
   min-height: 100vh;
-  background: #ececec;
+  background: #ededed;
 }
 
 .mobile-nav-toggle {
@@ -41,6 +45,7 @@
   border: none;
   font: inherit;
   text-align: left;
+  cursor: pointer;
 }
 
 @media (max-width: 1023px) {
@@ -73,23 +78,24 @@
       transform: translateX(0);
     }
   }
-
-  .logo {
-    padding-left: 60px;
-  }
 }
 
+// EMHIP roundel logo — 123x108 at (50,27) in the 224px sidebar (i.e. horizontally centred).
 .logo {
-  padding: 27px 29px 32px;
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  font-weight: 700;
-  font-size: 18px;
-  letter-spacing: 0.5px;
-  color: #941c3c;
+  display: block;
+  width: 123px;
+  height: 108px;
+  margin: 27px auto 0;
+  object-fit: contain;
 }
 
 .nav-section {
-  margin-bottom: 12px;
+  margin-bottom: 10px;
+
+  // First section label sits 24px under the logo block (y159 in the design).
+  &:first-of-type {
+    margin-top: 24px;
+  }
 
   &__label {
     padding: 0 29px;
@@ -97,6 +103,7 @@
     font-family: 'Wix Madefor Display', sans-serif;
     font-weight: 600;
     font-size: 10px;
+    line-height: 24px;
     letter-spacing: -0.005em;
     color: #8f8f8f;
     text-transform: uppercase;
@@ -109,7 +116,7 @@
   align-items: center;
   gap: 7px;
   height: 36px;
-  margin: 0 15px 4px;
+  margin: 0 15px 12px;
   padding: 0 14px;
   border-radius: 6px;
   color: #2a2a2a;
@@ -153,9 +160,9 @@
     &::before {
       content: '';
       position: absolute;
-      left: -14px;
-      top: 4px;
-      bottom: 4px;
+      left: -1px;
+      top: 5px;
+      height: 27px;
       width: 2px;
       background: #941c3c;
     }
@@ -177,61 +184,79 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 32px;
+  gap: 16px;
+  // Design: greeting at x243 (17px in from the sidebar edge), right cluster ends 21px from 1440.
+  padding: 0 21px 0 17px;
 
   &__greeting {
     font-family: 'Plus Jakarta Sans', sans-serif;
     font-weight: 600;
     font-size: 20px;
+    line-height: 24px;
+    white-space: nowrap;
   }
 
   &__meta {
-    margin-top: 4px;
     font-family: 'Plus Jakarta Sans', sans-serif;
     font-weight: 500;
     font-size: 12px;
-    color: #dcdcdc;
+    line-height: 24px;
+    color: #ffffff;
+    white-space: nowrap;
   }
 
   &__actions {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 14px;
+    min-width: 0;
   }
 
+  // Persistent search — styled after the design's search field (white, radius 4,
+  // inset 1px #e5e5e5 border, 20px icon at x16, 12px/500 placeholder in #8c8c8c).
   &__search {
-    display: flex;
-    align-items: center;
+    position: relative;
+    flex-shrink: 1;
+    min-width: 0;
+  }
+
+  &__search-icon {
+    position: absolute;
+    left: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #727272;
+    pointer-events: none;
   }
 
   &__search-input {
-    width: 0;
-    opacity: 0;
-    padding: 0;
-    border: none;
+    width: 390px;
+    max-width: 100%;
     height: 36px;
-    border-radius: 12px;
+    padding: 0 12px 0 46px;
+    border: none;
+    border-radius: 4px;
     background: #ffffff;
-    color: #323232;
+    box-shadow: inset 0 0 0 1px #e5e5e5;
+    color: #2a2a2a;
     font-family: 'Plus Jakarta Sans', sans-serif;
-    font-size: 13px;
-    transition: width 0.2s ease, opacity 0.2s ease, margin 0.2s ease;
+    font-weight: 500;
+    font-size: 12px;
+
+    &::placeholder {
+      color: #8c8c8c;
+      font-weight: 500;
+    }
 
     &:focus {
-      outline: 2px solid #941c3c;
-      outline-offset: -2px;
+      outline: 2px solid #ffffff;
+      outline-offset: 1px;
     }
-  }
-
-  &__search--open &__search-input {
-    width: 220px;
-    opacity: 1;
-    padding: 0 12px;
-    margin-right: 8px;
   }
 
   &__icon-btn {
     position: relative;
+    flex-shrink: 0;
     width: 36px;
     height: 36px;
     border-radius: 12px;
@@ -242,6 +267,11 @@
     align-items: center;
     justify-content: center;
     cursor: pointer;
+
+    &--settings:disabled {
+      cursor: default;
+      opacity: 1;
+    }
 
     &__dot {
       position: absolute;
@@ -256,12 +286,13 @@
   }
 
   &__avatar {
+    flex-shrink: 0;
     width: 36px;
     height: 36px;
     border-radius: 50%;
     background: #ffffff;
     color: #941c3c;
-    box-shadow: inset 0 0 0 1px #e12628;
+    box-shadow: inset 0 0 0 1px #dc2626;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -274,7 +305,13 @@
 .content {
   flex: 1;
   overflow: auto;
-  background: #ececec;
+  background: #ededed;
+}
+
+@media (max-width: 1279px) {
+  .header__search-input {
+    width: 240px;
+  }
 }
 
 @media (max-width: 1023px) {
@@ -288,6 +325,10 @@
 
   .header__greeting {
     font-size: 16px;
+  }
+
+  .header__search-input {
+    width: 180px;
   }
 }
 
@@ -305,6 +346,10 @@
   }
 
   .header__search {
+    display: none;
+  }
+
+  .header__icon-btn--settings {
     display: none;
   }
 }

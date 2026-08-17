@@ -2,20 +2,20 @@
   display: block;
 }
 
-// "This step can be saved as draft..." banner — colors/left accent from the source's info box
-// (backgroundColor rgb(249,250,252), left accent rgb(52,91,177)).
+// "This step can be saved as draft..." banner — 809x72 box, bg rgb(249,250,252) with a 3px
+// rgb(52,91,177) left accent; 18px info glyph 20px in, text (14/400/24) starting 50px in.
 .info-banner {
   display: flex;
   align-items: flex-start;
-  gap: 10px;
-  padding: 14px 16px;
-  margin-bottom: 28px;
+  gap: 9px;
+  padding: 11px 16px 13px 20px;
+  margin-bottom: 30px;
   background: #f9fafc;
   border-left: 3px solid #345bb1;
 
   &__icon {
     flex-shrink: 0;
-    margin-top: 2px;
+    margin-top: 3px;
     color: #345bb1;
   }
 
@@ -29,8 +29,13 @@
   }
 }
 
-.risk-pill__danger-text {
-  text-transform: uppercase;
+// Source vertical rhythm around the risk card: toggle row -> card 27px, card -> next field 32px.
+.risk-card {
+  margin: 27px 0 32px;
+}
+
+.risk-flags {
+  margin: -16px 0 32px;
 }
 
 .risk-flags__title {

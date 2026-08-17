@@ -1,5 +1,9 @@
+// CMHW dashboard — geometry/colors from the `Dashboard` section (node 356:1140) of
+// project/screens/Components.bundle.js. Content area in the design starts 17px in from
+// the sidebar, 14px under the header, and ends 20/21px from the right edge at 1440px.
+
 .dashboard {
-  padding: 24px 33px;
+  padding: 14px 20px 40px 17px;
   font-family: 'Plus Jakarta Sans', sans-serif;
 }
 
@@ -14,12 +18,13 @@
   }
 }
 
+// Urgent banner: 3px #e12628 accent, #fef2f2 body, 64px tall, square corners.
 .banner {
   display: flex;
-  margin-bottom: 22px;
+  min-height: 64px;
+  margin-bottom: 24px;
   background: #fef2f2;
   overflow: hidden;
-  border-radius: 4px;
 
   &__accent {
     width: 3px;
@@ -31,12 +36,14 @@
     flex: 1;
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 14px 20px;
+    gap: 9px;
+    padding: 8px 16px 8px 20px;
   }
 
   &__icon {
     flex-shrink: 0;
+    align-self: flex-start;
+    margin-top: 8px;
     color: #d02537;
   }
 
@@ -47,21 +54,24 @@
   &__heading {
     font-weight: 500;
     font-size: 14px;
+    line-height: 24px;
     color: #2a2a2a;
   }
 
   &__detail {
-    margin-top: 4px;
-    font-size: 12px;
+    font-weight: 400;
+    font-size: 10px;
+    line-height: 15px;
     color: #2a2a2a;
   }
 
   &__cta {
     display: flex;
     align-items: center;
-    gap: 6px;
+    justify-content: center;
+    gap: 8px;
     height: 36px;
-    padding: 0 16px;
+    padding: 0 20px;
     border: none;
     border-radius: 4px;
     background: #eb3c2c;
@@ -75,9 +85,10 @@
 }
 
 .page-title {
-  margin: 0 0 20px;
+  margin: 0 0 17px;
   font-weight: 600;
   font-size: 20px;
+  line-height: 24px;
   color: #2a2a2a;
 }
 
@@ -85,41 +96,76 @@
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 23px;
-  margin-bottom: 22px;
+  margin-bottom: 15px;
 }
 
 .kpi-card {
+  position: relative;
   background: #ffffff;
   border-radius: 12px;
-  padding: 20px;
+  min-height: 114px;
+  padding: 8px 18px 13px;
+
+  // 36px bordered square with a chevron in the design's top-right corner of each card.
+  &__expand {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 36px;
+    height: 36px;
+    border-radius: 6px;
+    box-shadow: inset 0 0 0 1px #dbdbdb;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #000000;
+
+    svg {
+      transform: rotate(90deg);
+    }
+
+    &--up svg {
+      transform: rotate(-90deg);
+    }
+  }
 
   &__label {
     font-family: 'Wix Madefor Display', sans-serif;
     font-weight: 600;
     font-size: 10px;
+    line-height: 24px;
     letter-spacing: -0.005em;
     color: #2a2a2a;
-    text-transform: uppercase;
+    padding-right: 44px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   &__number {
-    margin-top: 12px;
+    margin-top: 3px;
     font-weight: 600;
     font-size: 32px;
+    line-height: 32px;
     color: #2a2a2a;
   }
 
   &__pill {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    margin-top: 16px;
-    padding: 4px 10px;
-    border-radius: 999px;
+    gap: 4px;
+    margin-top: 10px;
+    padding: 4px 8px;
+    border-radius: 200px;
     font-family: 'Wix Madefor Display', sans-serif;
     font-weight: 600;
-    font-size: 11px;
+    font-size: 12px;
+    line-height: 16px;
     letter-spacing: -0.005em;
+
+    svg {
+      flex-shrink: 0;
+    }
   }
 
   .dot {
@@ -127,19 +173,20 @@
     height: 6px;
     border-radius: 50%;
     background: #d02537;
+    flex-shrink: 0;
   }
 
-  &--green .kpi-card__pill {
+  &__pill--green {
     background: #eafdee;
     color: #147129;
   }
 
-  &--yellow .kpi-card__pill {
+  &__pill--yellow {
     background: #fff9e4;
     color: #9d852d;
   }
 
-  &--pink .kpi-card__pill {
+  &__pill--pink {
     background: #fff0f1;
     color: #d02537;
   }
@@ -148,25 +195,35 @@
 .active-guests {
   background: #ffffff;
   border-radius: 12px;
-  padding: 20px;
+  padding: 17px 24px 22px 21px;
   box-shadow: 1px 2px 7.3px 0px rgba(0, 0, 0, 0.1);
 
   &__header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 12px;
+    gap: 16px;
+    margin-bottom: 17px;
   }
 
   &__title {
     font-weight: 600;
     font-size: 15px;
+    line-height: 24px;
     color: #2a2a2a;
+    white-space: nowrap;
 
     span {
       color: #8c8c8c;
       font-weight: 500;
     }
+  }
+
+  &__tools {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
   }
 
   &__table {
@@ -175,25 +232,33 @@
 
     thead th {
       text-align: left;
-      padding: 10px 12px;
+      height: 41px;
+      padding: 0 12px 0 21px;
       background: #fff0f1;
       font-weight: 600;
       font-size: 12px;
+      line-height: 24px;
       letter-spacing: 0.01em;
       color: #2a2a2a;
 
       &:first-child {
-        border-top-left-radius: 4px;
+        border-top-left-radius: 3px;
+        border-bottom-left-radius: 3px;
+        width: 42%;
       }
       &:last-child {
-        border-top-right-radius: 4px;
+        border-top-right-radius: 3px;
+        border-bottom-right-radius: 3px;
       }
     }
 
     tbody td {
-      padding: 12px;
+      height: 72px;
+      padding: 0 12px 0 21px;
       border-bottom: 1px solid #e8e8e8;
+      font-weight: 500;
       font-size: 14px;
+      letter-spacing: -0.005em;
       color: #2a2a2a;
     }
 
@@ -211,12 +276,100 @@
       cursor: default;
     }
   }
+
+  &__footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-top: 15px;
+  }
+
+  &__count {
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 24px;
+    letter-spacing: -0.005em;
+    color: #2a2a2a;
+  }
+}
+
+// In-card search field: 390x36, radius 4, inset 1px #e5e5e5, 12px/500 placeholder.
+.table-search {
+  position: relative;
+  width: 390px;
+  max-width: 100%;
+  flex-shrink: 1;
+  min-width: 120px;
+
+  svg {
+    position: absolute;
+    left: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #727272;
+    pointer-events: none;
+  }
+
+  input {
+    width: 100%;
+    height: 36px;
+    padding: 0 12px 0 46px;
+    border: none;
+    border-radius: 4px;
+    background: #ffffff;
+    box-shadow: inset 0 0 0 1px #e5e5e5;
+    color: #2a2a2a;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-weight: 500;
+    font-size: 12px;
+
+    &::placeholder {
+      color: #8c8c8c;
+      font-weight: 500;
+    }
+
+    &:focus {
+      outline: 2px solid #941c3c;
+      outline-offset: -1px;
+    }
+  }
+}
+
+// Static filter affordances from the design (no per-row pathway/CMHW data in the
+// CMHW dashboard DTO to drive them yet).
+.filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 15px 0 17px;
+  border-radius: 4px;
+  background: #ffffff;
+  box-shadow: inset 0 0 0 1px #e5e5e5;
+  font-weight: 500;
+  font-size: 14px;
+  letter-spacing: -0.005em;
+  color: #2a2a2a;
+  white-space: nowrap;
+  flex-shrink: 0;
+
+  svg {
+    color: #727272;
+  }
 }
 
 .guest-cell {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 6px;
+  height: 72px;
+
+  &__name {
+    font-weight: 600;
+    font-size: 12px;
+    letter-spacing: 0;
+  }
 }
 
 .avatar {
@@ -229,8 +382,38 @@
   align-items: center;
   justify-content: center;
   font-weight: 600;
-  font-size: 13px;
+  font-size: 15px;
   flex-shrink: 0;
+}
+
+.link-red {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #d02537;
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 24px;
+  letter-spacing: -0.005em;
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+
+  svg {
+    flex-shrink: 0;
+  }
+}
+
+@media (max-width: 1279px) {
+  .active-guests__header {
+    flex-wrap: wrap;
+  }
+
+  .active-guests__tools {
+    flex-wrap: wrap;
+  }
 }
 
 @media (max-width: 1023px) {
@@ -254,10 +437,15 @@
     flex-wrap: wrap;
   }
 
+  .filter-chip {
+    display: none;
+  }
+
   .active-guests {
     padding: 16px 0;
 
-    &__header {
+    &__header,
+    &__footer {
       padding: 0 16px;
     }
 

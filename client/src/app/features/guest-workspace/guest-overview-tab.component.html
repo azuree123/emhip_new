@@ -1,15 +1,18 @@
 <div class="overview">
   <div class="stat-row">
     <div class="stat-tile">
-      <span class="stat-tile__label">Days since last contact</span>
+      <span class="stat-tile__label">Days since last activity</span>
       <span class="stat-tile__value">{{ lastContactDaysAgo() ?? '—' }}</span>
       <span class="stat-tile__foot">
-        <svg width="16" height="16" viewBox="0 0 13.333 13.333" fill="none">
-          <path
-            d="M 1 6.667 C 1 3.537 3.537 1 6.667 1 C 9.796 1 12.333 3.537 12.333 6.667 C 12.333 9.796 9.796 12.333 6.667 12.333 C 3.537 12.333 1 9.796 1 6.667 Z M 6.667 0 C 2.985 0 0 2.985 0 6.667 C 0 10.349 2.985 13.333 6.667 13.333 C 10.349 13.333 13.333 10.349 13.333 6.667 C 13.333 2.985 10.349 0 6.667 0 Z M 6.662 3.099 C 6.629 2.855 6.42 2.667 6.167 2.667 C 5.891 2.667 5.667 2.891 5.667 3.167 L 5.667 7.167 L 5.671 7.234 C 5.704 7.478 5.914 7.667 6.167 7.667 L 8.833 7.667 L 8.901 7.662 C 9.145 7.629 9.333 7.42 9.333 7.167 C 9.333 6.891 9.109 6.667 8.833 6.667 L 6.667 6.667 L 6.667 3.167 L 6.662 3.099 Z"
-            fill="currentColor"
-          />
-        </svg>
+        <span class="stat-tile__pill">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path
+              transform="translate(1.333,1.333)"
+              d="M 1 6.667 C 1 3.537 3.537 1 6.667 1 C 9.796 1 12.333 3.537 12.333 6.667 C 12.333 9.796 9.796 12.333 6.667 12.333 C 3.537 12.333 1 9.796 1 6.667 Z M 6.667 0 C 2.985 0 0 2.985 0 6.667 C 0 10.349 2.985 13.333 6.667 13.333 C 10.349 13.333 13.333 10.349 13.333 6.667 C 13.333 2.985 10.349 0 6.667 0 Z M 6.662 3.099 C 6.629 2.855 6.42 2.667 6.167 2.667 C 5.891 2.667 5.667 2.891 5.667 3.167 L 5.667 7.167 L 5.671 7.234 C 5.704 7.478 5.914 7.667 6.167 7.667 L 8.833 7.667 L 8.901 7.662 C 9.145 7.629 9.333 7.42 9.333 7.167 C 9.333 6.891 9.109 6.667 8.833 6.667 L 6.667 6.667 L 6.667 3.167 L 6.662 3.099 Z"
+              fill="currentColor"
+            />
+          </svg>
+        </span>
         {{ overview().recentContacts.length ? formatDate(overview().recentContacts[0].occurredAt) : 'No contacts yet' }}
       </span>
     </div>
@@ -17,12 +20,15 @@
       <span class="stat-tile__label">Open follow-up entries</span>
       <span class="stat-tile__value">{{ overview().openFollowUpCount }}</span>
       <span class="stat-tile__foot">
-        <svg width="16" height="16" viewBox="0 0 13.333 13.333" fill="none">
-          <path
-            d="M 1 6.667 C 1 3.537 3.537 1 6.667 1 C 9.796 1 12.333 3.537 12.333 6.667 C 12.333 9.796 9.796 12.333 6.667 12.333 C 3.537 12.333 1 9.796 1 6.667 Z M 6.667 0 C 2.985 0 0 2.985 0 6.667 C 0 10.349 2.985 13.333 6.667 13.333 C 10.349 13.333 13.333 10.349 13.333 6.667 C 13.333 2.985 10.349 0 6.667 0 Z M 6.662 3.099 C 6.629 2.855 6.42 2.667 6.167 2.667 C 5.891 2.667 5.667 2.891 5.667 3.167 L 5.667 7.167 L 5.671 7.234 C 5.704 7.478 5.914 7.667 6.167 7.667 L 8.833 7.667 L 8.901 7.662 C 9.145 7.629 9.333 7.42 9.333 7.167 C 9.333 6.891 9.109 6.667 8.833 6.667 L 6.667 6.667 L 6.667 3.167 L 6.662 3.099 Z"
-            fill="currentColor"
-          />
-        </svg>
+        <span class="stat-tile__pill">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path
+              transform="translate(1.333,1.333)"
+              d="M 1 6.667 C 1 3.537 3.537 1 6.667 1 C 9.796 1 12.333 3.537 12.333 6.667 C 12.333 9.796 9.796 12.333 6.667 12.333 C 3.537 12.333 1 9.796 1 6.667 Z M 6.667 0 C 2.985 0 0 2.985 0 6.667 C 0 10.349 2.985 13.333 6.667 13.333 C 10.349 13.333 13.333 10.349 13.333 6.667 C 13.333 2.985 10.349 0 6.667 0 Z M 6.662 3.099 C 6.629 2.855 6.42 2.667 6.167 2.667 C 5.891 2.667 5.667 2.891 5.667 3.167 L 5.667 7.167 L 5.671 7.234 C 5.704 7.478 5.914 7.667 6.167 7.667 L 8.833 7.667 L 8.901 7.662 C 9.145 7.629 9.333 7.42 9.333 7.167 C 9.333 6.891 9.109 6.667 8.833 6.667 L 6.667 6.667 L 6.667 3.167 L 6.662 3.099 Z"
+              fill="currentColor"
+            />
+          </svg>
+        </span>
         See Follow-up tab
       </span>
     </div>
@@ -30,14 +36,37 @@
       <span class="stat-tile__label">Pinned notes</span>
       <span class="stat-tile__value">{{ overview().pinnedNotes.length }}</span>
       <span class="stat-tile__foot">
-        <svg width="16" height="16" viewBox="0 0 13.333 13.333" fill="none">
-          <path
-            d="M 1 6.667 C 1 3.537 3.537 1 6.667 1 C 9.796 1 12.333 3.537 12.333 6.667 C 12.333 9.796 9.796 12.333 6.667 12.333 C 3.537 12.333 1 9.796 1 6.667 Z M 6.667 0 C 2.985 0 0 2.985 0 6.667 C 0 10.349 2.985 13.333 6.667 13.333 C 10.349 13.333 13.333 10.349 13.333 6.667 C 13.333 2.985 10.349 0 6.667 0 Z M 6.662 3.099 C 6.629 2.855 6.42 2.667 6.167 2.667 C 5.891 2.667 5.667 2.891 5.667 3.167 L 5.667 7.167 L 5.671 7.234 C 5.704 7.478 5.914 7.667 6.167 7.667 L 8.833 7.667 L 8.901 7.662 C 9.145 7.629 9.333 7.42 9.333 7.167 C 9.333 6.891 9.109 6.667 8.833 6.667 L 6.667 6.667 L 6.667 3.167 L 6.662 3.099 Z"
-            fill="currentColor"
-          />
-        </svg>
+        <span class="stat-tile__pill">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path
+              transform="translate(1.333,1.333)"
+              d="M 1 6.667 C 1 3.537 3.537 1 6.667 1 C 9.796 1 12.333 3.537 12.333 6.667 C 12.333 9.796 9.796 12.333 6.667 12.333 C 3.537 12.333 1 9.796 1 6.667 Z M 6.667 0 C 2.985 0 0 2.985 0 6.667 C 0 10.349 2.985 13.333 6.667 13.333 C 10.349 13.333 13.333 10.349 13.333 6.667 C 13.333 2.985 10.349 0 6.667 0 Z M 6.662 3.099 C 6.629 2.855 6.42 2.667 6.167 2.667 C 5.891 2.667 5.667 2.891 5.667 3.167 L 5.667 7.167 L 5.671 7.234 C 5.704 7.478 5.914 7.667 6.167 7.667 L 8.833 7.667 L 8.901 7.662 C 9.145 7.629 9.333 7.42 9.333 7.167 C 9.333 6.891 9.109 6.667 8.833 6.667 L 6.667 6.667 L 6.667 3.167 L 6.662 3.099 Z"
+              fill="currentColor"
+            />
+          </svg>
+        </span>
         See Notes tab
       </span>
+      <svg class="stat-tile__mark" width="76" height="76" viewBox="0 0 75.18 75.1" fill="none" aria-hidden="true">
+        <g transform="matrix(1,0,0,-1,0,64.099)">
+          <path
+            d="M 37.59 64.099 C 16.863 64.099 0 47.276 0 26.598 L 13.807 26.598 C 13.807 39.682 24.476 50.325 37.59 50.325 C 50.705 50.325 61.374 39.682 61.374 26.598 C 61.374 20.233 58.882 14.256 54.355 9.769 L 64.088 0 C 71.241 7.092 75.18 16.538 75.18 26.599 C 75.181 47.277 58.318 64.099 37.59 64.099 Z"
+            fill="#eb3c2c"
+          />
+        </g>
+        <g transform="matrix(1,0,0,-1,0,75.099)">
+          <path
+            d="M 13.807 37.501 L 0 37.501 C 0 28.458 3.271 19.725 9.212 12.908 C 16.359 4.705 26.703 0 37.59 0 L 37.59 13.774 C 30.701 13.774 24.156 16.752 19.632 21.944 C 15.876 26.255 13.807 31.78 13.807 37.501 Z"
+            fill="#f0f0f0"
+          />
+        </g>
+        <g transform="matrix(1,0,0,-1,37.592,75.099)">
+          <path
+            d="M 16.768 20.674 C 14.456 18.381 11.755 16.615 8.742 15.426 C 5.963 14.33 3.023 13.774 0 13.774 L 0 0 C 4.768 0 9.418 0.881 13.819 2.618 C 18.586 4.498 22.853 7.287 26.501 10.906 L 16.768 20.674 Z"
+            fill="#f0f0f0"
+          />
+        </g>
+      </svg>
     </div>
   </div>
 
@@ -45,26 +74,32 @@
     <div class="column">
       <section class="card">
         <h2 class="card__title">Personal snapshot</h2>
-        <div class="field-grid">
-          <div class="field">
-            <span class="field__label">Date of birth</span>
-            <span class="field__value">{{ formatDate(overview().dateOfBirth) }}</span>
+        <div class="field-rows">
+          <div class="field-row">
+            <div class="field">
+              <span class="field__label">Date of birth</span>
+              <span class="field__value">{{ formatDate(overview().dateOfBirth) }}</span>
+            </div>
+            <div class="field">
+              <span class="field__label">Contact phone</span>
+              <span class="field__value">{{ overview().contactPhone || '—' }}</span>
+            </div>
           </div>
-          <div class="field">
-            <span class="field__label">Contact phone</span>
-            <span class="field__value">{{ overview().contactPhone || '—' }}</span>
+          <div class="field-row">
+            <div class="field">
+              <span class="field__label">Contact email</span>
+              <span class="field__value">{{ overview().contactEmail || '—' }}</span>
+            </div>
+            <div class="field">
+              <span class="field__label">Assigned CMHW</span>
+              <span class="field__value">{{ overview().assignedCmhwName || 'Unassigned' }}</span>
+            </div>
           </div>
-          <div class="field">
-            <span class="field__label">Contact email</span>
-            <span class="field__value">{{ overview().contactEmail || '—' }}</span>
-          </div>
-          <div class="field">
-            <span class="field__label">Assigned CMHW</span>
-            <span class="field__value">{{ overview().assignedCmhwName || 'Unassigned' }}</span>
-          </div>
-          <div class="field">
-            <span class="field__label">Registered</span>
-            <span class="field__value">{{ formatDate(overview().registeredAt) }}</span>
+          <div class="field-row">
+            <div class="field">
+              <span class="field__label">Registered</span>
+              <span class="field__value">{{ formatDate(overview().registeredAt) }}</span>
+            </div>
           </div>
         </div>
       </section>
@@ -156,6 +191,7 @@
                   </div>
                   <div class="timeline-item__meta">
                     <span>{{ contact.createdByName }}</span>
+                    <span class="timeline-item__sep"></span>
                     <span>{{ formatDateTime(contact.occurredAt) }}</span>
                   </div>
                 </div>
@@ -165,6 +201,17 @@
         } @else {
           <p class="empty-state">No contacts logged yet for this guest.</p>
         }
+
+        <div class="card__footer">
+          @if (overview().openFollowUpCount > 0) {
+            <span class="card__footer-text">
+              {{ overview().openFollowUpCount }} open {{ overview().openFollowUpCount === 1 ? 'entry' : 'entries' }} in follow-up log
+            </span>
+          } @else {
+            <span class="card__footer-text card__footer-text--muted">Follow-up log up to date</span>
+          }
+          <button type="button" class="btn-link" (click)="viewFollowUps.emit()">View all →</button>
+        </div>
       </section>
     </div>
   </div>

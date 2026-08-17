@@ -77,15 +77,19 @@
         <input class="field__input" type="text" formControlName="postCode" placeholder="E1 6AN" />
       </label>
       <label class="field">
+        <span class="field__label">Nationality</span>
+        <input class="field__input" type="text" formControlName="nationality" placeholder="British" />
+      </label>
+    </div>
+
+    <div class="field-row">
+      <label class="field">
         <span class="field__label">Contact email</span>
         <input class="field__input" type="email" formControlName="contactEmail" placeholder="name@gmail.com" />
         @if (form.get('contact.contactEmail')?.hasError('email')) {
           <span class="field__error">Enter a valid email address.</span>
         }
       </label>
-    </div>
-
-    <div class="field-row">
       <label class="field">
         <span class="field__label">Housing status</span>
         <select class="field__select" formControlName="housingStatus">
@@ -94,10 +98,6 @@
             <option [value]="option">{{ option }}</option>
           }
         </select>
-      </label>
-      <label class="field">
-        <span class="field__label">Nationality</span>
-        <input class="field__input" type="text" formControlName="nationality" placeholder="British" />
       </label>
     </div>
 
@@ -111,7 +111,6 @@
           }
         </select>
       </label>
-      <div></div>
     </div>
   </div>
 
@@ -185,7 +184,6 @@
           }
         </select>
       </label>
-      <div></div>
     </div>
   </div>
 

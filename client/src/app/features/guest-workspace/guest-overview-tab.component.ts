@@ -31,6 +31,9 @@ export class GuestOverviewTabComponent {
   /** When true (header "Add contact" button), the add-contact form starts expanded. */
   readonly openContactForm = input(false);
   @Output() readonly refresh = new EventEmitter<void>();
+  /** "View all →" footer on the Recent contacts card (design: follow-up log link) — the
+   *  workspace responds by switching to the Follow-up tab. */
+  @Output() readonly viewFollowUps = new EventEmitter<void>();
 
   constructor() {
     effect(() => {

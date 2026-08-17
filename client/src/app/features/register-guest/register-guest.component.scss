@@ -1,8 +1,9 @@
 // Ported from the "Register New Guest" panel inside DmegographicsTab / InitialConversationTab
-// (project/screens/Components.bundle.js). The source renders this as an 858px-wide drawer
-// floating over a guest-list background; here it's a normal full-page, centered card since
-// this component owns the whole `/guests/new` route content area (no sidebar/header — those
-// come from the shared shell).
+// (project/screens/Components.bundle.js, lines 14622-25836). The source renders this as an
+// 858px-wide drawer (x 582-1440) floating over the guest list; here it's a normal centered
+// card since this component owns the whole `/guests/new` route content area (sidebar/header
+// come from the shared shell). All colors/sizes below are lifted verbatim from the source.
+
 .page {
   padding: 32px;
   display: flex;
@@ -11,25 +12,25 @@
 
 .panel {
   width: 100%;
-  max-width: 900px;
+  max-width: 858px;
   background: #ffffff;
   border-radius: 8px;
-  box-shadow: 1px 2px 11.1px 0px rgba(0, 0, 0, 0.08);
+  box-shadow: -8px 4px 51.2px 0px rgba(0, 0, 0, 0.1);
   display: flex;
   flex-direction: column;
 }
 
+// Gray header band: 858x98, radius 8 8 0 0, bg rgb(240,240,240). Title at (22, 23),
+// close button 36x36 white r6 at right inset 34 / top 33.
 .panel__header {
-  padding: 24px 32px 0;
+  box-sizing: border-box;
+  min-height: 98px;
+  padding: 23px 34px 0 22px;
   background: #f0f0f0;
   border-radius: 8px 8px 0 0;
-}
-
-.panel__header-top {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  margin-bottom: 20px;
 }
 
 .panel__title {
@@ -41,9 +42,17 @@
   color: #2a2a2a;
 }
 
+// "DRAFT SAVED" pill + "Last updated …" caption sit on one row 5px under the title
+// (source: badge at top 52 next to 12px/500 caption, both under the 20px title at top 23).
+.panel__draft-row {
+  margin-top: 5px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .draft-badge {
   display: inline-flex;
-  margin-top: 8px;
   padding: 4px 8px;
   border-radius: 200px;
   background: #fff9e4;
@@ -54,9 +63,19 @@
   color: #9d852d;
 }
 
+.draft-meta {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 24px;
+  color: #2a2a2a;
+  white-space: nowrap;
+}
+
 .icon-btn {
   width: 36px;
   height: 36px;
+  margin-top: 10px; // 33 - 23 header padding-top
   flex-shrink: 0;
   border: none;
   border-radius: 6px;
@@ -68,32 +87,38 @@
   cursor: pointer;
 }
 
-// Stepper: two steps, mirroring the source's circle states (upcoming = light gray fill, active
-// = red inset ring, done = solid red fill + white checkmark) and connecting line colors.
+.panel__body {
+  padding: 15px 24px 32px 22px;
+}
+
+// Stepper: its own white card (812x94, r8, 1px #e6e6e6 inset ring + soft drop shadow) sitting
+// 15px below the gray header. Five steps; circles 32px at y 23, labels (Wix Madefor 10/600)
+// centered under each circle, 1px connector lines at circle mid-height.
 .stepper {
+  box-sizing: border-box;
   display: flex;
+  align-items: flex-start;
   list-style: none;
-  margin: 0;
-  padding: 0 8px 24px;
-  gap: 0;
+  margin: 0 0 39px;
+  padding: 23px 56px 0;
+  height: 94px;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow:
+    inset 0 0 0 1px #e6e6e6,
+    1px 2px 11.1px 0px rgba(0, 0, 0, 0.08);
 }
 
 .stepper__item {
-  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
-  max-width: 220px;
-}
-
-.stepper__row {
-  display: flex;
-  align-items: center;
-  width: 100%;
+  width: 32px; // circle width; labels overflow-center via nowrap
 }
 
 .stepper__circle {
   flex-shrink: 0;
+  box-sizing: border-box;
   width: 32px;
   height: 32px;
   border-radius: 50%;
@@ -104,6 +129,7 @@
   font-family: 'Plus Jakarta Sans', sans-serif;
   font-weight: 600;
   font-size: 14px;
+  line-height: 24px;
   color: #8c8c8c;
 
   &--active {
@@ -114,6 +140,7 @@
 
   &--done {
     background: #eb3c2c;
+    box-shadow: inset 0 0 0 2px #eb3c2c;
     color: #ffffff;
   }
 }
@@ -121,30 +148,27 @@
 .stepper__line {
   flex: 1;
   height: 1px;
+  margin: 16px 8px 0; // aligned to circle mid-height (circle 32px)
   background: #d7d7d7;
 
-  &--done {
+  &--active {
     background: #2a2a2a;
   }
 }
 
 .stepper__label {
-  margin-top: 8px;
+  margin-top: 3px;
   font-family: 'Wix Madefor Display', sans-serif;
   font-weight: 600;
   font-size: 10px;
+  line-height: 24px;
   letter-spacing: -0.005em;
+  white-space: nowrap;
   color: #8c8c8c;
 
   &--active {
     color: #2a2a2a;
   }
-}
-
-.panel__body {
-  padding: 28px 32px;
-  max-height: 65vh;
-  overflow-y: auto;
 }
 
 .submit-error {
@@ -157,22 +181,29 @@
   font-size: 13px;
 }
 
+// Footer: white bar 860x104 (radius 0 0 8 8, upward shadow). "Go Back" ghost on the left;
+// "Save Draft" ghost + "Save & Continue" primary (with white arrow-right) on the right.
 .panel__footer {
+  box-sizing: border-box;
+  min-height: 104px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 20px 32px;
+  padding: 0 24px;
+  background: #ffffff;
   border-radius: 0 0 8px 8px;
   box-shadow: 1px -3px 21px 0px rgba(0, 0, 0, 0.09);
 }
 
-.panel__footer-left {
+.panel__footer-right {
   display: flex;
-  gap: 12px;
+  align-items: center;
+  gap: 8px;
 }
 
 .btn {
+  box-sizing: border-box;
   height: 36px;
   padding: 0 20px;
   border-radius: 4px;
@@ -180,19 +211,27 @@
   font-family: 'Plus Jakarta Sans', sans-serif;
   font-weight: 500;
   font-size: 14px;
+  line-height: 24px;
   letter-spacing: -0.005em;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
 
   &--ghost {
+    min-width: 122px;
     background: #ffffff;
     box-shadow: inset 0 0 0 1px #d9d9d9;
     color: #2a2a2a;
+
+    svg {
+      color: #212121;
+    }
   }
 
   &--primary {
+    min-width: 171px;
     background: #eb3c2c;
     color: #ffffff;
 
@@ -209,21 +248,30 @@
   }
 
   .panel__header {
-    padding: 16px 16px 0;
+    padding: 16px 16px 12px;
+    min-height: 0;
+  }
+
+  .icon-btn {
+    margin-top: 0;
   }
 
   .panel__body {
-    padding: 20px 16px;
-    max-height: none;
+    padding: 15px 16px 24px;
   }
 
-  .panel__footer {
-    padding: 16px;
-    flex-wrap: wrap;
+  .stepper {
+    padding: 23px 20px 0;
   }
 
   .stepper__label {
     display: none;
+  }
+
+  .panel__footer {
+    min-height: 0;
+    padding: 16px;
+    flex-wrap: wrap;
   }
 }
 
@@ -233,17 +281,16 @@
     align-items: stretch;
   }
 
-  .panel__footer-left {
-    justify-content: stretch;
+  .panel__footer-right {
+    flex-direction: column-reverse;
+    align-items: stretch;
 
     .btn {
-      flex: 1;
-      justify-content: center;
+      width: 100%;
     }
   }
 
-  .btn--primary {
+  .btn--ghost {
     width: 100%;
-    justify-content: center;
   }
 }

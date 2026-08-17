@@ -64,14 +64,24 @@ export class RegisterGuestComponent {
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly draftSavedAt = signal<Date | null>(null);
 
+  /**
+   * The source stepper card shows five steps (Demographics / Initial conversation / DIALOG /
+   * Pathway & allocation / REVIEW — casing verbatim, see Components.bundle.js lines
+   * 19364-19539). Only the first two are implemented as wizard steps here; 3-5 render
+   * permanently "upcoming" for visual parity (those flows live elsewhere in the app / are out
+   * of scope for registration).
+   */
   protected readonly steps = [
-    { index: 1 as const, label: 'Demographics' },
-    { index: 2 as const, label: 'Initial conversation' },
+    { index: 1, label: 'Demographics' },
+    { index: 2, label: 'Initial conversation' },
+    { index: 3, label: 'DIALOG' },
+    { index: 4, label: 'Pathway & allocation' },
+    { index: 5, label: 'REVIEW' },
   ];
 
   protected readonly draftSavedLabel = computed(() => {
     const at = this.draftSavedAt();
-    return at ? `Last saved ${at.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : '';
+    return at ? `Last updated at ${at.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : '';
   });
 
   protected readonly demographicsForm = this.fb.group({

@@ -5,23 +5,36 @@
       <p class="page-header__subtitle">Manage active, on hold, new, and urgent guest records.</p>
     </div>
     <div class="page-header__actions">
-      <button type="button" class="btn btn--secondary">
-        <svg width="14" height="17" viewBox="0 0 12.375 14.625" fill="none">
+      @if (exportError()) {
+        <span class="export-error" role="alert">{{ exportError() }}</span>
+      }
+      <button
+        type="button"
+        class="btn btn--secondary"
+        (click)="exportGuests()"
+        [disabled]="exporting()"
+      >
+        <svg width="13" height="15" viewBox="0 0 12.375 14.625" fill="none" aria-hidden="true">
           <path
             d="M 12.375 6.75 L 12.375 13.5 C 12.375 13.799 12.256 14.085 12.045 14.296 C 11.835 14.507 11.548 14.625 11.25 14.625 L 1.125 14.625 C 0.827 14.625 0.54 14.507 0.33 14.296 C 0.119 14.085 0 13.799 0 13.5 L 0 6.75 C 0 6.452 0.119 6.166 0.33 5.955 C 0.54 5.744 0.827 5.625 1.125 5.625 L 2.813 5.625 C 2.962 5.625 3.105 5.685 3.21 5.79 C 3.316 5.896 3.375 6.039 3.375 6.188 C 3.375 6.337 3.316 6.48 3.21 6.586 C 3.105 6.691 2.962 6.75 2.813 6.75 L 1.125 6.75 L 1.125 13.5 L 11.25 13.5 L 11.25 6.75 L 9.563 6.75 C 9.413 6.75 9.27 6.691 9.165 6.586 C 9.059 6.48 9 6.337 9 6.188 C 9 6.039 9.059 5.896 9.165 5.79 C 9.27 5.685 9.413 5.625 9.563 5.625 L 11.25 5.625 C 11.548 5.625 11.835 5.744 12.045 5.955 C 12.256 6.166 12.375 6.452 12.375 6.75 Z M 3.773 3.773 L 5.625 1.921 L 5.625 8.438 C 5.625 8.587 5.684 8.73 5.79 8.836 C 5.895 8.941 6.038 9 6.188 9 C 6.337 9 6.48 8.941 6.585 8.836 C 6.691 8.73 6.75 8.587 6.75 8.438 L 6.75 1.921 L 8.602 3.773 C 8.708 3.879 8.851 3.938 9 3.938 C 9.149 3.938 9.292 3.879 9.398 3.773 C 9.504 3.668 9.563 3.525 9.563 3.375 C 9.563 3.226 9.504 3.083 9.398 2.977 L 6.585 0.165 C 6.533 0.113 6.471 0.071 6.403 0.043 C 6.335 0.015 6.261 0 6.188 0 C 6.114 0 6.04 0.015 5.972 0.043 C 5.904 0.071 5.842 0.113 5.79 0.165 L 2.977 2.977 C 2.871 3.083 2.812 3.226 2.812 3.375 C 2.812 3.525 2.871 3.668 2.977 3.773 C 3.083 3.879 3.226 3.938 3.375 3.938 C 3.524 3.938 3.667 3.879 3.773 3.773 Z"
             fill="currentColor"
           />
         </svg>
-        Export Guest
+        {{ exporting() ? 'Exporting…' : 'Export Guest' }}
       </button>
-      <button type="button" class="btn btn--primary" (click)="registerGuest()">Register New Guest</button>
+      <button type="button" class="btn btn--primary" (click)="registerGuest()">
+        <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
+          <path d="M 5 0.25 V 9.75 M 0.25 5 H 9.75" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+        </svg>
+        Register New Guest
+      </button>
     </div>
   </header>
 
   <section class="card">
     <div class="toolbar">
       <div class="search-box">
-        <svg width="16" height="16" viewBox="0 0 15.001 15.001" fill="none" class="search-box__icon">
+        <svg width="15" height="15" viewBox="0 0 15.001 15.001" fill="none" class="search-box__icon">
           <path
             d="M 14.506 15.496 C 14.779 15.769 15.222 15.769 15.496 15.496 C 15.769 15.222 15.769 14.779 15.496 14.506 L 15.001 15.001 L 14.506 15.496 Z M 12.5 6.25 L 13.2 6.25 L 12.5 6.25 Z M 6.25 0 L 6.25 -0.7 L 6.25 0 Z M 1.831 1.831 L 1.336 1.336 L 1.336 1.336 L 1.831 1.831 Z M 0 6.25 L -0.7 6.25 L 0 6.25 Z M 6.25 12.5 L 6.25 13.2 L 6.25 12.5 Z M 15.001 15.001 L 15.496 14.506 L 11.165 10.175 L 10.67 10.67 L 10.175 11.165 L 14.506 15.496 L 15.001 15.001 Z M 10.67 10.67 L 11.165 11.165 C 12.468 9.861 13.2 8.094 13.2 6.25 L 12.5 6.25 L 11.8 6.25 C 11.8 7.722 11.216 9.134 10.175 10.175 L 10.67 10.67 Z M 12.5 6.25 L 13.2 6.25 C 13.2 4.407 12.468 2.639 11.165 1.336 L 10.67 1.831 L 10.175 2.326 C 11.216 3.366 11.8 4.778 11.8 6.25 L 12.5 6.25 Z M 10.67 1.831 L 11.165 1.336 C 9.861 0.032 8.094 -0.7 6.25 -0.7 L 6.25 0 L 6.25 0.7 C 7.722 0.7 9.134 1.285 10.175 2.326 L 10.67 1.831 Z M 6.25 0 L 6.25 -0.7 C 4.407 -0.7 2.639 0.032 1.336 1.336 L 1.831 1.831 L 2.326 2.326 C 3.366 1.285 4.778 0.7 6.25 0.7 L 6.25 0 Z M 1.831 1.831 L 1.336 1.336 C 0.032 2.639 -0.7 4.407 -0.7 6.25 L 0 6.25 L 0.7 6.25 C 0.7 4.778 1.285 3.366 2.326 2.326 L 1.831 1.831 Z M 0 6.25 L -0.7 6.25 C -0.7 8.094 0.032 9.861 1.336 11.165 L 1.831 10.67 L 2.326 10.175 C 1.285 9.134 0.7 7.722 0.7 6.25 L 0 6.25 Z M 1.831 10.67 L 1.336 11.165 C 2.639 12.468 4.407 13.2 6.25 13.2 L 6.25 12.5 L 6.25 11.8 C 4.778 11.8 3.366 11.216 2.326 10.175 L 1.831 10.67 Z M 6.25 12.5 L 6.25 13.2 C 8.094 13.2 9.861 12.468 11.165 11.165 L 10.67 10.67 L 10.175 10.175 C 9.134 11.216 7.722 11.8 6.25 11.8 L 6.25 12.5 Z"
             fill="currentColor"
@@ -47,25 +60,21 @@
             <option [value]="option.value">{{ option.label }}</option>
           }
         </select>
-        <svg width="10" height="10" viewBox="0 0 8.75 4.375" fill="none" class="status-filter__chevron">
+        <svg width="9" height="5" viewBox="0 0 8.75 4.375" fill="none" class="status-filter__chevron">
           <path
             d="M 9.28 0.53 C 9.573 0.237 9.573 -0.237 9.28 -0.53 C 8.987 -0.823 8.513 -0.823 8.22 -0.53 L 8.75 0 L 9.28 0.53 Z M 4.375 4.375 L 3.845 4.905 C 4.138 5.198 4.612 5.198 4.905 4.905 L 4.375 4.375 Z M 0.53 -0.53 C 0.237 -0.823 -0.237 -0.823 -0.53 -0.53 C -0.823 -0.237 -0.823 0.237 -0.53 0.53 L 0 0 L 0.53 -0.53 Z M 8.75 0 L 8.22 -0.53 L 3.845 3.845 L 4.375 4.375 L 4.905 4.905 L 9.28 0.53 L 8.75 0 Z M 4.375 4.375 L 4.905 3.845 L 0.53 -0.53 L 0 0 L -0.53 0.53 L 3.845 4.905 L 4.375 4.375 Z"
             fill="currentColor"
           />
         </svg>
       </div>
-
-      <div class="result-count">
-        {{ guests().length }} guest{{ guests().length === 1 ? '' : 's' }} loaded{{ hasMore() ? '+' : '' }}
-      </div>
     </div>
 
     <div class="table-head">
-      <span class="col col--status">Status</span>
       <span class="col col--name">Guest Name</span>
-      <span class="col col--cmhw">Assigned CMHW</span>
+      <span class="col col--status">Status</span>
       <span class="col col--registered">Registered</span>
-      <span class="col col--contact">Last Contact</span>
+      <span class="col col--cmhw">CMHW</span>
+      <span class="col col--activity">Last Activity</span>
       <span class="col col--actions">Actions</span>
     </div>
 
@@ -89,10 +98,6 @@
           *cdkVirtualFor="let guest of guests(); trackBy: trackGuest"
           (click)="openGuest(guest.id)"
         >
-          <span class="col col--status">
-            <span class="badge" [attr.data-status]="guest.status">{{ statusLabel(guest.status) }}</span>
-          </span>
-
           <span class="col col--name name-cell">
             <span class="avatar">{{ initials(guest) }}</span>
             <span class="name-block">
@@ -101,9 +106,13 @@
             </span>
           </span>
 
-          <span class="col col--cmhw">{{ guest.assignedCmhwName ?? '—' }}</span>
+          <span class="col col--status">
+            <span class="badge" [attr.data-status]="guest.status">{{ statusLabel(guest.status) }}</span>
+          </span>
+
           <span class="col col--registered">{{ formatDate(guest.registeredAt) }}</span>
-          <span class="col col--contact">{{ formatDate(guest.lastContactAt) }}</span>
+          <span class="col col--cmhw">{{ guest.assignedCmhwName ?? '—' }}</span>
+          <span class="col col--activity">{{ formatActivity(guest.lastContactAt) }}</span>
 
           <span class="col col--actions">
             <button type="button" class="open-btn" (click)="$event.stopPropagation(); openGuest(guest.id)">
@@ -120,13 +129,18 @@
       </cdk-virtual-scroll-viewport>
 
       <div class="load-footer">
-        @if (loadingMore()) {
-          <span>Loading more guests…</span>
-        } @else if (hasMore()) {
-          <button type="button" class="load-more-btn" (click)="loadMore()">Load more</button>
-        } @else {
-          <span>You've reached the end — {{ guests().length }} guest{{ guests().length === 1 ? '' : 's' }} loaded.</span>
-        }
+        <span class="load-footer__showing">
+          Showing 1 to {{ guests().length }} of {{ guests().length }}{{ hasMore() ? '+' : '' }} entries
+        </span>
+        <span class="load-footer__controls">
+          @if (loadingMore()) {
+            <span class="load-footer__note">Loading more guests…</span>
+          } @else if (hasMore()) {
+            <button type="button" class="load-more-btn" (click)="loadMore()">Load more</button>
+          } @else {
+            <span class="load-footer__note">You've reached the end.</span>
+          }
+        </span>
       </div>
     }
   </section>

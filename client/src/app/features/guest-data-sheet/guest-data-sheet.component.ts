@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/cor
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ScrollingModule } from '@angular/cdk/scrolling';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Subject, of } from 'rxjs';
+import { Subject, firstValueFrom, of } from 'rxjs';
 import { catchError, debounceTime, distinctUntilChanged } from 'rxjs/operators';
 
 import { GuestsApiService } from '../../core/guests-api.service';
@@ -14,8 +14,15 @@ const PAGE_SIZE = 50;
 /** How close (in rendered rows) to the bottom of the loaded set before we fetch the next page. */
 const PREFETCH_THRESHOLD = 15;
 
+/** Page size used while walking the keyset pages for a CSV export. */
+const EXPORT_PAGE_SIZE = 200;
+/** Hard cap on exported rows — if reached, we still download what was fetched. */
+const EXPORT_ROW_CAP = 2000;
+
 const STATUS_OPTIONS: { value: StatusFilterValue; label: string }[] = [
-  { value: 'All', label: 'All statuses' },
+  // "Status" doubles as the closed-state label of the native select, matching the design's
+  // filter chip; selecting it clears the filter.
+  { value: 'All', label: 'Status' },
   { value: 'Active', label: 'Active' },
   { value: 'PendingConversation', label: 'Pending Conversation' },
   { value: 'Inactive', label: 'Inactive' },
@@ -51,6 +58,8 @@ export class GuestDataSheetComponent {
   protected readonly hasMore = signal(true);
   protected readonly error = signal<string | null>(null);
   protected readonly statusFilter = signal<StatusFilterValue>('All');
+  protected readonly exporting = signal(false);
+  protected readonly exportError = signal<string | null>(null);
 
   protected readonly statusOptions = STATUS_OPTIONS;
 
@@ -147,6 +156,95 @@ export class GuestDataSheetComponent {
       });
   }
 
+  /**
+   * "Export Guest" — walks the current filter's keyset pages (same q/status the table is
+   * showing), caps at EXPORT_ROW_CAP rows, and downloads the result as a CSV. If the cap is
+   * hit — or a later page fails after some rows were fetched — what was fetched still
+   * downloads.
+   */
+  protected async exportGuests(): Promise<void> {
+    if (this.exporting()) {
+      return;
+    }
+    this.exporting.set(true);
+    this.exportError.set(null);
+
+    const status = this.statusFilter();
+    const rows: GuestListItemDto[] = [];
+    let cursor: string | undefined;
+
+    try {
+      for (;;) {
+        const page = await firstValueFrom(
+          this.guestsApi.getGuestList({
+            q: this.searchTerm || undefined,
+            status: status === 'All' ? undefined : status,
+            cursor,
+            pageSize: EXPORT_PAGE_SIZE,
+          }),
+        );
+        rows.push(...page.items);
+        if (rows.length >= EXPORT_ROW_CAP || !page.hasMore || !page.nextCursor) {
+          break;
+        }
+        cursor = page.nextCursor;
+      }
+    } catch {
+      if (rows.length === 0) {
+        this.exportError.set('Export failed. Please try again.');
+        this.exporting.set(false);
+        return;
+      }
+      // Partial fetch: fall through and download what we have.
+    }
+
+    this.downloadCsv(rows.slice(0, EXPORT_ROW_CAP));
+    this.exporting.set(false);
+  }
+
+  private downloadCsv(rows: GuestListItemDto[]): void {
+    const header = [
+      'Guest ID',
+      'First Name',
+      'Last Name',
+      'Date of Birth',
+      'Status',
+      'Assigned CMHW',
+      'Registered At',
+      'Last Contact At',
+    ];
+    const escape = (value: string | null): string => {
+      const s = value ?? '';
+      return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const lines = [header.join(',')];
+    for (const guest of rows) {
+      lines.push(
+        [
+          guest.id,
+          guest.firstName,
+          guest.lastName,
+          guest.dateOfBirth,
+          this.statusLabel(guest.status),
+          guest.assignedCmhwName ?? '',
+          guest.registeredAt,
+          guest.lastContactAt ?? '',
+        ]
+          .map(escape)
+          .join(','),
+      );
+    }
+
+    // BOM so Excel opens the UTF-8 CSV with names intact.
+    const blob = new Blob(['\uFEFF' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `guests-export-${new Date().toISOString().slice(0, 10)}.csv`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  }
+
   protected trackGuest(_index: number, guest: GuestListItemDto): string {
     return guest.id;
   }
@@ -168,6 +266,26 @@ export class GuestDataSheetComponent {
       return '—';
     }
     return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+  }
+
+  /** Last Activity column — the design shows "Today" for same-day activity. */
+  protected formatActivity(value: string | null): string {
+    if (!value) {
+      return '—';
+    }
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+      return '—';
+    }
+    const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+    const diffDays = Math.round((startOfDay(new Date()) - startOfDay(date)) / 86_400_000);
+    if (diffDays === 0) {
+      return 'Today';
+    }
+    if (diffDays === 1) {
+      return 'Yesterday';
+    }
+    return this.formatDate(value);
   }
 
   protected shortId(id: string): string {

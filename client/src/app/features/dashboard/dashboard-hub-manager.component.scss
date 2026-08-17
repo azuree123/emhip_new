@@ -1,5 +1,9 @@
+// Hub Manager "Service Overview" — geometry/colors from the `Dashboard2` section
+// (node 356:1438) of project/screens/Components.bundle.js. Two columns: 687 / 467 at
+// 1440px with a 23px gutter; cards are white, radius 12.
+
 .dashboard {
-  padding: 24px 33px;
+  padding: 14px 20px 40px 17px;
   font-family: 'Plus Jakarta Sans', sans-serif;
 }
 
@@ -15,53 +19,74 @@
 }
 
 .page-title {
-  margin: 0 0 8px;
+  margin: 0 0 17px;
   font-weight: 600;
   font-size: 20px;
+  line-height: 24px;
   color: #2a2a2a;
-}
-
-.total-stat {
-  margin-bottom: 22px;
-
-  &__number {
-    font-weight: 600;
-    font-size: 40px;
-    color: #2a2a2a;
-  }
-
-  &__label {
-    margin-left: 10px;
-    font-size: 14px;
-    color: #8c8c8c;
-  }
 }
 
 .grid {
   display: grid;
-  grid-template-columns: 687fr 467fr;
+  grid-template-columns: minmax(0, 687fr) minmax(0, 467fr);
   gap: 23px;
-  margin-bottom: 22px;
   align-items: start;
+
+  &__col {
+    display: flex;
+    flex-direction: column;
+    gap: 23px;
+    min-width: 0;
+  }
 }
 
 .card {
   background: #ffffff;
   border-radius: 12px;
-  padding: 24px;
+  padding: 24px 24px 24px 19px;
+
+  &__head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
 
   &__title {
     font-weight: 600;
     font-size: 20px;
+    line-height: 24px;
     color: #2a2a2a;
   }
 
   &__subtitle {
-    margin-top: 4px;
-    margin-bottom: 20px;
+    margin-top: 2px;
     font-weight: 500;
     font-size: 12px;
+    line-height: 24px;
     color: #2a2a2a;
+  }
+}
+
+.link-red {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #d02537;
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 24px;
+  letter-spacing: -0.005em;
+  text-decoration: none;
+  white-space: nowrap;
+
+  &:hover {
+    text-decoration: underline;
+  }
+
+  svg {
+    flex-shrink: 0;
   }
 }
 
@@ -72,10 +97,12 @@
   padding: 16px 0;
 }
 
+// Pathway distribution rows — label left; "N GUEST · P%" right; 6px track below.
 .pathway-rows {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 24px;
+  margin-top: 4px;
 }
 
 .pathway-row {
@@ -83,22 +110,40 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 8px;
+    gap: 12px;
+    margin-bottom: 10px;
   }
 
   &__label {
     font-weight: 500;
     font-size: 14px;
+    line-height: 24px;
     color: #2a2a2a;
   }
 
   &__meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  &__count {
     font-weight: 600;
     font-size: 12px;
     color: #2a2a2a;
-    display: flex;
-    align-items: center;
-    gap: 6px;
+  }
+
+  &__unit {
+    font-weight: 500;
+    font-size: 12px;
+    color: #2a2a2a;
+  }
+
+  &__pct {
+    font-weight: 600;
+    font-size: 12px;
+    min-width: 32px;
+    text-align: right;
   }
 
   .dot {
@@ -106,18 +151,77 @@
     height: 4px;
     border-radius: 50%;
     background: #cacaca;
+    flex-shrink: 0;
   }
 
   &__track {
     height: 6px;
-    border-radius: 999px;
+    border-radius: 444px;
     background: #ededed;
     overflow: hidden;
   }
 
   &__fill {
     height: 100%;
-    border-radius: 999px;
+    border-radius: 444px;
+  }
+}
+
+.pathway-note {
+  margin-top: 20px;
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 24px;
+  color: #2a2a2a;
+}
+
+.pathway-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 36px;
+
+  &__total {
+    font-weight: 600;
+    font-size: 14px;
+    line-height: 18px;
+    color: #8c8c8c;
+
+    span {
+      color: #2a2a2a;
+    }
+  }
+}
+
+// Guest Seen — big 40px stat with a gray "this month" pill.
+.seen-card {
+  &__number {
+    margin-top: 40px;
+    font-weight: 600;
+    font-size: 40px;
+    line-height: 40px;
+    color: #2a2a2a;
+  }
+
+  &__pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    height: 30px;
+    margin-top: 8px;
+    margin-bottom: 3px;
+    padding: 0 14px;
+    border-radius: 444px;
+    background: #f0f0f0;
+    font-weight: 500;
+    font-size: 14px;
+    color: #2a2a2a;
+
+    svg {
+      color: #212121;
+      flex-shrink: 0;
+    }
   }
 }
 
@@ -143,44 +247,66 @@
   }
 }
 
-.activity-card {
-  margin-top: 0;
-}
-
+// Recent activity timeline — 48px circles (alternating pink/gray) joined by a
+// 1px #c5c5c5 connector, 24px event icon inside, time/actor line under the text.
 .timeline {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 27px;
+  margin-top: 8px;
+}
 
-  &__item {
-    display: flex;
-    gap: 14px;
-    align-items: flex-start;
+.timeline__item {
+  position: relative;
+  display: flex;
+  gap: 17px;
+  align-items: flex-start;
+  min-height: 48px;
+
+  &:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    left: 24px;
+    top: 52px;
+    height: 19px;
+    width: 1px;
+    background: #c5c5c5;
   }
+}
 
-  &__icon {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background: #fff0f1;
-    flex-shrink: 0;
+.timeline__icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #fff0f1;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #2a2a2a;
 
-    &--alt {
-      background: #f0f0f0;
-    }
+  &--alt {
+    background: #f0f0f0;
   }
+}
 
-  &__description {
-    font-weight: 500;
-    font-size: 14px;
-    color: #2a2a2a;
-  }
+.timeline__content {
+  min-width: 0;
+  padding-top: 2px;
+}
 
-  &__meta {
-    margin-top: 4px;
-    font-size: 12px;
-    color: #8c8c8c;
-  }
+.timeline__description {
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 24px;
+  color: #2a2a2a;
+}
+
+.timeline__meta {
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 18px;
+  color: #8c8c8c;
 }
 
 @media (max-width: 1023px) {
@@ -198,7 +324,8 @@
     padding: 16px;
   }
 
-  .total-stat__number {
+  .seen-card__number {
+    margin-top: 16px;
     font-size: 32px;
   }
 

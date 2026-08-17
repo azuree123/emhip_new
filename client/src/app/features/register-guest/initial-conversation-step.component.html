@@ -8,18 +8,26 @@
     </svg>
     <p>
       This step can be saved as draft and completed later if the guest cannot continue — they will remain in "New" status until
-      this is submitted.
+      this is submitted
     </p>
   </div>
 
   <div class="section">
-    <h3 class="section__title">Hub worker conducting the conversation</h3>
+    <h3 class="section__title section__title--solo">Hub worker conducting the conversation</h3>
 
     <div class="field-row">
       <label class="field">
         <span class="field__label">Hub worker&nbsp;*</span>
         <input class="field__input" type="text" [value]="hubWorkerName" disabled />
-        <span class="field__hint">pre filled from your login</span>
+        <span class="field__hint">
+          <svg width="11" height="11" viewBox="0 0 9.625 9.625" fill="none">
+            <path
+              d="M 5.156 4.469 C 5.156 4.378 5.119 4.29 5.055 4.226 C 4.99 4.161 4.903 4.125 4.812 4.125 C 4.721 4.125 4.633 4.161 4.569 4.226 C 4.504 4.29 4.468 4.378 4.468 4.469 L 4.468 6.531 C 4.468 6.622 4.504 6.71 4.569 6.774 C 4.633 6.839 4.721 6.875 4.812 6.875 C 4.903 6.875 4.99 6.839 5.055 6.774 C 5.119 6.71 5.156 6.622 5.156 6.531 L 5.156 4.469 Z M 5.327 3.094 C 5.327 3.23 5.273 3.361 5.177 3.458 C 5.08 3.555 4.949 3.609 4.812 3.609 C 4.675 3.609 4.544 3.555 4.448 3.458 C 4.351 3.361 4.297 3.23 4.297 3.094 C 4.297 2.957 4.351 2.826 4.448 2.73 C 4.544 2.633 4.675 2.579 4.812 2.579 C 4.948 2.579 5.079 2.633 5.176 2.73 C 5.272 2.826 5.327 2.957 5.327 3.094 Z M 4.813 0 C 3.536 0 2.312 0.507 1.41 1.41 C 0.507 2.312 0 3.536 0 4.813 C 0 6.089 0.507 7.313 1.41 8.215 C 2.312 9.118 3.536 9.625 4.813 9.625 C 6.089 9.625 7.313 9.118 8.215 8.215 C 9.118 7.313 9.625 6.089 9.625 4.813 C 9.625 3.536 9.118 2.312 8.215 1.41 C 7.313 0.507 6.089 0 4.813 0 Z M 0.688 4.813 C 0.688 4.271 0.794 3.734 1.001 3.234 C 1.209 2.733 1.513 2.279 1.896 1.896 C 2.279 1.513 2.733 1.209 3.234 1.001 C 3.734 0.794 4.271 0.687 4.813 0.687 C 5.354 0.687 5.891 0.794 6.391 1.001 C 6.892 1.209 7.346 1.513 7.729 1.896 C 8.112 2.279 8.416 2.733 8.624 3.234 C 8.831 3.734 8.938 4.271 8.938 4.813 C 8.938 5.907 8.503 6.956 7.729 7.729 C 6.956 8.503 5.907 8.938 4.813 8.938 C 3.718 8.938 2.669 8.503 1.896 7.729 C 1.122 6.956 0.688 5.907 0.688 4.813 Z"
+              fill="currentColor"
+            />
+          </svg>
+          pre filled from your login
+        </span>
       </label>
       <label class="field">
         <span class="field__label">Place of interview&nbsp;*</span>
@@ -32,7 +40,7 @@
   </div>
 
   <div class="section">
-    <h3 class="section__title">Presenting problem</h3>
+    <h3 class="section__title section__title--solo">Presenting problem</h3>
 
     <div class="field-row field-row--single">
       <label class="field">
@@ -41,7 +49,7 @@
           class="field__textarea"
           formControlName="presentingIssues"
           placeholder="Describe in the guest own words if possible..."
-          rows="3"
+          rows="1"
         ></textarea>
         @if (form.get('presentingIssues')?.invalid && form.get('presentingIssues')?.touched) {
           <span class="field__error">Description of problem is required.</span>
@@ -49,44 +57,19 @@
       </label>
     </div>
 
-    <div class="field-row field-row--single">
-      <label class="field">
-        <span class="field__label">Past mental health difficulties &amp; treatment</span>
-        <textarea
-          class="field__textarea"
-          formControlName="pastMentalHealth"
-          placeholder="No prior treatment history reported"
-          rows="3"
-        ></textarea>
-      </label>
-    </div>
-
-    <div class="field-row field-row--single">
-      <label class="field">
-        <span class="field__label">Family mental health history</span>
-        <textarea
-          class="field__textarea"
-          formControlName="familyMentalHealth"
-          placeholder="Mother reported history of depression"
-          rows="3"
-        ></textarea>
-      </label>
-    </div>
-
     <div class="field-row">
       <div class="field">
         <span class="field__label">Long-term health condition?</span>
-        <label class="toggle">
+        <label class="toggle-shell">
           <input class="toggle__input" type="checkbox" formControlName="longTermHealthCondition" />
+          <span class="toggle-shell__caption">No/Yes</span>
           <span class="toggle__track"><span class="toggle__thumb"></span></span>
-          <span class="toggle__label">No/Yes</span>
         </label>
       </div>
-      <div></div>
     </div>
 
-    <div class="field">
-      <span class="field__label">Immediate Risk Identified?&nbsp;*</span>
+    <div class="risk-card">
+      <span class="risk-card__title">Immediate Risk Identified?&nbsp;*</span>
       <div class="risk-choice">
         <div
           class="risk-pill"
@@ -100,55 +83,81 @@
             />
           </svg>
           <span>NO RISK DETECTED</span>
+          <span class="risk-pill__radio"></span>
         </div>
         <div
-          class="risk-pill risk-pill--danger"
+          class="risk-pill"
           [class.risk-pill--selected]="form.get('immediateRisk')?.value === true"
           (click)="form.get('immediateRisk')?.setValue(true)"
         >
           <svg width="14" height="15" viewBox="0 0 13.5 15" fill="none">
             <path
-              d="M 12.938 2.25 C 10.94 2.25 8.994 1.542 7.087 0.113 C 6.887 -0.037 6.613 -0.037 6.413 0.113 C 4.506 1.542 2.56 2.25 0.563 2.25 C 0.252 2.25 0 2.502 0 2.813 L 0 6.75 C 0 10.501 2.218 13.257 6.544 14.961 C 6.676 15.013 6.824 15.013 6.956 14.961 C 11.282 13.257 13.5 10.501 13.5 6.75 L 13.5 2.813 C 13.5 2.502 13.248 2.25 12.938 2.25 Z"
+              d="M 12.938 2.25 C 10.94 2.25 8.994 1.542 7.087 0.113 C 6.887 -0.037 6.613 -0.037 6.413 0.113 C 4.506 1.542 2.56 2.25 0.563 2.25 C 0.252 2.25 0 2.502 0 2.813 L 0 6.75 C 0 10.501 2.218 13.257 6.544 14.961 C 6.676 15.013 6.824 15.013 6.956 14.961 C 11.282 13.257 13.5 10.501 13.5 6.75 L 13.5 2.813 C 13.5 2.502 13.248 2.25 12.938 2.25 Z M 1.125 3.358 C 3.058 3.244 4.936 2.541 6.75 1.258 C 8.564 2.541 10.442 3.244 12.375 3.358 L 12.375 6.75 C 12.375 9.942 10.535 12.284 6.75 13.831 C 2.965 12.284 1.125 9.942 1.125 6.75 L 1.125 3.358 Z M 7.307 4.239 C 7.27 3.964 7.035 3.753 6.75 3.753 C 6.439 3.753 6.188 4.005 6.188 4.315 L 6.188 9.189 L 6.193 9.266 C 6.23 9.54 6.465 9.752 6.75 9.752 C 7.061 9.752 7.313 9.5 7.313 9.189 L 7.313 4.315 L 7.307 4.239 Z M 6.75 12 C 7.164 12 7.5 11.664 7.5 11.25 C 7.5 10.836 7.164 10.5 6.75 10.5 C 6.336 10.5 6 10.836 6 11.25 C 6 11.664 6.336 12 6.75 12 Z"
               fill="currentColor"
             />
           </svg>
-          <span>YES, <span class="risk-pill__danger-text">HIGH RISK</span></span>
+          <span>YES, HIGH RISK</span>
+          <span class="risk-pill__radio"></span>
         </div>
       </div>
       @if (form.get('immediateRisk')?.touched && form.get('immediateRisk')?.invalid) {
         <span class="field__error">Please indicate whether an immediate risk was identified.</span>
       }
+    </div>
 
-      @if (form.get('immediateRisk')?.value === true) {
-        <div class="risk-flags" formGroupName="riskFlags">
-          <span class="risk-flags__title">Select the risk flags identified during this conversation:</span>
-          <label class="checkbox-field">
-            <input class="checkbox-field__input" type="checkbox" formControlName="suicidalIdeation" />
-            <span class="checkbox-field__box"><ng-container *ngTemplateOutlet="check" /></span>
-            <span class="checkbox-field__label">Suicidal ideation</span>
-          </label>
-          <label class="checkbox-field">
-            <input class="checkbox-field__input" type="checkbox" formControlName="selfHarm" />
-            <span class="checkbox-field__box"><ng-container *ngTemplateOutlet="check" /></span>
-            <span class="checkbox-field__label">Self-harm</span>
-          </label>
-          <label class="checkbox-field">
-            <input class="checkbox-field__input" type="checkbox" formControlName="riskToOthers" />
-            <span class="checkbox-field__box"><ng-container *ngTemplateOutlet="check" /></span>
-            <span class="checkbox-field__label">Risk to others</span>
-          </label>
-          <label class="checkbox-field">
-            <input class="checkbox-field__input" type="checkbox" formControlName="severeDeterioration" />
-            <span class="checkbox-field__box"><ng-container *ngTemplateOutlet="check" /></span>
-            <span class="checkbox-field__label">Severe deterioration</span>
-          </label>
-          <label class="checkbox-field">
-            <input class="checkbox-field__input" type="checkbox" formControlName="safeguardingConcern" />
-            <span class="checkbox-field__box"><ng-container *ngTemplateOutlet="check" /></span>
-            <span class="checkbox-field__label">Safeguarding concern</span>
-          </label>
-        </div>
-      }
+    @if (form.get('immediateRisk')?.value === true) {
+      <div class="risk-flags" formGroupName="riskFlags">
+        <span class="risk-flags__title">Select the risk flags identified during this conversation:</span>
+        <label class="checkbox-field">
+          <input class="checkbox-field__input" type="checkbox" formControlName="suicidalIdeation" />
+          <span class="checkbox-field__box"><ng-container *ngTemplateOutlet="check" /></span>
+          <span class="checkbox-field__label">Suicidal ideation</span>
+        </label>
+        <label class="checkbox-field">
+          <input class="checkbox-field__input" type="checkbox" formControlName="selfHarm" />
+          <span class="checkbox-field__box"><ng-container *ngTemplateOutlet="check" /></span>
+          <span class="checkbox-field__label">Self-harm</span>
+        </label>
+        <label class="checkbox-field">
+          <input class="checkbox-field__input" type="checkbox" formControlName="riskToOthers" />
+          <span class="checkbox-field__box"><ng-container *ngTemplateOutlet="check" /></span>
+          <span class="checkbox-field__label">Risk to others</span>
+        </label>
+        <label class="checkbox-field">
+          <input class="checkbox-field__input" type="checkbox" formControlName="severeDeterioration" />
+          <span class="checkbox-field__box"><ng-container *ngTemplateOutlet="check" /></span>
+          <span class="checkbox-field__label">Severe deterioration</span>
+        </label>
+        <label class="checkbox-field">
+          <input class="checkbox-field__input" type="checkbox" formControlName="safeguardingConcern" />
+          <span class="checkbox-field__box"><ng-container *ngTemplateOutlet="check" /></span>
+          <span class="checkbox-field__label">Safeguarding concern</span>
+        </label>
+      </div>
+    }
+
+    <div class="field-row field-row--single">
+      <label class="field">
+        <span class="field__label">Past mental health difficulties &amp; treatment</span>
+        <textarea
+          class="field__textarea"
+          formControlName="pastMentalHealth"
+          placeholder="No prior treatment history reported"
+          rows="1"
+        ></textarea>
+      </label>
+    </div>
+
+    <div class="field-row field-row--single">
+      <label class="field">
+        <span class="field__label">Family mental health history</span>
+        <textarea
+          class="field__textarea"
+          formControlName="familyMentalHealth"
+          placeholder="Mother reported history of depression"
+          rows="1"
+        ></textarea>
+      </label>
     </div>
   </div>
 

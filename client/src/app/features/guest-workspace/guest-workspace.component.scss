@@ -1,10 +1,13 @@
 @use './guest-workspace.tokens' as t;
 
+// Geometry lifted from GuestOverviewTab (Components.bundle.js): content inset from the
+// shell chrome is 17px left / ~15px right / 31px top; header card is 98px tall to its
+// divider; the segmented tab bar is a 36px #f6f6f6 track with a 32px red active pill.
 .workspace {
-  padding: 24px 32px 40px;
+  padding: 31px 16px 40px 17px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 19px;
 }
 
 .state-card {
@@ -24,22 +27,40 @@
 .identity-card {
   background: #fff;
   border-radius: t.$radius-card;
-  padding: 24px 24px 0;
 }
 
 .identity-card__top {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 16px;
   flex-wrap: wrap;
-  padding-bottom: 20px;
+  padding: 26px 24px 13px 23px;
+  border-bottom: 1px solid t.$color-border;
 }
 
 .identity-card__who {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
+  min-width: 0;
+}
+
+.btn-back {
+  width: 36px;
+  height: 36px;
+  margin-right: 4px; // 16px total to the avatar (design: 302 -> 318)
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: #fff;
+  box-shadow: inset 0 0 0 1px #dbdbdb;
+  color: #212121;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
 }
 
 .avatar {
@@ -60,13 +81,14 @@
 .identity-card__meta {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
+  min-width: 0;
 }
 
 .identity-card__name-row {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   flex-wrap: wrap;
 }
 
@@ -74,16 +96,18 @@
   font-family: t.$font-primary;
   font-weight: 600;
   font-size: 20px;
+  line-height: 24px;
   color: t.$color-text-primary;
 }
 
 .identity-card__submeta {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   font-family: t.$font-primary;
   font-weight: 500;
   font-size: 12px;
+  line-height: 18px;
   color: t.$color-text-primary;
 
   .dot {
@@ -91,6 +115,7 @@
     height: 3px;
     border-radius: 50%;
     background: t.$color-border-strong;
+    flex-shrink: 0;
   }
 }
 
@@ -101,6 +126,7 @@
   font-weight: 500;
   font-size: 12px;
   line-height: 16px;
+  white-space: nowrap;
 
   &--urgent {
     background: t.$color-chip-red-bg;
@@ -111,46 +137,113 @@
 .identity-card__actions {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
+  margin-left: auto;
 }
 
 .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   height: 36px;
-  padding: 0 16px;
+  padding: 0 16px 0 12px;
   border-radius: 4px;
   border: none;
   font-family: t.$font-primary;
   font-weight: 500;
   font-size: 14px;
+  line-height: 24px;
   letter-spacing: -0.005em;
+  white-space: nowrap;
   cursor: pointer;
 
-  &--ghost {
-    background: #fff;
-    box-shadow: inset 0 0 0 1px t.$color-border-strong;
-    color: t.$color-text-primary;
+  &__icon {
+    flex-shrink: 0;
   }
 
   &--outline {
     background: #fff;
     box-shadow: inset 0 0 0 1px t.$color-border-strong;
     color: t.$color-text-primary;
+
+    .btn__icon {
+      color: #212121;
+    }
   }
 
   &--primary {
     background: t.$color-brand-red;
     color: #fff;
+
+    .btn__icon {
+      color: #fff;
+    }
   }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+}
+
+.identity-card__tabs {
+  padding: 33px 25px 30px;
+}
+
+.tabbar {
+  display: flex;
+  align-items: center;
+  height: 36px;
+  padding: 2px 4px;
+  box-sizing: border-box;
+  border-radius: 4px;
+  background: t.$color-segment-bg;
+  overflow-x: auto;
+}
+
+.tabbar__tab {
+  height: 32px;
+  padding: 0 20px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  font-family: t.$font-primary;
+  font-weight: 600;
+  font-size: 12px;
+  line-height: 24px;
+  letter-spacing: -0.005em;
+  color: t.$color-text-primary;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+
+  &--active {
+    background: t.$color-brand-red;
+    color: #fff;
+    padding: 0 26px;
+  }
+}
+
+.tabbar__divider {
+  width: 1px;
+  height: 21px;
+  background: t.$color-divider;
+  flex-shrink: 0;
+}
+
+// The design shows no divider directly beside the active pill.
+.tabbar__tab--active + .tabbar__divider,
+.tabbar__divider:has(+ .tabbar__tab--active) {
+  visibility: hidden;
 }
 
 .banner {
   position: relative;
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin: 0 0 20px;
-  padding: 12px 16px 12px 22px;
-  border-radius: 6px;
+  gap: 9px;
+  min-height: 48px;
+  padding: 12px 16px 12px 23px;
   background: t.$color-amber-banner-bg;
 
   &__bar {
@@ -159,7 +252,6 @@
     top: 0;
     bottom: 0;
     width: 3px;
-    border-radius: 6px 0 0 6px;
     background: t.$color-amber-banner-bar;
   }
 
@@ -170,54 +262,17 @@
 
   &__text {
     font-family: t.$font-primary;
+    font-weight: 400;
     font-size: 14px;
+    line-height: 24px;
     color: t.$color-text-primary;
   }
-}
-
-.tabbar {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 6px;
-  margin: 0 0 -1px;
-  border-radius: 4px;
-  background: t.$color-segment-bg;
-  width: fit-content;
-  max-width: 100%;
-  overflow-x: auto;
-}
-
-.tabbar__tab {
-  height: 32px;
-  padding: 0 16px;
-  border: none;
-  border-radius: 6px;
-  background: transparent;
-  font-family: t.$font-primary;
-  font-weight: 600;
-  font-size: 12px;
-  letter-spacing: -0.005em;
-  color: t.$color-text-primary;
-  cursor: pointer;
-  white-space: nowrap;
-
-  &--active {
-    background: t.$color-brand-red;
-    color: #fff;
-  }
-}
-
-.tabbar__divider {
-  width: 1px;
-  height: 21px;
-  background: #e5e5e5;
-  flex-shrink: 0;
 }
 
 .tab-body {
   display: flex;
   flex-direction: column;
+  margin-top: 4px; // 19px flex gap + 4 = the design's 23px rhythm below the header/banner
 }
 
 @media (max-width: 767px) {
@@ -225,15 +280,24 @@
     padding: 16px 16px 32px;
   }
 
-  .identity-card {
-    padding: 16px 16px 0;
+  .identity-card__top {
+    padding: 16px 16px 13px;
+  }
+
+  .identity-card__tabs {
+    padding: 20px 16px 20px;
   }
 
   .identity-card__actions {
     flex-wrap: wrap;
+    margin-left: 0;
   }
 
   .identity-card__name {
     font-size: 17px;
+  }
+
+  .btn-back {
+    display: none;
   }
 }

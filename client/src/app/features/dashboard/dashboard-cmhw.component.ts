@@ -1,5 +1,5 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
-import { Router } from '@angular/router';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { Router, RouterLink } from '@angular/router';
 import { catchError, of } from 'rxjs';
 import { DashboardsApiService } from '../../core/dashboards-api.service';
 import { CmhwDashboardDto } from '../../core/api-models';
@@ -17,6 +17,7 @@ import { CmhwDashboardDto } from '../../core/api-models';
   selector: 'app-dashboard-cmhw',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [RouterLink],
   templateUrl: './dashboard-cmhw.component.html',
   styleUrl: './dashboard-cmhw.component.scss',
 })
@@ -27,6 +28,18 @@ export class DashboardCmhwComponent {
   protected readonly data = signal<CmhwDashboardDto | null>(null);
   protected readonly loading = signal(true);
   protected readonly error = signal<string | null>(null);
+
+  /** Client-side filter behind the design's in-card "Search guest…" field. */
+  protected readonly guestFilter = signal('');
+  protected readonly filteredGuests = computed(() => {
+    const d = this.data();
+    if (!d) return [];
+    const q = this.guestFilter().trim().toLowerCase();
+    if (!q) return d.activeGuests;
+    return d.activeGuests.filter(
+      (g) => g.name.toLowerCase().includes(q) || g.guestId.toLowerCase().includes(q) || g.status.toLowerCase().includes(q),
+    );
+  });
 
   constructor() {
     this.dashboardsApi

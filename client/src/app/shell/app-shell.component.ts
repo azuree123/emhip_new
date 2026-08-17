@@ -41,10 +41,16 @@ export class AppShellComponent implements OnInit {
 
   readonly currentUser = this.auth.current;
   readonly urgentCaseCount = signal<number | null>(null);
-  readonly today = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  // Design meta line reads "Tuesday 13 May 2025" (no comma) — built manually because
+  // en-GB toLocaleDateString inserts a comma after the weekday.
+  readonly today = (() => {
+    const now = new Date();
+    const weekday = now.toLocaleDateString('en-GB', { weekday: 'long' });
+    const month = now.toLocaleDateString('en-GB', { month: 'long' });
+    return `${weekday} ${now.getDate()} ${month} ${now.getFullYear()}`;
+  })();
   readonly mobileNavOpen = signal(false);
 
-  readonly searchOpen = signal(false);
   searchTerm = '';
   readonly canSearchGuests = this.auth.hasPermission(Permissions.Guests.View);
   readonly canViewUrgentCases = this.auth.hasPermission(Permissions.UrgentCases.View);
@@ -78,12 +84,8 @@ export class AppShellComponent implements OnInit {
           iconPath:
             'M 9.394 0 C 9.225 -0.005 9.061 0.059 8.94 0.177 C 8.818 0.294 8.75 0.456 8.75 0.625 L 8.75 7.289 C 8.75 7.634 9.03 7.914 9.375 7.914 L 16.039 7.914 C 16.208 7.914 16.369 7.845 16.487 7.724 C 16.605 7.603 16.668 7.439 16.663 7.27 C 16.545 3.308 13.356 0.118 9.394 0 Z M 10 6.664 L 10 1.302 C 12.785 1.673 14.991 3.879 15.362 6.664 L 10 6.664 Z M 7.5 2.317 C 7.5 2.141 7.426 1.974 7.297 1.855 C 7.167 1.737 6.994 1.678 6.819 1.694 C 2.996 2.039 0 5.251 0 9.164 C 0 13.306 3.358 16.664 7.5 16.664 C 11.413 16.664 14.625 13.668 14.969 9.845 C 14.985 9.67 14.927 9.497 14.808 9.367 C 14.69 9.237 14.523 9.164 14.347 9.164 L 7.5 9.164 L 7.5 2.317 Z M 1.25 9.164 C 1.25 6.14 3.397 3.617 6.25 3.039 L 6.25 9.789 C 6.25 10.134 6.53 10.414 6.875 10.414 L 13.625 10.414 C 13.046 13.266 10.524 15.414 7.5 15.414 C 4.048 15.414 1.25 12.615 1.25 9.164 Z',
         },
-      ],
-    },
-    {
-      // NOTE: "CASE MANGEMENT" is the exact (typo'd) label in the source Figma file.
-      label: 'CASE MANGEMENT',
-      items: [
+        // Per the design (nodes 356:1140/356:1438), "Guest" sits in the OVERVIEW section
+        // directly under Dashboard, before the CASE MANGEMENT heading.
         {
           label: 'Guest',
           route: '/guests',
@@ -92,6 +94,12 @@ export class AppShellComponent implements OnInit {
             'M 6.248 2.5 C 6.248 3.034 6.583 3.49 7.055 3.669 C 7.346 3.74 7.65 3.74 7.941 3.669 C 8.412 3.49 8.748 3.034 8.748 2.5 C 8.748 1.81 8.188 1.25 7.498 1.25 C 6.807 1.25 6.248 1.81 6.248 2.5 Z M 5.02 2.832 C 5.005 2.724 4.998 2.613 4.998 2.5 C 4.998 1.119 6.117 0 7.498 0 C 8.878 0 9.998 1.119 9.998 2.5 C 9.998 2.613 9.99 2.724 9.976 2.832 L 12.373 1.815 C 13.326 1.411 14.429 1.852 14.841 2.801 C 15.254 3.754 14.812 4.858 13.857 5.263 L 10.833 6.547 L 10.833 9.644 L 12.395 14.181 C 12.732 15.16 12.212 16.227 11.233 16.564 C 10.254 16.901 9.187 16.381 8.849 15.401 L 7.498 11.476 L 6.146 15.401 C 5.809 16.38 4.742 16.901 3.763 16.564 C 2.784 16.227 2.264 15.16 2.601 14.18 L 4.166 9.633 L 4.166 6.548 L 1.139 5.263 C 0.183 4.858 -0.258 3.754 0.155 2.801 C 0.566 1.852 1.67 1.411 2.623 1.815 L 5.02 2.832 Z',
           permissions: [Permissions.Guests.View],
         },
+      ],
+    },
+    {
+      // NOTE: "CASE MANGEMENT" is the exact (typo'd) label in the source Figma file.
+      label: 'CASE MANGEMENT',
+      items: [
         {
           label: 'Follow-up Log',
           route: '/followups',
@@ -150,23 +158,9 @@ export class AppShellComponent implements OnInit {
     }
   }
 
-  toggleSearch(input: HTMLInputElement): void {
-    if (!this.searchOpen()) {
-      this.searchOpen.set(true);
-      setTimeout(() => input.focus());
-    } else {
-      this.submitSearch();
-    }
-  }
-
   submitSearch(): void {
     const q = this.searchTerm.trim();
-    this.searchOpen.set(false);
     void this.router.navigate(['/guests'], { queryParams: q ? { q } : {} });
-  }
-
-  closeSearch(): void {
-    this.searchOpen.set(false);
   }
 
   goToUrgentCases(): void {

@@ -38,6 +38,20 @@ function toIsoDate(date: Date): string {
 export class ReportsComponent implements OnInit {
   private readonly reportsApi = inject(ReportsApiService);
 
+  /**
+   * Report-section tabs drawn in the source header (Desktop50). Only "Overview" (this
+   * screen) exists in the app; the rest are rendered disabled purely for visual parity
+   * with the design — there are no other report endpoints to navigate to.
+   */
+  readonly inactiveTabs = [
+    'Guest Report',
+    'Pathway Analytics',
+    'Caseload Reports',
+    'DIALOG Outcomes',
+    'Data Quality',
+    'Export History',
+  ];
+
   readonly maxDate = toIsoDate(new Date());
   readonly todayLabel = new Date().toLocaleDateString('en-GB', {
     weekday: 'long',

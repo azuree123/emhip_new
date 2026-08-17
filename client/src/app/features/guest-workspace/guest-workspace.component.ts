@@ -1,4 +1,6 @@
 import { Component, computed, effect, inject, input, signal } from '@angular/core';
+import { Location } from '@angular/common';
+import { Router } from '@angular/router';
 import { Observable, forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { GuestOverviewDto } from '../../core/api-models';
@@ -43,6 +45,8 @@ interface TabDef {
 })
 export class GuestWorkspaceComponent {
   private readonly guestsApi = inject(GuestsApiService);
+  private readonly location = inject(Location);
+  private readonly router = inject(Router);
 
   readonly guestId = input.required<string>();
 
@@ -81,6 +85,16 @@ export class GuestWorkspaceComponent {
       onCleanup(() => (cancelled = true));
       this.loadOverview(id, () => cancelled);
     });
+  }
+
+  /** Header back button (design: 36px outline square with left arrow). Falls back to the
+   *  guest list when there is no browser history to go back to (e.g. deep link). */
+  goBack(): void {
+    if (window.history.length > 1) {
+      this.location.back();
+    } else {
+      this.router.navigateByUrl('/guests');
+    }
   }
 
   selectTab(id: TabId): void {

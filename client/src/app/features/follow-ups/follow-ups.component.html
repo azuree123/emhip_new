@@ -5,118 +5,195 @@
       <p class="page-header__subtitle">All entries across all guests — most recent first</p>
     </div>
     <div class="page-header__actions">
-      <button type="button" class="btn btn--ghost" (click)="exportCsv()" [disabled]="!items().length">
-        <svg width="14" height="15" viewBox="0 0 12.375 14.625" fill="none">
-          <path
+      <button type="button" class="btn btn--outline" (click)="openAddNew()">
+        <app-icon name="IconOutlinePlusLg" [size]="16" />
+        Add follow-up
+      </button>
+      <button type="button" class="btn btn--primary" (click)="exportCsv()" [disabled]="!visibleItems().length || exporting()">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+          <path transform="translate(2.813 1.125)"
             d="M 12.375 6.75 L 12.375 13.5 C 12.375 13.799 12.256 14.085 12.045 14.296 C 11.835 14.507 11.548 14.625 11.25 14.625 L 1.125 14.625 C 0.827 14.625 0.54 14.507 0.33 14.296 C 0.119 14.085 0 13.799 0 13.5 L 0 6.75 C 0 6.452 0.119 6.166 0.33 5.955 C 0.54 5.744 0.827 5.625 1.125 5.625 L 2.813 5.625 C 2.962 5.625 3.105 5.685 3.21 5.79 C 3.316 5.896 3.375 6.039 3.375 6.188 C 3.375 6.337 3.316 6.48 3.21 6.586 C 3.105 6.691 2.962 6.75 2.813 6.75 L 1.125 6.75 L 1.125 13.5 L 11.25 13.5 L 11.25 6.75 L 9.563 6.75 C 9.413 6.75 9.27 6.691 9.165 6.586 C 9.059 6.48 9 6.337 9 6.188 C 9 6.039 9.059 5.896 9.165 5.79 C 9.27 5.685 9.413 5.625 9.563 5.625 L 11.25 5.625 C 11.548 5.625 11.835 5.744 12.045 5.955 C 12.256 6.166 12.375 6.452 12.375 6.75 Z M 3.773 3.773 L 5.625 1.921 L 5.625 8.438 C 5.625 8.587 5.684 8.73 5.79 8.836 C 5.895 8.941 6.038 9 6.188 9 C 6.337 9 6.48 8.941 6.585 8.836 C 6.691 8.73 6.75 8.587 6.75 8.438 L 6.75 1.921 L 8.602 3.773 C 8.708 3.879 8.851 3.938 9 3.938 C 9.149 3.938 9.292 3.879 9.398 3.773 C 9.504 3.668 9.563 3.525 9.563 3.375 C 9.563 3.226 9.504 3.083 9.398 2.977 L 6.585 0.165 C 6.533 0.113 6.471 0.071 6.403 0.043 C 6.335 0.015 6.261 0 6.188 0 C 6.114 0 6.04 0.015 5.972 0.043 C 5.904 0.071 5.842 0.113 5.79 0.165 L 2.977 2.977 C 2.871 3.083 2.812 3.226 2.812 3.375 C 2.812 3.525 2.871 3.668 2.977 3.773 C 3.083 3.879 3.226 3.938 3.375 3.938 C 3.524 3.938 3.667 3.879 3.773 3.773 Z"
             fill="currentColor" />
         </svg>
-        Export
-      </button>
-      <button type="button" class="btn btn--primary" (click)="openAddNew()">
-        <app-icon name="IconOutlinePlusLg" [size]="16" />
-        Add follow-up
+        {{ exporting() ? 'Exporting…' : 'Export' }}
       </button>
     </div>
   </header>
 
   <section class="stat-cards">
     <div class="stat-card">
-      <span class="stat-card__label">Loaded entries</span>
-      <span class="stat-card__value">{{ totalLoaded() }}</span>
-      <span class="pill pill--muted">Across this page</span>
+      <span class="stat-card__label">Entries today</span>
+      <span class="stat-card__value">{{ dueTodayCount() }}</span>
+      <span class="chip">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <path transform="translate(4 2.667)"
+            d="M 3.333 10.667 C 3.333 11.035 3.632 11.333 4 11.333 C 4.368 11.333 4.667 11.035 4.667 10.667 L 4 10.667 L 3.333 10.667 Z M 4 0 L 4.471 -0.471 C 4.211 -0.732 3.789 -0.732 3.529 -0.471 L 4 0 Z M -0.471 3.529 C -0.732 3.789 -0.732 4.211 -0.471 4.471 C -0.211 4.732 0.211 4.732 0.471 4.471 L 0 4 L -0.471 3.529 Z M 7.529 4.471 C 7.789 4.732 8.211 4.732 8.471 4.471 C 8.732 4.211 8.732 3.789 8.471 3.529 L 8 4 L 7.529 4.471 Z M 4 10.667 L 4.667 10.667 L 4.667 0 L 4 0 L 3.333 0 L 3.333 10.667 L 4 10.667 Z M 0 4 L 0.471 4.471 L 4.471 0.471 L 4 0 L 3.529 -0.471 L -0.471 3.529 L 0 4 Z M 4 0 L 3.529 0.471 L 7.529 4.471 L 8 4 L 8.471 3.529 L 4.471 -0.471 L 4 0 Z"
+            fill="rgb(20,113,41)" />
+        </svg>
+        Across {{ dueTodayGuests() }} guest{{ dueTodayGuests() === 1 ? '' : 's' }}
+      </span>
     </div>
     <div class="stat-card">
-      <span class="stat-card__label">Overdue</span>
-      <span class="stat-card__value stat-card__value--danger">{{ overdueLoaded() }}</span>
-      <span class="pill pill--muted">Needs action</span>
+      <span class="stat-card__label">This week</span>
+      <span class="stat-card__value">{{ dueThisWeekCount() }}</span>
+      <span class="chip">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <path transform="translate(1.333 1.333)"
+            d="M 1 6.667 C 1 3.537 3.537 1 6.667 1 C 9.796 1 12.333 3.537 12.333 6.667 C 12.333 9.796 9.796 12.333 6.667 12.333 C 3.537 12.333 1 9.796 1 6.667 Z M 6.667 0 C 2.985 0 0 2.985 0 6.667 C 0 10.349 2.985 13.333 6.667 13.333 C 10.349 13.333 13.333 10.349 13.333 6.667 C 13.333 2.985 10.349 0 6.667 0 Z M 6.662 3.099 C 6.629 2.855 6.42 2.667 6.167 2.667 C 5.891 2.667 5.667 2.891 5.667 3.167 L 5.667 7.167 L 5.671 7.234 C 5.704 7.478 5.914 7.667 6.167 7.667 L 8.833 7.667 L 8.901 7.662 C 9.145 7.629 9.333 7.42 9.333 7.167 C 9.333 6.891 9.109 6.667 8.833 6.667 L 6.667 6.667 L 6.667 3.167 L 6.662 3.099 Z"
+            fill="rgb(42,42,42)" />
+        </svg>
+        {{ weekStart | date: 'EEE d' }} — today
+      </span>
     </div>
     <div class="stat-card">
-      <span class="stat-card__label">Scheduled</span>
-      <span class="stat-card__value">{{ scheduledLoaded() }}</span>
-      <span class="pill pill--muted">Upcoming</span>
+      <span class="stat-card__label">This month</span>
+      <span class="stat-card__value">{{ dueThisMonthCount() }}</span>
+      <span class="chip">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <path transform="translate(1.333 1.333)"
+            d="M 1 6.667 C 1 3.537 3.537 1 6.667 1 C 9.796 1 12.333 3.537 12.333 6.667 C 12.333 9.796 9.796 12.333 6.667 12.333 C 3.537 12.333 1 9.796 1 6.667 Z M 6.667 0 C 2.985 0 0 2.985 0 6.667 C 0 10.349 2.985 13.333 6.667 13.333 C 10.349 13.333 13.333 10.349 13.333 6.667 C 13.333 2.985 10.349 0 6.667 0 Z M 6.662 3.099 C 6.629 2.855 6.42 2.667 6.167 2.667 C 5.891 2.667 5.667 2.891 5.667 3.167 L 5.667 7.167 L 5.671 7.234 C 5.704 7.478 5.914 7.667 6.167 7.667 L 8.833 7.667 L 8.901 7.662 C 9.145 7.629 9.333 7.42 9.333 7.167 C 9.333 6.891 9.109 6.667 8.833 6.667 L 6.667 6.667 L 6.667 3.167 L 6.662 3.099 Z"
+            fill="rgb(42,42,42)" />
+        </svg>
+        {{ now | date: 'MMMM y' }}
+      </span>
     </div>
-  </section>
-
-  <section class="filter-bar">
-    <label class="filter-bar__checkbox">
-      <input type="checkbox" [ngModel]="overdueOnly()" (ngModelChange)="overdueOnly.set($event)" />
-      Overdue only
-    </label>
-    <label class="filter-bar__field">
-      <span>Assignee ID</span>
-      <input type="text" [ngModel]="assigneeFilter()" (ngModelChange)="assigneeFilter.set($event)" placeholder="Filter by staff ID" />
-    </label>
-    <button type="button" class="btn btn--outline" (click)="loadFirstPage()">Apply filters</button>
+    <div class="stat-card">
+      <span class="stat-card__label">Assigned to you</span>
+      <span class="stat-card__value">{{ assignedToMeCount() }}</span>
+      <span class="chip">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <path transform="translate(2.669 1.337)"
+            d="M 9.167 7.997 C 9.995 7.997 10.666 8.668 10.666 9.496 L 10.666 9.88 C 10.666 10.476 10.453 11.052 10.066 11.505 C 9.019 12.728 7.428 13.331 5.331 13.331 C 3.234 13.331 1.643 12.728 0.599 11.505 C 0.212 11.052 0 10.476 0 9.881 L 0 9.496 C 0 8.668 0.671 7.997 1.499 7.997 L 9.167 7.997 Z M 9.167 8.997 L 1.499 8.997 C 1.224 8.997 1 9.22 1 9.496 L 1 9.881 C 1 10.238 1.127 10.584 1.359 10.855 C 2.195 11.834 3.505 12.331 5.331 12.331 C 7.157 12.331 8.468 11.834 9.306 10.855 C 9.539 10.583 9.666 10.237 9.666 9.88 L 9.666 9.496 C 9.666 9.22 9.443 8.997 9.167 8.997 Z M 5.331 0 C 7.172 0 8.664 1.492 8.664 3.333 C 8.664 5.174 7.172 6.667 5.331 6.667 C 3.49 6.667 1.998 5.174 1.998 3.333 C 1.998 1.492 3.49 0 5.331 0 Z M 5.331 1 C 4.042 1 2.998 2.045 2.998 3.333 C 2.998 4.622 4.042 5.667 5.331 5.667 C 6.62 5.667 7.664 4.622 7.664 3.333 C 7.664 2.045 6.62 1 5.331 1 Z"
+            fill="rgb(42,42,42)" />
+        </svg>
+        {{ userName || 'You' }}
+      </span>
+    </div>
   </section>
 
   <section class="queue-card">
+    <div class="filter-row">
+      <label class="search-box">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+          <path transform="translate(2.499 2.499)"
+            d="M 14.506 15.496 C 14.779 15.769 15.222 15.769 15.496 15.496 C 15.769 15.222 15.769 14.779 15.496 14.506 L 15.001 15.001 L 14.506 15.496 Z M 15.001 15.001 L 15.496 14.506 L 11.165 10.175 L 10.67 10.67 L 10.175 11.165 L 14.506 15.496 L 15.001 15.001 Z M 10.67 10.67 L 11.165 11.165 C 12.468 9.861 13.2 8.094 13.2 6.25 L 12.5 6.25 L 11.8 6.25 C 11.8 7.722 11.216 9.134 10.175 10.175 L 10.67 10.67 Z M 12.5 6.25 L 13.2 6.25 C 13.2 4.407 12.468 2.639 11.165 1.336 L 10.67 1.831 L 10.175 2.326 C 11.216 3.366 11.8 4.778 11.8 6.25 L 12.5 6.25 Z M 10.67 1.831 L 11.165 1.336 C 9.861 0.032 8.094 -0.7 6.25 -0.7 L 6.25 0 L 6.25 0.7 C 7.722 0.7 9.134 1.285 10.175 2.326 L 10.67 1.831 Z M 6.25 0 L 6.25 -0.7 C 4.407 -0.7 2.639 0.032 1.336 1.336 L 1.831 1.831 L 2.326 2.326 C 3.366 1.285 4.778 0.7 6.25 0.7 L 6.25 0 Z M 1.831 1.831 L 1.336 1.336 C 0.032 2.639 -0.7 4.407 -0.7 6.25 L 0 6.25 L 0.7 6.25 C 0.7 4.778 1.285 3.366 2.326 2.326 L 1.831 1.831 Z M 0 6.25 L -0.7 6.25 C -0.7 8.094 0.032 9.861 1.336 11.165 L 1.831 10.67 L 2.326 10.175 C 1.285 9.134 0.7 7.722 0.7 6.25 L 0 6.25 Z M 1.831 10.67 L 1.336 11.165 C 2.639 12.468 4.407 13.2 6.25 13.2 L 6.25 12.5 L 6.25 11.8 C 4.778 11.8 3.366 11.216 2.326 10.175 L 1.831 10.67 Z M 6.25 12.5 L 6.25 13.2 C 8.094 13.2 9.861 12.468 11.165 11.165 L 10.67 10.67 L 10.175 10.175 C 9.134 11.216 7.722 11.8 6.25 11.8 L 6.25 12.5 Z"
+            fill="rgb(114,114,114)" />
+        </svg>
+        <input
+          type="text"
+          [ngModel]="searchText()"
+          (ngModelChange)="searchText.set($event)"
+          placeholder="Search by guest name, ref number, or note content…" />
+      </label>
+
+      <div class="filter-row__group">
+        <label class="check-filter">
+          <input type="checkbox" [ngModel]="overdueOnly()" (ngModelChange)="setOverdueOnly($event)" />
+          Overdue Only
+        </label>
+        <input
+          class="filter-input"
+          type="text"
+          [ngModel]="assigneeFilter()"
+          (ngModelChange)="assigneeFilter.set($event)"
+          (change)="applyAssigneeFilter()"
+          placeholder="All Workers"
+          title="Filter by assignee staff ID (applies on Enter)" />
+        <select class="filter-select" [ngModel]="dateRange()" (ngModelChange)="dateRange.set($event)" aria-label="Date range">
+          <option value="">Date Range</option>
+          <option value="today">Today</option>
+          <option value="week">This week</option>
+          <option value="month">This month</option>
+        </select>
+        <select class="filter-select" [ngModel]="statusFilter()" (ngModelChange)="statusFilter.set($event)" aria-label="Entry type">
+          <option value="">Entry Type</option>
+          @for (s of statusOptions; track s) {
+            <option [value]="s">{{ s }}</option>
+          }
+        </select>
+      </div>
+    </div>
+
     @if (loadError()) {
       <div class="banner banner--error">{{ loadError() }}</div>
     }
 
-    @for (item of items(); track item.id) {
-      <article class="row">
-        <div class="row__top">
-          <div class="row__badges">
-            <span class="due-label" [class.due-label--overdue]="item.isOverdue">
-              {{ item.isOverdue ? 'Overdue' : 'Due' }} {{ item.dueDate | date: 'd MMM y' }}
-            </span>
+    <div class="rows">
+      @for (item of visibleItems(); track item.id) {
+        <article class="row">
+          <div class="row__top">
+            <a class="row__guest" [routerLink]="['/guests', item.guestId]">{{ item.guestName }}</a>
+            <span class="row__time">{{ item.dueDate | date: 'h:mm a' }}</span>
+          </div>
+
+          <div class="row__meta">
+            <span class="row__ref">Ref #{{ refLabel(item) }}</span>
             <span class="pill" [style.background]="statusColor(item.status).bg" [style.color]="statusColor(item.status).fg">
               {{ item.status }}
             </span>
           </div>
-          <span class="row__time">{{ item.dueDate | date: 'shortTime' }}</span>
-        </div>
 
-        <a class="row__guest" [routerLink]="['/guests', item.guestId]">{{ item.guestName }}</a>
+          <p class="row__note">
+            {{ item.isOverdue ? 'Overdue follow-up — was due' : 'Follow-up due' }}
+            {{ item.dueDate | date: 'EEEE d MMMM y, h:mm a' }}. Assigned to {{ item.assigneeName }}.
+          </p>
 
-        <div class="row__bottom">
-          <span class="pill pill--assignee">
-            <svg width="16" height="16" viewBox="0 0 10.666 13.331" fill="none">
-              <path
-                d="M 9.167 7.997 C 9.995 7.997 10.666 8.668 10.666 9.496 L 10.666 9.88 C 10.666 10.476 10.453 11.052 10.066 11.505 C 9.019 12.728 7.428 13.331 5.331 13.331 C 3.234 13.331 1.643 12.728 0.599 11.505 C 0.212 11.052 0 10.476 0 9.881 L 0 9.496 C 0 8.668 0.671 7.997 1.499 7.997 L 9.167 7.997 Z M 9.167 8.997 L 1.499 8.997 C 1.224 8.997 1 9.22 1 9.496 L 1 9.881 C 1 10.238 1.127 10.584 1.359 10.855 C 2.195 11.834 3.505 12.331 5.331 12.331 C 7.157 12.331 8.468 11.834 9.306 10.855 C 9.539 10.583 9.666 10.237 9.666 9.88 L 9.666 9.496 C 9.666 9.22 9.443 8.997 9.167 8.997 Z M 5.331 0 C 7.172 0 8.664 1.492 8.664 3.333 C 8.664 5.174 7.172 6.667 5.331 6.667 C 3.49 6.667 1.998 5.174 1.998 3.333 C 1.998 1.492 3.49 0 5.331 0 Z M 5.331 1 C 4.042 1 2.998 2.045 2.998 3.333 C 2.998 4.622 4.042 5.667 5.331 5.667 C 6.62 5.667 7.664 4.622 7.664 3.333 C 7.664 2.045 6.62 1 5.331 1 Z"
-                fill="currentColor" />
-            </svg>
-            {{ item.assigneeName }}
-          </span>
-
-          <div class="row__actions">
-            @if (item.status === 'Scheduled' || item.status === 'Overdue') {
-              <button type="button" class="icon-btn" title="Mark complete" (click)="complete(item)">
-                <app-icon name="IconsNameCheckColorDefault" [size]="16" />
-              </button>
-            }
-            <button type="button" class="btn btn--outline btn--sm" (click)="openAddForGuest(item.guestId, item.guestName)">
-              <app-icon name="IconOutlinePlusLg" [size]="14" />
-              Add follow-up entry
-            </button>
-            <a class="btn btn--primary btn--sm" [routerLink]="['/guests', item.guestId]">
-              <svg width="14" height="14" viewBox="0 0 13.5 13.5" fill="none">
-                <path
-                  d="M 2.437 1.125 C 1.713 1.125 1.125 1.713 1.125 2.438 L 1.125 11.063 C 1.125 11.787 1.713 12.375 2.437 12.375 L 11.062 12.375 C 11.787 12.375 12.375 11.787 12.375 11.063 L 12.375 8.063 C 12.375 7.752 12.627 7.5 12.937 7.5 C 13.248 7.5 13.5 7.752 13.5 8.063 L 13.5 11.063 C 13.5 12.409 12.408 13.5 11.062 13.5 L 2.437 13.5 C 1.091 13.5 0 12.409 0 11.063 L 0 2.438 C 0 1.091 1.091 0 2.437 0 L 5.437 0 C 5.748 0 6 0.252 6 0.563 C 6 0.873 5.748 1.125 5.437 1.125 L 2.437 1.125 Z M 7.5 0.563 C 7.5 0.252 7.752 0 8.062 0 L 12.938 0 C 13.248 0 13.5 0.252 13.5 0.563 L 13.5 5.438 C 13.5 5.748 13.248 6 12.938 6 C 12.627 6 12.375 5.748 12.375 5.438 L 12.375 1.921 L 8.46 5.835 C 8.24 6.055 7.884 6.055 7.665 5.835 C 7.445 5.616 7.445 5.259 7.665 5.04 L 11.58 1.125 L 8.062 1.125 C 7.752 1.125 7.5 0.873 7.5 0.563 Z"
+          <div class="row__bottom">
+            <span class="pill pill--assignee">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path transform="translate(2.669 1.337)"
+                  d="M 9.167 7.997 C 9.995 7.997 10.666 8.668 10.666 9.496 L 10.666 9.88 C 10.666 10.476 10.453 11.052 10.066 11.505 C 9.019 12.728 7.428 13.331 5.331 13.331 C 3.234 13.331 1.643 12.728 0.599 11.505 C 0.212 11.052 0 10.476 0 9.881 L 0 9.496 C 0 8.668 0.671 7.997 1.499 7.997 L 9.167 7.997 Z M 9.167 8.997 L 1.499 8.997 C 1.224 8.997 1 9.22 1 9.496 L 1 9.881 C 1 10.238 1.127 10.584 1.359 10.855 C 2.195 11.834 3.505 12.331 5.331 12.331 C 7.157 12.331 8.468 11.834 9.306 10.855 C 9.539 10.583 9.666 10.237 9.666 9.88 L 9.666 9.496 C 9.666 9.22 9.443 8.997 9.167 8.997 Z M 5.331 0 C 7.172 0 8.664 1.492 8.664 3.333 C 8.664 5.174 7.172 6.667 5.331 6.667 C 3.49 6.667 1.998 5.174 1.998 3.333 C 1.998 1.492 3.49 0 5.331 0 Z M 5.331 1 C 4.042 1 2.998 2.045 2.998 3.333 C 2.998 4.622 4.042 5.667 5.331 5.667 C 6.62 5.667 7.664 4.622 7.664 3.333 C 7.664 2.045 6.62 1 5.331 1 Z"
                   fill="currentColor" />
               </svg>
-              Open Guest
-            </a>
+              {{ item.assigneeName }}
+            </span>
+
+            <div class="row__actions">
+              @if (item.status === 'Scheduled' || item.status === 'Overdue') {
+                <button type="button" class="icon-btn" title="Mark complete" (click)="complete(item)">
+                  <app-icon name="IconsNameCheckColorDefault" [size]="16" />
+                </button>
+              }
+              <button type="button" class="btn btn--outline" (click)="openAddForGuest(item.guestId, item.guestName)">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                  <path transform="translate(5 5)"
+                    d="M 0 4.25 C -0.414 4.25 -0.75 4.586 -0.75 5 C -0.75 5.414 -0.414 5.75 0 5.75 L 0 5 L 0 4.25 Z M 10 5.75 C 10.414 5.75 10.75 5.414 10.75 5 C 10.75 4.586 10.414 4.25 10 4.25 L 10 5 L 10 5.75 Z M 5.75 0 C 5.75 -0.414 5.414 -0.75 5 -0.75 C 4.586 -0.75 4.25 -0.414 4.25 0 L 5 0 L 5.75 0 Z M 4.25 10 C 4.25 10.414 4.586 10.75 5 10.75 C 5.414 10.75 5.75 10.414 5.75 10 L 5 10 L 4.25 10 Z M 0 5 L 0 5.75 L 5 5.75 L 5 5 L 5 4.25 L 0 4.25 L 0 5 Z M 10 5 L 10 4.25 L 5 4.25 L 5 5 L 5 5.75 L 10 5.75 L 10 5 Z M 5 5 L 5.75 5 L 5.75 0 L 5 0 L 4.25 0 L 4.25 5 L 5 5 Z M 5 5 L 4.25 5 L 4.25 10 L 5 10 L 5.75 10 L 5.75 5 L 5 5 Z"
+                    fill="currentColor" />
+                </svg>
+                Add follow-up entry
+              </button>
+              <a class="btn btn--primary" [routerLink]="['/guests', item.guestId]">
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                  <path transform="translate(2.25 2.25)"
+                    d="M 2.437 1.125 C 1.713 1.125 1.125 1.713 1.125 2.438 L 1.125 11.063 C 1.125 11.787 1.713 12.375 2.437 12.375 L 11.062 12.375 C 11.787 12.375 12.375 11.787 12.375 11.063 L 12.375 8.063 C 12.375 7.752 12.627 7.5 12.937 7.5 C 13.248 7.5 13.5 7.752 13.5 8.063 L 13.5 11.063 C 13.5 12.409 12.408 13.5 11.062 13.5 L 2.437 13.5 C 1.091 13.5 0 12.409 0 11.063 L 0 2.438 C 0 1.091 1.091 0 2.437 0 L 5.437 0 C 5.748 0 6 0.252 6 0.563 C 6 0.873 5.748 1.125 5.437 1.125 L 2.437 1.125 Z M 7.5 0.563 C 7.5 0.252 7.752 0 8.062 0 L 12.938 0 C 13.248 0 13.5 0.252 13.5 0.563 L 13.5 5.438 C 13.5 5.748 13.248 6 12.938 6 C 12.627 6 12.375 5.748 12.375 5.438 L 12.375 1.921 L 8.46 5.835 C 8.24 6.055 7.884 6.055 7.665 5.835 C 7.445 5.616 7.445 5.259 7.665 5.04 L 11.58 1.125 L 8.062 1.125 C 7.752 1.125 7.5 0.873 7.5 0.563 Z"
+                    fill="currentColor" />
+                </svg>
+                Open Guest
+              </a>
+            </div>
           </div>
-        </div>
-      </article>
-    }
+        </article>
+      }
+    </div>
 
     @if (loading()) {
       <div class="loading-row">Loading…</div>
     }
 
-    @if (!loading() && items().length === 0 && !loadError()) {
+    @if (!loading() && visibleItems().length === 0 && !loadError()) {
       <div class="empty-state">No follow-up entries match these filters.</div>
     }
 
-    @if (hasMore()) {
-      <div class="load-more">
-        <button type="button" class="btn btn--outline" (click)="loadMore()" [disabled]="loading()">
-          {{ loading() ? 'Loading…' : 'Load more' }}
-        </button>
+    @if (!loading() && items().length > 0) {
+      <div class="list-footer">
+        <span class="list-footer__summary">
+          Showing 1 to {{ visibleItems().length }} of {{ items().length }}{{ hasMore() ? '+' : '' }} entries
+        </span>
+        @if (hasMore()) {
+          <button type="button" class="pager-btn" (click)="loadMore()" [disabled]="loading()">
+            {{ loading() ? 'Loading…' : 'Next' }}
+          </button>
+        }
       </div>
     }
   </section>
@@ -204,7 +281,7 @@
       </div>
 
       <div class="modal__footer">
-        <button type="button" class="btn btn--ghost" (click)="closeModal()">Cancel</button>
+        <button type="button" class="btn btn--outline" (click)="closeModal()">Cancel</button>
         <button type="button" class="btn btn--primary" [disabled]="saving()" (click)="submitModal()">
           {{ saving() ? 'Saving…' : 'Save' }}
         </button>

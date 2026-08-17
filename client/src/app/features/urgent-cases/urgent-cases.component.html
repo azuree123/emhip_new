@@ -1,105 +1,165 @@
 <div class="page">
-  <header class="page-header">
-    <div class="page-header__title-row">
-      <h1 class="page-header__title">Urgent cases</h1>
-      <span class="live-indicator" [class.live-indicator--down]="connectionState() !== 'Connected'">
-        <span class="live-indicator__dot"></span>
-        {{ connectionState() === 'Connected' ? 'Live' : connectionState() }}
-      </span>
-    </div>
-    <p class="page-header__subtitle">
-      All guests with an active urgent flag — follow-up required within 72 hours of flag being raised
-    </p>
-  </header>
-
   @if (overdueCount() > 0) {
     <div class="alert-banner">
-      <svg width="18" height="16" viewBox="0 0 15.201 13.465" fill="none">
+      <svg class="alert-banner__icon" width="18" height="16" viewBox="0 0 15.201 13.465" fill="none">
         <path
           d="M 8.575 0.563 L 15.05 11.778 C 15.149 11.949 15.201 12.143 15.201 12.34 C 15.201 12.538 15.149 12.732 15.05 12.903 C 14.951 13.074 14.809 13.216 14.638 13.315 C 14.467 13.414 14.273 13.465 14.076 13.465 L 1.125 13.465 C 0.927 13.465 0.733 13.414 0.562 13.315 C 0.391 13.216 0.249 13.074 0.151 12.903 C 0.052 12.732 0 12.538 0 12.34 C 0 12.143 0.052 11.949 0.151 11.778 L 6.626 0.563 C 7.059 -0.188 8.141 -0.188 8.575 0.563 Z M 7.6 9.451 C 7.402 9.451 7.211 9.531 7.07 9.671 C 6.929 9.812 6.85 10.003 6.85 10.201 C 6.85 10.4 6.929 10.591 7.07 10.732 C 7.211 10.872 7.402 10.951 7.6 10.951 C 7.799 10.951 7.99 10.872 8.131 10.732 C 8.271 10.591 8.35 10.4 8.35 10.201 C 8.35 10.003 8.271 9.812 8.131 9.671 C 7.99 9.531 7.799 9.451 7.6 9.451 Z M 7.6 4.201 C 7.417 4.202 7.239 4.269 7.102 4.391 C 6.965 4.513 6.877 4.681 6.856 4.864 L 6.85 4.951 L 6.85 7.951 C 6.851 8.143 6.924 8.327 7.055 8.466 C 7.186 8.605 7.366 8.688 7.557 8.699 C 7.747 8.711 7.935 8.648 8.082 8.526 C 8.228 8.403 8.323 8.229 8.345 8.039 L 8.35 7.951 L 8.35 4.951 C 8.35 4.753 8.271 4.562 8.131 4.421 C 7.99 4.281 7.799 4.201 7.6 4.201 Z"
           fill="currentColor" />
       </svg>
-      <span>{{ overdueCount() }} urgent case{{ overdueCount() === 1 ? ' is' : 's are' }} overdue — follow-up window has passed</span>
+      <span class="alert-banner__text">
+        {{ overdueCount() }} urgent case{{ overdueCount() === 1 ? ' is' : 's are' }} overdue — follow-up window has passed
+      </span>
+      <button type="button" class="alert-banner__cta" (click)="scrollToOverdue()">View now →</button>
     </div>
   }
+
+  <header class="page-header">
+    <div>
+      <div class="page-header__title-row">
+        <h1 class="page-header__title">Urgent cases</h1>
+        <span class="live-indicator" [class.live-indicator--down]="connectionState() !== 'Connected'">
+          <span class="live-indicator__dot"></span>
+          {{ connectionState() === 'Connected' ? 'Live' : connectionState() }}
+        </span>
+      </div>
+      <p class="page-header__subtitle">
+        All guests with an active urgent flag — follow-up required within 72 hours of flag being raised
+      </p>
+    </div>
+    <button type="button" class="btn btn--primary" (click)="exportCsv()" [disabled]="!visibleCases().length || exporting()">
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+        <path transform="translate(2.813 1.125)"
+          d="M 12.375 6.75 L 12.375 13.5 C 12.375 13.799 12.256 14.085 12.045 14.296 C 11.835 14.507 11.548 14.625 11.25 14.625 L 1.125 14.625 C 0.827 14.625 0.54 14.507 0.33 14.296 C 0.119 14.085 0 13.799 0 13.5 L 0 6.75 C 0 6.452 0.119 6.166 0.33 5.955 C 0.54 5.744 0.827 5.625 1.125 5.625 L 2.813 5.625 C 2.962 5.625 3.105 5.685 3.21 5.79 C 3.316 5.896 3.375 6.039 3.375 6.188 C 3.375 6.337 3.316 6.48 3.21 6.586 C 3.105 6.691 2.962 6.75 2.813 6.75 L 1.125 6.75 L 1.125 13.5 L 11.25 13.5 L 11.25 6.75 L 9.563 6.75 C 9.413 6.75 9.27 6.691 9.165 6.586 C 9.059 6.48 9 6.337 9 6.188 C 9 6.039 9.059 5.896 9.165 5.79 C 9.27 5.685 9.413 5.625 9.563 5.625 L 11.25 5.625 C 11.548 5.625 11.835 5.744 12.045 5.955 C 12.256 6.166 12.375 6.452 12.375 6.75 Z M 3.773 3.773 L 5.625 1.921 L 5.625 8.438 C 5.625 8.587 5.684 8.73 5.79 8.836 C 5.895 8.941 6.038 9 6.188 9 C 6.337 9 6.48 8.941 6.585 8.836 C 6.691 8.73 6.75 8.587 6.75 8.438 L 6.75 1.921 L 8.602 3.773 C 8.708 3.879 8.851 3.938 9 3.938 C 9.149 3.938 9.292 3.879 9.398 3.773 C 9.504 3.668 9.563 3.525 9.563 3.375 C 9.563 3.226 9.504 3.083 9.398 2.977 L 6.585 0.165 C 6.533 0.113 6.471 0.071 6.403 0.043 C 6.335 0.015 6.261 0 6.188 0 C 6.114 0 6.04 0.015 5.972 0.043 C 5.904 0.071 5.842 0.113 5.79 0.165 L 2.977 2.977 C 2.871 3.083 2.812 3.226 2.812 3.375 C 2.812 3.525 2.871 3.668 2.977 3.773 C 3.083 3.879 3.226 3.938 3.375 3.938 C 3.524 3.938 3.667 3.879 3.773 3.773 Z"
+          fill="currentColor" />
+      </svg>
+      {{ exporting() ? 'Exporting…' : 'Export' }}
+    </button>
+  </header>
 
   <section class="stat-cards">
     <div class="stat-card">
       <span class="stat-card__label">Active Urgent Cases</span>
       <span class="stat-card__value">{{ totalCount() }}</span>
-      <span class="pill pill--muted">Across {{ totalCount() }} guest{{ totalCount() === 1 ? '' : 's' }}</span>
+      <span class="stat-card__sub">Across {{ totalCount() }} guest{{ totalCount() === 1 ? '' : 's' }}</span>
     </div>
     <div class="stat-card">
       <span class="stat-card__label">Follow-up overdue</span>
-      <span class="stat-card__value stat-card__value--danger">{{ overdueCount() }}</span>
-      <span class="pill pill--muted">72-hour window passed</span>
+      <span class="stat-card__value">{{ overdueCount() }}</span>
+      <span class="stat-card__sub">72-hour window passed</span>
     </div>
     <div class="stat-card">
       <span class="stat-card__label">Within 72-hour window</span>
       <span class="stat-card__value">{{ withinWindowCount() }}</span>
-      <span class="pill pill--muted">Action required</span>
+      <span class="stat-card__sub">Action required today</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-card__label">Resolved this month</span>
+      <span class="stat-card__value">—</span>
+      <span class="stat-card__sub">{{ now | date: 'MMMM y' }}</span>
     </div>
   </section>
 
   <section class="queue-card">
-    <h2 class="queue-card__title">Active Urgent Cases</h2>
+    <div class="filter-row">
+      <select class="filter-select" [ngModel]="riskFilter()" (ngModelChange)="riskFilter.set($event)" aria-label="Risk level">
+        <option value="">Risk Level</option>
+        @for (f of riskFlags; track f.key) {
+          <option [value]="f.key">{{ f.label }}</option>
+        }
+      </select>
+      <select class="filter-select" [ngModel]="cmhwFilter()" (ngModelChange)="cmhwFilter.set($event)" aria-label="Assigned CMHW">
+        <option value="">Assigned CMHW</option>
+        @for (name of cmhwOptions(); track name) {
+          <option [value]="name">{{ name }}</option>
+        }
+      </select>
+      <span class="filter-row__divider"></span>
+      <label class="check-filter">
+        <input type="checkbox" [ngModel]="overdueOnly()" (ngModelChange)="overdueOnly.set($event)" />
+        Overdue Only
+      </label>
+    </div>
 
     @if (loadError()) {
       <div class="banner banner--error">{{ loadError() }}</div>
     }
 
-    @for (c of cases(); track c.guestId) {
-      <article class="row">
-        <div class="row__top">
-          <div class="row__badges">
+    <div class="rows">
+      @for (c of visibleCases(); track c.guestId) {
+        <article class="row" [class.row--overdue]="isOverdue(c)">
+          <div class="row__top">
+            <a class="row__guest" [routerLink]="['/guests', c.guestId]">{{ c.guestName }}</a>
+            <div class="row__window-col">
+              <span class="row__window" [class.row__window--overdue]="windowLabel(c).overdue">{{ windowLabel(c).text }}</span>
+              <span class="row__deadline">{{ deadlineLabel(c) }}</span>
+            </div>
+          </div>
+
+          <div class="row__meta">
+            <span class="row__ref">Ref #{{ refLabel(c) }}</span>
+            <span class="pill pill--urgent">Urgent</span>
             @for (flag of activeFlags(c); track flag.key) {
               <span class="pill" [style.background]="flag.bg" [style.color]="flag.fg">{{ flag.label }}</span>
             }
           </div>
-          <span class="row__window" [class.row__window--overdue]="windowLabel(c).overdue">{{ windowLabel(c).text }}</span>
-        </div>
 
-        <a class="row__guest" [routerLink]="['/guests', c.guestId]">{{ c.guestName }}</a>
-        <span class="row__flag-raised">Flag raised: {{ c.escalatedAt | date: 'd MMM, h:mm a' }}</span>
+          <div class="row__bottom">
+            <div class="row__chips">
+              <span class="pill pill--muted">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <path transform="translate(2.669 1.337)"
+                    d="M 9.167 7.997 C 9.995 7.997 10.666 8.668 10.666 9.496 L 10.666 9.88 C 10.666 10.476 10.453 11.052 10.066 11.505 C 9.019 12.728 7.428 13.331 5.331 13.331 C 3.234 13.331 1.643 12.728 0.599 11.505 C 0.212 11.052 0 10.476 0 9.881 L 0 9.496 C 0 8.668 0.671 7.997 1.499 7.997 L 9.167 7.997 Z M 9.167 8.997 L 1.499 8.997 C 1.224 8.997 1 9.22 1 9.496 L 1 9.881 C 1 10.238 1.127 10.584 1.359 10.855 C 2.195 11.834 3.505 12.331 5.331 12.331 C 7.157 12.331 8.468 11.834 9.306 10.855 C 9.539 10.583 9.666 10.237 9.666 9.88 L 9.666 9.496 C 9.666 9.22 9.443 8.997 9.167 8.997 Z M 5.331 0 C 7.172 0 8.664 1.492 8.664 3.333 C 8.664 5.174 7.172 6.667 5.331 6.667 C 3.49 6.667 1.998 5.174 1.998 3.333 C 1.998 1.492 3.49 0 5.331 0 Z M 5.331 1 C 4.042 1 2.998 2.045 2.998 3.333 C 2.998 4.622 4.042 5.667 5.331 5.667 C 6.62 5.667 7.664 4.622 7.664 3.333 C 7.664 2.045 6.62 1 5.331 1 Z"
+                    fill="rgb(42,42,42)" />
+                </svg>
+                {{ c.assignedCmhwName ?? 'Unassigned' }}
+              </span>
+              <span class="pill pill--muted">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <path transform="translate(2 1.999)"
+                    d="M 0 0.5 C 0 0.224 0.224 0 0.5 0 L 11.503 0 C 11.915 0 12.15 0.47 11.903 0.8 L 9.127 4.501 L 11.903 8.202 C 12.15 8.531 11.915 9.002 11.503 9.002 L 1 9.001 L 1 12.168 C 1 12.421 0.812 12.63 0.568 12.663 L 0.5 12.668 C 0.247 12.668 0.038 12.48 0.005 12.236 L 0 12.168 L 0 0.5 Z M 10.503 1 L 1 1 L 1 8.002 L 10.503 8.002 L 8.101 4.801 C 7.968 4.623 7.968 4.379 8.101 4.201 L 10.503 1 Z"
+                    fill="rgb(42,42,42)" />
+                </svg>
+                Flag raised:&nbsp;{{ c.escalatedAt | date: 'd MMM, h:mm a' }}
+              </span>
+            </div>
 
-        <div class="row__bottom">
-          <span class="pill pill--assignee">
-            <svg width="16" height="16" viewBox="0 0 10.666 13.331" fill="none">
-              <path
-                d="M 9.167 7.997 C 9.995 7.997 10.666 8.668 10.666 9.496 L 10.666 9.88 C 10.666 10.476 10.453 11.052 10.066 11.505 C 9.019 12.728 7.428 13.331 5.331 13.331 C 3.234 13.331 1.643 12.728 0.599 11.505 C 0.212 11.052 0 10.476 0 9.881 L 0 9.496 C 0 8.668 0.671 7.997 1.499 7.997 L 9.167 7.997 Z M 9.167 8.997 L 1.499 8.997 C 1.224 8.997 1 9.22 1 9.496 L 1 9.881 C 1 10.238 1.127 10.584 1.359 10.855 C 2.195 11.834 3.505 12.331 5.331 12.331 C 7.157 12.331 8.468 11.834 9.306 10.855 C 9.539 10.583 9.666 10.237 9.666 9.88 L 9.666 9.496 C 9.666 9.22 9.443 8.997 9.167 8.997 Z M 5.331 0 C 7.172 0 8.664 1.492 8.664 3.333 C 8.664 5.174 7.172 6.667 5.331 6.667 C 3.49 6.667 1.998 5.174 1.998 3.333 C 1.998 1.492 3.49 0 5.331 0 Z M 5.331 1 C 4.042 1 2.998 2.045 2.998 3.333 C 2.998 4.622 4.042 5.667 5.331 5.667 C 6.62 5.667 7.664 4.622 7.664 3.333 C 7.664 2.045 6.62 1 5.331 1 Z"
-                fill="currentColor" />
-            </svg>
-            {{ c.assignedCmhwName ?? 'Unassigned' }}
-          </span>
-
-          <div class="row__actions">
-            <button type="button" class="btn btn--outline btn--sm" (click)="openLogFollowUp(c)">
-              <svg width="14" height="14" viewBox="0 0 14.625 14.625" fill="none">
-                <path
-                  d="M 13.495 2.255 L 13.499 2.346 L 13.5 2.438 L 13.5 10.763 C 13.5 12.274 12.274 13.5 10.763 13.5 L 2.438 13.5 C 2.376 13.5 2.316 13.498 2.255 13.495 C 2.687 14.174 3.447 14.625 4.313 14.625 L 10.763 14.625 C 12.896 14.625 14.625 12.896 14.625 10.763 L 14.625 4.313 C 14.625 3.447 14.174 2.688 13.495 2.255 Z M 2.438 0 C 1.091 0 0 1.091 0 2.438 L 0 10.313 C 0 11.659 1.091 12.75 2.438 12.75 L 10.313 12.75 C 11.659 12.75 12.75 11.659 12.75 10.313 L 12.75 2.438 C 12.75 1.091 11.659 0 10.313 0 L 2.438 0 Z M 1.125 4.125 L 11.625 4.125 L 11.625 10.313 C 11.625 11.037 11.037 11.625 10.313 11.625 L 2.438 11.625 C 1.713 11.625 1.125 11.037 1.125 10.313 L 1.125 4.125 Z M 2.438 1.125 L 10.313 1.125 C 11.037 1.125 11.625 1.713 11.625 2.438 L 11.625 3 L 1.125 3 L 1.125 2.438 C 1.125 1.713 1.713 1.125 2.438 1.125 Z"
-                  fill="currentColor" />
-              </svg>
-              Log follow up
-            </button>
-            <a class="btn btn--primary btn--sm" [routerLink]="['/guests', c.guestId]">
-              <svg width="14" height="14" viewBox="0 0 13.5 13.5" fill="none">
-                <path
-                  d="M 2.437 1.125 C 1.713 1.125 1.125 1.713 1.125 2.438 L 1.125 11.063 C 1.125 11.787 1.713 12.375 2.437 12.375 L 11.062 12.375 C 11.787 12.375 12.375 11.787 12.375 11.063 L 12.375 8.063 C 12.375 7.752 12.627 7.5 12.937 7.5 C 13.248 7.5 13.5 7.752 13.5 8.063 L 13.5 11.063 C 13.5 12.409 12.408 13.5 11.062 13.5 L 2.437 13.5 C 1.091 13.5 0 12.409 0 11.063 L 0 2.438 C 0 1.091 1.091 0 2.437 0 L 5.437 0 C 5.748 0 6 0.252 6 0.563 C 6 0.873 5.748 1.125 5.437 1.125 L 2.437 1.125 Z M 7.5 0.563 C 7.5 0.252 7.752 0 8.062 0 L 12.938 0 C 13.248 0 13.5 0.252 13.5 0.563 L 13.5 5.438 C 13.5 5.748 13.248 6 12.938 6 C 12.627 6 12.375 5.748 12.375 5.438 L 12.375 1.921 L 8.46 5.835 C 8.24 6.055 7.884 6.055 7.665 5.835 C 7.445 5.616 7.445 5.259 7.665 5.04 L 11.58 1.125 L 8.062 1.125 C 7.752 1.125 7.5 0.873 7.5 0.563 Z"
-                  fill="currentColor" />
-              </svg>
-              Open Guest
-            </a>
+            <div class="row__actions">
+              <button type="button" class="btn btn--outline" (click)="openLogFollowUp(c)">
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                  <path transform="translate(1.5 1.5)"
+                    d="M 13.495 2.255 L 13.499 2.346 L 13.5 2.438 L 13.5 10.763 C 13.5 12.274 12.274 13.5 10.763 13.5 L 2.438 13.5 C 2.376 13.5 2.316 13.498 2.255 13.495 C 2.687 14.174 3.447 14.625 4.313 14.625 L 10.763 14.625 C 12.896 14.625 14.625 12.896 14.625 10.763 L 14.625 4.313 C 14.625 3.447 14.174 2.688 13.495 2.255 Z M 2.438 0 C 1.091 0 0 1.091 0 2.438 L 0 10.313 C 0 11.659 1.091 12.75 2.438 12.75 L 10.313 12.75 C 11.659 12.75 12.75 11.659 12.75 10.313 L 12.75 2.438 C 12.75 1.091 11.659 0 10.313 0 L 2.438 0 Z M 1.125 4.125 L 11.625 4.125 L 11.625 10.313 C 11.625 11.037 11.037 11.625 10.313 11.625 L 2.438 11.625 C 1.713 11.625 1.125 11.037 1.125 10.313 L 1.125 4.125 Z M 2.438 1.125 L 10.313 1.125 C 11.037 1.125 11.625 1.713 11.625 2.438 L 11.625 3 L 1.125 3 L 1.125 2.438 C 1.125 1.713 1.713 1.125 2.438 1.125 Z"
+                    fill="currentColor" />
+                </svg>
+                Log follow up
+              </button>
+              <a class="btn btn--primary" [routerLink]="['/guests', c.guestId]">
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                  <path transform="translate(2.25 2.25)"
+                    d="M 2.437 1.125 C 1.713 1.125 1.125 1.713 1.125 2.438 L 1.125 11.063 C 1.125 11.787 1.713 12.375 2.437 12.375 L 11.062 12.375 C 11.787 12.375 12.375 11.787 12.375 11.063 L 12.375 8.063 C 12.375 7.752 12.627 7.5 12.937 7.5 C 13.248 7.5 13.5 7.752 13.5 8.063 L 13.5 11.063 C 13.5 12.409 12.408 13.5 11.062 13.5 L 2.437 13.5 C 1.091 13.5 0 12.409 0 11.063 L 0 2.438 C 0 1.091 1.091 0 2.437 0 L 5.437 0 C 5.748 0 6 0.252 6 0.563 C 6 0.873 5.748 1.125 5.437 1.125 L 2.437 1.125 Z M 7.5 0.563 C 7.5 0.252 7.752 0 8.062 0 L 12.938 0 C 13.248 0 13.5 0.252 13.5 0.563 L 13.5 5.438 C 13.5 5.748 13.248 6 12.938 6 C 12.627 6 12.375 5.748 12.375 5.438 L 12.375 1.921 L 8.46 5.835 C 8.24 6.055 7.884 6.055 7.665 5.835 C 7.445 5.616 7.445 5.259 7.665 5.04 L 11.58 1.125 L 8.062 1.125 C 7.752 1.125 7.5 0.873 7.5 0.563 Z"
+                    fill="currentColor" />
+                </svg>
+                Open Guest
+              </a>
+            </div>
           </div>
-        </div>
-      </article>
-    }
+        </article>
+      }
+    </div>
 
     @if (loading()) {
       <div class="loading-row">Loading…</div>
     }
 
-    @if (!loading() && cases().length === 0 && !loadError()) {
-      <div class="empty-state">No active urgent cases right now.</div>
+    @if (!loading() && visibleCases().length === 0 && !loadError()) {
+      <div class="empty-state">No active urgent cases match these filters.</div>
+    }
+
+    @if (!loading() && visibleCases().length > 0) {
+      <div class="list-footer">
+        <span class="list-footer__summary">
+          Showing 1 to {{ visibleCases().length }} of {{ totalCount() }} entries
+        </span>
+      </div>
     }
   </section>
 </div>
@@ -138,7 +198,7 @@
       </div>
 
       <div class="modal__footer">
-        <button type="button" class="btn btn--ghost" (click)="closeModal()">Cancel</button>
+        <button type="button" class="btn btn--outline" (click)="closeModal()">Cancel</button>
         <button type="button" class="btn btn--primary" [disabled]="saving()" (click)="submitModal()">
           {{ saving() ? 'Saving…' : 'Save' }}
         </button>

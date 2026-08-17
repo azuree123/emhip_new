@@ -1,37 +1,47 @@
 @use './guest-workspace.tokens' as t;
 
+// Geometry from GuestOverviewTab (Components.bundle.js): 23px gaps between cards,
+// 378/781 column split, 114px stat tiles with a grey icon pill in the foot row,
+// snapshot rows split by #e8e8e8 hairlines, and a dotted 1px timeline rail.
 .overview {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 23px;
 }
 
 .stat-row {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 23px;
 }
 
 .stat-tile {
+  position: relative;
+  overflow: hidden;
   background: #fff;
   border-radius: t.$radius-card;
-  padding: 16px 24px 20px;
+  min-height: 114px;
+  padding: 8px 20px 13px 19px;
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  align-items: flex-start;
 
   &__label {
     font-family: t.$font-eyebrow;
     font-weight: 600;
     font-size: 10px;
+    line-height: 24px;
     letter-spacing: -0.005em;
     color: t.$color-text-primary;
   }
 
   &__value {
+    margin-top: 7px;
     font-family: t.$font-primary;
     font-weight: 600;
     font-size: 32px;
+    line-height: 32px;
     color: t.$color-text-primary;
   }
 
@@ -39,29 +49,48 @@
     display: flex;
     align-items: center;
     gap: 6px;
+    margin-top: 6px;
     font-family: t.$font-primary;
     font-weight: 600;
     font-size: 12px;
+    line-height: 24px;
     color: t.$color-text-primary;
+  }
+
+  &__pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 8px;
+    border-radius: t.$radius-pill;
+    background: t.$color-tile-bg;
+    flex-shrink: 0;
 
     svg {
+      display: block;
       color: t.$color-text-primary;
-      flex-shrink: 0;
     }
+  }
+
+  // Decorative EMHIP swirl on the third tile (design x1317..1392 / y421..496).
+  &__mark {
+    position: absolute;
+    top: 16px;
+    right: 33px;
+    pointer-events: none;
   }
 }
 
 .columns {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
-  gap: 16px;
+  grid-template-columns: minmax(0, 378fr) minmax(0, 781fr);
+  gap: 23px;
   align-items: start;
 }
 
 .column {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 23px;
 }
 
 .card {
@@ -71,10 +100,11 @@
 }
 
 .card__title {
-  margin: 0 0 16px;
+  margin: 0 0 33px;
   font-family: t.$font-primary;
   font-weight: 600;
   font-size: 20px;
+  line-height: 24px;
   color: t.$color-text-primary;
 }
 
@@ -82,17 +112,27 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 16px;
+  margin-bottom: 24px;
 
   .card__title {
     margin: 0;
   }
 }
 
-.field-grid {
+.field-rows {
+  display: flex;
+  flex-direction: column;
+}
+
+.field-row {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20px 16px;
+  grid-template-columns: minmax(0, 194fr) minmax(0, 136fr);
+
+  & + & {
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 1px solid t.$color-border;
+  }
 }
 
 .field {
@@ -105,6 +145,7 @@
     font-family: t.$font-primary;
     font-weight: 600;
     font-size: 14px;
+    line-height: 24px;
     color: t.$color-text-primary;
   }
 
@@ -112,6 +153,7 @@
     font-family: t.$font-primary;
     font-weight: 400;
     font-size: 14px;
+    line-height: 24px;
     color: t.$color-text-body;
     overflow-wrap: anywhere;
   }
@@ -165,6 +207,7 @@
     font-family: t.$font-primary;
     font-weight: 500;
     font-size: 12px;
+    line-height: 18px;
     color: t.$color-text-meta;
   }
 }
@@ -175,9 +218,11 @@
   font-family: t.$font-primary;
   font-weight: 600;
   font-size: 14px;
+  line-height: 24px;
   color: t.$color-link-red;
   cursor: pointer;
   padding: 0;
+  white-space: nowrap;
 }
 
 .chip {
@@ -200,13 +245,15 @@
 
 .timeline-item {
   display: flex;
-  gap: 14px;
+  gap: 21px;
 
+  // Design: dot column starts 21px in from the card padding edge (x 689 vs card x 644+24).
   &__rail {
     display: flex;
     flex-direction: column;
     align-items: center;
     width: 10px;
+    margin-left: 21px;
     flex-shrink: 0;
   }
 
@@ -216,7 +263,7 @@
     border-radius: 50%;
     background: #bcb7b7;
     flex-shrink: 0;
-    margin-top: 4px;
+    margin-top: 7px;
   }
 
   &__line {
@@ -229,30 +276,66 @@
   &__content {
     flex: 1;
     min-width: 0;
-    padding-bottom: 20px;
+    padding-bottom: 24px;
+  }
+
+  &:last-child &__content {
+    padding-bottom: 0;
   }
 
   &__head {
     display: flex;
     align-items: center;
     gap: 10px;
-    margin-bottom: 6px;
   }
 
   &__type {
     font-family: t.$font-primary;
     font-weight: 600;
     font-size: 16px;
+    line-height: 24px;
     color: t.$color-text-primary;
   }
 
   &__meta {
     display: flex;
-    gap: 16px;
+    align-items: center;
+    gap: 8px;
+    margin-top: 7px;
     font-family: t.$font-primary;
     font-weight: 500;
     font-size: 12px;
+    line-height: 18px;
     color: t.$color-text-meta;
+  }
+
+  &__sep {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: t.$color-border-strong;
+    flex-shrink: 0;
+  }
+}
+
+.card__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.card__footer-text {
+  font-family: t.$font-primary;
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 24px;
+  color: t.$color-text-primary;
+
+  &--muted {
+    color: t.$color-text-meta;
+    font-weight: 500;
   }
 }
 
@@ -326,6 +409,7 @@
   font-family: t.$font-primary;
   font-weight: 500;
   font-size: 14px;
+  letter-spacing: -0.005em;
   cursor: pointer;
 
   &:disabled {
@@ -335,6 +419,13 @@
 }
 
 @media (max-width: 960px) {
+  .overview,
+  .stat-row,
+  .columns,
+  .column {
+    gap: 16px;
+  }
+
   .stat-row {
     grid-template-columns: 1fr;
   }
@@ -342,12 +433,20 @@
   .columns {
     grid-template-columns: 1fr;
   }
+
+  .card__title {
+    margin-bottom: 20px;
+  }
 }
 
 @media (max-width: 640px) {
-  .field-grid,
+  .field-row,
   .add-contact-form__row {
     grid-template-columns: 1fr;
+  }
+
+  .field-row .field + .field {
+    margin-top: 12px;
   }
 
   .card {

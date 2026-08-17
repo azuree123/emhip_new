@@ -1,10 +1,15 @@
 // Shared field/section styles for the Register Guest wizard steps. Values (colors, radii,
-// font sizes) are lifted verbatim from the DmegographicsTab / InitialConversationTab functions
-// in project/screens/Components.bundle.js (the "Register New Guest" panel), re-expressed as
-// normal flow/grid CSS instead of the source's absolute-positioned divs.
+// font sizes, spacing) are lifted verbatim from the DmegographicsTab / InitialConversationTab
+// functions in project/screens/Components.bundle.js (the "Register New Guest" panel),
+// re-expressed as normal flow/grid CSS instead of the source's absolute-positioned divs.
+//
+// Source geometry: field columns are a fixed 262px wide with a 26px gutter (x 604 and 892),
+// so a full-width field spans 550px — the form deliberately does NOT stretch across the whole
+// 812px content lane. Row pitch is 90px (37px input + 20px gap + 33px label block); sections
+// are separated by 46px.
 
 .section {
-  margin-bottom: 32px;
+  margin-bottom: 46px;
 
   &:last-child {
     margin-bottom: 0;
@@ -17,7 +22,13 @@
   font-size: 16px;
   line-height: 24px;
   color: #2a2a2a;
-  margin: 0 0 4px;
+  margin: 0 0 2px;
+
+  // Step-2 sections have no description line; the source leaves ~30px between the heading
+  // and the first field label there.
+  &--solo {
+    margin-bottom: 30px;
+  }
 }
 
 .section__desc {
@@ -26,17 +37,21 @@
   font-size: 12px;
   line-height: 24px;
   color: #2a2a2a;
-  margin: 0 0 20px;
+  margin: 0 0 34px;
 }
 
 .field-row {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 24px;
+  grid-template-columns: 262px 262px;
+  column-gap: 26px;
   margin-bottom: 20px;
 
   &--single {
-    grid-template-columns: 1fr;
+    grid-template-columns: 550px;
+  }
+
+  &:last-child {
+    margin-bottom: 0;
   }
 }
 
@@ -60,7 +75,7 @@
   box-sizing: border-box;
   width: 100%;
   height: 37px;
-  padding: 0 12px;
+  padding: 0 16px;
   border-radius: 8px;
   border: none;
   box-shadow: inset 0 0 0 1px #e5e5e5;
@@ -71,10 +86,21 @@
   line-height: 24px;
   color: #323232;
 
+  // The source renders placeholder text in the same rgb(50,50,50) as values.
   &::placeholder {
-    color: #8c8c8c;
+    color: #323232;
+    opacity: 1;
   }
 
+  &:disabled {
+    background: #ffffff;
+    color: #323232;
+    opacity: 1;
+    -webkit-text-fill-color: #323232;
+  }
+
+  // Focus/invalid states are not drawn in the static source; these reuse the app's brand
+  // maroon / danger red so keyboard users still get a visible state.
   &:focus {
     outline: none;
     box-shadow: inset 0 0 0 1.5px #941c3c;
@@ -85,20 +111,22 @@
   }
 }
 
+// The source draws every long-text answer as a 37px single-line box; a real textarea keeps
+// that initial height but stays user-resizable so longer notes remain usable.
 .field__textarea {
-  height: auto;
-  min-height: 72px;
-  padding: 10px 12px;
+  height: 37px;
+  min-height: 37px;
+  padding: 6px 16px;
   resize: vertical;
-  line-height: 20px;
+  line-height: 24px;
 }
 
 .field__select {
   appearance: none;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='5' viewBox='0 0 9 5' fill='none'%3E%3Cpath d='M0.53 0.53 L4.375 4.375 L8.22 0.53' stroke='%23727272' stroke-width='1.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
-  background-position: right 12px center;
-  padding-right: 30px;
+  background-position: right 15px center;
+  padding-right: 34px;
   cursor: pointer;
 }
 
@@ -108,14 +136,25 @@
   color: #d02537;
 }
 
+// "pre filled from your login" caption: italic 10px with a small maroon info glyph.
 .field__hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   font-family: 'Plus Jakarta Sans', sans-serif;
-  font-size: 11px;
-  color: #8c8c8c;
+  font-weight: 400;
+  font-style: italic;
+  font-size: 10px;
+  line-height: 15px;
+  color: #323232;
+
+  svg {
+    flex-shrink: 0;
+    color: #941c3c;
+  }
 }
 
-// Checkbox (consent, interpreter needed, etc.) — checked state reuses the CTA red used by the
-// "Save & Continue" button (rgb(235,60,44)) and the checkmark path from the completed-step icon.
+// Checkbox (consent, risk flags, etc. — the checked state reuses the CTA red rgb(235,60,44)).
 .checkbox-field {
   display: flex;
   align-items: flex-start;
@@ -169,16 +208,35 @@
   color: #2a2a2a;
 }
 
-// Toggle switch (Long-term health condition? No/Yes)
-.toggle {
-  display: inline-flex;
+// "Long-term health condition?" — a 262x37 input-style shell with the "No/Yes" caption on the
+// left and the switch (43x21, off-track rgb(217,217,217), white knob w/ soft shadow) on the
+// right, exactly as drawn in the source.
+.toggle-shell {
+  box-sizing: border-box;
+  width: 262px;
+  max-width: 100%;
+  height: 37px;
+  padding: 0 14px 0 16px;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: inset 0 0 0 1px #e5e5e5;
+  display: flex;
   align-items: center;
-  gap: 10px;
+  justify-content: space-between;
   cursor: pointer;
+}
+
+.toggle-shell__caption {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 24px;
+  color: #323232;
 }
 
 .toggle__track {
   position: relative;
+  flex-shrink: 0;
   width: 43px;
   height: 21px;
   border-radius: 15.5px;
@@ -213,46 +271,88 @@
   }
 }
 
-.toggle__label {
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  font-weight: 400;
-  font-size: 12px;
-  color: #323232;
+// "Immediate Risk Identified? *" — gray card (550 wide, r8, rgb(240,240,240)) holding the
+// question and two white option pills; the selected pill is marked by a red radio ring + dot
+// on its right edge (the pills themselves stay white/borderless in the source).
+.risk-card {
+  box-sizing: border-box;
+  max-width: 550px;
+  padding: 12px 16px 16px;
+  border-radius: 8px;
+  background: #f0f0f0;
 }
 
-// Two-option segmented control (Immediate Risk Identified?)
+.risk-card__title {
+  display: block;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 24px;
+  color: #2a2a2a;
+  margin-bottom: 19px;
+}
+
 .risk-choice {
   display: flex;
-  gap: 12px;
+  gap: 22px;
 }
 
 .risk-pill {
+  box-sizing: border-box;
   flex: 1;
+  max-width: 236px;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 9px;
   height: 36px;
-  padding: 0 14px;
+  padding: 0 12px 0 13px;
   border-radius: 6px;
   background: #ffffff;
-  box-shadow: inset 0 0 0 1px #e5e5e5;
   font-family: 'Plus Jakarta Sans', sans-serif;
   font-weight: 500;
   font-size: 12px;
+  line-height: 24px;
   color: #323232;
   cursor: pointer;
 
-  &--selected {
-    box-shadow: inset 0 0 0 1.5px #eb3c2c;
-    background: #fff1ef;
-  }
-
-  &--danger.risk-pill--selected {
-    box-shadow: inset 0 0 0 1.5px #d02537;
-    background: #fef2f2;
+  svg {
+    flex-shrink: 0;
+    color: #212121;
   }
 }
 
+.risk-pill__radio {
+  box-sizing: border-box;
+  flex-shrink: 0;
+  margin-left: auto;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1.5px #636366;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &::after {
+    content: '';
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: #eb3c2c;
+    opacity: 0;
+  }
+}
+
+.risk-pill--selected .risk-pill__radio {
+  box-shadow: inset 0 0 0 1.5px #eb3c2c;
+
+  &::after {
+    opacity: 1;
+  }
+}
+
+// Risk-flag checklist (functional addition — the static source only draws the yes/no pills;
+// per the design handoff README the flags escalate the guest onto the Urgent Cases queue).
 .risk-flags {
   margin-top: 16px;
   padding: 16px;
@@ -263,12 +363,18 @@
   gap: 10px;
 }
 
-@media (max-width: 640px) {
-  .field-row {
+@media (max-width: 720px) {
+  .field-row,
+  .field-row--single {
     grid-template-columns: 1fr;
+    row-gap: 20px;
   }
 
   .risk-choice {
     flex-direction: column;
+
+    .risk-pill {
+      max-width: none;
+    }
   }
 }

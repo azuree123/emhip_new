@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+import { CommonModule, formatDate } from '@angular/common';
 import { Component, OnDestroy, OnInit, computed, effect, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -32,10 +32,12 @@ const RISK_FLAGS: RiskFlagDef[] = [
 ];
 
 /**
- * "Urgent Cases" screen — ported from Desktop46 in project/screens/Components.bundle.js.
+ * "Urgent cases" screen — ported from Desktop46 in project/screens/Components.bundle.js.
  * Initial load is a plain GET (UrgentCasesApiService.getActive()); after that the list stays
  * live via UrgentCasesHubService (SignalR) per the README's "near-real-time (polling or SignalR)"
  * requirement — the same hub connection the shell already opens for the sidebar badge count.
+ * Risk-level / CMHW / overdue filters are applied client-side (the endpoint returns the full
+ * active set); the design's Pathway filter and Resolved history have no backing data.
  */
 @Component({
   selector: 'app-urgent-cases',
@@ -51,6 +53,7 @@ export class UrgentCasesComponent implements OnInit, OnDestroy {
   private readonly auth = inject(AuthService);
 
   readonly riskFlags = RISK_FLAGS;
+  readonly now = new Date();
 
   readonly cases = signal<UrgentCaseDto[]>([]);
   readonly loading = signal(false);
@@ -58,15 +61,39 @@ export class UrgentCasesComponent implements OnInit, OnDestroy {
   readonly nowTick = signal(Date.now());
   readonly connectionState = this.hub.connectionState;
 
+  // Client-side filters (the API returns the complete active set).
+  readonly riskFilter = signal<'' | RiskFlagKey>('');
+  readonly cmhwFilter = signal('');
+  readonly overdueOnly = signal(false);
+
   readonly overdueCount = computed(() => this.cases().filter((c) => this.hoursSince(c.escalatedAt) >= WINDOW_HOURS).length);
   readonly withinWindowCount = computed(() => this.cases().filter((c) => this.hoursSince(c.escalatedAt) < WINDOW_HOURS).length);
   readonly totalCount = computed(() => this.cases().length);
+
+  readonly cmhwOptions = computed(() => {
+    const names = new Set<string>();
+    for (const c of this.cases()) if (c.assignedCmhwName) names.add(c.assignedCmhwName);
+    return [...names].sort();
+  });
+
+  readonly visibleCases = computed(() => {
+    const risk = this.riskFilter();
+    const cmhw = this.cmhwFilter();
+    const overdue = this.overdueOnly();
+    return this.cases().filter((c) => {
+      if (risk && !c[risk]) return false;
+      if (cmhw && (c.assignedCmhwName ?? '') !== cmhw) return false;
+      if (overdue && this.hoursSince(c.escalatedAt) < WINDOW_HOURS) return false;
+      return true;
+    });
+  });
 
   readonly modalOpen = signal(false);
   readonly modalGuestId = signal('');
   readonly modalGuestName = signal('');
   readonly saving = signal(false);
   readonly saveError = signal<string | null>(null);
+  readonly exporting = signal(false);
 
   scheduleForm = { dueDate: '', assigneeStaffId: this.auth.current().staffId, notes: '' };
 
@@ -112,14 +139,70 @@ export class UrgentCasesComponent implements OnInit, OnDestroy {
     return (Date.now() - new Date(iso).getTime()) / 3_600_000;
   }
 
+  isOverdue(c: UrgentCaseDto): boolean {
+    return this.hoursSince(c.escalatedAt) >= WINDOW_HOURS;
+  }
+
   windowLabel(c: UrgentCaseDto): { text: string; overdue: boolean } {
     const remaining = WINDOW_HOURS - this.hoursSince(c.escalatedAt);
     if (remaining <= 0) return { text: `${Math.round(-remaining)}h overdue`, overdue: true };
     return { text: `${Math.round(remaining)}h left`, overdue: false };
   }
 
+  /** Second line under the countdown: "72h window closed" or "Follow-up by 22:00 today". */
+  deadlineLabel(c: UrgentCaseDto): string {
+    if (this.isOverdue(c)) return '72h window closed';
+    const deadline = new Date(new Date(c.escalatedAt).getTime() + WINDOW_HOURS * 3_600_000);
+    const time = formatDate(deadline, 'HH:mm', 'en-US');
+    const today = new Date();
+    const tomorrow = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
+    if (this.sameDay(deadline, today)) return `Follow-up by ${time} today`;
+    if (this.sameDay(deadline, tomorrow)) return `Follow-up by ${time} tomorrow`;
+    return `Follow-up by ${time}, ${formatDate(deadline, 'd MMM', 'en-US')}`;
+  }
+
+  private sameDay(a: Date, b: Date): boolean {
+    return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+  }
+
+  /** Short human-readable reference derived from the guest id (no ref number exists in the DTO). */
+  refLabel(c: UrgentCaseDto): string {
+    return c.guestId.replace(/-/g, '').slice(0, 6).toUpperCase();
+  }
+
   activeFlags(c: UrgentCaseDto): RiskFlagDef[] {
     return this.riskFlags.filter((f) => c[f.key]);
+  }
+
+  scrollToOverdue(): void {
+    document.querySelector('.row--overdue')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  exportCsv(): void {
+    const rows = this.visibleCases();
+    if (!rows.length || this.exporting()) return;
+    this.exporting.set(true);
+    try {
+      const header = ['Ref', 'Guest', 'Risk flags', 'Assigned CMHW', 'Flag raised', 'Window status'];
+      const lines = rows.map((c) => [
+        this.refLabel(c),
+        c.guestName,
+        this.activeFlags(c).map((f) => f.label).join('; '),
+        c.assignedCmhwName ?? 'Unassigned',
+        c.escalatedAt,
+        this.windowLabel(c).text,
+      ]);
+      const csv = [header, ...lines].map((cols) => cols.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'urgent-cases.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+    } finally {
+      this.exporting.set(false);
+    }
   }
 
   openLogFollowUp(c: UrgentCaseDto): void {

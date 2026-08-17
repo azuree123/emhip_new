@@ -7,6 +7,17 @@
     <section class="identity-card">
       <div class="identity-card__top">
         <div class="identity-card__who">
+          <button type="button" class="btn-back" aria-label="Go back" (click)="goBack()">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <g transform="matrix(0,-1,-1,0,24,24)">
+                <path
+                  transform="translate(4.002,3)"
+                  d="M 15.789 10.267 C 16.074 9.967 16.063 9.493 15.763 9.207 C 15.463 8.921 14.988 8.933 14.702 9.233 L 8.748 15.484 L 8.748 0.75 C 8.748 0.336 8.412 0 7.998 0 C 7.584 0 7.248 0.336 7.248 0.75 L 7.248 15.484 L 1.293 9.233 C 1.007 8.933 0.533 8.921 0.233 9.207 C -0.067 9.493 -0.079 9.967 0.207 10.267 L 7.274 17.686 C 7.435 17.855 7.64 17.955 7.854 17.986 C 7.9 17.995 7.949 18 7.998 18 C 8.048 18 8.096 17.995 8.143 17.986 C 8.356 17.955 8.561 17.855 8.722 17.686 L 15.789 10.267 Z"
+                  fill="currentColor"
+                />
+              </g>
+            </svg>
+          </button>
           <div class="avatar">{{ avatarInitials() }}</div>
           <div class="identity-card__meta">
             <div class="identity-card__name-row">
@@ -30,46 +41,74 @@
           </div>
         </div>
         <div class="identity-card__actions">
-          <button type="button" class="btn btn--ghost" [disabled]="exporting()" (click)="exportRecord()">
-            {{ exporting() ? 'Exporting…' : 'Export record' }}
+          <button type="button" class="btn btn--primary" (click)="addContact()">
+            <svg class="btn__icon" width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+              <path
+                transform="translate(5,5)"
+                d="M 0 4.25 C -0.414 4.25 -0.75 4.586 -0.75 5 C -0.75 5.414 -0.414 5.75 0 5.75 L 0 5 L 0 4.25 Z M 10 5.75 C 10.414 5.75 10.75 5.414 10.75 5 C 10.75 4.586 10.414 4.25 10 4.25 L 10 5 L 10 5.75 Z M 5.75 0 C 5.75 -0.414 5.414 -0.75 5 -0.75 C 4.586 -0.75 4.25 -0.414 4.25 0 L 5 0 L 5.75 0 Z M 4.25 10 C 4.25 10.414 4.586 10.75 5 10.75 C 5.414 10.75 5.75 10.414 5.75 10 L 5 10 L 4.25 10 Z M 0 5 L 0 5.75 L 5 5.75 L 5 5 L 5 4.25 L 0 4.25 L 0 5 Z M 10 5 L 10 4.25 L 5 4.25 L 5 5 L 5 5.75 L 10 5.75 L 10 5 Z M 5 5 L 5.75 5 L 5.75 0 L 5 0 L 4.25 0 L 4.25 5 L 5 5 Z M 5 5 L 4.25 5 L 4.25 10 L 5 10 L 5.75 10 L 5.75 5 L 5 5 Z"
+                fill="currentColor"
+              />
+            </svg>
+            Add Contact
           </button>
-          <button type="button" class="btn btn--outline" (click)="raiseUrgentFlag()">Raise urgent flag</button>
-          <button type="button" class="btn btn--primary" (click)="addContact()">Add contact</button>
+          <button type="button" class="btn btn--outline" (click)="raiseUrgentFlag()">
+            <svg class="btn__icon" width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+              <path
+                transform="translate(2.25,1.5)"
+                d="M 12.938 2.25 C 10.94 2.25 8.994 1.542 7.087 0.113 C 6.887 -0.037 6.613 -0.037 6.413 0.113 C 4.506 1.542 2.56 2.25 0.563 2.25 C 0.252 2.25 0 2.502 0 2.813 L 0 6.75 C 0 10.501 2.218 13.257 6.544 14.961 C 6.676 15.013 6.824 15.013 6.956 14.961 C 11.282 13.257 13.5 10.501 13.5 6.75 L 13.5 2.813 C 13.5 2.502 13.248 2.25 12.938 2.25 Z M 1.125 3.358 C 3.058 3.244 4.936 2.541 6.75 1.258 C 8.564 2.541 10.442 3.244 12.375 3.358 L 12.375 6.75 C 12.375 9.942 10.535 12.284 6.75 13.831 C 2.965 12.284 1.125 9.942 1.125 6.75 L 1.125 3.358 Z M 7.307 4.239 C 7.27 3.964 7.035 3.753 6.75 3.753 C 6.439 3.753 6.188 4.005 6.188 4.315 L 6.188 9.189 L 6.193 9.266 C 6.23 9.54 6.465 9.752 6.75 9.752 C 7.061 9.752 7.313 9.5 7.313 9.189 L 7.313 4.315 L 7.307 4.239 Z M 6.75 12 C 7.164 12 7.5 11.664 7.5 11.25 C 7.5 10.836 7.164 10.5 6.75 10.5 C 6.336 10.5 6 10.836 6 11.25 C 6 11.664 6.336 12 6.75 12 Z"
+                fill="currentColor"
+              />
+            </svg>
+            Raise Urgent Flag
+          </button>
+          <button type="button" class="btn btn--outline" [disabled]="exporting()" (click)="exportRecord()">
+            <svg class="btn__icon" width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+              <path
+                transform="translate(2.813,1.125)"
+                d="M 12.375 6.75 L 12.375 13.5 C 12.375 13.799 12.256 14.085 12.045 14.296 C 11.835 14.507 11.548 14.625 11.25 14.625 L 1.125 14.625 C 0.827 14.625 0.54 14.507 0.33 14.296 C 0.119 14.085 0 13.799 0 13.5 L 0 6.75 C 0 6.452 0.119 6.166 0.33 5.955 C 0.54 5.744 0.827 5.625 1.125 5.625 L 2.813 5.625 C 2.962 5.625 3.105 5.685 3.21 5.79 C 3.316 5.896 3.375 6.039 3.375 6.188 C 3.375 6.337 3.316 6.48 3.21 6.586 C 3.105 6.691 2.962 6.75 2.813 6.75 L 1.125 6.75 L 1.125 13.5 L 11.25 13.5 L 11.25 6.75 L 9.563 6.75 C 9.413 6.75 9.27 6.691 9.165 6.586 C 9.059 6.48 9 6.337 9 6.188 C 9 6.039 9.059 5.896 9.165 5.79 C 9.27 5.685 9.413 5.625 9.563 5.625 L 11.25 5.625 C 11.548 5.625 11.835 5.744 12.045 5.955 C 12.256 6.166 12.375 6.452 12.375 6.75 Z M 3.773 3.773 L 5.625 1.921 L 5.625 8.438 C 5.625 8.587 5.684 8.73 5.79 8.836 C 5.895 8.941 6.038 9 6.188 9 C 6.337 9 6.48 8.941 6.585 8.836 C 6.691 8.73 6.75 8.587 6.75 8.438 L 6.75 1.921 L 8.602 3.773 C 8.708 3.879 8.851 3.938 9 3.938 C 9.149 3.938 9.292 3.879 9.398 3.773 C 9.504 3.668 9.563 3.525 9.563 3.375 C 9.563 3.226 9.504 3.083 9.398 2.977 L 6.585 0.165 C 6.533 0.113 6.471 0.071 6.403 0.043 C 6.335 0.015 6.261 0 6.188 0 C 6.114 0 6.04 0.015 5.972 0.043 C 5.904 0.071 5.842 0.113 5.79 0.165 L 2.977 2.977 C 2.871 3.083 2.812 3.226 2.812 3.375 C 2.812 3.525 2.871 3.668 2.977 3.773 C 3.083 3.879 3.226 3.938 3.375 3.938 C 3.524 3.938 3.667 3.879 3.773 3.773 Z"
+                fill="currentColor"
+              />
+            </svg>
+            {{ exporting() ? 'Exporting…' : 'Export Record' }}
+          </button>
         </div>
       </div>
 
-      @if (guest.openFollowUpCount > 0) {
-        <div class="banner">
-          <span class="banner__bar"></span>
-          <svg width="18" height="18" viewBox="0 0 15 15" fill="none" class="banner__icon">
-            <path
-              d="M 9.938 8.625 L 6.938 8.625 C 6.627 8.625 6.375 8.373 6.375 8.063 L 6.375 3.563 C 6.375 3.252 6.627 3 6.938 3 C 7.248 3 7.5 3.252 7.5 3.563 L 7.5 7.5 L 9.938 7.5 C 10.248 7.5 10.5 7.752 10.5 8.063 C 10.5 8.373 10.248 8.625 9.938 8.625 Z M 7.5 0 C 3.359 0 0 3.359 0 7.5 C 0 11.641 3.359 15 7.5 15 C 11.641 15 15 11.641 15 7.5 C 15 3.359 11.641 0 7.5 0 Z"
-              fill="currentColor"
-            />
-          </svg>
-          <span class="banner__text">
-            {{ guest.openFollowUpCount }} open follow-up {{ guest.openFollowUpCount === 1 ? 'entry' : 'entries' }} —
-            check the Follow-up tab to keep the record current.
-          </span>
-        </div>
-      }
-
-      <nav class="tabbar">
-        @for (tab of tabs; track tab.id; let last = $last) {
-          <button
-            type="button"
-            class="tabbar__tab"
-            [class.tabbar__tab--active]="activeTab() === tab.id"
-            (click)="selectTab(tab.id)"
-          >
-            {{ tab.label }}
-          </button>
-          @if (!last) {
-            <span class="tabbar__divider"></span>
+      <div class="identity-card__tabs">
+        <nav class="tabbar">
+          @for (tab of tabs; track tab.id; let last = $last) {
+            <button
+              type="button"
+              class="tabbar__tab"
+              [class.tabbar__tab--active]="activeTab() === tab.id"
+              (click)="selectTab(tab.id)"
+            >
+              {{ tab.label }}
+            </button>
+            @if (!last) {
+              <span class="tabbar__divider"></span>
+            }
           }
-        }
-      </nav>
+        </nav>
+      </div>
     </section>
+
+    @if (guest.openFollowUpCount > 0) {
+      <div class="banner">
+        <span class="banner__bar"></span>
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" class="banner__icon" aria-hidden="true">
+          <path
+            transform="translate(1.5,1.5)"
+            d="M 9.938 8.625 L 6.938 8.625 C 6.627 8.625 6.375 8.373 6.375 8.063 L 6.375 3.563 C 6.375 3.252 6.627 3 6.938 3 C 7.248 3 7.5 3.252 7.5 3.563 L 7.5 7.5 L 9.938 7.5 C 10.248 7.5 10.5 7.752 10.5 8.063 C 10.5 8.373 10.248 8.625 9.938 8.625 Z M 7.5 0 C 3.359 0 0 3.359 0 7.5 C 0 11.641 3.359 15 7.5 15 C 11.641 15 15 11.641 15 7.5 C 15 3.359 11.641 0 7.5 0 Z"
+            fill="currentColor"
+          />
+        </svg>
+        <span class="banner__text">
+          {{ guest.openFollowUpCount }} open follow-up {{ guest.openFollowUpCount === 1 ? 'entry' : 'entries' }} —
+          check the Follow-up tab to keep the record current.
+        </span>
+      </div>
+    }
 
     <section class="tab-body">
       @switch (activeTab()) {
@@ -78,6 +117,7 @@
             [overview]="guest"
             [openContactForm]="pendingAction() === 'contact'"
             (refresh)="reloadOverview()"
+            (viewFollowUps)="selectTab('followup')"
           />
         }
         @case ('demographics') {

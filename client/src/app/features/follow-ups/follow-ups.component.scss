@@ -1,6 +1,7 @@
-// Ported from Desktop34 in project/screens/Components.bundle.js (the "Global Follow-up" screen).
+// Ported from Desktop34 in project/screens/Components.bundle.js (the "Follow-up log" screen).
 // The sidebar/header chrome lives in app-shell; this file only covers the content area
-// (source x >= 226, y >= 86).
+// (source x >= 226, y >= 86). Key geometry at 1440px: content inset 17/21, stat tiles 277x114
+// on a 23px gap, one white card (radius 12) holding the filter row + 185px entry cards.
 
 :host {
   display: block;
@@ -8,23 +9,24 @@
 }
 
 .page {
-  padding: 24px 32px 40px;
+  padding: 56px 21px 65px 17px;
   display: flex;
   flex-direction: column;
-  gap: 20px;
 }
 
 .page-header {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 16px;
   flex-wrap: wrap;
+  margin-bottom: 23px;
 
   &__title {
     margin: 0;
     font-size: 20px;
     font-weight: 600;
+    line-height: 24px;
     color: rgb(42, 42, 42);
   }
 
@@ -32,6 +34,7 @@
     margin: 6px 0 0;
     font-size: 14px;
     font-weight: 500;
+    line-height: 24px;
     color: rgb(42, 42, 42);
   }
 
@@ -43,37 +46,55 @@
 }
 
 .stat-cards {
-  display: flex;
-  gap: 16px;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 23px;
+  margin-bottom: 20px;
 
   .stat-card {
-    flex: 1 1 220px;
     background: rgb(255, 255, 255);
     border-radius: 12px;
-    padding: 16px 20px;
+    min-height: 114px;
+    padding: 8px 18px 13px 19px;
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    align-items: flex-start;
 
     &__label {
-      font-family: 'Wix Madefor Display', sans-serif;
+      font-family: 'Wix Madefor Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
       font-weight: 600;
       font-size: 10px;
+      line-height: 24px;
       letter-spacing: -0.005em;
       color: rgb(42, 42, 42);
-      text-transform: uppercase;
     }
 
     &__value {
       font-size: 32px;
       font-weight: 600;
+      line-height: 32px;
       color: rgb(42, 42, 42);
-
-      &--danger {
-        color: rgb(225, 38, 40);
-      }
+      margin-top: 3px;
     }
+  }
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  border-radius: 200px;
+  padding: 4px 8px;
+  background: rgb(240, 240, 240);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 16px;
+  color: rgb(42, 42, 42);
+  white-space: nowrap;
+  margin-top: 10px;
+
+  svg {
+    flex-shrink: 0;
   }
 }
 
@@ -89,51 +110,13 @@
   white-space: nowrap;
   width: fit-content;
 
-  &--muted {
-    background: rgb(240, 240, 240);
-    color: rgb(50, 50, 50);
-  }
-
   &--assignee {
     background: rgb(240, 240, 240);
     color: rgb(50, 50, 50);
-    font-size: 12px;
-  }
-}
 
-.filter-bar {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  flex-wrap: wrap;
-  background: rgb(255, 255, 255);
-  border-radius: 12px;
-  padding: 14px 20px;
-
-  &__checkbox {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 14px;
-    font-weight: 500;
-    color: rgb(42, 42, 42);
-  }
-
-  &__field {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 14px;
-    font-weight: 500;
-    color: rgb(42, 42, 42);
-
-    input {
-      height: 36px;
-      border-radius: 4px;
-      border: 1px solid rgb(229, 229, 229);
-      padding: 0 12px;
-      font-size: 14px;
-      font-family: inherit;
+    svg {
+      color: rgb(42, 42, 42);
+      flex-shrink: 0;
     }
   }
 }
@@ -141,7 +124,124 @@
 .queue-card {
   background: rgb(255, 255, 255);
   border-radius: 12px;
-  padding: 20px;
+  padding: 23px 23px 28px;
+  display: flex;
+  flex-direction: column;
+}
+
+.filter-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 34px;
+
+  &__group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+}
+
+.search-box {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 396px;
+  max-width: 100%;
+  height: 36px;
+  border-radius: 4px;
+  background: rgb(255, 255, 255);
+  box-shadow: inset 0 0 0 1px rgb(229, 229, 229);
+
+  svg {
+    position: absolute;
+    left: 13px;
+    pointer-events: none;
+  }
+
+  input {
+    width: 100%;
+    height: 100%;
+    border: none;
+    background: transparent;
+    border-radius: 4px;
+    padding: 0 12px 0 43px;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 500;
+    color: rgb(42, 42, 42);
+
+    &::placeholder {
+      color: rgb(140, 140, 140);
+    }
+
+    &:focus {
+      outline: 2px solid rgb(148, 28, 60);
+      outline-offset: -1px;
+    }
+  }
+}
+
+.check-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: -0.005em;
+  color: rgb(42, 42, 42);
+  cursor: pointer;
+  padding: 0 8px;
+
+  input {
+    width: 17px;
+    height: 17px;
+    accent-color: rgb(148, 28, 60);
+  }
+}
+
+.filter-input,
+.filter-select {
+  height: 36px;
+  border: none;
+  border-radius: 4px;
+  background: rgb(255, 255, 255);
+  box-shadow: inset 0 0 0 1px rgb(229, 229, 229);
+  padding: 0 17px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: -0.005em;
+  color: rgb(42, 42, 42);
+
+  &:focus {
+    outline: 2px solid rgb(148, 28, 60);
+    outline-offset: -1px;
+  }
+}
+
+.filter-input {
+  width: 128px;
+
+  &::placeholder {
+    color: rgb(42, 42, 42);
+    opacity: 1;
+  }
+}
+
+.filter-select {
+  appearance: none;
+  padding-right: 34px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 14 14' fill='none'%3E%3Cpath d='M 3.5 5.25 L 7 8.75 L 10.5 5.25' stroke='%23727272' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  cursor: pointer;
+}
+
+.rows {
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -150,34 +250,22 @@
 .row {
   border-radius: 8px;
   box-shadow: inset 0 0 0 1px rgb(238, 238, 238);
-  padding: 16px 24px;
+  min-height: 185px;
+  padding: 22px 34px 22px 32px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
 
   &__top {
     display: flex;
-    align-items: center;
+    align-items: baseline;
     justify-content: space-between;
     gap: 12px;
-  }
-
-  &__badges {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  &__time {
-    font-size: 14px;
-    font-weight: 500;
-    letter-spacing: -0.005em;
-    color: rgb(42, 42, 42);
   }
 
   &__guest {
     font-size: 14px;
     font-weight: 600;
+    line-height: 24px;
     color: rgb(42, 42, 42);
     text-decoration: none;
     width: fit-content;
@@ -187,47 +275,76 @@
     }
   }
 
+  &__time {
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 24px;
+    letter-spacing: -0.005em;
+    color: rgb(42, 42, 42);
+    white-space: nowrap;
+  }
+
+  &__meta {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    margin-top: 4px;
+  }
+
+  &__ref {
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 18px;
+    color: rgb(225, 38, 40);
+    white-space: nowrap;
+  }
+
+  &__note {
+    margin: 2px 0 0;
+    max-width: 760px;
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 24px;
+    color: rgb(50, 50, 50);
+  }
+
   &__bottom {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 12px;
     flex-wrap: wrap;
+    margin-top: auto;
+    padding-top: 9px;
   }
 
   &__actions {
     display: flex;
     align-items: center;
-    gap: 10px;
-  }
-}
-
-.due-label {
-  font-size: 12px;
-  font-weight: 500;
-  line-height: 18px;
-  color: rgb(50, 50, 50);
-
-  &--overdue {
-    color: rgb(225, 38, 40);
+    gap: 6px;
   }
 }
 
 .btn {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   height: 36px;
-  padding: 0 16px;
+  padding: 0 16px 0 12px;
   border-radius: 4px;
   border: none;
   font-family: inherit;
   font-size: 14px;
   font-weight: 500;
   letter-spacing: -0.005em;
+  line-height: 24px;
   cursor: pointer;
   text-decoration: none;
   white-space: nowrap;
+
+  svg {
+    flex-shrink: 0;
+  }
 
   &:disabled {
     opacity: 0.5;
@@ -239,30 +356,20 @@
     color: rgb(255, 255, 255);
   }
 
-  &--ghost {
-    background: rgb(235, 60, 44);
-    color: rgb(255, 255, 255);
-  }
-
   &--outline {
     background: rgb(255, 255, 255);
     color: rgb(42, 42, 42);
     box-shadow: inset 0 0 0 1px rgb(217, 217, 217);
   }
-
-  &--sm {
-    height: 36px;
-    padding: 0 14px;
-    font-size: 14px;
-  }
 }
 
 .icon-btn {
-  width: 32px;
-  height: 32px;
-  border-radius: 6px;
+  width: 36px;
+  height: 36px;
+  border-radius: 4px;
   border: none;
-  background: rgb(240, 240, 240);
+  background: rgb(255, 255, 255);
+  box-shadow: inset 0 0 0 1px rgb(217, 217, 217);
   color: rgb(20, 113, 41);
   display: inline-flex;
   align-items: center;
@@ -275,6 +382,7 @@
   padding: 12px 16px;
   font-size: 14px;
   font-weight: 500;
+  margin-bottom: 12px;
 
   &--error {
     background: rgb(254, 242, 242);
@@ -291,10 +399,39 @@
   font-size: 14px;
 }
 
-.load-more {
+.list-footer {
   display: flex;
-  justify-content: center;
-  padding-top: 8px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 24px;
+
+  &__summary {
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 24px;
+    letter-spacing: -0.005em;
+    color: rgb(50, 50, 50);
+  }
+}
+
+.pager-btn {
+  height: 38px;
+  padding: 0 16px;
+  border-radius: 8px;
+  border: 1px solid rgb(229, 229, 229);
+  background: rgb(246, 246, 246);
+  font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.005em;
+  color: rgb(42, 42, 42);
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
 }
 
 .modal-overlay {
@@ -420,16 +557,36 @@
   }
 }
 
+@media (max-width: 1279px) {
+  .stat-cards {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+}
+
 @media (max-width: 767px) {
   .page {
     padding: 16px;
   }
 
+  .stat-cards {
+    grid-template-columns: 1fr;
+  }
+
+  .queue-card {
+    padding: 16px;
+  }
+
   .row {
+    min-height: 0;
     padding: 14px 16px;
   }
 
-  .filter-bar {
-    padding: 12px 16px;
+  .filter-row {
+    margin-bottom: 16px;
+  }
+
+  .search-box {
+    width: 100%;
   }
 }

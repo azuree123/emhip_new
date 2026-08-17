@@ -1,80 +1,133 @@
 <div class="dashboard">
   @if (data(); as d) {
     <h1 class="page-title">Guest Overview</h1>
-    <div class="total-stat">
-      <span class="total-stat__number">{{ d.totalGuestsAcrossHub }}</span>
-      <span class="total-stat__label">total guests across hub</span>
-    </div>
 
     <div class="grid">
-      <div class="card">
-        <div class="card__title">Pathway distribution</div>
-        <div class="card__subtitle">Active guest only</div>
-
-        <div class="pathway-rows">
-          @for (row of pathwayRows(d); track row.category) {
-            <div class="pathway-row">
-              <div class="pathway-row__top">
-                <span class="pathway-row__label">{{ row.label }}</span>
-                <span class="pathway-row__meta">
-                  {{ row.count }} guests
-                  <span class="dot"></span>
-                  <span [style.color]="row.color">{{ row.percentage }}%</span>
-                </span>
-              </div>
-              <div class="pathway-row__track">
-                <div class="pathway-row__fill" [style.width.%]="row.percentage" [style.background]="row.color"></div>
-              </div>
+      <div class="grid__col grid__col--main">
+        <div class="card">
+          <div class="card__head">
+            <div>
+              <div class="card__title">Pathway distribution</div>
+              <div class="card__subtitle">Active guest only</div>
             </div>
-          } @empty {
-            <div class="empty">No pathway referrals recorded yet.</div>
-          }
+            <a class="link-red" routerLink="/guests">
+              View guest list
+              <svg width="14" height="14" viewBox="0 0 13.5 13.5" fill="none">
+                <path
+                  d="M 2.437 1.125 C 1.713 1.125 1.125 1.713 1.125 2.438 L 1.125 11.063 C 1.125 11.787 1.713 12.375 2.437 12.375 L 11.062 12.375 C 11.787 12.375 12.375 11.787 12.375 11.063 L 12.375 8.063 C 12.375 7.752 12.627 7.5 12.937 7.5 C 13.248 7.5 13.5 7.752 13.5 8.063 L 13.5 11.063 C 13.5 12.409 12.408 13.5 11.062 13.5 L 2.437 13.5 C 1.091 13.5 0 12.409 0 11.063 L 0 2.438 C 0 1.091 1.091 0 2.437 0 L 5.437 0 C 5.748 0 6 0.252 6 0.563 C 6 0.873 5.748 1.125 5.437 1.125 L 2.437 1.125 Z M 7.5 0.563 C 7.5 0.252 7.752 0 8.062 0 L 12.938 0 C 13.248 0 13.5 0.252 13.5 0.563 L 13.5 5.438 C 13.5 5.748 13.248 6 12.938 6 C 12.627 6 12.375 5.748 12.375 5.438 L 12.375 1.921 L 8.46 5.835 C 8.24 6.055 7.884 6.055 7.665 5.835 C 7.445 5.616 7.445 5.259 7.665 5.04 L 11.58 1.125 L 8.062 1.125 C 7.752 1.125 7.5 0.873 7.5 0.563 Z"
+                  fill="currentColor"
+                />
+              </svg>
+            </a>
+          </div>
+
+          <div class="pathway-rows">
+            @for (row of pathwayRows(d); track row.category) {
+              <div class="pathway-row">
+                <div class="pathway-row__top">
+                  <span class="pathway-row__label">{{ row.label }}</span>
+                  <span class="pathway-row__meta">
+                    <span class="pathway-row__count">{{ row.count }}</span>
+                    <span class="pathway-row__unit">GUEST</span>
+                    <span class="dot"></span>
+                    <span class="pathway-row__pct" [style.color]="row.color">{{ row.percentage }}%</span>
+                  </span>
+                </div>
+                <div class="pathway-row__track">
+                  <div class="pathway-row__fill" [style.width.%]="row.percentage" [style.background]="row.color"></div>
+                </div>
+              </div>
+            } @empty {
+              <div class="empty">No pathway referrals recorded yet.</div>
+            }
+          </div>
+
+          <div class="pathway-note">*Advice first aid available across all pathways</div>
+          <div class="pathway-footer">
+            <div class="pathway-footer__total">Total Patient: <span>{{ d.totalGuestsAcrossHub }}</span></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card__head">
+            <div>
+              <div class="card__title">Monthly stats</div>
+            </div>
+          </div>
+          <table class="monthly-table">
+            <thead>
+              <tr>
+                <th>Month</th>
+                <th>New</th>
+                <th>Closed</th>
+                <th>Contacts</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (m of d.monthlyStats; track m.year + '-' + m.month) {
+                <tr>
+                  <td>{{ monthLabel(m.year, m.month) }}</td>
+                  <td>{{ m.newGuests }}</td>
+                  <td>{{ m.closedGuests }}</td>
+                  <td>{{ m.contacts }}</td>
+                </tr>
+              } @empty {
+                <tr><td colspan="4" class="empty">No monthly data yet.</td></tr>
+              }
+            </tbody>
+          </table>
         </div>
       </div>
 
-      <div class="card">
-        <div class="card__title">Monthly stats</div>
-        <table class="monthly-table">
-          <thead>
-            <tr>
-              <th>Month</th>
-              <th>New</th>
-              <th>Closed</th>
-              <th>Contacts</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (m of d.monthlyStats; track m.year + '-' + m.month) {
-              <tr>
-                <td>{{ monthLabel(m.year, m.month) }}</td>
-                <td>{{ m.newGuests }}</td>
-                <td>{{ m.closedGuests }}</td>
-                <td>{{ m.contacts }}</td>
-              </tr>
-            } @empty {
-              <tr><td colspan="4" class="empty">No monthly data yet.</td></tr>
-            }
-          </tbody>
-        </table>
-      </div>
-    </div>
+      <div class="grid__col grid__col--side">
+        <div class="card seen-card">
+          <div class="card__head">
+            <div class="card__title">Guest Seen</div>
+          </div>
+          @if (latestMonth(d); as latest) {
+            <div class="seen-card__number">{{ latest.contacts }}</div>
+            <div class="seen-card__pill">
+              <svg width="13" height="15" viewBox="0 0 12.869 14.625" fill="none">
+                <path
+                  d="M 6.375 1.875 C 9.896 1.875 12.75 4.729 12.75 8.25 C 12.75 11.771 9.896 14.625 6.375 14.625 C 2.854 14.625 0 11.771 0 8.25 C 0 4.729 2.854 1.875 6.375 1.875 Z M 6.375 3 C 3.476 3 1.125 5.351 1.125 8.25 C 1.125 11.149 3.476 13.5 6.375 13.5 C 9.274 13.5 11.625 11.149 11.625 8.25 C 11.625 5.351 9.274 3 6.375 3 Z M 6.375 4.125 C 6.66 4.125 6.895 4.337 6.932 4.611 L 6.938 4.688 L 6.938 8.063 C 6.938 8.373 6.686 8.625 6.375 8.625 C 6.09 8.625 5.855 8.413 5.818 8.139 L 5.813 8.063 L 5.813 4.688 C 5.813 4.377 6.064 4.125 6.375 4.125 Z M 11.735 1.96 L 11.797 2.005 L 12.666 2.728 C 12.905 2.927 12.937 3.282 12.739 3.52 C 12.556 3.739 12.243 3.785 12.008 3.638 L 11.946 3.593 L 11.078 2.87 C 10.839 2.671 10.806 2.316 11.005 2.078 C 11.187 1.859 11.501 1.813 11.735 1.96 Z M 8.063 0 C 8.373 0 8.625 0.252 8.625 0.563 C 8.625 0.847 8.413 1.083 8.139 1.12 L 8.063 1.125 L 4.688 1.125 C 4.377 1.125 4.125 0.873 4.125 0.563 C 4.125 0.278 4.337 0.042 4.611 0.005 L 4.688 0 L 8.063 0 Z"
+                  fill="currentColor"
+                />
+              </svg>
+              this month
+            </div>
+          } @else {
+            <div class="empty">No contact data yet.</div>
+          }
+        </div>
 
-    <div class="card activity-card">
-      <div class="card__title">Recent activity</div>
-      <div class="card__subtitle">Latest events across the hub</div>
-
-      <div class="timeline">
-        @for (item of d.recentActivity; track $index) {
-          <div class="timeline__item">
-            <div class="timeline__icon" [class.timeline__icon--alt]="$index % 2 === 1"></div>
-            <div class="timeline__content">
-              <div class="timeline__description">{{ item.description }}</div>
-              <div class="timeline__meta">{{ item.actorName }} · {{ formatDateTime(item.occurredAt) }}</div>
+        <div class="card activity-card">
+          <div class="card__head">
+            <div>
+              <div class="card__title">Recent activity</div>
+              <div class="card__subtitle">Last 24 hours</div>
             </div>
           </div>
-        } @empty {
-          <div class="empty">No recent activity.</div>
-        }
+
+          <div class="timeline">
+            @for (item of d.recentActivity; track $index) {
+              <div class="timeline__item">
+                <div class="timeline__icon" [class.timeline__icon--alt]="$index % 2 === 1">
+                  @if (activityIcon(item.description); as icon) {
+                    <svg [attr.width]="icon.width" [attr.height]="icon.height" [attr.viewBox]="icon.viewBox" fill="none">
+                      <path [attr.d]="icon.path" fill="currentColor" fill-rule="nonzero" />
+                    </svg>
+                  }
+                </div>
+                <div class="timeline__content">
+                  <div class="timeline__description">{{ item.description }}</div>
+                  <div class="timeline__meta">{{ item.actorName }} · {{ formatDateTime(item.occurredAt) }}</div>
+                </div>
+              </div>
+            } @empty {
+              <div class="empty">No recent activity.</div>
+            }
+          </div>
+        </div>
       </div>
     </div>
   } @else if (loading()) {
