@@ -2,6 +2,65 @@
   @if (data(); as d) {
     <h1 class="page-title">Guest Overview</h1>
 
+    <div class="kpi-row">
+      <div class="kpi-card" role="button" tabindex="0" (click)="drillToStatus('Active')" (keydown.enter)="drillToStatus('Active')">
+        <div class="kpi-card__expand kpi-card__expand--up" aria-hidden="true">
+          <svg width="8" height="13" viewBox="0 0 7.364 12.728" fill="none">
+            <path
+              d="M 7.071 7.071 L 1.414 12.728 L 0 11.314 L 4.95 6.364 L 0 1.414 L 1.414 0 L 7.071 5.657 C 7.258 5.845 7.364 6.099 7.364 6.364 C 7.364 6.629 7.364 6.883 7.071 7.071 Z"
+              fill="currentColor"
+              fill-rule="evenodd"
+            />
+          </svg>
+        </div>
+        <div class="kpi-card__label">Total active</div>
+        <div class="kpi-card__number">{{ d.totalActiveGuests }}</div>
+        <div class="kpi-card__pill kpi-card__pill--green">Active guests</div>
+      </div>
+      <div class="kpi-card" role="button" tabindex="0" (click)="drillToStatus('PendingConversation')" (keydown.enter)="drillToStatus('PendingConversation')">
+        <div class="kpi-card__expand" aria-hidden="true">
+          <svg width="8" height="13" viewBox="0 0 7.364 12.728" fill="none">
+            <path
+              d="M 7.071 7.071 L 1.414 12.728 L 0 11.314 L 4.95 6.364 L 0 1.414 L 1.414 0 L 7.071 5.657 C 7.258 5.845 7.364 6.099 7.364 6.364 C 7.364 6.629 7.364 6.883 7.071 7.071 Z"
+              fill="currentColor"
+              fill-rule="evenodd"
+            />
+          </svg>
+        </div>
+        <div class="kpi-card__label">New (pending conversation)</div>
+        <div class="kpi-card__number">{{ d.pendingConversationGuests }}</div>
+        <div class="kpi-card__pill kpi-card__pill--yellow">Awaiting initial conversation</div>
+      </div>
+      <div class="kpi-card" role="button" tabindex="0" (click)="drillToStatus('Inactive')" (keydown.enter)="drillToStatus('Inactive')">
+        <div class="kpi-card__expand" aria-hidden="true">
+          <svg width="8" height="13" viewBox="0 0 7.364 12.728" fill="none">
+            <path
+              d="M 7.071 7.071 L 1.414 12.728 L 0 11.314 L 4.95 6.364 L 0 1.414 L 1.414 0 L 7.071 5.657 C 7.258 5.845 7.364 6.099 7.364 6.364 C 7.364 6.629 7.364 6.883 7.071 7.071 Z"
+              fill="currentColor"
+              fill-rule="evenodd"
+            />
+          </svg>
+        </div>
+        <div class="kpi-card__label">IN ACTIVE</div>
+        <div class="kpi-card__number">{{ d.inactiveGuests }}</div>
+        <div class="kpi-card__pill kpi-card__pill--pink">Inactive guests</div>
+      </div>
+      <div class="kpi-card" role="button" tabindex="0" (click)="goToUrgentCases()" (keydown.enter)="goToUrgentCases()">
+        <div class="kpi-card__expand" aria-hidden="true">
+          <svg width="8" height="13" viewBox="0 0 7.364 12.728" fill="none">
+            <path
+              d="M 7.071 7.071 L 1.414 12.728 L 0 11.314 L 4.95 6.364 L 0 1.414 L 1.414 0 L 7.071 5.657 C 7.258 5.845 7.364 6.099 7.364 6.364 C 7.364 6.629 7.364 6.883 7.071 7.071 Z"
+              fill="currentColor"
+              fill-rule="evenodd"
+            />
+          </svg>
+        </div>
+        <div class="kpi-card__label">Urgent Cases</div>
+        <div class="kpi-card__number">{{ d.urgentGuests }}</div>
+        <div class="kpi-card__pill kpi-card__pill--pink"><span class="dot"></span>Needs follow-up</div>
+      </div>
+    </div>
+
     <div class="grid">
       <div class="grid__col grid__col--main">
         <div class="card">
@@ -130,6 +189,18 @@
         </div>
       </div>
     </div>
+
+    @if (d.clinicalComplexity.length > 0) {
+      <h2 class="section-title">Clinical Complexity Indicators</h2>
+      <div class="clinical-row">
+        @for (indicator of d.clinicalComplexity; track indicator.label) {
+          <div class="clinical-tile">
+            <div class="clinical-tile__label">{{ indicator.label }}</div>
+            <div class="clinical-tile__number">{{ indicator.count }}</div>
+          </div>
+        }
+      </div>
+    }
   } @else if (loading()) {
     <div class="state-message">Loading service overview…</div>
   } @else if (error()) {

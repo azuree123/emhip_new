@@ -93,6 +93,24 @@ public sealed class ReportMaterializerWorker(IServiceScopeFactory scopeFactory, 
             monthlyDtos.Add(new MonthlyStatDto(m.Year, m.Month, m.NewGuests, m.ClosedGuests, contactCount));
         }
 
+        // Clinical complexity: guests counted by the flags on their LATEST (highest-version)
+        // risk assessment — historical assessments never contribute, matching how the
+        // escalation logic reads the current clinical picture.
+        var latestFlags = await db.RiskAssessments.AsNoTracking()
+            .Where(r => db.Guests.Any(g => g.Id == r.GuestId && g.HubId == hubId))
+            .Where(r => !db.RiskAssessments.Any(r2 => r2.GuestId == r.GuestId && r2.Version > r.Version))
+            .Select(r => new { r.SuicidalIdeation, r.SelfHarm, r.RiskToOthers, r.SevereDeterioration, r.SafeguardingConcern })
+            .ToListAsync(cancellationToken);
+
+        var clinicalComplexity = new List<ClinicalIndicatorDto>
+        {
+            new("Suicidal ideation", latestFlags.Count(r => r.SuicidalIdeation)),
+            new("Self-harm", latestFlags.Count(r => r.SelfHarm)),
+            new("Risk to others", latestFlags.Count(r => r.RiskToOthers)),
+            new("Severe deterioration", latestFlags.Count(r => r.SevereDeterioration)),
+            new("Safeguarding concern", latestFlags.Count(r => r.SafeguardingConcern)),
+        };
+
         var snapshot = await db.DashboardSnapshots.FirstOrDefaultAsync(s => s.HubId == hubId, cancellationToken);
         if (snapshot is null)
         {
@@ -107,6 +125,7 @@ public sealed class ReportMaterializerWorker(IServiceScopeFactory scopeFactory, 
         snapshot.TotalGuestsAcrossHub = statusCounts.Sum(s => s.Count);
         snapshot.PathwayDistributionJson = JsonSerializer.Serialize(pathwayDtos);
         snapshot.MonthlyStatsJson = JsonSerializer.Serialize(monthlyDtos);
+        snapshot.ClinicalComplexityJson = JsonSerializer.Serialize(clinicalComplexity);
         snapshot.RefreshedAt = DateTimeOffset.UtcNow;
     }
 

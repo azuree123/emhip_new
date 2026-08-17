@@ -174,6 +174,13 @@ export interface CmhwDashboardDto {
   urgentGuests: number;
   activeGuests: ActiveGuestRowDto[];
   urgentBanner: UrgentCaseDto[];
+  clinicalComplexity: ClinicalIndicatorDto[];
+}
+
+/** One "Clinical Complexity Indicators" tile — guests whose latest risk assessment has the flag. */
+export interface ClinicalIndicatorDto {
+  label: string;
+  count: number;
 }
 
 export interface PathwayDistributionDto {
@@ -198,9 +205,14 @@ export interface RecentActivityDto {
 
 export interface HubManagerDashboardDto {
   totalGuestsAcrossHub: number;
+  totalActiveGuests: number;
+  pendingConversationGuests: number;
+  inactiveGuests: number;
+  urgentGuests: number;
   pathwayDistribution: PathwayDistributionDto[];
   monthlyStats: MonthlyStatDto[];
   recentActivity: RecentActivityDto[];
+  clinicalComplexity: ClinicalIndicatorDto[];
 }
 
 export interface PathwayCategoryTotalDto {

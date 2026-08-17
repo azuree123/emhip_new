@@ -37,8 +37,14 @@ public sealed class DashboardReadService(EmhipDbContext db, IUrgentCaseReadServi
             snapshot?.InactiveGuests ?? 0,
             snapshot?.UrgentGuests ?? 0,
             activeGuests,
-            urgentBanner.Take(5).ToList());
+            urgentBanner.Take(5).ToList(),
+            DeserializeClinicalComplexity(snapshot));
     }
+
+    private static List<ClinicalIndicatorDto> DeserializeClinicalComplexity(ReadModels.DashboardSnapshot? snapshot) =>
+        snapshot is null
+            ? []
+            : JsonSerializer.Deserialize<List<ClinicalIndicatorDto>>(snapshot.ClinicalComplexityJson) ?? [];
 
     public async Task<HubManagerDashboardDto> GetHubManagerDashboardAsync(Guid hubId, CancellationToken cancellationToken = default)
     {
@@ -63,6 +69,15 @@ public sealed class DashboardReadService(EmhipDbContext db, IUrgentCaseReadServi
                 a.OccurredAt))
             .ToListAsync(cancellationToken);
 
-        return new HubManagerDashboardDto(snapshot?.TotalGuestsAcrossHub ?? 0, pathwayDistribution, monthlyStats, recentActivity);
+        return new HubManagerDashboardDto(
+            snapshot?.TotalGuestsAcrossHub ?? 0,
+            snapshot?.TotalActiveGuests ?? 0,
+            snapshot?.PendingConversationGuests ?? 0,
+            snapshot?.InactiveGuests ?? 0,
+            snapshot?.UrgentGuests ?? 0,
+            pathwayDistribution,
+            monthlyStats,
+            recentActivity,
+            DeserializeClinicalComplexity(snapshot));
     }
 }

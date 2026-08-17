@@ -74,4 +74,9 @@ export class DashboardCmhwComponent {
   protected goToUrgentCases(): void {
     this.router.navigate(['/urgent-cases']);
   }
+
+  /** KPI drill-down — opens the guest list pre-filtered to the card's status. */
+  protected drillToStatus(status: string): void {
+    this.router.navigate(['/guests'], { queryParams: { status } });
+  }
 }

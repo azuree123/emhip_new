@@ -19,5 +19,8 @@ public class DashboardSnapshot
     /// <summary>JSON-serialized IReadOnlyList&lt;MonthlyStatDto&gt;.</summary>
     public string MonthlyStatsJson { get; set; } = "[]";
 
+    /// <summary>JSON-serialized IReadOnlyList&lt;ClinicalIndicatorDto&gt; — see ReportMaterializerWorker.</summary>
+    public string ClinicalComplexityJson { get; set; } = "[]";
+
     public DateTimeOffset RefreshedAt { get; set; }
 }

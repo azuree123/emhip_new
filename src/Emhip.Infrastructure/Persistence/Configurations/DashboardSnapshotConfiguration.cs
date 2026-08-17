@@ -12,5 +12,6 @@ public class DashboardSnapshotConfiguration : IEntityTypeConfiguration<Dashboard
         builder.HasKey(d => d.HubId);
         builder.Property(d => d.PathwayDistributionJson).HasColumnType("nvarchar(max)");
         builder.Property(d => d.MonthlyStatsJson).HasColumnType("nvarchar(max)");
+        builder.Property(d => d.ClinicalComplexityJson).HasColumnType("nvarchar(max)").HasDefaultValue("[]");
     }
 }

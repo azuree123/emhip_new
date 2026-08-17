@@ -1,3 +1,5 @@
+@import 'kpi-shared';
+
 // CMHW dashboard — geometry/colors from the `Dashboard` section (node 356:1140) of
 // project/screens/Components.bundle.js. Content area in the design starts 17px in from
 // the sidebar, 14px under the header, and ends 20/21px from the right edge at 1440px.
@@ -90,106 +92,6 @@
   font-size: 20px;
   line-height: 24px;
   color: #2a2a2a;
-}
-
-.kpi-row {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 23px;
-  margin-bottom: 15px;
-}
-
-.kpi-card {
-  position: relative;
-  background: #ffffff;
-  border-radius: 12px;
-  min-height: 114px;
-  padding: 8px 18px 13px;
-
-  // 36px bordered square with a chevron in the design's top-right corner of each card.
-  &__expand {
-    position: absolute;
-    top: 12px;
-    right: 12px;
-    width: 36px;
-    height: 36px;
-    border-radius: 6px;
-    box-shadow: inset 0 0 0 1px #dbdbdb;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #000000;
-
-    svg {
-      transform: rotate(90deg);
-    }
-
-    &--up svg {
-      transform: rotate(-90deg);
-    }
-  }
-
-  &__label {
-    font-family: 'Wix Madefor Display', sans-serif;
-    font-weight: 600;
-    font-size: 10px;
-    line-height: 24px;
-    letter-spacing: -0.005em;
-    color: #2a2a2a;
-    padding-right: 44px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  &__number {
-    margin-top: 3px;
-    font-weight: 600;
-    font-size: 32px;
-    line-height: 32px;
-    color: #2a2a2a;
-  }
-
-  &__pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    margin-top: 10px;
-    padding: 4px 8px;
-    border-radius: 200px;
-    font-family: 'Wix Madefor Display', sans-serif;
-    font-weight: 600;
-    font-size: 12px;
-    line-height: 16px;
-    letter-spacing: -0.005em;
-
-    svg {
-      flex-shrink: 0;
-    }
-  }
-
-  .dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: #d02537;
-    flex-shrink: 0;
-  }
-
-  &__pill--green {
-    background: #eafdee;
-    color: #147129;
-  }
-
-  &__pill--yellow {
-    background: #fff9e4;
-    color: #9d852d;
-  }
-
-  &__pill--pink {
-    background: #fff0f1;
-    color: #d02537;
-  }
 }
 
 .active-guests {

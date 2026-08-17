@@ -34,7 +34,7 @@
     <h1 class="page-title">Guest Overview</h1>
 
     <div class="kpi-row">
-      <div class="kpi-card">
+      <div class="kpi-card" role="button" tabindex="0" (click)="drillToStatus('Active')" (keydown.enter)="drillToStatus('Active')">
         <div class="kpi-card__expand kpi-card__expand--up" aria-hidden="true">
           <svg width="8" height="13" viewBox="0 0 7.364 12.728" fill="none">
             <path
@@ -48,7 +48,7 @@
         <div class="kpi-card__number">{{ d.totalActiveGuests }}</div>
         <div class="kpi-card__pill kpi-card__pill--green">Active guests</div>
       </div>
-      <div class="kpi-card">
+      <div class="kpi-card" role="button" tabindex="0" (click)="drillToStatus('PendingConversation')" (keydown.enter)="drillToStatus('PendingConversation')">
         <div class="kpi-card__expand" aria-hidden="true">
           <svg width="8" height="13" viewBox="0 0 7.364 12.728" fill="none">
             <path
@@ -70,7 +70,7 @@
           Awaiting initial conversation
         </div>
       </div>
-      <div class="kpi-card">
+      <div class="kpi-card" role="button" tabindex="0" (click)="drillToStatus('Inactive')" (keydown.enter)="drillToStatus('Inactive')">
         <div class="kpi-card__expand" aria-hidden="true">
           <svg width="8" height="13" viewBox="0 0 7.364 12.728" fill="none">
             <path
@@ -85,7 +85,7 @@
         <div class="kpi-card__number">{{ d.inactiveGuests }}</div>
         <div class="kpi-card__pill kpi-card__pill--pink">Inactive guests</div>
       </div>
-      <div class="kpi-card">
+      <div class="kpi-card" role="button" tabindex="0" (click)="goToUrgentCases()" (keydown.enter)="goToUrgentCases()">
         <div class="kpi-card__expand" aria-hidden="true">
           <svg width="8" height="13" viewBox="0 0 7.364 12.728" fill="none">
             <path
@@ -190,6 +190,18 @@
         </a>
       </div>
     </div>
+
+    @if (d.clinicalComplexity.length > 0) {
+      <h2 class="section-title">Clinical Complexity Indicators</h2>
+      <div class="clinical-row">
+        @for (indicator of d.clinicalComplexity; track indicator.label) {
+          <div class="clinical-tile">
+            <div class="clinical-tile__label">{{ indicator.label }}</div>
+            <div class="clinical-tile__number">{{ indicator.count }}</div>
+          </div>
+        }
+      </div>
+    }
   } @else if (loading()) {
     <div class="state-message">Loading dashboard…</div>
   } @else if (error()) {

@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { catchError, of } from 'rxjs';
 import { DashboardsApiService } from '../../core/dashboards-api.service';
 import { HubManagerDashboardDto, MonthlyStatDto, PathwayDistributionDto } from '../../core/api-models';
@@ -72,6 +72,7 @@ const ACTIVITY_ICON_DEFAULT = {
 })
 export class DashboardHubManagerComponent {
   private readonly dashboardsApi = inject(DashboardsApiService);
+  private readonly router = inject(Router);
 
   protected readonly data = signal<HubManagerDashboardDto | null>(null);
   protected readonly loading = signal(true);
@@ -116,5 +117,14 @@ export class DashboardHubManagerComponent {
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return value;
     return date.toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+  }
+
+  /** KPI drill-down — opens the guest list pre-filtered to the card's status. */
+  protected drillToStatus(status: string): void {
+    this.router.navigate(['/guests'], { queryParams: { status } });
+  }
+
+  protected goToUrgentCases(): void {
+    this.router.navigate(['/urgent-cases']);
   }
 }

@@ -76,13 +76,18 @@ export class GuestDataSheetComponent {
         this.resetAndLoad();
       });
 
-    // The header search bar navigates here with ?q=… — including while this screen is
-    // already active, so track the param instead of reading it once. The first emission
-    // (synchronous) doubles as the initial load.
+    // The header search bar navigates here with ?q=…, and the dashboard KPI cards with
+    // ?status=… — including while this screen is already active, so track the params
+    // instead of reading them once. The first (synchronous) emission doubles as the
+    // initial load.
     this.route.queryParamMap.pipe(takeUntilDestroyed()).subscribe((params) => {
       const q = params.get('q') ?? '';
-      const changed = q !== this.searchTerm;
+      const statusParam = params.get('status');
+      const status: StatusFilterValue =
+        statusParam && STATUS_OPTIONS.some((o) => o.value === statusParam) ? (statusParam as StatusFilterValue) : 'All';
+      const changed = q !== this.searchTerm || status !== this.statusFilter();
       this.searchTerm = q;
+      this.statusFilter.set(status);
       if (changed || !this.initialized) {
         this.initialized = true;
         this.resetAndLoad();

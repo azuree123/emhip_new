@@ -1,0 +1,171 @@
+// KPI cards + Clinical Complexity tiles — shared by both dashboard variants
+// (design: Dashboard / Dashboard2 in project/screens/Components.bundle.js).
+
+.kpi-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 23px;
+  margin-bottom: 15px;
+}
+
+.kpi-card {
+  position: relative;
+  background: #ffffff;
+  border-radius: 12px;
+  min-height: 114px;
+  padding: 8px 18px 13px;
+  cursor: pointer;
+  transition: box-shadow 0.15s ease;
+
+  &:hover,
+  &:focus-visible {
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
+    outline: none;
+  }
+
+  // 36px bordered square with a chevron in the design's top-right corner of each card.
+  &__expand {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 36px;
+    height: 36px;
+    border-radius: 6px;
+    box-shadow: inset 0 0 0 1px #dbdbdb;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #000000;
+
+    svg {
+      transform: rotate(90deg);
+    }
+
+    &--up svg {
+      transform: rotate(-90deg);
+    }
+  }
+
+  &__label {
+    font-family: 'Wix Madefor Display', sans-serif;
+    font-weight: 600;
+    font-size: 10px;
+    line-height: 24px;
+    letter-spacing: -0.005em;
+    color: #2a2a2a;
+    padding-right: 44px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &__number {
+    margin-top: 3px;
+    font-weight: 600;
+    font-size: 32px;
+    line-height: 32px;
+    color: #2a2a2a;
+  }
+
+  &__pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 10px;
+    padding: 4px 8px;
+    border-radius: 200px;
+    font-family: 'Wix Madefor Display', sans-serif;
+    font-weight: 600;
+    font-size: 12px;
+    line-height: 16px;
+    letter-spacing: -0.005em;
+
+    svg {
+      flex-shrink: 0;
+    }
+  }
+
+  .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #d02537;
+    flex-shrink: 0;
+  }
+
+  &__pill--green {
+    background: #eafdee;
+    color: #147129;
+  }
+
+  &__pill--yellow {
+    background: #fff9e4;
+    color: #9d852d;
+  }
+
+  &__pill--pink {
+    background: #fff0f1;
+    color: #d02537;
+  }
+}
+
+// "Clinical Complexity Indicators" — title 20/600 over 166px tiles (r8, inset #e5e5e5,
+// eyebrow label above a 32px count in the lower half of each tile).
+.section-title {
+  margin: 23px 0 16px;
+  font-weight: 600;
+  font-size: 20px;
+  line-height: 24px;
+  color: #2a2a2a;
+}
+
+.clinical-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(216px, 1fr));
+  gap: 9px;
+}
+
+.clinical-tile {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  min-height: 166px;
+  padding: 19px;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: inset 0 0 0 1px #e5e5e5;
+
+  &__label {
+    font-family: 'Wix Madefor Display', sans-serif;
+    font-weight: 600;
+    font-size: 10px;
+    line-height: 24px;
+    letter-spacing: -0.005em;
+    color: #2a2a2a;
+    text-transform: uppercase;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &__number {
+    margin-top: 7px;
+    font-weight: 600;
+    font-size: 32px;
+    line-height: 24px;
+    color: #2a2a2a;
+  }
+}
+
+@media (max-width: 1023px) {
+  .kpi-row {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+  }
+}
+
+@media (max-width: 560px) {
+  .kpi-row {
+    grid-template-columns: 1fr;
+  }
+}
