@@ -199,6 +199,37 @@
     gap: 12px;
   }
 
+  &__search {
+    display: flex;
+    align-items: center;
+  }
+
+  &__search-input {
+    width: 0;
+    opacity: 0;
+    padding: 0;
+    border: none;
+    height: 36px;
+    border-radius: 12px;
+    background: #ffffff;
+    color: #323232;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 13px;
+    transition: width 0.2s ease, opacity 0.2s ease, margin 0.2s ease;
+
+    &:focus {
+      outline: 2px solid #941c3c;
+      outline-offset: -2px;
+    }
+  }
+
+  &__search--open &__search-input {
+    width: 220px;
+    opacity: 1;
+    padding: 0 12px;
+    margin-right: 8px;
+  }
+
   &__icon-btn {
     position: relative;
     width: 36px;
@@ -273,7 +304,7 @@
     font-size: 11px;
   }
 
-  .header__icon-btn--search {
+  .header__search {
     display: none;
   }
 }

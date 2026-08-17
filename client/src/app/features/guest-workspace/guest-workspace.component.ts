@@ -1,4 +1,6 @@
 import { Component, computed, effect, inject, input, signal } from '@angular/core';
+import { Observable, forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import { GuestOverviewDto } from '../../core/api-models';
 import { GuestsApiService } from '../../core/guests-api.service';
 import { GuestOverviewTabComponent } from './guest-overview-tab.component';
@@ -53,10 +55,13 @@ export class GuestWorkspaceComponent {
     { id: 'notes', label: 'Notes' },
   ];
   readonly activeTab = signal<TabId>('overview');
+  /** Set by the header quick-action buttons so the target tab opens with its form expanded. */
+  readonly pendingAction = signal<'contact' | 'risk' | null>(null);
 
   readonly overview = signal<GuestOverviewDto | null>(null);
   readonly loading = signal(true);
   readonly error = signal<string | null>(null);
+  readonly exporting = signal(false);
 
   readonly fullName = computed(() => {
     const o = this.overview();
@@ -79,7 +84,49 @@ export class GuestWorkspaceComponent {
   }
 
   selectTab(id: TabId): void {
+    this.pendingAction.set(null);
     this.activeTab.set(id);
+  }
+
+  /** Urgent flags are raised by recording a risk assessment — jump to Clinical with the form open. */
+  raiseUrgentFlag(): void {
+    this.activeTab.set('clinical');
+    this.pendingAction.set('risk');
+  }
+
+  addContact(): void {
+    this.activeTab.set('overview');
+    this.pendingAction.set('contact');
+  }
+
+  /** Downloads the guest's full record as JSON. Sections the user may not view (403) export as null. */
+  exportRecord(): void {
+    const guest = this.overview();
+    if (!guest || this.exporting()) return;
+    this.exporting.set(true);
+
+    const id = this.guestId();
+    const section = <T>(obs: Observable<T>): Observable<T | null> => obs.pipe(catchError(() => of(null)));
+    forkJoin({
+      overview: of(guest),
+      demographics: section(this.guestsApi.getDemographics(id)),
+      clinical: section(this.guestsApi.getClinical(id)),
+      pathway: section(this.guestsApi.getPathway(id)),
+      followUps: section(this.guestsApi.getFollowUps(id)),
+      initialConversation: section(this.guestsApi.getInitialConversation(id)),
+    }).subscribe((record) => {
+      this.exporting.set(false);
+      const blob = new Blob(
+        [JSON.stringify({ exportedAt: new Date().toISOString(), ...record }, null, 2)],
+        { type: 'application/json' },
+      );
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = `guest-record-${guest.firstName}-${guest.lastName}-${id.slice(0, 8)}.json`;
+      anchor.click();
+      URL.revokeObjectURL(url);
+    });
   }
 
   reloadOverview(): void {

@@ -1,4 +1,4 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, effect, inject, signal } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AuthService } from '../core/auth.service';
 import { Permissions } from '../core/permissions';
@@ -43,6 +43,20 @@ export class AppShellComponent implements OnInit {
   readonly urgentCaseCount = signal<number | null>(null);
   readonly today = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
   readonly mobileNavOpen = signal(false);
+
+  readonly searchOpen = signal(false);
+  searchTerm = '';
+  readonly canSearchGuests = this.auth.hasPermission(Permissions.Guests.View);
+  readonly canViewUrgentCases = this.auth.hasPermission(Permissions.UrgentCases.View);
+
+  constructor() {
+    // A live escalation may add a case — refresh the badge count when one arrives.
+    effect(() => {
+      if (this.urgentCasesHub.latestEscalation() && this.canViewUrgentCases) {
+        this.urgentCasesApi.getActive().subscribe((cases) => this.urgentCaseCount.set(cases.length));
+      }
+    });
+  }
 
   readonly visibleSections = computed(() =>
     this.allSections
@@ -129,8 +143,34 @@ export class AppShellComponent implements OnInit {
   ];
 
   ngOnInit(): void {
-    this.urgentCasesApi.getActive().subscribe((cases) => this.urgentCaseCount.set(cases.length));
-    this.urgentCasesHub.connect();
+    // The urgent-cases endpoints and hub are [Authorize]d — only touch them when permitted.
+    if (this.canViewUrgentCases) {
+      this.urgentCasesApi.getActive().subscribe((cases) => this.urgentCaseCount.set(cases.length));
+      this.urgentCasesHub.connect();
+    }
+  }
+
+  toggleSearch(input: HTMLInputElement): void {
+    if (!this.searchOpen()) {
+      this.searchOpen.set(true);
+      setTimeout(() => input.focus());
+    } else {
+      this.submitSearch();
+    }
+  }
+
+  submitSearch(): void {
+    const q = this.searchTerm.trim();
+    this.searchOpen.set(false);
+    void this.router.navigate(['/guests'], { queryParams: q ? { q } : {} });
+  }
+
+  closeSearch(): void {
+    this.searchOpen.set(false);
+  }
+
+  goToUrgentCases(): void {
+    void this.router.navigateByUrl('/urgent-cases');
   }
 
   toggleMobileNav(): void {

@@ -21,6 +21,8 @@ export class GuestClinicalTabComponent {
   private readonly guestsApi = inject(GuestsApiService);
 
   readonly guestId = input.required<string>();
+  /** When true (header "Raise urgent flag" button), the risk-assessment form starts expanded. */
+  readonly openForm = input(false);
   @Output() readonly refresh = new EventEmitter<void>();
 
   readonly clinical = signal<GuestClinicalDto | null>(null);
@@ -41,6 +43,9 @@ export class GuestClinicalTabComponent {
       let cancelled = false;
       onCleanup(() => (cancelled = true));
       this.load(id, () => cancelled);
+    });
+    effect(() => {
+      if (this.openForm()) this.showForm.set(true);
     });
   }
 

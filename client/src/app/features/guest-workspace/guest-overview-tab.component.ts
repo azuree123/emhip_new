@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Output, computed, inject, input, signal } from '@angular/core';
+import { Component, EventEmitter, Output, computed, effect, inject, input, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { AddContactRequest, ContactOutcome, ContactType, GuestOverviewDto } from '../../core/api-models';
 import { GuestsApiService } from '../../core/guests-api.service';
@@ -28,7 +28,15 @@ export class GuestOverviewTabComponent {
   private readonly guestsApi = inject(GuestsApiService);
 
   readonly overview = input.required<GuestOverviewDto>();
+  /** When true (header "Add contact" button), the add-contact form starts expanded. */
+  readonly openContactForm = input(false);
   @Output() readonly refresh = new EventEmitter<void>();
+
+  constructor() {
+    effect(() => {
+      if (this.openContactForm()) this.showAddContact.set(true);
+    });
+  }
 
   readonly lastContactDaysAgo = computed(() => {
     const contacts = this.overview().recentContacts;

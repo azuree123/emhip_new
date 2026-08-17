@@ -30,9 +30,11 @@
           </div>
         </div>
         <div class="identity-card__actions">
-          <button type="button" class="btn btn--ghost">Export record</button>
-          <button type="button" class="btn btn--outline" (click)="selectTab('clinical')">Raise urgent flag</button>
-          <button type="button" class="btn btn--primary" (click)="selectTab('overview')">Add contact</button>
+          <button type="button" class="btn btn--ghost" [disabled]="exporting()" (click)="exportRecord()">
+            {{ exporting() ? 'Exporting…' : 'Export record' }}
+          </button>
+          <button type="button" class="btn btn--outline" (click)="raiseUrgentFlag()">Raise urgent flag</button>
+          <button type="button" class="btn btn--primary" (click)="addContact()">Add contact</button>
         </div>
       </div>
 
@@ -72,13 +74,21 @@
     <section class="tab-body">
       @switch (activeTab()) {
         @case ('overview') {
-          <app-guest-overview-tab [overview]="guest" (refresh)="reloadOverview()" />
+          <app-guest-overview-tab
+            [overview]="guest"
+            [openContactForm]="pendingAction() === 'contact'"
+            (refresh)="reloadOverview()"
+          />
         }
         @case ('demographics') {
           <app-guest-demographics-tab [guestId]="guestId()" />
         }
         @case ('clinical') {
-          <app-guest-clinical-tab [guestId]="guestId()" (refresh)="reloadOverview()" />
+          <app-guest-clinical-tab
+            [guestId]="guestId()"
+            [openForm]="pendingAction() === 'risk'"
+            (refresh)="reloadOverview()"
+          />
         }
         @case ('pathway') {
           <app-guest-pathway-tab [guestId]="guestId()" />

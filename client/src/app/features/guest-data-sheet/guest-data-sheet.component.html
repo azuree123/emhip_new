@@ -31,6 +31,7 @@
           type="text"
           class="search-box__input"
           placeholder="Search guest by name, ID, phone, CMHW..."
+          [value]="searchTerm"
           (input)="onSearchInput($any($event.target).value)"
         />
       </div>

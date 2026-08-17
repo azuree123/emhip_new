@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ScrollingModule } from '@angular/cdk/scrolling';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { Subject, of } from 'rxjs';
 import { catchError, debounceTime, distinctUntilChanged } from 'rxjs/operators';
 
@@ -43,6 +43,7 @@ const STATUS_OPTIONS: { value: StatusFilterValue; label: string }[] = [
 export class GuestDataSheetComponent {
   private readonly guestsApi = inject(GuestsApiService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
 
   protected readonly guests = signal<GuestListItemDto[]>([]);
   protected readonly loading = signal(false);
@@ -53,8 +54,9 @@ export class GuestDataSheetComponent {
 
   protected readonly statusOptions = STATUS_OPTIONS;
 
-  private searchTerm = '';
+  protected searchTerm = '';
   private nextCursor: string | null = null;
+  private initialized = false;
   private readonly searchInput$ = new Subject<string>();
 
   constructor() {
@@ -65,7 +67,18 @@ export class GuestDataSheetComponent {
         this.resetAndLoad();
       });
 
-    this.resetAndLoad();
+    // The header search bar navigates here with ?q=… — including while this screen is
+    // already active, so track the param instead of reading it once. The first emission
+    // (synchronous) doubles as the initial load.
+    this.route.queryParamMap.pipe(takeUntilDestroyed()).subscribe((params) => {
+      const q = params.get('q') ?? '';
+      const changed = q !== this.searchTerm;
+      this.searchTerm = q;
+      if (changed || !this.initialized) {
+        this.initialized = true;
+        this.resetAndLoad();
+      }
+    });
   }
 
   protected onSearchInput(value: string): void {
