@@ -15,8 +15,10 @@ export class ReportsApiService {
     return this.http.get<PathwayReportDto>(`${this.base}/pathways`, { params });
   }
 
-  /** Streaming CSV export — returns the endpoint URL for a direct browser navigation/download rather than buffering the response. */
-  exportUrl(from: string, to: string): string {
-    return `${this.base}/export?from=${from}&to=${to}`;
+  /** CSV export — fetched via HttpClient so the auth interceptor attaches the JWT
+   *  (a plain browser navigation would send no Authorization header and get a 401). */
+  exportCsv(from: string, to: string): Observable<Blob> {
+    const params = new HttpParams().set('from', from).set('to', to);
+    return this.http.get(`${this.base}/export`, { params, responseType: 'blob' });
   }
 }

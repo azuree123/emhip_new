@@ -20,7 +20,10 @@ var builder = WebApplication.CreateBuilder(args);
 
 const string AngularClientCorsPolicy = "AngularClient";
 
-builder.Services.AddControllers();
+// Enums serialize as their names ("Active"), not ordinals — the Angular client types
+// statuses as string unions and keys badge styling off the names.
+builder.Services.AddControllers()
+    .AddJsonOptions(o => o.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter()));
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c => c.SwaggerDoc("v1", new OpenApiInfo { Title = "EMHIP API", Version = "v1" }));
 
@@ -97,7 +100,9 @@ builder.Services.AddAuthorization(options =>
 });
 // -------------------------------------------------------------------------------------------
 
-builder.Services.AddSignalR();
+// Same enum-as-name convention as the REST endpoints for pushed payloads.
+builder.Services.AddSignalR()
+    .AddJsonProtocol(o => o.PayloadSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter()));
 
 builder.Services.AddExceptionHandler<ValidationExceptionHandler>();
 builder.Services.AddProblemDetails();

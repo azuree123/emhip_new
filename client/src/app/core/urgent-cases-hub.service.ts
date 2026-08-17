@@ -6,8 +6,9 @@ import { UrgentCaseDto } from './api-models';
 
 /**
  * Live Urgent Cases updates over SignalR (Emhip.Api's UrgentCasesHub). Browsers can't set
- * custom headers on the WebSocket handshake, so the hub id travels as `?hubId=` — see
- * UrgentCasesHub.cs.
+ * custom headers on the WebSocket handshake, so the JWT travels as `?access_token=`
+ * (accessTokenFactory) — the API's JwtBearer OnMessageReceived picks it up for /hubs paths,
+ * and the hub derives the group from the token's hub claim. See UrgentCasesHub.cs.
  */
 @Injectable({ providedIn: 'root' })
 export class UrgentCasesHubService implements OnDestroy {
@@ -20,9 +21,10 @@ export class UrgentCasesHubService implements OnDestroy {
   connect(): void {
     if (this.connection) return;
 
-    const hubId = this.auth.current().hubId;
     this.connection = new signalR.HubConnectionBuilder()
-      .withUrl(`${environment.signalRHubUrl}?hubId=${hubId}`)
+      .withUrl(environment.signalRHubUrl, {
+        accessTokenFactory: () => this.auth.token ?? '',
+      })
       .withAutomaticReconnect()
       .build();
 

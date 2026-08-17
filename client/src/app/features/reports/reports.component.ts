@@ -90,7 +90,19 @@ export class ReportsComponent implements OnInit {
   }
 
   exportCsv(): void {
-    window.location.href = this.reportsApi.exportUrl(this.from(), this.to());
+    const from = this.from();
+    const to = this.to();
+    this.reportsApi.exportCsv(from, to).subscribe({
+      next: (blob) => {
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement('a');
+        anchor.href = url;
+        anchor.download = `pathway-report-${from}-to-${to}.csv`;
+        anchor.click();
+        URL.revokeObjectURL(url);
+      },
+      error: () => this.error.set('Could not export the report. Please try again.'),
+    });
   }
 
   load(): void {

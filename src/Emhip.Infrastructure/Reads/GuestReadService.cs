@@ -117,14 +117,24 @@ public sealed class GuestReadService(ISqlConnectionFactory connectionFactory, Em
             hasRiskFlags, openFollowUps, pinnedNotes, recentContacts);
     }
 
-    public async Task<GuestDemographicsDto?> GetDemographicsAsync(Guid guestId, CancellationToken cancellationToken = default) =>
-        await db.GuestDemographics.AsNoTracking()
+    public async Task<GuestDemographicsDto?> GetDemographicsAsync(Guid guestId, CancellationToken cancellationToken = default)
+    {
+        var dto = await db.GuestDemographics.AsNoTracking()
             .Where(d => d.GuestId == guestId)
             .Select(d => new GuestDemographicsDto(
                 d.GuestId, d.Ethnicity, d.Nationality, d.PreferredLanguage, d.InterpreterNeeded,
                 d.HousingStatus, d.EmploymentStatus, d.EmergencyContactName, d.EmergencyContactPhone,
                 d.EmergencyContactRelationship, d.GpName, d.GpPractice, d.NhsNumber))
             .FirstOrDefaultAsync(cancellationToken);
+        if (dto is not null) return dto;
+
+        // The demographics row is created lazily on first save, so a guest without one is
+        // "nothing recorded yet", not 404 — mirror GetClinicalAsync's exists check.
+        var exists = await db.Guests.AsNoTracking().AnyAsync(g => g.Id == guestId, cancellationToken);
+        return exists
+            ? new GuestDemographicsDto(guestId, null, null, null, false, null, null, null, null, null, null, null, null)
+            : null;
+    }
 
     public async Task<GuestClinicalDto?> GetClinicalAsync(Guid guestId, CancellationToken cancellationToken = default)
     {

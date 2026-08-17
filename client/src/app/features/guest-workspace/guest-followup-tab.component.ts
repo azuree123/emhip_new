@@ -1,6 +1,7 @@
 import { Component, EventEmitter, Output, effect, inject, input, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { GuestFollowUpsDto, ScheduleFollowUpRequest } from '../../core/api-models';
+import { AuthService } from '../../core/auth.service';
 import { GuestsApiService } from '../../core/guests-api.service';
 import { followUpStatusChip, formatDate, formatDateTime } from './guest-workspace.util';
 
@@ -15,6 +16,7 @@ import { followUpStatusChip, formatDate, formatDateTime } from './guest-workspac
 })
 export class GuestFollowUpTabComponent {
   private readonly guestsApi = inject(GuestsApiService);
+  private readonly auth = inject(AuthService);
 
   readonly guestId = input.required<string>();
   @Output() readonly refresh = new EventEmitter<void>();
@@ -43,7 +45,12 @@ export class GuestFollowUpTabComponent {
   }
 
   private emptyForm(): ScheduleFollowUpRequest {
-    return { dueDate: new Date().toISOString().slice(0, 10), assigneeStaffId: '', notes: '' };
+    // Default the assignee to the signed-in worker — the API requires a valid staff GUID.
+    return {
+      dueDate: new Date().toISOString().slice(0, 10),
+      assigneeStaffId: this.auth.current().staffId,
+      notes: '',
+    };
   }
 
   private load(guestId: string, isCancelled: () => boolean): void {
@@ -70,6 +77,10 @@ export class GuestFollowUpTabComponent {
   }
 
   submit(): void {
+    if (!this.form.assigneeStaffId) {
+      this.submitError.set('An assignee is required.');
+      return;
+    }
     this.submitting.set(true);
     this.submitError.set(null);
     this.guestsApi.scheduleFollowUp(this.guestId(), this.form).subscribe({
