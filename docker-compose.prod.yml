@@ -42,5 +42,6 @@ services:
 
   client:
     restart: unless-stopped
+    # Host nginx terminates TLS for emhip.brainshub.co.uk on 80/443 and proxies here.
     ports: !override
-      - "80:80"
+      - "127.0.0.1:8080:80"

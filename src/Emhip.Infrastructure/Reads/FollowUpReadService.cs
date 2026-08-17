@@ -45,8 +45,10 @@ public sealed class FollowUpReadService(ISqlConnectionFactory connectionFactory)
             AssigneeStaffId = assigneeStaffId,
             OverdueOnly = overdueOnly,
             HasCursor = decodedCursor is not null,
-            DueDate = decodedCursor?.DueDate.ToDateTime(TimeOnly.MinValue) ?? DateTime.MinValue,
-            Id = decodedCursor?.Id ?? Guid.Empty,
+            // NULL when there's no cursor — DateTime.MinValue overflows the sql `datetime`
+            // parameter type (min 1753-01-01); @HasCursor = 0 already bypasses the comparison.
+            DueDate = decodedCursor?.DueDate.ToDateTime(TimeOnly.MinValue),
+            Id = decodedCursor?.Id,
             FetchSize = pageSize + 1,
         })).ToList();
 
