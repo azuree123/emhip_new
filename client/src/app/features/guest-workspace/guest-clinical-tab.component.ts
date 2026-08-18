@@ -5,10 +5,14 @@ import { GuestsApiService } from '../../core/guests-api.service';
 import { formatDateTime } from './guest-workspace.util';
 
 /**
- * Clinical Details tab — no exact pixel source for this tab; a clean panel over
- * GuestClinicalDto's risk-assessment history, plus a form to record a new assessment across
- * the five risk flags called out in the design handoff (suicidal ideation, self-harm, risk to
- * others, severe deterioration, safeguarding concern).
+ * Risk-assessment history panel — a clean list over GuestClinicalDto's versioned history,
+ * plus a form to record a new assessment across the five risk flags (suicidal ideation,
+ * self-harm, risk to others, severe deterioration, safeguarding concern).
+ *
+ * Superseded by GuestClinicalDetailsTabComponent (emhip-guest-clinical-details-tab), the
+ * pixel-sourced Clinical Details tab that embeds the same risk form inside its
+ * "Risk & complexity" card; keep this component only while the shell still routes the
+ * legacy "Clinical" tab here.
  */
 @Component({
   selector: 'app-guest-clinical-tab',

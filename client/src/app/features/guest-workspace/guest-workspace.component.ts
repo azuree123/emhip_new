@@ -7,13 +7,24 @@ import { GuestOverviewDto } from '../../core/api-models';
 import { GuestsApiService } from '../../core/guests-api.service';
 import { GuestOverviewTabComponent } from './guest-overview-tab.component';
 import { GuestDemographicsTabComponent } from './guest-demographics-tab.component';
-import { GuestClinicalTabComponent } from './guest-clinical-tab.component';
+import { GuestInitialConversationTabComponent } from './guest-initial-conversation-tab.component';
+import { GuestClinicalDetailsTabComponent } from './guest-clinical-details-tab.component';
+import { GuestDialogTabComponent } from './guest-dialog-tab.component';
 import { GuestPathwayTabComponent } from './guest-pathway-tab.component';
 import { GuestFollowUpTabComponent } from './guest-followup-tab.component';
-import { GuestNotesTabComponent } from './guest-notes-tab.component';
-import { formatDate, initials, statusChip } from './guest-workspace.util';
+import { GuestActionTabComponent } from './guest-action-tab.component';
+import { GuestContactLogComponent } from './guest-contact-log.component';
+import { formatDate, guestPathwayChip, initials, statusChip } from './guest-workspace.util';
 
-type TabId = 'overview' | 'demographics' | 'clinical' | 'pathway' | 'followup' | 'notes';
+type TabId =
+  | 'overview'
+  | 'demographics'
+  | 'initial'
+  | 'clinical'
+  | 'followup'
+  | 'dialog'
+  | 'pathway'
+  | 'action';
 
 interface TabDef {
   id: TabId;
@@ -22,9 +33,16 @@ interface TabDef {
 
 /**
  * Guest Workspace — a single guest's record. Structured after GuestOverviewTab in
- * project/screens/Components.bundle.js: a shared identity header + segmented tab bar
- * (pixel-matched) that stays mounted while the tab body below it swaps between sibling
- * tab components, each of which fetches its own slice of data from GuestsApiService.
+ * project/screens/Components.bundle.js (lines 13375-15849): a shared identity header +
+ * segmented tab bar (pixel-matched) that stays mounted while the tab body below it swaps
+ * between sibling tab components, each of which fetches its own slice of data from
+ * GuestsApiService.
+ *
+ * Tab set/order comes straight from the bundle's segmented bar: Overview · Demographics ·
+ * Initial Conversation · Clinical Details · Follow-up Log · DIALOG Scores · Pathway History ·
+ * Actions & Reminders. (The source uses three label variants for the 5th slot — "Activity
+ * History", "Follow Up Log", "Contact History" — we standardise on "Follow-up Log".) The old
+ * Notes tab is not part of the design's tab bar and is no longer rendered.
  *
  * The sidebar/top header bar from the source are intentionally omitted — those are
  * rendered once by AppShellComponent around every routed screen.
@@ -35,10 +53,13 @@ interface TabDef {
   imports: [
     GuestOverviewTabComponent,
     GuestDemographicsTabComponent,
-    GuestClinicalTabComponent,
+    GuestInitialConversationTabComponent,
+    GuestClinicalDetailsTabComponent,
+    GuestDialogTabComponent,
     GuestPathwayTabComponent,
     GuestFollowUpTabComponent,
-    GuestNotesTabComponent,
+    GuestActionTabComponent,
+    GuestContactLogComponent,
   ],
   templateUrl: './guest-workspace.component.html',
   styleUrl: './guest-workspace.component.scss',
@@ -53,14 +74,19 @@ export class GuestWorkspaceComponent {
   readonly tabs: TabDef[] = [
     { id: 'overview', label: 'Overview' },
     { id: 'demographics', label: 'Demographics' },
-    { id: 'clinical', label: 'Clinical' },
-    { id: 'pathway', label: 'Pathway' },
-    { id: 'followup', label: 'Follow-up' },
-    { id: 'notes', label: 'Notes' },
+    { id: 'initial', label: 'Initial Conversation' },
+    { id: 'clinical', label: 'Clinical Details' },
+    { id: 'followup', label: 'Follow-up Log' },
+    { id: 'dialog', label: 'DIALOG Scores' },
+    { id: 'pathway', label: 'Pathway History' },
+    { id: 'action', label: 'Actions & Reminders' },
   ];
   readonly activeTab = signal<TabId>('overview');
-  /** Set by the header quick-action buttons so the target tab opens with its form expanded. */
-  readonly pendingAction = signal<'contact' | 'risk' | null>(null);
+
+  /** "Add Contact" header button opens the drawer from GuestOverviewTab2 (bundle 50271-54563). */
+  readonly contactDrawerOpen = signal(false);
+  /** Set by "Raise Urgent Flag" so Clinical Details opens with its risk form expanded. */
+  readonly pendingRiskForm = signal(false);
 
   readonly overview = signal<GuestOverviewDto | null>(null);
   readonly loading = signal(true);
@@ -76,7 +102,13 @@ export class GuestWorkspaceComponent {
     return o ? initials(o.firstName, o.lastName) : '';
   });
   readonly chip = computed(() => (this.overview() ? statusChip(this.overview()!.status) : null));
+  readonly pathwayChip = computed(() => guestPathwayChip(this.overview()?.pathway));
   readonly registeredLabel = computed(() => formatDate(this.overview()?.registeredAt));
+  /** Design meta row shows "Last activity: <date>"; the newest recent contact is our real source. */
+  readonly lastActivityLabel = computed(() => {
+    const contacts = this.overview()?.recentContacts;
+    return contacts?.length ? formatDate(contacts[0].occurredAt) : null;
+  });
 
   constructor() {
     effect((onCleanup) => {
@@ -98,19 +130,28 @@ export class GuestWorkspaceComponent {
   }
 
   selectTab(id: TabId): void {
-    this.pendingAction.set(null);
+    this.pendingRiskForm.set(false);
     this.activeTab.set(id);
   }
 
-  /** Urgent flags are raised by recording a risk assessment — jump to Clinical with the form open. */
+  /** Urgent flags are raised by recording a risk assessment — jump to Clinical Details with
+   *  its risk form open. */
   raiseUrgentFlag(): void {
+    this.pendingRiskForm.set(true);
     this.activeTab.set('clinical');
-    this.pendingAction.set('risk');
   }
 
-  addContact(): void {
-    this.activeTab.set('overview');
-    this.pendingAction.set('contact');
+  openContactDrawer(): void {
+    this.contactDrawerOpen.set(true);
+  }
+
+  closeContactDrawer(): void {
+    this.contactDrawerOpen.set(false);
+  }
+
+  contactSaved(): void {
+    this.contactDrawerOpen.set(false);
+    this.reloadOverview();
   }
 
   /** Downloads the guest's full record as JSON. Sections the user may not view (403) export as null. */
@@ -125,9 +166,12 @@ export class GuestWorkspaceComponent {
       overview: of(guest),
       demographics: section(this.guestsApi.getDemographics(id)),
       clinical: section(this.guestsApi.getClinical(id)),
+      clinicalProfile: section(this.guestsApi.getClinicalProfile(id)),
       pathway: section(this.guestsApi.getPathway(id)),
       followUps: section(this.guestsApi.getFollowUps(id)),
       initialConversation: section(this.guestsApi.getInitialConversation(id)),
+      dialog: section(this.guestsApi.getDialog(id)),
+      actions: section(this.guestsApi.getActions(id)),
     }).subscribe((record) => {
       this.exporting.set(false);
       const blob = new Blob(

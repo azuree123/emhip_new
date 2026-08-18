@@ -1,4 +1,7 @@
-// Ported from Desktop46 in project/screens/Components.bundle.js (the "Urgent cases" screen).
+// Ported from Desktop57/Desktop58/Desktop65 in project/screens/Components.bundle.js (the
+// "Urgent cases" list plus the Desktop58 "Urgent Case Details" drawer: 520px right-hand panel,
+// rgb(255,245,244) countdown card with 6px progress bar, two-column info grid with hairline
+// dividers, bordered "Crisis Actions Taken" card and grey rgb(247,247,247) episode timeline).
 // The sidebar/header chrome lives in app-shell; this file only covers the content area
 // (source x >= 226, y >= 86). Key geometry at 1440px: alert banner 14px below the header
 // (48px tall, 3px red accent), stat tiles 277x114 on a 23px gap, one white card (radius 12)
@@ -263,6 +266,20 @@
   display: flex;
   flex-direction: column;
 
+  &--clickable {
+    cursor: pointer;
+
+    &:hover,
+    &:focus-visible {
+      box-shadow: inset 0 0 0 1px rgb(217, 217, 217), 0 2px 8px rgba(0, 0, 0, 0.06);
+    }
+
+    &:focus-visible {
+      outline: 2px solid rgb(148, 28, 60);
+      outline-offset: -1px;
+    }
+  }
+
   &__top {
     display: flex;
     align-items: flex-start;
@@ -500,6 +517,7 @@
   color: rgb(42, 42, 42);
 
   input,
+  select,
   textarea {
     height: 36px;
     border-radius: 4px;
@@ -513,6 +531,400 @@
     height: auto;
     padding: 8px 12px;
     resize: vertical;
+  }
+
+  &--readonly {
+    background: rgb(246, 246, 246);
+    border-radius: 6px;
+    padding: 8px 12px;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
+// ---- "Urgent Case Details" drawer (Desktop58) ----
+
+.drawer-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  justify-content: flex-end;
+  z-index: 100;
+}
+
+.drawer {
+  width: 520px;
+  max-width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  background: rgb(255, 255, 255);
+  border-radius: 8px 0 0 8px;
+  padding: 24px 30px 32px 29px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+
+  &__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  &__title {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 600;
+    line-height: 24px;
+    color: rgb(42, 42, 42);
+  }
+
+  &__ref {
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 24px;
+    color: rgb(42, 42, 42);
+  }
+
+  &__close {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    border: none;
+    background: transparent;
+    color: rgb(33, 33, 33);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  &__guest {
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 24px;
+    color: rgb(42, 42, 42);
+    text-decoration: none;
+    width: fit-content;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
+  &__flags {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  &__actions {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: auto;
+    padding-top: 12px;
+  }
+}
+
+.countdown-card {
+  border-radius: 8px;
+  background: rgb(255, 245, 244);
+  padding: 16px 19px 18px 18px;
+
+  &__head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 24px;
+    color: rgb(42, 42, 42);
+
+    svg {
+      flex-shrink: 0;
+    }
+  }
+
+  &__status {
+    display: block;
+    margin-top: 10px;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 24px;
+    color: rgb(157, 133, 45);
+
+    &--overdue {
+      color: rgb(235, 60, 44);
+    }
+  }
+
+  &__track {
+    height: 6px;
+    border-radius: 444px;
+    background: rgba(235, 60, 44, 0.15);
+    overflow: hidden;
+    margin-top: 2px;
+  }
+
+  &__bar {
+    height: 100%;
+    border-radius: 444px;
+    background: rgb(157, 133, 45);
+
+    &--overdue {
+      background: rgb(235, 60, 44);
+    }
+  }
+
+  &__deadline {
+    display: block;
+    margin-top: 6px;
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 24px;
+    color: rgb(42, 42, 42);
+  }
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 24px;
+
+  &__cell {
+    display: flex;
+    flex-direction: column;
+    padding: 10px 0 11px;
+    border-bottom: 1px solid rgb(232, 232, 232);
+
+    &:nth-last-child(-n + 2) {
+      border-bottom: none;
+    }
+  }
+
+  &__label {
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 26px;
+    color: rgb(42, 42, 42);
+  }
+
+  &__value {
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 24px;
+    color: rgb(50, 50, 50);
+  }
+}
+
+.panel-card {
+  border-radius: 8px;
+  box-shadow: inset 0 0 0 1px rgb(238, 238, 238);
+  padding: 14px 19px 16px 18px;
+
+  &__head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    h3 {
+      margin: 0;
+      font-size: 14px;
+      font-weight: 600;
+      line-height: 24px;
+      color: rgb(42, 42, 42);
+    }
+
+    svg {
+      flex-shrink: 0;
+    }
+  }
+
+  &__list {
+    margin: 10px 0 0;
+    padding: 0 0 0 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+
+    li {
+      font-size: 14px;
+      font-weight: 400;
+      line-height: 24px;
+      color: rgb(50, 50, 50);
+    }
+  }
+
+  &__empty {
+    margin: 10px 0 0;
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 24px;
+    color: rgb(140, 140, 140);
+  }
+}
+
+.add-note-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+  border: none;
+  background: transparent;
+  padding: 0;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 24px;
+  color: rgb(208, 37, 55);
+  cursor: pointer;
+}
+
+.note-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 14px;
+
+  textarea {
+    border-radius: 4px;
+    border: 1px solid rgb(229, 229, 229);
+    padding: 8px 12px;
+    font-size: 14px;
+    font-family: inherit;
+    resize: vertical;
+  }
+
+  &__actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+  }
+}
+
+.timeline-card {
+  border-radius: 8px;
+  background: rgb(247, 247, 247);
+  padding: 16px 19px 22px 18px;
+
+  &__head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+
+    h3 {
+      margin: 0;
+      font-size: 14px;
+      font-weight: 600;
+      line-height: 24px;
+      color: rgb(42, 42, 42);
+    }
+
+    svg {
+      flex-shrink: 0;
+    }
+  }
+}
+
+.timeline {
+  position: relative;
+  margin-left: 7px;
+  padding-left: 24px;
+  border-left: 1px solid rgba(197, 197, 197, 0.31);
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+
+  &__event {
+    position: relative;
+
+    &::before {
+      content: '';
+      position: absolute;
+      left: -29.5px;
+      top: 7px;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: rgb(188, 183, 183);
+    }
+  }
+
+  &__title {
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 26px;
+    color: rgb(42, 42, 42);
+  }
+
+  &__desc {
+    margin: 4px 0 0;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 24px;
+    color: rgb(42, 42, 42);
+  }
+
+  &__meta {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    margin-top: 8px;
+  }
+
+  &__author {
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 18px;
+    color: rgb(235, 60, 44);
+  }
+
+  &__sep {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: rgb(210, 210, 210);
+  }
+
+  &__time {
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 18px;
+    color: rgb(140, 140, 140);
+  }
+}
+
+.drawer-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 36px;
+  border-radius: 4px;
+  border: none;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: -0.005em;
+  line-height: 24px;
+  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
+
+  &--red {
+    background: rgb(225, 38, 40);
+    color: rgb(255, 255, 255);
+  }
+
+  &--outline {
+    background: rgb(255, 255, 255);
+    color: rgb(42, 42, 42);
+    box-shadow: inset 0 0 0 1px rgb(217, 217, 217);
   }
 }
 
@@ -546,6 +958,24 @@
 
     &__divider {
       display: none;
+    }
+  }
+
+  .drawer {
+    width: 100%;
+    border-radius: 0;
+    padding: 16px;
+  }
+
+  .info-grid {
+    grid-template-columns: 1fr;
+
+    &__cell:nth-last-child(-n + 2) {
+      border-bottom: 1px solid rgb(232, 232, 232);
+    }
+
+    &__cell:last-child {
+      border-bottom: none;
     }
   }
 }

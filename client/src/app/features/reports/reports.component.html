@@ -7,7 +7,9 @@
         <span class="header-card__today">Today:&nbsp;{{ todayLabel }}</span>
       </div>
       <div class="header-card__actions">
-        <button type="button" class="btn btn--secondary" (click)="exportCsv()">
+        <!-- The source header offers "Export Excel" + "Export CSV"; only a CSV export
+             endpoint exists, so a single primary button opens the export dialog. -->
+        <button type="button" class="btn btn--primary" (click)="exportOpen.set(true)">
           <span class="btn__icon" aria-hidden="true">
             <svg width="14" height="15" viewBox="0 0 13.5 15" fill="none">
               <path
@@ -25,187 +27,77 @@
     <div class="header-card__divider"></div>
 
     <div class="tab-bar" role="tablist" aria-label="Report sections">
-      <button type="button" class="tab-bar__tab tab-bar__tab--active" role="tab" aria-selected="true">Overview</button>
-      @for (tab of inactiveTabs; track tab; let first = $first) {
+      @for (tab of tabs; track tab.label; let first = $first) {
         @if (!first) {
           <span class="tab-bar__sep" aria-hidden="true"></span>
         }
-        <button type="button" class="tab-bar__tab" role="tab" aria-selected="false" disabled>{{ tab }}</button>
+        <button
+          type="button"
+          class="tab-bar__tab"
+          [class.tab-bar__tab--active]="tab.id !== null && tab.id === activeTab()"
+          role="tab"
+          [attr.aria-selected]="tab.id !== null && tab.id === activeTab()"
+          [disabled]="tab.id === null"
+          [title]="tab.id === null ? 'No report data source yet' : null"
+          (click)="selectTab(tab.id)"
+        >
+          {{ tab.label }}
+        </button>
       }
     </div>
 
-    <div class="filters">
-      <span class="filters__label">Filters</span>
+    <!-- Date-range filter row (Desktop74): From / To fields + red Apply button.
+         The source's All CMHW / All Hub / All Pathway dropdowns are omitted here —
+         the pathway-report endpoint only accepts a date range. Only the Overview
+         report is date-ranged, so the row hides on the other tabs. -->
+    @if (activeTab() === 'overview') {
+      <div class="filters">
+        <span class="filters__label">Filters:</span>
 
-      <label class="filters__field">
-        <span class="filters__field-caption">From</span>
-        <input type="date" [value]="from()" [max]="to()" (change)="onFromChange($event)" />
-      </label>
+        <label class="filters__field">
+          <span class="filters__field-caption">From</span>
+          <input type="date" [value]="draftFrom()" [max]="draftTo()" (change)="onDraftFromChange($event)" />
+        </label>
 
-      <label class="filters__field">
-        <span class="filters__field-caption">To</span>
-        <input type="date" [value]="to()" [min]="from()" [max]="maxDate" (change)="onToChange($event)" />
-      </label>
+        <label class="filters__field">
+          <span class="filters__field-caption">To</span>
+          <input type="date" [value]="draftTo()" [min]="draftFrom()" [max]="maxDate" (change)="onDraftToChange($event)" />
+        </label>
 
-      <div class="filters__presets">
-        <button type="button" class="filters__preset" (click)="applyPreset(6)">Last 6 months</button>
-        <button type="button" class="filters__preset" (click)="applyPreset(12)">Last 12 months</button>
-      </div>
-    </div>
-  </section>
-
-  @if (error()) {
-    <div class="error-banner">Couldn't load report data — {{ error() }}</div>
-  }
-
-  <!-- KPI tile row (source: 4 tiles 277x114 at top 428) driven by statusCounts. -->
-  <section class="stat-row">
-    @for (tile of kpiTiles(); track tile.label) {
-      <div class="stat-card">
-        <span class="stat-card__label">{{ tile.label }}</span>
-        <span class="stat-card__value">{{ tile.value ?? '—' }}</span>
+        <button type="button" class="btn btn--primary filters__apply" [disabled]="draftInvalid() || loading()" (click)="applyDates()">
+          Apply
+        </button>
       </div>
     }
   </section>
 
-  <!-- Two-column card grid per Desktop50: 687px main column + 466px side column. -->
-  <div class="report-grid">
-    <div class="report-grid__main">
-      <section class="report-card">
-        <h2 class="report-card__title">Pathway distribution</h2>
-        <p class="report-card__subtitle">{{ from() }} to {{ to() }}</p>
+  @if (activeTab() === 'overview' && error()) {
+    <div class="error-banner">Couldn't load report data — {{ error() }}</div>
+  }
+  @if (activeTab() === 'dialog-outcomes' && outcomesError()) {
+    <div class="error-banner">Couldn't load DIALOG outcome data — {{ outcomesError() }}</div>
+  }
 
-        @if (loading()) {
-          <div class="report-card__state">Loading pathway report…</div>
-        } @else if (categoryRows().length === 0) {
-          <div class="report-card__state">No pathway referrals recorded for this period.</div>
-        } @else {
-          @for (row of categoryRows(); track row.category) {
-            <div class="pathway-row">
-              <div class="pathway-row__top">
-                <span class="pathway-row__label">{{ row.label }}</span>
-                <span class="pathway-row__count">{{ row.count }}</span>
-                <span class="pathway-row__unit">REFERRALS</span>
-                <span class="pathway-row__dot" aria-hidden="true"></span>
-                <span class="pathway-row__percentage" [style.color]="row.color">{{ row.percentage }}%</span>
-              </div>
-              <div class="pathway-row__track">
-                <div class="pathway-row__fill" [style.width.%]="row.percentage" [style.background]="row.color"></div>
-              </div>
-            </div>
-          }
-        }
-      </section>
-
-      <section class="report-card">
-        <div class="report-card__head">
-          <div>
-            <h2 class="report-card__title">Guest registrations over time</h2>
-            <p class="report-card__subtitle">Monthly &middot; {{ rangeLabel() }}</p>
-          </div>
-          <div class="chart-legend">
-            <span class="chart-legend__swatch" aria-hidden="true"></span>
-            <span class="chart-legend__label">New registrations</span>
-          </div>
-        </div>
-
-        @if (loading()) {
-          <div class="report-card__state">Loading registrations…</div>
-        } @else {
-          @if (regChart(); as chart) {
-          <svg
-            class="reg-chart"
-            [attr.viewBox]="chartViewBox"
-            preserveAspectRatio="xMidYMid meet"
-            role="img"
-            aria-label="Guest registrations per month"
-          >
-            @for (tick of chart.ticks; track tick.y) {
-              <line class="reg-chart__grid" x1="56" x2="628" [attr.y1]="tick.y" [attr.y2]="tick.y" />
-              <text class="reg-chart__tick" x="48" [attr.y]="tick.y + 4">{{ tick.label }}</text>
-            }
-
-            <path class="reg-chart__line" [attr.d]="chart.linePath" />
-
-            @for (p of chart.points; track p.x) {
-              <circle class="reg-chart__dot" [attr.cx]="p.x" [attr.cy]="p.y" r="7" />
-            }
-
-            @for (m of chart.monthLabels; track m.x) {
-              <text class="reg-chart__month" [attr.x]="m.x" y="244">{{ m.text }}</text>
-            }
-
-            @for (p of chart.points; track p.x; let i = $index) {
-              <rect
-                class="reg-chart__hit"
-                [attr.x]="p.hitX"
-                [attr.width]="p.hitW"
-                y="8"
-                height="220"
-                (mouseenter)="hoveredPoint.set(i)"
-                (mouseleave)="hoveredPoint.set(null)"
-              />
-            }
-
-            @if (regChartTip(); as tip) {
-              <g class="reg-chart__tip" aria-hidden="true">
-                <rect class="reg-chart__tip-box" [attr.x]="tip.x - 48" [attr.y]="tip.top" width="96" height="50" rx="8" />
-                <path class="reg-chart__tip-notch" [attr.d]="tip.notchFill" />
-                <path class="reg-chart__tip-notch-edge" [attr.d]="tip.notchEdge" />
-                <text class="reg-chart__tip-caption" [attr.x]="tip.x" [attr.y]="tip.top + 20">New reg.</text>
-                <text class="reg-chart__tip-value" [attr.x]="tip.x" [attr.y]="tip.top + 40">Total: {{ tip.count }}</text>
-              </g>
-            }
-          </svg>
-          } @else {
-            <div class="report-card__state">No guest registrations recorded for this period.</div>
-          }
-        }
-      </section>
-
-      <section class="report-card">
-        <h2 class="report-card__title">Guest demographics</h2>
-        <p class="report-card__subtitle">Ethnicity breakdown</p>
-
-        @if (loading()) {
-          <div class="report-card__state">Loading demographics…</div>
-        } @else if (ethnicityRows().length === 0) {
-          <div class="report-card__state">No demographic data recorded for this period.</div>
-        } @else {
-          @for (row of ethnicityRows(); track row.label) {
-            <div class="ethnic-row">
-              <div class="ethnic-row__top">
-                <span class="ethnic-row__label">{{ row.label }}</span>
-                <span class="ethnic-row__percentage">{{ row.percentage }}%</span>
-              </div>
-              <div class="ethnic-row__track">
-                <div class="ethnic-row__fill" [style.width.%]="row.barPct"></div>
-              </div>
-            </div>
-          }
-        }
-      </section>
-    </div>
-
-    <div class="report-grid__side">
-      <section class="report-card">
-        <h2 class="report-card__title">Activity this period</h2>
-
-        @if (loading()) {
-          <div class="report-card__state">Loading activity…</div>
-        } @else if (activityRows().length === 0) {
-          <div class="report-card__state">No activity recorded for this period.</div>
-        } @else {
-          <div class="activity-list">
-            @for (row of activityRows(); track row.label) {
-              <div class="activity-row">
-                <span class="activity-row__label">{{ row.label }}</span>
-                <span class="activity-row__value">{{ row.value }}</span>
-              </div>
-            }
-          </div>
-        }
-      </section>
-    </div>
-  </div>
+  @switch (activeTab()) {
+    @case ('overview') {
+      <app-reports-overview
+        [report]="report()"
+        [loading]="loading()"
+        [outcomes]="outcomes()"
+        [outcomesLoading]="outcomesLoading()"
+        [from]="from()"
+        [to]="to()"
+      />
+    }
+    @case ('guest-report') {
+      <app-reports-guest-report />
+    }
+    @case ('dialog-outcomes') {
+      <app-reports-dialog-outcomes [outcomes]="outcomes()" [loading]="outcomesLoading()" />
+    }
+  }
 </div>
+
+@if (exportOpen()) {
+  <app-reports-export-dialog [from]="from()" [to]="to()" (closed)="exportOpen.set(false)" />
+}

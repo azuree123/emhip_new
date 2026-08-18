@@ -1,0 +1,32 @@
+// "Average DIALOG scores by domain" table (Desktop72 lines ~75700+, Desktop47).
+// Domain 14/500, values 14/500, change in green rgb(0,124,56) / red for declines,
+// bold 700 totals row above a darker rgb(144,142,142) rule.
+@import 'reports-shared';
+
+:host {
+  display: block;
+  font-family: $font-body;
+}
+
+.domain-table {
+  margin-top: 18px;
+
+  &__num {
+    text-align: right;
+    width: 110px;
+    white-space: nowrap;
+  }
+
+  &__change--up {
+    color: rgb(0, 124, 56);
+  }
+
+  &__change--down {
+    color: rgb(208, 37, 55);
+  }
+
+  tfoot td {
+    border-top: 1px solid rgb(144, 142, 142);
+    font-weight: 700;
+  }
+}

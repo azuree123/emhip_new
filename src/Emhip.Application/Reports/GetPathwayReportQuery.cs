@@ -9,3 +9,11 @@ public sealed class GetPathwayReportQueryHandler(IReportReadService reads) : IRe
     public Task<PathwayReportDto> Handle(GetPathwayReportQuery request, CancellationToken cancellationToken) =>
         reads.GetPathwayReportAsync(request.HubId, request.From, request.To, cancellationToken);
 }
+
+public sealed record GetDialogOutcomesReportQuery(Guid HubId) : IRequest<DialogOutcomesReportDto>;
+
+public sealed class GetDialogOutcomesReportQueryHandler(IReportReadService reads) : IRequestHandler<GetDialogOutcomesReportQuery, DialogOutcomesReportDto>
+{
+    public Task<DialogOutcomesReportDto> Handle(GetDialogOutcomesReportQuery request, CancellationToken cancellationToken) =>
+        reads.GetDialogOutcomesAsync(request.HubId, cancellationToken);
+}

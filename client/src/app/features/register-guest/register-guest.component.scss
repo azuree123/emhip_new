@@ -1,8 +1,8 @@
-// Ported from the "Register New Guest" panel inside DmegographicsTab / InitialConversationTab
-// (project/screens/Components.bundle.js, lines 14622-25836). Matching the source, this is an
-// 858px-wide right-anchored drawer (x 582-1440 on the 1440px canvas) sliding in over the
-// guest list, which stays visible behind a dimmed backdrop. All colors/sizes below are lifted
-// verbatim from the source.
+// Drawer chrome for the Register Guest wizard. The redesigned source screens
+// (Desktop79/80/81/83/87/88 in project/screens/Components.bundle.js) are full pages — white
+// r12 cards on a rgb(237,237,237) canvas with the stepper in a header card and a pinned white
+// footer bar. Kept here as the pre-existing 858px right-anchored drawer over the guest list
+// (per the /guests/new child-route presentation), with the same canvas/stepper/footer values.
 
 // Full-viewport overlay host: backdrop + right-anchored panel. High z-index so it sits over
 // the shared shell (sidebar/header included).
@@ -55,13 +55,15 @@
 
 @media (prefers-reduced-motion: reduce) {
   .drawer__backdrop,
-  .panel {
+  .panel,
+  .success__modal {
     animation: none;
   }
 }
 
-// Gray header band: 858x98, bg rgb(240,240,240). Title at (22, 23), close button 36x36 white
-// r6 at right inset 34 / top 33. Pinned: only the drawer body scrolls.
+// Gray header band with the "Register New Guest" title (20/600) and the DRAFT SAVED pill +
+// "Last updated …" caption, close button 36x36 white r6 at the right. Pinned: only the drawer
+// body scrolls.
 .panel__header {
   box-sizing: border-box;
   flex-shrink: 0;
@@ -87,8 +89,6 @@
   color: #2a2a2a;
 }
 
-// "DRAFT SAVED" pill + "Last updated …" caption sit on one row 5px under the title
-// (source: badge at top 52 next to 12px/500 caption, both under the 20px title at top 23).
 .panel__draft-row {
   margin-top: 5px;
   display: flex;
@@ -132,32 +132,29 @@
   cursor: pointer;
 }
 
-// Internal scroll area of the drawer; overscroll containment keeps wheel/touch momentum from
+// Internal scroll area of the drawer, on the source's rgb(237,237,237) canvas — the step
+// cards (white, r12) sit on it. Overscroll containment keeps wheel/touch momentum from
 // chaining to the (scroll-locked) page behind.
 .panel__body {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding: 15px 24px 32px 22px;
+  padding: 22px 24px 32px 22px;
+  background: #ededed;
 }
 
-// Stepper: its own white card (812x94, r8, 1px #e6e6e6 inset ring + soft drop shadow) sitting
-// 15px below the gray header. Five steps; circles 32px at y 23, labels (Wix Madefor 10/600)
-// centered under each circle, 1px connector lines at circle mid-height.
+// Stepper: white card (r12) at the top of the body — circles 32px, connector lines at circle
+// mid-height, uppercase Wix Madefor 10/600 labels underneath (Desktop79-88 header card).
 .stepper {
   box-sizing: border-box;
   display: flex;
   align-items: flex-start;
   list-style: none;
-  margin: 0 0 39px;
-  padding: 23px 56px 0;
-  height: 94px;
-  border-radius: 8px;
+  margin: 0 0 22px;
+  padding: 23px 56px 16px;
+  border-radius: 12px;
   background: #ffffff;
-  box-shadow:
-    inset 0 0 0 1px #e6e6e6,
-    1px 2px 11.1px 0px rgba(0, 0, 0, 0.08);
 }
 
 .stepper__item {
@@ -214,6 +211,7 @@
   font-size: 10px;
   line-height: 24px;
   letter-spacing: -0.005em;
+  text-transform: uppercase;
   white-space: nowrap;
   color: #8c8c8c;
 
@@ -232,20 +230,20 @@
   font-size: 13px;
 }
 
-// Footer: white bar 860x104 with upward shadow, pinned at the bottom of the drawer.
-// "Go Back" ghost on the left; "Save Draft" ghost + "Save & Continue" primary (with white
-// arrow-right) on the right.
+// Footer: white bar with upward shadow, pinned at the bottom of the drawer. "Go Back" ghost
+// on the left; "Save Draft" ghost + primary CTA (Register & Continue / Save & Continue /
+// Submit) on the right — exactly the Desktop79-88 footer bar.
 .panel__footer {
   box-sizing: border-box;
   flex-shrink: 0;
-  min-height: 104px;
+  min-height: 83px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
   padding: 0 24px;
   background: #ffffff;
-  box-shadow: 1px -3px 21px 0px rgba(0, 0, 0, 0.09);
+  box-shadow: 13px -1px 16.8px 0px rgba(0, 0, 0, 0.1);
 }
 
 .panel__footer-right {
@@ -294,6 +292,101 @@
   }
 }
 
+// "Success!" overlay (Desktop88): rgba(42,42,42,0.4) veil over everything, 610px white r8
+// modal with concentric red circles + white check, title, message and the workspace CTA.
+.success {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.success__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(42, 42, 42, 0.4);
+}
+
+.success__modal {
+  position: relative;
+  box-sizing: border-box;
+  width: 610px;
+  max-width: 100%;
+  padding: 63px 40px 66px;
+  border-radius: 8px;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  animation: drawer-fade-in 0.2s ease-out both;
+}
+
+.success__close {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: #212121;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+// Concentric circles: 136px at 25% red over a solid 90px red disc.
+.success__ring {
+  width: 136px;
+  height: 136px;
+  border-radius: 50%;
+  background: rgba(235, 60, 44, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.success__circle {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  background: #eb3c2c;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.success__title {
+  margin: 19px 0 0;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-weight: 600;
+  font-size: 20px;
+  line-height: 24px;
+  color: #2a2a2a;
+}
+
+.success__message {
+  margin: 7px 0 0;
+  max-width: 436px;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 24px;
+  color: #323232;
+}
+
+.success__cta {
+  margin-top: 28px;
+  min-width: 213px;
+}
+
 @media (max-width: 767px) {
   .panel {
     max-width: 100vw;
@@ -311,11 +404,11 @@
   }
 
   .panel__body {
-    padding: 15px 16px 24px;
+    padding: 16px 12px 24px;
   }
 
   .stepper {
-    padding: 23px 20px 0;
+    padding: 23px 20px 12px;
   }
 
   .stepper__label {

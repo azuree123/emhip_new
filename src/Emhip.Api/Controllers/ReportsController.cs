@@ -23,6 +23,15 @@ public sealed class ReportsController(IMediator mediator, IReportReadService rep
         return Ok(result);
     }
 
+    /// <summary>"Outcome dimensions" report — hub-wide DIALOG averages, baseline vs latest follow-up.</summary>
+    [HttpGet("dialog-outcomes")]
+    [Authorize(Policy = Permissions.Reports.View)]
+    public async Task<IActionResult> GetDialogOutcomes(CancellationToken cancellationToken)
+    {
+        var result = await mediator.Send(new GetDialogOutcomesReportQuery(currentUser.HubId), cancellationToken);
+        return Ok(result);
+    }
+
     /// <summary>
     /// Streams CSV rows as they're read from the database — never buffers the full export in
     /// memory, per ARCHITECTURE.md "Streaming for exports/reports".

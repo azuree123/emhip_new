@@ -3,7 +3,16 @@ import { Component, OnDestroy, OnInit, computed, effect, inject, signal } from '
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { AuthService } from '../../core/auth.service';
-import { ScheduleFollowUpRequest, UrgentCaseDto } from '../../core/api-models';
+import {
+  AddContactRequest,
+  AddNoteRequest,
+  ContactOutcome,
+  ContactType,
+  GuestContactSummaryDto,
+  GuestOverviewDto,
+  ScheduleFollowUpRequest,
+  UrgentCaseDto,
+} from '../../core/api-models';
 import { GuestsApiService } from '../../core/guests-api.service';
 import { UrgentCasesApiService } from '../../core/urgent-cases-api.service';
 import { UrgentCasesHubService } from '../../core/urgent-cases-hub.service';
@@ -32,12 +41,15 @@ const RISK_FLAGS: RiskFlagDef[] = [
 ];
 
 /**
- * "Urgent cases" screen — ported from Desktop46 in project/screens/Components.bundle.js.
+ * "Urgent cases" screen — ported from Desktop57/Desktop58/Desktop65 in
+ * project/screens/Components.bundle.js (list + the Desktop58 "Urgent Case Details" drawer).
  * Initial load is a plain GET (UrgentCasesApiService.getActive()); after that the list stays
  * live via UrgentCasesHubService (SignalR) per the README's "near-real-time (polling or SignalR)"
  * requirement — the same hub connection the shell already opens for the sidebar badge count.
  * Risk-level / CMHW / overdue filters are applied client-side (the endpoint returns the full
- * active set); the design's Pathway filter and Resolved history have no backing data.
+ * active set). The drawer is backed by the guest overview (pinned notes + recent contacts);
+ * the design's Pathway filter, Resolved history (Desktop57), "Mark episode as resolved" and
+ * "Escalate to CMHT" (Desktop65 modal) have no backing data/endpoints and are omitted.
  */
 @Component({
   selector: 'app-urgent-cases',
@@ -96,6 +108,38 @@ export class UrgentCasesComponent implements OnInit, OnDestroy {
   readonly exporting = signal(false);
 
   scheduleForm = { dueDate: '', assigneeStaffId: this.auth.current().staffId, notes: '' };
+
+  // ---- "Urgent Case Details" drawer (Desktop58) ----
+  readonly detailsGuestId = signal<string | null>(null);
+  readonly detailsCase = computed(() => this.cases().find((c) => c.guestId === this.detailsGuestId()) ?? null);
+  readonly overview = signal<GuestOverviewDto | null>(null);
+  readonly detailsLoading = signal(false);
+  readonly detailsError = signal<string | null>(null);
+
+  /** Contacts recorded since the flag was raised — the drawer's "Follow-ups logged" + timeline entries. */
+  readonly episodeContacts = computed<GuestContactSummaryDto[]>(() => {
+    const dc = this.detailsCase();
+    const ov = this.overview();
+    if (!dc || !ov) return [];
+    const flagAt = new Date(dc.escalatedAt).getTime();
+    return ov.recentContacts
+      .filter((ct) => new Date(ct.occurredAt).getTime() >= flagAt)
+      .sort((a, b) => new Date(a.occurredAt).getTime() - new Date(b.occurredAt).getTime());
+  });
+
+  // Inline "Add Crisis Note" form inside the drawer (saved as a pinned note on the guest).
+  readonly noteFormOpen = signal(false);
+  readonly savingNote = signal(false);
+  readonly noteError = signal<string | null>(null);
+  noteBody = '';
+
+  // "Log urgent follow-up note" modal — records a contact via GuestsApiService.addContact.
+  readonly contactTypes: ContactType[] = ['PhoneCall', 'InPerson', 'VideoCall', 'TextMessage', 'Email'];
+  readonly contactOutcomes: ContactOutcome[] = ['Successful', 'NoAnswer', 'LeftMessage', 'Declined', 'Rescheduled'];
+  readonly contactModalOpen = signal(false);
+  readonly savingContact = signal(false);
+  readonly contactError = signal<string | null>(null);
+  contactForm = { type: 'PhoneCall' as ContactType, outcome: 'Successful' as ContactOutcome, occurredAt: this.nowLocal(), notes: '' };
 
   private tickHandle?: ReturnType<typeof setInterval>;
 
@@ -239,5 +283,147 @@ export class UrgentCasesComponent implements OnInit, OnDestroy {
         this.saveError.set('Could not schedule the follow-up.');
       },
     });
+  }
+
+  // ---- "Urgent Case Details" drawer (Desktop58) ----
+
+  /** Card click opens the drawer; clicks on the row's own links/buttons are ignored. */
+  onRowClick(c: UrgentCaseDto, event: Event): void {
+    if ((event.target as HTMLElement).closest('a, button')) return;
+    this.openDetails(c);
+  }
+
+  openDetails(c: UrgentCaseDto): void {
+    this.detailsGuestId.set(c.guestId);
+    this.overview.set(null);
+    this.noteFormOpen.set(false);
+    this.noteError.set(null);
+    this.noteBody = '';
+    this.fetchDetails(c.guestId);
+  }
+
+  closeDetails(): void {
+    this.detailsGuestId.set(null);
+  }
+
+  private fetchDetails(guestId: string): void {
+    this.detailsLoading.set(true);
+    this.detailsError.set(null);
+    this.guestsApi.getOverview(guestId).subscribe({
+      next: (ov) => {
+        if (this.detailsGuestId() === guestId) this.overview.set(ov);
+        this.detailsLoading.set(false);
+      },
+      error: () => {
+        this.detailsLoading.set(false);
+        this.detailsError.set('Could not load the guest overview for this case.');
+      },
+    });
+  }
+
+  /** "Overdue — 18h 9m past deadline" / "53h 51m until deadline". */
+  countdownText(c: UrgentCaseDto): string {
+    const past = this.hoursSince(c.escalatedAt) - WINDOW_HOURS;
+    return past >= 0
+      ? `Overdue — ${UrgentCasesComponent.formatHm(past)} past deadline`
+      : `${UrgentCasesComponent.formatHm(-past)} until deadline`;
+  }
+
+  countdownPct(c: UrgentCaseDto): number {
+    return Math.min(100, (this.hoursSince(c.escalatedAt) / WINDOW_HOURS) * 100);
+  }
+
+  /** "Deadline: 13 May 2025 · 10:45 AM". */
+  deadlineFull(c: UrgentCaseDto): string {
+    const deadline = new Date(new Date(c.escalatedAt).getTime() + WINDOW_HOURS * 3_600_000);
+    return formatDate(deadline, 'd MMM y · h:mm a', 'en-US');
+  }
+
+  private static formatHm(hours: number): string {
+    const h = Math.floor(hours);
+    const m = Math.round((hours - h) * 60);
+    return `${h}h ${m}m`;
+  }
+
+  /** "PhoneCall" -> "Phone Call", "NoAnswer" -> "No Answer" — for contact type/outcome enum names. */
+  pretty(value: string): string {
+    return value.replace(/([a-z])([A-Z])/g, '$1 $2');
+  }
+
+  // ---- Add Crisis Note (pinned guest note) ----
+
+  cancelCrisisNote(): void {
+    this.noteFormOpen.set(false);
+    this.noteError.set(null);
+    this.noteBody = '';
+  }
+
+  submitCrisisNote(): void {
+    const guestId = this.detailsGuestId();
+    const body = this.noteBody.trim();
+    if (!guestId || !body) {
+      this.noteError.set('Note text is required.');
+      return;
+    }
+    this.savingNote.set(true);
+    this.noteError.set(null);
+    const req: AddNoteRequest = { body, color: 'Orange', isPinned: true };
+    this.guestsApi.addNote(guestId, req).subscribe({
+      next: () => {
+        this.savingNote.set(false);
+        this.cancelCrisisNote();
+        this.fetchDetails(guestId);
+      },
+      error: () => {
+        this.savingNote.set(false);
+        this.noteError.set('Could not save the crisis note.');
+      },
+    });
+  }
+
+  // ---- "Log urgent follow-up note" (records a contact) ----
+
+  openLogContact(): void {
+    this.contactForm = { type: 'PhoneCall', outcome: 'Successful', occurredAt: this.nowLocal(), notes: '' };
+    this.contactError.set(null);
+    this.contactModalOpen.set(true);
+  }
+
+  closeContactModal(): void {
+    this.contactModalOpen.set(false);
+  }
+
+  submitContact(): void {
+    const guestId = this.detailsGuestId();
+    if (!guestId) return;
+    if (!this.contactForm.occurredAt) {
+      this.contactError.set('Date/time of contact is required.');
+      return;
+    }
+    this.savingContact.set(true);
+    this.contactError.set(null);
+    const req: AddContactRequest = {
+      type: this.contactForm.type,
+      outcome: this.contactForm.outcome,
+      occurredAt: new Date(this.contactForm.occurredAt).toISOString(),
+      notes: this.contactForm.notes || null,
+    };
+    this.guestsApi.addContact(guestId, req).subscribe({
+      next: () => {
+        this.savingContact.set(false);
+        this.contactModalOpen.set(false);
+        this.fetchDetails(guestId);
+      },
+      error: () => {
+        this.savingContact.set(false);
+        this.contactError.set('Could not log the follow-up note.');
+      },
+    });
+  }
+
+  private nowLocal(): string {
+    const d = new Date();
+    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+    return d.toISOString().slice(0, 16);
   }
 }

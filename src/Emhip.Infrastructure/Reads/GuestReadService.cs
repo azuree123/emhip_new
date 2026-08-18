@@ -1,6 +1,8 @@
 using Dapper;
 using Emhip.Application.Common;
 using Emhip.Application.Guests;
+using Emhip.Application.Guests.Actions;
+using Emhip.Application.Guests.Dialog;
 using Emhip.Application.Guests.Dtos;
 using Emhip.Domain.Enums;
 using Emhip.Infrastructure.Persistence;
@@ -107,6 +109,7 @@ public sealed class GuestReadService(ISqlConnectionFactory connectionFactory, Em
             .Select(g => new
             {
                 g.Id, g.FirstName, g.LastName, g.DateOfBirth, g.Status, g.ContactPhone, g.ContactEmail, g.RegisteredAt,
+                g.Pathway, g.AfaSupportNeeded,
                 AssignedCmhwName = db.Users.Where(s => s.Id == g.AssignedCmhwId).Select(s => s.DisplayName).FirstOrDefault(),
             })
             .FirstOrDefaultAsync(cancellationToken);
@@ -141,7 +144,7 @@ public sealed class GuestReadService(ISqlConnectionFactory connectionFactory, Em
         return new GuestOverviewDto(
             guest.Id, guest.FirstName, guest.LastName, guest.DateOfBirth, guest.Status,
             guest.ContactPhone, guest.ContactEmail, guest.AssignedCmhwName, guest.RegisteredAt,
-            hasRiskFlags, openFollowUps, pinnedNotes, recentContacts);
+            hasRiskFlags, openFollowUps, guest.Pathway, guest.AfaSupportNeeded, pinnedNotes, recentContacts);
     }
 
     public async Task<GuestDemographicsDto?> GetDemographicsAsync(Guid guestId, CancellationToken cancellationToken = default)
@@ -227,6 +230,42 @@ public sealed class GuestReadService(ISqlConnectionFactory connectionFactory, Em
             .OrderBy(u => u.DisplayName)
             .Select(u => new CmhwOptionDto(u.Id, u.DisplayName))
             .ToListAsync(cancellationToken);
+
+    public async Task<GuestDialogDto?> GetDialogAsync(Guid guestId, CancellationToken cancellationToken = default)
+    {
+        var guestExists = await db.Guests.AsNoTracking().AnyAsync(g => g.Id == guestId, cancellationToken);
+        if (!guestExists) return null;
+
+        var history = await db.DialogAssessments.AsNoTracking()
+            .Where(d => d.GuestId == guestId)
+            .OrderBy(d => d.Version)
+            .Select(d => new DialogAssessmentDto(
+                d.Id, d.Version, d.AssessedAt,
+                db.Users.Where(u => u.Id == d.AssessedByStaffId).Select(u => u.DisplayName).FirstOrDefault() ?? "System",
+                d.MentalHealth, d.PhysicalHealth, d.JobSituation, d.Accommodation,
+                d.LeisureActivities, d.FriendshipsSocialLife, d.RelationshipWithFamily,
+                d.PersonalSafety, d.PracticalHelp, d.Medication, d.MeetingsWithMhStaff,
+                d.MentalHealth + d.PhysicalHealth + d.JobSituation + d.Accommodation +
+                d.LeisureActivities + d.FriendshipsSocialLife + d.RelationshipWithFamily +
+                d.PersonalSafety + d.PracticalHelp + d.Medication + d.MeetingsWithMhStaff))
+            .ToListAsync(cancellationToken);
+
+        return new GuestDialogDto(history.FirstOrDefault(), history.LastOrDefault(), history);
+    }
+
+    public async Task<IReadOnlyList<GuestActionDto>> GetActionsAsync(Guid guestId, CancellationToken cancellationToken = default)
+    {
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        return await db.GuestActions.AsNoTracking()
+            .Where(a => a.GuestId == guestId)
+            .OrderBy(a => a.IsCompleted).ThenBy(a => a.DueDate)
+            .Select(a => new GuestActionDto(
+                a.Id, a.Description, a.DueDate,
+                a.AssignedToStaffId,
+                db.Users.Where(u => u.Id == a.AssignedToStaffId).Select(u => u.DisplayName).FirstOrDefault(),
+                a.IsCompleted, !a.IsCompleted && a.DueDate < today, a.CreatedAt, a.CompletedAt))
+            .ToListAsync(cancellationToken);
+    }
 
     private sealed class GuestListRow
     {

@@ -44,15 +44,39 @@
             <span class="stepper__label" [class.stepper__label--active]="step() >= s.index">{{ s.label }}</span>
           </li>
           @if (!last) {
-            <li class="stepper__line" [class.stepper__line--active]="step() >= s.index" aria-hidden="true"></li>
+            <li class="stepper__line" [class.stepper__line--active]="step() > s.index" aria-hidden="true"></li>
           }
         }
       </ol>
 
-      @if (step() === 1) {
-        <app-demographics-step [form]="demographicsForm" />
-      } @else {
-        <app-initial-conversation-step [form]="conversationForm" [hubWorkerName]="currentUser().displayName" />
+      @switch (step()) {
+        @case (1) {
+          <app-demographics-step [form]="demographicsForm" [completedBy]="currentUser().displayName" [todayLabel]="todayLabel" />
+        }
+        @case (2) {
+          <app-initial-conversation-step
+            [form]="conversationForm"
+            [hubWorkerName]="currentUser().displayName"
+            [jobTitle]="jobTitle()"
+          />
+        }
+        @case (3) {
+          <app-dialog-step [form]="dialogForm" />
+        }
+        @case (4) {
+          <app-pathway-step [form]="pathwayForm" [cmhwOptions]="cmhwOptions()" />
+        }
+        @case (5) {
+          <app-review-step
+            [demographicsForm]="demographicsForm"
+            [conversationForm]="conversationForm"
+            [dialogForm]="dialogForm"
+            [pathwayForm]="pathwayForm"
+            [cmhwOptions]="cmhwOptions()"
+            [submissionCalls]="submissionCalls()"
+            [showCallStatuses]="showCallStatuses()"
+          />
+        }
       }
 
       @if (errorMessage()) {
@@ -61,7 +85,7 @@
     </div>
 
     <footer class="panel__footer">
-      <button type="button" class="btn btn--ghost" (click)="step() === 1 ? cancel() : goBack()">
+      <button type="button" class="btn btn--ghost" (click)="goBack()">
         <svg width="12" height="12" viewBox="0 0 10.664 12" fill="none" style="transform: rotate(90deg)">
           <path
             d="M 10.526 6.845 C 10.716 6.645 10.708 6.328 10.508 6.138 C 10.309 5.947 9.992 5.955 9.802 6.155 L 5.832 10.323 L 5.832 0.5 C 5.832 0.224 5.608 0 5.332 0 C 5.056 0 4.832 0.224 4.832 0.5 L 4.832 10.323 L 0.862 6.155 C 0.672 5.955 0.355 5.947 0.155 6.138 C -0.045 6.328 -0.053 6.645 0.138 6.845 L 4.849 11.791 C 4.956 11.904 5.093 11.97 5.236 11.991 C 5.267 11.997 5.299 12 5.332 12 C 5.365 12 5.397 11.997 5.429 11.991 C 5.571 11.97 5.707 11.903 5.815 11.791 L 10.526 6.845 Z"
@@ -82,28 +106,46 @@
           Save Draft
         </button>
 
-        @if (step() === 1) {
-          <button type="button" class="btn btn--primary" (click)="goToStep2()">
-            Save &amp; Continue
-            <svg width="12" height="12" viewBox="0 0 10.664 12" fill="none" style="transform: rotate(-90deg)">
-              <path
-                d="M 10.526 6.845 C 10.716 6.645 10.708 6.328 10.508 6.138 C 10.309 5.947 9.992 5.955 9.802 6.155 L 5.832 10.323 L 5.832 0.5 C 5.832 0.224 5.608 0 5.332 0 C 5.056 0 4.832 0.224 4.832 0.5 L 4.832 10.323 L 0.862 6.155 C 0.672 5.955 0.355 5.947 0.155 6.138 C -0.045 6.328 -0.053 6.645 0.138 6.845 L 4.849 11.791 C 4.956 11.904 5.093 11.97 5.236 11.991 C 5.267 11.997 5.299 12 5.332 12 C 5.365 12 5.397 11.997 5.429 11.991 C 5.571 11.97 5.707 11.903 5.815 11.791 L 10.526 6.845 Z"
-                fill="currentColor"
-              />
-            </svg>
-          </button>
-        } @else {
-          <button type="button" class="btn btn--primary" [disabled]="submitting()" (click)="submit()">
-            {{ submitting() ? 'Submitting…' : 'Save & Continue' }}
-            <svg width="12" height="12" viewBox="0 0 10.664 12" fill="none" style="transform: rotate(-90deg)">
-              <path
-                d="M 10.526 6.845 C 10.716 6.645 10.708 6.328 10.508 6.138 C 10.309 5.947 9.992 5.955 9.802 6.155 L 5.832 10.323 L 5.832 0.5 C 5.832 0.224 5.608 0 5.332 0 C 5.056 0 4.832 0.224 4.832 0.5 L 4.832 10.323 L 0.862 6.155 C 0.672 5.955 0.355 5.947 0.155 6.138 C -0.045 6.328 -0.053 6.645 0.138 6.845 L 4.849 11.791 C 4.956 11.904 5.093 11.97 5.236 11.991 C 5.267 11.997 5.299 12 5.332 12 C 5.365 12 5.397 11.997 5.429 11.991 C 5.571 11.97 5.707 11.903 5.815 11.791 L 10.526 6.845 Z"
-                fill="currentColor"
-              />
-            </svg>
-          </button>
-        }
+        <button type="button" class="btn btn--primary" [disabled]="submitting()" (click)="primaryAction()">
+          {{ primaryLabel() }}
+          <svg width="12" height="12" viewBox="0 0 10.664 12" fill="none" style="transform: rotate(-90deg)">
+            <path
+              d="M 10.526 6.845 C 10.716 6.645 10.708 6.328 10.508 6.138 C 10.309 5.947 9.992 5.955 9.802 6.155 L 5.832 10.323 L 5.832 0.5 C 5.832 0.224 5.608 0 5.332 0 C 5.056 0 4.832 0.224 4.832 0.5 L 4.832 10.323 L 0.862 6.155 C 0.672 5.955 0.355 5.947 0.155 6.138 C -0.045 6.328 -0.053 6.645 0.138 6.845 L 4.849 11.791 C 4.956 11.904 5.093 11.97 5.236 11.991 C 5.267 11.997 5.299 12 5.332 12 C 5.365 12 5.397 11.997 5.429 11.991 C 5.571 11.97 5.707 11.903 5.815 11.791 L 10.526 6.845 Z"
+              fill="currentColor"
+            />
+          </svg>
+        </button>
       </div>
     </footer>
   </div>
+
+  <!-- Success! (Desktop88) — shown once every submission call has succeeded -->
+  @if (submitted()) {
+    <div class="success">
+      <div class="success__backdrop" aria-hidden="true"></div>
+      <div class="success__modal" role="dialog" aria-modal="true" aria-labelledby="register-success-title">
+        <button type="button" class="success__close" (click)="cancel()" aria-label="Close and return to guest list">
+          <svg width="16" height="16" viewBox="0 0 15.5 15.5" fill="none">
+            <path
+              d="M 0.147 0.304 L 0.22 0.22 C 0.486 -0.047 0.903 -0.071 1.196 0.147 L 1.28 0.22 L 7.75 6.689 L 14.22 0.22 C 14.513 -0.073 14.987 -0.073 15.28 0.22 C 15.573 0.513 15.573 0.987 15.28 1.28 L 8.811 7.75 L 15.28 14.22 C 15.547 14.486 15.571 14.903 15.353 15.196 L 15.28 15.28 C 15.014 15.547 14.597 15.571 14.304 15.353 L 14.22 15.28 L 7.75 8.811 L 1.28 15.28 C 0.987 15.573 0.513 15.573 0.22 15.28 C -0.073 14.987 -0.073 14.513 0.22 14.22 L 6.689 7.75 L 0.22 1.28 C -0.047 1.014 -0.071 0.597 0.147 0.304 Z"
+              fill="currentColor"
+            />
+          </svg>
+        </button>
+        <div class="success__ring">
+          <div class="success__circle">
+            <svg width="36" height="28" viewBox="0 0 35.468 27.104" fill="none">
+              <path
+                d="M 33.323 0.001 C 32.782 0.017 32.268 0.243 31.891 0.632 L 10.447 22.075 L 3.586 15.215 C 3.395 15.015 3.165 14.855 2.91 14.745 C 2.656 14.635 2.382 14.577 2.105 14.575 C 1.828 14.572 1.553 14.624 1.296 14.729 C 1.039 14.834 0.806 14.989 0.61 15.185 C 0.414 15.381 0.259 15.614 0.155 15.87 C 0.05 16.127 -0.003 16.402 0 16.679 C 0.003 16.956 0.061 17.23 0.171 17.485 C 0.281 17.739 0.441 17.969 0.641 18.161 L 8.974 26.494 C 9.365 26.885 9.894 27.104 10.447 27.104 C 10.999 27.104 11.529 26.885 11.92 26.494 L 34.836 3.578 C 35.138 3.285 35.343 2.908 35.426 2.497 C 35.51 2.085 35.467 1.658 35.303 1.271 C 35.139 0.885 34.863 0.557 34.509 0.33 C 34.156 0.103 33.742 -0.011 33.323 0.001 Z"
+                fill="currentColor"
+              />
+            </svg>
+          </div>
+        </div>
+        <h2 class="success__title" id="register-success-title">Success!</h2>
+        <p class="success__message">{{ successMessage() }}</p>
+        <button type="button" class="btn btn--primary success__cta" (click)="goToWorkspace()">Go to Guest Workspace</button>
+      </div>
+    </div>
+  }
 </div>

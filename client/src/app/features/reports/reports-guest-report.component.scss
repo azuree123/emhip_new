@@ -1,0 +1,188 @@
+// Guest Report tab — Desktop66 (project/screens/Components.bundle.js).
+// Search field 36px r4 with 13.5px magnifier, 36px round rgb(240,240,240)
+// avatars with 15/600 rgb(148,148,148) initials, "Open" secondary buttons,
+// and design-styled Prev/Next pager buttons (38px r8).
+@import 'reports-shared';
+
+:host {
+  display: block;
+  font-family: $font-body;
+}
+
+.guest-report {
+  &__toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 24px;
+  }
+
+  &__filters {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  &__error {
+    margin-bottom: 16px;
+  }
+
+  &__footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-top: 21px;
+  }
+
+  &__count {
+    font-weight: 500;
+    font-size: 12px;
+    line-height: 24px;
+    letter-spacing: -0.005em;
+    color: $ink-soft;
+  }
+}
+
+.search-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1 1 280px;
+  max-width: 420px;
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 4px;
+  background: rgb(255, 255, 255);
+  box-shadow: inset 0 0 0 1px $line-soft;
+  box-sizing: border-box;
+
+  &__icon {
+    display: inline-flex;
+    color: $ink-faint;
+    flex-shrink: 0;
+  }
+
+  &__input {
+    flex: 1 1 auto;
+    min-width: 0;
+    border: none;
+    background: transparent;
+    font-family: inherit;
+    font-weight: 500;
+    font-size: 12px;
+    line-height: 24px;
+    color: $ink;
+
+    &::placeholder {
+      color: $ink-faint;
+    }
+
+    &:focus {
+      outline: none;
+    }
+  }
+
+  &:focus-within {
+    box-shadow: inset 0 0 0 1px $maroon;
+  }
+}
+
+.guest-table {
+  td {
+    padding-top: 17px;
+    padding-bottom: 17px;
+  }
+
+  &__open {
+    height: 36px;
+    padding: 0 16px;
+    text-decoration: none;
+  }
+}
+
+.guest-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+
+  &__avatar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 24px;
+    background: rgb(240, 240, 240);
+    font-weight: 600;
+    font-size: 15px;
+    color: rgb(148, 148, 148);
+    flex-shrink: 0;
+  }
+
+  &__text {
+    display: flex;
+    flex-direction: column;
+  }
+
+  &__name {
+    font-weight: 600;
+    font-size: 12px;
+    line-height: 20px;
+    color: $ink;
+    white-space: nowrap;
+  }
+
+  &__sub {
+    font-weight: 500;
+    font-size: 10px;
+    line-height: 16px;
+    color: rgb(143, 143, 143);
+    white-space: nowrap;
+  }
+}
+
+.pager {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  &__btn {
+    height: 38px;
+    padding: 0 16px;
+    border: 1px solid $line-soft;
+    border-radius: 8px;
+    background: rgb(255, 255, 255);
+    font-family: inherit;
+    font-weight: 600;
+    font-size: 14px;
+    line-height: 24px;
+    letter-spacing: 0.005em;
+    color: rgb(51, 65, 85);
+    cursor: pointer;
+
+    &:hover:not(:disabled) {
+      background: rgb(246, 246, 246);
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: default;
+    }
+  }
+}
+
+@media (max-width: 720px) {
+  .guest-report__toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .search-field {
+    max-width: none;
+  }
+}

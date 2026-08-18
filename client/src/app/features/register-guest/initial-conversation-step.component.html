@@ -1,28 +1,32 @@
 <div [formGroup]="form" class="steps-form">
-  <div class="info-banner">
-    <svg width="18" height="18" viewBox="0 0 15 15" fill="none" class="info-banner__icon">
+  <!-- Locked-record notice (Desktop79, banner directly under the header card) -->
+  <div class="info-banner info-banner--page">
+    <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
       <path
         d="M 7.5 0 C 11.642 0 15 3.359 15 7.5 C 15 11.641 11.642 15 7.5 15 C 3.358 15 0 11.641 0 7.5 C 0 3.359 3.358 0 7.5 0 Z M 7.501 9.753 C 7.088 9.753 6.752 10.088 6.752 10.502 C 6.752 10.915 7.088 11.251 7.501 11.251 C 7.915 11.251 8.25 10.915 8.25 10.502 C 8.25 10.088 7.915 9.753 7.501 9.753 Z M 7.5 3.75 C 7.115 3.75 6.798 4.04 6.755 4.413 L 6.75 4.5 L 6.751 8.251 L 6.756 8.338 C 6.8 8.711 7.117 9.001 7.502 9.001 C 7.886 9.001 8.203 8.711 8.246 8.338 L 8.251 8.25 L 8.25 4.5 L 8.245 4.412 C 8.201 4.039 7.884 3.75 7.5 3.75 Z"
         fill="currentColor"
       />
     </svg>
-    <p>
-      This step can be saved as draft and completed later if the guest cannot continue — they will remain in "New" status until
-      this is submitted
+    <p class="info-banner__text">
+      This form is completed once during the first session. It is permanently locked after submission and forms the baseline
+      clinical record. Status changes from New to Active on submission.
     </p>
   </div>
 
-  <div class="section">
-    <h3 class="section__title section__title--solo">Hub worker conducting the conversation</h3>
+  <!-- Session details (Desktop79, card 1) -->
+  <section class="card" formGroupName="session">
+    <div class="card__header">
+      <h3 class="card__title">Session details</h3>
+    </div>
 
     <div class="field-row">
       <label class="field">
         <span class="field__label">Hub worker&nbsp;*</span>
-        <input class="field__input" type="text" [value]="hubWorkerName" disabled />
+        <input class="field__input" type="text" [value]="hubWorkerName" readonly />
         <span class="field__hint">
-          <svg width="11" height="11" viewBox="0 0 9.625 9.625" fill="none">
+          <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
             <path
-              d="M 5.156 4.469 C 5.156 4.378 5.119 4.29 5.055 4.226 C 4.99 4.161 4.903 4.125 4.812 4.125 C 4.721 4.125 4.633 4.161 4.569 4.226 C 4.504 4.29 4.468 4.378 4.468 4.469 L 4.468 6.531 C 4.468 6.622 4.504 6.71 4.569 6.774 C 4.633 6.839 4.721 6.875 4.812 6.875 C 4.903 6.875 4.99 6.839 5.055 6.774 C 5.119 6.71 5.156 6.622 5.156 6.531 L 5.156 4.469 Z M 5.327 3.094 C 5.327 3.23 5.273 3.361 5.177 3.458 C 5.08 3.555 4.949 3.609 4.812 3.609 C 4.675 3.609 4.544 3.555 4.448 3.458 C 4.351 3.361 4.297 3.23 4.297 3.094 C 4.297 2.957 4.351 2.826 4.448 2.73 C 4.544 2.633 4.675 2.579 4.812 2.579 C 4.948 2.579 5.079 2.633 5.176 2.73 C 5.272 2.826 5.327 2.957 5.327 3.094 Z M 4.813 0 C 3.536 0 2.312 0.507 1.41 1.41 C 0.507 2.312 0 3.536 0 4.813 C 0 6.089 0.507 7.313 1.41 8.215 C 2.312 9.118 3.536 9.625 4.813 9.625 C 6.089 9.625 7.313 9.118 8.215 8.215 C 9.118 7.313 9.625 6.089 9.625 4.813 C 9.625 3.536 9.118 2.312 8.215 1.41 C 7.313 0.507 6.089 0 4.813 0 Z M 0.688 4.813 C 0.688 4.271 0.794 3.734 1.001 3.234 C 1.209 2.733 1.513 2.279 1.896 1.896 C 2.279 1.513 2.733 1.209 3.234 1.001 C 3.734 0.794 4.271 0.687 4.813 0.687 C 5.354 0.687 5.891 0.794 6.391 1.001 C 6.892 1.209 7.346 1.513 7.729 1.896 C 8.112 2.279 8.416 2.733 8.624 3.234 C 8.831 3.734 8.938 4.271 8.938 4.813 C 8.938 5.907 8.503 6.956 7.729 7.729 C 6.956 8.503 5.907 8.938 4.813 8.938 C 3.718 8.938 2.669 8.503 1.896 7.729 C 1.122 6.956 0.688 5.907 0.688 4.813 Z"
+              d="M 5.5 0.688 C 8.158 0.688 10.313 2.842 10.313 5.5 C 10.313 8.158 8.158 10.313 5.5 10.313 C 2.842 10.313 0.688 8.158 0.688 5.5 C 0.688 2.842 2.842 0.688 5.5 0.688 Z M 5.501 6.94 C 5.204 6.94 4.964 7.181 4.964 7.478 C 4.964 7.774 5.204 8.015 5.501 8.015 C 5.798 8.015 6.038 7.774 6.038 7.478 C 6.038 7.181 5.798 6.94 5.501 6.94 Z M 5.5 2.75 C 5.224 2.75 4.996 2.958 4.966 3.226 L 4.963 3.288 L 4.963 5.978 L 4.967 6.041 C 4.998 6.308 5.226 6.516 5.501 6.516 C 5.777 6.516 6.005 6.308 6.036 6.041 L 6.039 5.978 L 6.038 3.288 L 6.035 3.225 C 6.003 2.957 5.776 2.75 5.5 2.75 Z"
               fill="currentColor"
             />
           </svg>
@@ -30,154 +34,370 @@
         </span>
       </label>
       <label class="field">
-        <span class="field__label">Place of interview&nbsp;*</span>
-        <input class="field__input" type="text" formControlName="placeOfInterview" placeholder="Wandsworth Hub" />
-        @if (form.get('placeOfInterview')?.invalid && form.get('placeOfInterview')?.touched) {
-          <span class="field__error">Place of interview is required.</span>
-        }
-      </label>
-    </div>
-  </div>
-
-  <div class="section">
-    <h3 class="section__title section__title--solo">Presenting problem</h3>
-
-    <div class="field-row field-row--single">
-      <label class="field">
-        <span class="field__label">Description of problem&nbsp;*</span>
-        <textarea
-          class="field__textarea"
-          formControlName="presentingIssues"
-          placeholder="Describe in the guest own words if possible..."
-          rows="1"
-        ></textarea>
-        @if (form.get('presentingIssues')?.invalid && form.get('presentingIssues')?.touched) {
-          <span class="field__error">Description of problem is required.</span>
-        }
+        <span class="field__label">Job title</span>
+        <input class="field__input" type="text" [value]="jobTitle" readonly />
+        <span class="field__hint">
+          <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+            <path
+              d="M 5.5 0.688 C 8.158 0.688 10.313 2.842 10.313 5.5 C 10.313 8.158 8.158 10.313 5.5 10.313 C 2.842 10.313 0.688 8.158 0.688 5.5 C 0.688 2.842 2.842 0.688 5.5 0.688 Z M 5.501 6.94 C 5.204 6.94 4.964 7.181 4.964 7.478 C 4.964 7.774 5.204 8.015 5.501 8.015 C 5.798 8.015 6.038 7.774 6.038 7.478 C 6.038 7.181 5.798 6.94 5.501 6.94 Z M 5.5 2.75 C 5.224 2.75 4.996 2.958 4.966 3.226 L 4.963 3.288 L 4.963 5.978 L 4.967 6.041 C 4.998 6.308 5.226 6.516 5.501 6.516 C 5.777 6.516 6.005 6.308 6.036 6.041 L 6.039 5.978 L 6.038 3.288 L 6.035 3.225 C 6.003 2.957 5.776 2.75 5.5 2.75 Z"
+              fill="currentColor"
+            />
+          </svg>
+          pre filled from your login
+        </span>
       </label>
     </div>
 
     <div class="field-row">
-      <div class="field">
-        <span class="field__label">Long-term health condition?</span>
-        <label class="toggle-shell">
-          <input class="toggle__input" type="checkbox" formControlName="longTermHealthCondition" />
-          <span class="toggle-shell__caption">No/Yes</span>
-          <span class="toggle__track"><span class="toggle__thumb"></span></span>
-        </label>
-      </div>
+      <label class="field">
+        <span class="field__label">Date of session&nbsp;*</span>
+        <input class="field__input" type="date" formControlName="sessionDate" />
+        @if (form.get('session.sessionDate')?.invalid && form.get('session.sessionDate')?.touched) {
+          <span class="field__error">The session date is required.</span>
+        }
+      </label>
+      <label class="field">
+        <span class="field__label">Type of contact&nbsp;*</span>
+        <select class="field__select" formControlName="contactType">
+          @for (option of contactTypeOptions; track option) {
+            <option [value]="option">{{ option }}</option>
+          }
+        </select>
+      </label>
+    </div>
+  </section>
+
+  <!-- Presenting problem — guided conversation (Desktop79, card 2) -->
+  <section class="card" formGroupName="prompts">
+    <div class="card__header">
+      <h3 class="card__title">Presenting problem</h3>
+      <span class="card__badge">Guided conversation &middot; 4 prompts</span>
     </div>
 
-    <div class="risk-card">
-      <span class="risk-card__title">Immediate Risk Identified?&nbsp;*</span>
-      <div class="risk-choice">
-        <div
-          class="risk-pill"
-          [class.risk-pill--selected]="form.get('immediateRisk')?.value === false"
-          (click)="form.get('immediateRisk')?.setValue(false)"
-        >
-          <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
-            <path
-              d="M 7.5 0 C 11.642 0 15 3.358 15 7.5 C 15 11.642 11.642 15 7.5 15 C 3.358 15 0 11.642 0 7.5 C 0 3.358 3.358 0 7.5 0 Z M 7.5 1.125 C 3.979 1.125 1.125 3.979 1.125 7.5 C 1.125 11.021 3.979 13.875 7.5 13.875 C 11.021 13.875 13.875 11.021 13.875 7.5 C 13.875 3.979 11.021 1.125 7.5 1.125 Z M 6.563 8.579 L 9.915 5.227 C 10.134 5.008 10.491 5.008 10.71 5.227 C 10.91 5.427 10.928 5.739 10.765 5.96 L 10.71 6.023 L 6.96 9.773 C 6.761 9.972 6.448 9.991 6.228 9.827 L 6.165 9.773 L 4.29 7.898 C 4.07 7.678 4.07 7.322 4.29 7.102 C 4.489 6.903 4.802 6.884 5.022 7.048 L 5.085 7.102 L 6.563 8.579 Z"
-              fill="currentColor"
-            />
-          </svg>
-          <span>NO RISK DETECTED</span>
-          <span class="risk-pill__radio"></span>
-        </div>
-        <div
-          class="risk-pill"
-          [class.risk-pill--selected]="form.get('immediateRisk')?.value === true"
-          (click)="form.get('immediateRisk')?.setValue(true)"
-        >
-          <svg width="14" height="15" viewBox="0 0 13.5 15" fill="none">
-            <path
-              d="M 12.938 2.25 C 10.94 2.25 8.994 1.542 7.087 0.113 C 6.887 -0.037 6.613 -0.037 6.413 0.113 C 4.506 1.542 2.56 2.25 0.563 2.25 C 0.252 2.25 0 2.502 0 2.813 L 0 6.75 C 0 10.501 2.218 13.257 6.544 14.961 C 6.676 15.013 6.824 15.013 6.956 14.961 C 11.282 13.257 13.5 10.501 13.5 6.75 L 13.5 2.813 C 13.5 2.502 13.248 2.25 12.938 2.25 Z M 1.125 3.358 C 3.058 3.244 4.936 2.541 6.75 1.258 C 8.564 2.541 10.442 3.244 12.375 3.358 L 12.375 6.75 C 12.375 9.942 10.535 12.284 6.75 13.831 C 2.965 12.284 1.125 9.942 1.125 6.75 L 1.125 3.358 Z M 7.307 4.239 C 7.27 3.964 7.035 3.753 6.75 3.753 C 6.439 3.753 6.188 4.005 6.188 4.315 L 6.188 9.189 L 6.193 9.266 C 6.23 9.54 6.465 9.752 6.75 9.752 C 7.061 9.752 7.313 9.5 7.313 9.189 L 7.313 4.315 L 7.307 4.239 Z M 6.75 12 C 7.164 12 7.5 11.664 7.5 11.25 C 7.5 10.836 7.164 10.5 6.75 10.5 C 6.336 10.5 6 10.836 6 11.25 C 6 11.664 6.336 12 6.75 12 Z"
-              fill="currentColor"
-            />
-          </svg>
-          <span>YES, HIGH RISK</span>
-          <span class="risk-pill__radio"></span>
-        </div>
-      </div>
-      @if (form.get('immediateRisk')?.touched && form.get('immediateRisk')?.invalid) {
-        <span class="field__error">Please indicate whether an immediate risk was identified.</span>
-      }
+    <div class="info-banner">
+      <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+        <path
+          d="M 7.5 0 C 11.642 0 15 3.359 15 7.5 C 15 11.641 11.642 15 7.5 15 C 3.358 15 0 11.641 0 7.5 C 0 3.359 3.358 0 7.5 0 Z M 7.501 9.753 C 7.088 9.753 6.752 10.088 6.752 10.502 C 6.752 10.915 7.088 11.251 7.501 11.251 C 7.915 11.251 8.25 10.915 8.25 10.502 C 8.25 10.088 7.915 9.753 7.501 9.753 Z M 7.5 3.75 C 7.115 3.75 6.798 4.04 6.755 4.413 L 6.75 4.5 L 6.751 8.251 L 6.756 8.338 C 6.8 8.711 7.117 9.001 7.502 9.001 C 7.886 9.001 8.203 8.711 8.246 8.338 L 8.251 8.25 L 8.25 4.5 L 8.245 4.412 C 8.201 4.039 7.884 3.75 7.5 3.75 Z"
+          fill="currentColor"
+        />
+      </svg>
+      <p class="info-banner__text">
+        Use the prompts below to guide a natural conversation — you don't need to follow the exact words or order. Write a
+        brief note after each prompt of what came up. Your job is to understand what the person needs, not to diagnose.
+      </p>
     </div>
 
-    @if (form.get('immediateRisk')?.value === true) {
-      <div class="risk-flags" formGroupName="riskFlags">
-        <span class="risk-flags__title">Select the risk flags identified during this conversation:</span>
-        <label class="checkbox-field">
-          <input class="checkbox-field__input" type="checkbox" formControlName="suicidalIdeation" />
-          <span class="checkbox-field__box"><ng-container *ngTemplateOutlet="check" /></span>
-          <span class="checkbox-field__label">Suicidal ideation</span>
-        </label>
-        <label class="checkbox-field">
-          <input class="checkbox-field__input" type="checkbox" formControlName="selfHarm" />
-          <span class="checkbox-field__box"><ng-container *ngTemplateOutlet="check" /></span>
-          <span class="checkbox-field__label">Self-harm</span>
-        </label>
-        <label class="checkbox-field">
-          <input class="checkbox-field__input" type="checkbox" formControlName="riskToOthers" />
-          <span class="checkbox-field__box"><ng-container *ngTemplateOutlet="check" /></span>
-          <span class="checkbox-field__label">Risk to others</span>
-        </label>
-        <label class="checkbox-field">
-          <input class="checkbox-field__input" type="checkbox" formControlName="severeDeterioration" />
-          <span class="checkbox-field__box"><ng-container *ngTemplateOutlet="check" /></span>
-          <span class="checkbox-field__label">Severe deterioration</span>
-        </label>
-        <label class="checkbox-field">
-          <input class="checkbox-field__input" type="checkbox" formControlName="safeguardingConcern" />
-          <span class="checkbox-field__box"><ng-container *ngTemplateOutlet="check" /></span>
-          <span class="checkbox-field__label">Safeguarding concern</span>
+    @for (prompt of prompts; track prompt.control) {
+      <div class="prompt-block">
+        <span class="prompt-tag">{{ prompt.tag }}</span>
+        @if (prompt.quote) {
+          <p class="prompt-quote">{{ prompt.quote }}</p>
+        }
+        <label class="field">
+          <span class="field__label">{{ prompt.label }}</span>
+          <textarea
+            class="field__textarea"
+            [formControlName]="prompt.control"
+            placeholder="Write what the guest told you in plain language....."
+          ></textarea>
+          <span class="field__hint">
+            <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+              <path
+                d="M 5.5 0.688 C 8.158 0.688 10.313 2.842 10.313 5.5 C 10.313 8.158 8.158 10.313 5.5 10.313 C 2.842 10.313 0.688 8.158 0.688 5.5 C 0.688 2.842 2.842 0.688 5.5 0.688 Z M 5.501 6.94 C 5.204 6.94 4.964 7.181 4.964 7.478 C 4.964 7.774 5.204 8.015 5.501 8.015 C 5.798 8.015 6.038 7.774 6.038 7.478 C 6.038 7.181 5.798 6.94 5.501 6.94 Z M 5.5 2.75 C 5.224 2.75 4.996 2.958 4.966 3.226 L 4.963 3.288 L 4.963 5.978 L 4.967 6.041 C 4.998 6.308 5.226 6.516 5.501 6.516 C 5.777 6.516 6.005 6.308 6.036 6.041 L 6.039 5.978 L 6.038 3.288 L 6.035 3.225 C 6.003 2.957 5.776 2.75 5.5 2.75 Z"
+                fill="currentColor"
+              />
+            </svg>
+            {{ prompt.hint }}
+          </span>
+          @if (prompt.required && form.get('prompts.' + prompt.control)?.invalid && form.get('prompts.' + prompt.control)?.touched) {
+            <span class="field__error">{{ prompt.requiredError }}</span>
+          }
         </label>
       </div>
     }
+  </section>
+
+  <!-- Mental health & psychiatric history (Desktop79, card 3 — ends with the MDT summary) -->
+  <section class="card">
+    <div class="card__header">
+      <h3 class="card__title">Mental health &amp; psychiatric history</h3>
+    </div>
+
+    <div formGroupName="history">
+      <div class="field-row">
+        <label class="field">
+          <span class="field__label">Previous mental health diagnosis?&nbsp;*</span>
+          <select class="field__select" formControlName="previousDiagnosis">
+            @for (option of previousDiagnosisOptions; track option) {
+              <option [value]="option">{{ option }}</option>
+            }
+          </select>
+        </label>
+        <label class="field">
+          <span class="field__label">Diagnosis group(s) — select all that apply</span>
+          <select class="field__select" formControlName="diagnosisGroups">
+            <option value="">Select diagnosis group</option>
+            @for (option of diagnosisGroupOptions; track option) {
+              <option [value]="option">{{ option }}</option>
+            }
+          </select>
+          <span class="field__hint">
+            <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+              <path
+                d="M 5.5 0.688 C 8.158 0.688 10.313 2.842 10.313 5.5 C 10.313 8.158 8.158 10.313 5.5 10.313 C 2.842 10.313 0.688 8.158 0.688 5.5 C 0.688 2.842 2.842 0.688 5.5 0.688 Z M 5.501 6.94 C 5.204 6.94 4.964 7.181 4.964 7.478 C 4.964 7.774 5.204 8.015 5.501 8.015 C 5.798 8.015 6.038 7.774 6.038 7.478 C 6.038 7.181 5.798 6.94 5.501 6.94 Z M 5.5 2.75 C 5.224 2.75 4.996 2.958 4.966 3.226 L 4.963 3.288 L 4.963 5.978 L 4.967 6.041 C 4.998 6.308 5.226 6.516 5.501 6.516 C 5.777 6.516 6.005 6.308 6.036 6.041 L 6.039 5.978 L 6.038 3.288 L 6.035 3.225 C 6.003 2.957 5.776 2.75 5.5 2.75 Z"
+                fill="currentColor"
+              />
+            </svg>
+            Maps to ICD-10/11 in the backend
+          </span>
+        </label>
+      </div>
+
+      <div class="field-row field-row--single">
+        <label class="field">
+          <span class="field__label">What does the client report to be their previous diagnosis?</span>
+          <textarea class="field__textarea field__textarea--narrow" formControlName="reportedDiagnosis" placeholder="Record in their words......"></textarea>
+        </label>
+      </div>
+
+      <div class="field-row">
+        <label class="field">
+          <span class="field__label">Previous inpatient admission?</span>
+          <select class="field__select" formControlName="inpatientAdmission">
+            @for (option of inpatientOptions; track option) {
+              <option [value]="option">{{ option }}</option>
+            }
+          </select>
+        </label>
+        <label class="field">
+          <span class="field__label">Approximate year(s) and location</span>
+          <input class="field__input" type="text" formControlName="inpatientDetails" placeholder="e.g 2018 - Springfield Hospital" />
+        </label>
+      </div>
+
+      <div class="field-row">
+        <label class="field">
+          <span class="field__label">Family history of mental health difficulties?</span>
+          <select class="field__select" formControlName="familyHistory">
+            @for (option of specifyOptions; track option) {
+              <option [value]="option">{{ option }}</option>
+            }
+          </select>
+        </label>
+        <label class="field">
+          <span class="field__label">Family history details</span>
+          <input class="field__input" type="text" formControlName="familyHistoryDetails" placeholder="Specify details shared by guest..." />
+        </label>
+      </div>
+    </div>
+
+    <div class="field-row field-row--single summary-block">
+      <label class="field">
+        <span class="field__label">Summary&nbsp;*</span>
+        <textarea
+          class="field__textarea"
+          formControlName="summary"
+          placeholder="3-5 sentences for the MDT. What did the person come with, what is their key concern, how are they coping, what do they want..."
+        ></textarea>
+        <span class="field__hint">
+          <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+            <path
+              d="M 5.5 0.688 C 8.158 0.688 10.313 2.842 10.313 5.5 C 10.313 8.158 8.158 10.313 5.5 10.313 C 2.842 10.313 0.688 8.158 0.688 5.5 C 0.688 2.842 2.842 0.688 5.5 0.688 Z M 5.501 6.94 C 5.204 6.94 4.964 7.181 4.964 7.478 C 4.964 7.774 5.204 8.015 5.501 8.015 C 5.798 8.015 6.038 7.774 6.038 7.478 C 6.038 7.181 5.798 6.94 5.501 6.94 Z M 5.5 2.75 C 5.224 2.75 4.996 2.958 4.966 3.226 L 4.963 3.288 L 4.963 5.978 L 4.967 6.041 C 4.998 6.308 5.226 6.516 5.501 6.516 C 5.777 6.516 6.005 6.308 6.036 6.041 L 6.039 5.978 L 6.038 3.288 L 6.035 3.225 C 6.003 2.957 5.776 2.75 5.5 2.75 Z"
+              fill="currentColor"
+            />
+          </svg>
+          This is your clinical summary for the multi-disciplinary team — write clearly and concisely
+        </span>
+        @if (form.get('summary')?.invalid && form.get('summary')?.touched) {
+          <span class="field__error">The MDT summary is required.</span>
+        }
+      </label>
+    </div>
+  </section>
+
+  <!-- Physical health (Desktop79, card 4) -->
+  <section class="card" formGroupName="physical">
+    <div class="card__header">
+      <h3 class="card__title">Physical health</h3>
+    </div>
 
     <div class="field-row field-row--single">
       <label class="field">
-        <span class="field__label">Past mental health difficulties &amp; treatment</span>
+        <span class="field__label">Relevant physical health conditions (current and/or previous)</span>
         <textarea
-          class="field__textarea"
-          formControlName="pastMentalHealth"
-          placeholder="No prior treatment history reported"
-          rows="1"
+          class="field__textarea field__textarea--narrow"
+          formControlName="conditions"
+          placeholder="List current and previous health conditions relevant to this person’s care...."
         ></textarea>
+      </label>
+    </div>
+
+    <div class="field-row">
+      <label class="field">
+        <span class="field__label">Known allergies</span>
+        <select class="field__select" formControlName="allergies">
+          @for (option of specifyOptions; track option) {
+            <option [value]="option">{{ option }}</option>
+          }
+        </select>
+      </label>
+      <label class="field">
+        <span class="field__label">Allergy details</span>
+        <input class="field__input" type="text" formControlName="allergyDetails" placeholder="Specify allergy type and reaction..." />
       </label>
     </div>
 
     <div class="field-row field-row--single">
       <label class="field">
-        <span class="field__label">Family mental health history</span>
+        <span class="field__label">Current medication — list all</span>
+        <textarea class="field__textarea" formControlName="medication" placeholder="Name dose, frequency - e.g Stertaline 50 mg daily....."></textarea>
+        <span class="field__hint">
+          <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+            <path
+              d="M 5.5 0.688 C 8.158 0.688 10.313 2.842 10.313 5.5 C 10.313 8.158 8.158 10.313 5.5 10.313 C 2.842 10.313 0.688 8.158 0.688 5.5 C 0.688 2.842 2.842 0.688 5.5 0.688 Z M 5.501 6.94 C 5.204 6.94 4.964 7.181 4.964 7.478 C 4.964 7.774 5.204 8.015 5.501 8.015 C 5.798 8.015 6.038 7.774 6.038 7.478 C 6.038 7.181 5.798 6.94 5.501 6.94 Z M 5.5 2.75 C 5.224 2.75 4.996 2.958 4.966 3.226 L 4.963 3.288 L 4.963 5.978 L 4.967 6.041 C 4.998 6.308 5.226 6.516 5.501 6.516 C 5.777 6.516 6.005 6.308 6.036 6.041 L 6.039 5.978 L 6.038 3.288 L 6.035 3.225 C 6.003 2.957 5.776 2.75 5.5 2.75 Z"
+              fill="currentColor"
+            />
+          </svg>
+          Include all prescribed medication, supplements, and over-the-counter treatments
+        </span>
+      </label>
+    </div>
+  </section>
+
+  <!-- Risk screening (Desktop79, card 5) -->
+  <section class="card" formGroupName="risk">
+    <div class="card__header">
+      <h3 class="card__title">Risk screening</h3>
+      <span class="card__badge">Mandatory &middot; escalate immediately if concerned</span>
+    </div>
+
+    <div class="info-banner info-banner--warn">
+      <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+        <path
+          d="M 7.5 0 C 11.642 0 15 3.359 15 7.5 C 15 11.641 11.642 15 7.5 15 C 3.358 15 0 11.641 0 7.5 C 0 3.359 3.358 0 7.5 0 Z M 7.501 9.753 C 7.088 9.753 6.752 10.088 6.752 10.502 C 6.752 10.915 7.088 11.251 7.501 11.251 C 7.915 11.251 8.25 10.915 8.25 10.502 C 8.25 10.088 7.915 9.753 7.501 9.753 Z M 7.5 3.75 C 7.115 3.75 6.798 4.04 6.755 4.413 L 6.75 4.5 L 6.751 8.251 L 6.756 8.338 C 6.8 8.711 7.117 9.001 7.502 9.001 C 7.886 9.001 8.203 8.711 8.246 8.338 L 8.251 8.25 L 8.25 4.5 L 8.245 4.412 C 8.201 4.039 7.884 3.75 7.5 3.75 Z"
+          fill="currentColor"
+        />
+      </svg>
+      <p class="info-banner__text">
+        Complete to the best of your ability. You are not expected to conduct a formal clinical risk assessment. If anything
+        concerns you, escalate to the Hub Manager immediately — do not wait.
+      </p>
+    </div>
+
+    <div class="risk-row">
+      <span class="field__label risk-row__label">History of self-harm or suicide?&nbsp;*</span>
+      <select class="field__select risk-row__answer" formControlName="selfHarmHistory">
+        <option value="" disabled>—</option>
+        @for (option of riskAnswerOptions; track option) {
+          <option [value]="option">{{ option }}</option>
+        }
+      </select>
+      <input class="field__input risk-row__comment" type="text" formControlName="selfHarmComment" placeholder="Add comment..." />
+    </div>
+
+    <div class="risk-row">
+      <span class="field__label risk-row__label">History of risk to others?&nbsp;*</span>
+      <select class="field__select risk-row__answer" formControlName="riskToOthersHistory">
+        <option value="" disabled>—</option>
+        @for (option of riskAnswerOptions; track option) {
+          <option [value]="option">{{ option }}</option>
+        }
+      </select>
+      <input class="field__input risk-row__comment" type="text" formControlName="riskToOthersComment" placeholder="Add comment..." />
+    </div>
+
+    <div class="risk-row">
+      <span class="field__label risk-row__label">History of safeguarding concerns (adults or children)?&nbsp;*</span>
+      <select class="field__select risk-row__answer" formControlName="safeguardingHistory">
+        <option value="" disabled>—</option>
+        @for (option of riskAnswerOptions; track option) {
+          <option [value]="option">{{ option }}</option>
+        }
+      </select>
+      <input class="field__input risk-row__comment" type="text" formControlName="safeguardingComment" placeholder="Add comment..." />
+    </div>
+
+    <div class="risk-row risk-row--last">
+      <span class="field__label risk-row__label">Immediate escalation required?&nbsp;*</span>
+      <span></span>
+      <select class="field__select risk-row__comment" formControlName="escalationRequired">
+        <option value="" disabled>—</option>
+        @for (option of escalationOptions; track option) {
+          <option [value]="option">{{ option }}</option>
+        }
+      </select>
+    </div>
+
+    @if (escalationNoted) {
+      <div class="crisis-card">
+        <div class="crisis-card__title">
+          <svg width="14" height="13" viewBox="0 0 13.512 11.969" fill="none">
+            <path
+              d="M 7.622 0.5 L 13.378 10.469 C 13.466 10.621 13.512 10.794 13.512 10.969 C 13.512 11.145 13.466 11.317 13.378 11.469 C 13.29 11.621 13.164 11.748 13.012 11.835 C 12.86 11.923 12.688 11.969 12.512 11.969 L 1 11.969 C 0.824 11.969 0.652 11.923 0.5 11.835 C 0.348 11.748 0.222 11.621 0.134 11.469 C 0.046 11.317 0 11.145 0 10.969 C 0 10.794 0.046 10.621 0.134 10.469 L 5.89 0.5 C 6.275 -0.167 7.237 -0.167 7.622 0.5 Z M 6.756 8.401 C 6.579 8.401 6.41 8.472 6.285 8.597 C 6.16 8.722 6.089 8.891 6.089 9.068 C 6.089 9.245 6.16 9.414 6.285 9.539 C 6.41 9.664 6.579 9.735 6.756 9.735 C 6.933 9.735 7.102 9.664 7.227 9.539 C 7.352 9.414 7.423 9.245 7.423 9.068 C 7.423 8.891 7.352 8.722 7.227 8.597 C 7.102 8.472 6.933 8.401 6.756 8.401 Z M 6.756 3.735 C 6.593 3.735 6.435 3.795 6.313 3.903 C 6.191 4.012 6.113 4.161 6.094 4.323 L 6.089 4.401 L 6.089 7.068 C 6.089 7.238 6.155 7.401 6.271 7.525 C 6.388 7.648 6.547 7.723 6.717 7.733 C 6.887 7.743 7.054 7.688 7.184 7.578 C 7.314 7.469 7.398 7.315 7.418 7.146 L 7.423 7.068 L 7.423 4.401 C 7.423 4.225 7.352 4.055 7.227 3.93 C 7.102 3.805 6.933 3.735 6.756 3.735 Z"
+              fill="currentColor"
+            />
+          </svg>
+          Escalation noted — crisis notes required
+        </div>
+        <textarea
+          class="crisis-card__notes"
+          formControlName="crisisNotes"
+          placeholder="Record actions taken, who was notified, and what was agreed with the guest....."
+        ></textarea>
+        @if (form.get('risk.crisisNotes')?.invalid && form.get('risk.crisisNotes')?.touched) {
+          <span class="field__error">Crisis notes are required when escalation is needed.</span>
+        }
+      </div>
+    }
+
+    <div class="mdt-flags" formGroupName="flags">
+      <span class="field__label">Flag anything that came up in the conversation — these inform the MDT decision</span>
+      @for (flag of mdtFlags; track flag.key) {
+        <label class="checkbox-field">
+          <input class="checkbox-field__input" type="checkbox" [formControlName]="flag.key" />
+          <span class="checkbox-field__box">
+            <svg width="10" height="8" viewBox="0 0 9.231 7" fill="none">
+              <path
+                d="M 0.793 2.39 C 0.456 1.953 -0.172 1.871 -0.61 2.207 C -1.047 2.544 -1.129 3.172 -0.793 3.61 L 0 3 L 0.793 2.39 Z M 9.982 0.66 C 10.346 0.245 10.306 -0.386 9.891 -0.751 C 9.476 -1.116 8.844 -1.075 8.48 -0.66 L 9.231 0 L 9.982 0.66 Z M 3.879 6.087 L 4.631 6.747 L 3.879 6.087 Z M 0 3 L -0.793 3.61 L 1.543 6.646 L 2.336 6.037 L 3.128 5.427 L 0.793 2.39 L 0 3 Z M 3.879 6.087 L 4.631 6.747 L 9.982 0.66 L 9.231 0 L 8.48 -0.66 L 3.128 5.427 L 3.879 6.087 Z"
+                fill="currentColor"
+              />
+            </svg>
+          </span>
+          <span class="checkbox-field__label">{{ flag.label }}</span>
+        </label>
+      }
+    </div>
+
+    <div class="field-row field-row--single risk-notes">
+      <label class="field">
+        <span class="field__label">Risk / safeguarding notes</span>
         <textarea
           class="field__textarea"
-          formControlName="familyMentalHealth"
-          placeholder="Mother reported history of depression"
-          rows="1"
+          formControlName="riskNotes"
+          placeholder="Write any risk or safeguarding notes here if any concern was identified above..."
         ></textarea>
       </label>
     </div>
-  </div>
+  </section>
 
-  <div class="section">
+  <!-- Verbal consent (not drawn in the mock; consentConfirmed is required by the API) -->
+  <section class="card">
     <label class="checkbox-field">
       <input class="checkbox-field__input" type="checkbox" formControlName="consentConfirmed" />
-      <span class="checkbox-field__box"><ng-container *ngTemplateOutlet="check" /></span>
-      <span class="checkbox-field__label">The guest's consent for this conversation to be recorded has been confirmed.</span>
+      <span class="checkbox-field__box">
+        <svg width="10" height="8" viewBox="0 0 9.231 7" fill="none">
+          <path
+            d="M 0.793 2.39 C 0.456 1.953 -0.172 1.871 -0.61 2.207 C -1.047 2.544 -1.129 3.172 -0.793 3.61 L 0 3 L 0.793 2.39 Z M 9.982 0.66 C 10.346 0.245 10.306 -0.386 9.891 -0.751 C 9.476 -1.116 8.844 -1.075 8.48 -0.66 L 9.231 0 L 9.982 0.66 Z M 3.879 6.087 L 4.631 6.747 L 3.879 6.087 Z M 0 3 L -0.793 3.61 L 1.543 6.646 L 2.336 6.037 L 3.128 5.427 L 0.793 2.39 L 0 3 Z M 3.879 6.087 L 4.631 6.747 L 9.982 0.66 L 9.231 0 L 8.48 -0.66 L 3.128 5.427 L 3.879 6.087 Z"
+            fill="currentColor"
+          />
+        </svg>
+      </span>
+      <span class="checkbox-field__label">
+        The guest confirmed their consent for this conversation to be recorded in their clinical record.
+      </span>
     </label>
     @if (form.get('consentConfirmed')?.invalid && form.get('consentConfirmed')?.touched) {
       <span class="field__error">Consent confirmation is required.</span>
     }
-  </div>
+  </section>
 </div>
-
-<ng-template #check>
-  <svg width="11" height="8" viewBox="0 0 10.5 7.5" fill="none">
-    <path
-      d="M 0.53 3.47 C 0.237 3.177 -0.237 3.177 -0.53 3.47 C -0.823 3.763 -0.823 4.237 -0.53 4.53 L 0 4 L 0.53 3.47 Z M 3.5 7.5 L 2.97 8.03 C 3.113 8.174 3.31 8.253 3.513 8.25 C 3.716 8.246 3.91 8.16 4.048 8.012 L 3.5 7.5 Z M 11.048 0.512 C 11.331 0.209 11.315 -0.266 11.012 -0.548 C 10.709 -0.831 10.234 -0.815 9.952 -0.512 L 10.5 0 L 11.048 0.512 Z M 0 4 L -0.53 4.53 L 2.97 8.03 L 3.5 7.5 L 4.03 6.97 L 0.53 3.47 L 0 4 Z M 3.5 7.5 L 4.048 8.012 L 11.048 0.512 L 10.5 0 L 9.952 -0.512 L 2.952 6.988 L 3.5 7.5 Z"
-      fill="currentColor"
-    />
-  </svg>
-</ng-template>

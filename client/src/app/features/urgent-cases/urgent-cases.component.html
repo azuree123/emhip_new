@@ -86,7 +86,14 @@
 
     <div class="rows">
       @for (c of visibleCases(); track c.guestId) {
-        <article class="row" [class.row--overdue]="isOverdue(c)">
+        <article
+          class="row row--clickable"
+          [class.row--overdue]="isOverdue(c)"
+          role="button"
+          tabindex="0"
+          title="View urgent case details"
+          (click)="onRowClick(c, $event)"
+          (keyup.enter)="openDetails(c)">
           <div class="row__top">
             <a class="row__guest" [routerLink]="['/guests', c.guestId]">{{ c.guestName }}</a>
             <div class="row__window-col">
@@ -201,6 +208,229 @@
         <button type="button" class="btn btn--outline" (click)="closeModal()">Cancel</button>
         <button type="button" class="btn btn--primary" [disabled]="saving()" (click)="submitModal()">
           {{ saving() ? 'Saving…' : 'Save' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- "Urgent Case Details" drawer — Desktop58 -->
+@if (detailsCase(); as dc) {
+  <div class="drawer-overlay" (click)="closeDetails()">
+    <aside class="drawer" (click)="$event.stopPropagation()">
+      <header class="drawer__header">
+        <div>
+          <h2 class="drawer__title">Urgent Case Details</h2>
+          <span class="drawer__ref">Reference ID:&nbsp;{{ refLabel(dc) }}</span>
+        </div>
+        <button type="button" class="drawer__close" (click)="closeDetails()" aria-label="Close">
+          <svg width="14" height="14" viewBox="0 0 10 10" fill="none">
+            <path
+              d="M 0 4.25 C -0.414 4.25 -0.75 4.586 -0.75 5 C -0.75 5.414 -0.414 5.75 0 5.75 L 0 5 L 0 4.25 Z M 10 5.75 C 10.414 5.75 10.75 5.414 10.75 5 C 10.75 4.586 10.414 4.25 10 4.25 L 10 5 L 10 5.75 Z M 5.75 0 C 5.75 -0.414 5.414 -0.75 5 -0.75 C 4.586 -0.75 4.25 -0.414 4.25 0 L 5 0 L 5.75 0 Z M 4.25 10 C 4.25 10.414 4.586 10.75 5 10.75 C 5.414 10.75 5.75 10.414 5.75 10 L 5 10 L 4.25 10 Z M 0 5 L 0 5.75 L 5 5.75 L 5 5 L 5 4.25 L 0 4.25 L 0 5 Z M 10 5 L 10 4.25 L 5 4.25 L 5 5 L 5 5.75 L 10 5.75 L 10 5 Z M 5 5 L 5.75 5 L 5.75 0 L 5 0 L 4.25 0 L 4.25 5 L 5 5 Z M 5 5 L 4.25 5 L 4.25 10 L 5 10 L 5.75 10 L 5.75 5 L 5 5 Z"
+              fill="currentColor" transform="rotate(45 5 5)" />
+          </svg>
+        </button>
+      </header>
+
+      <a class="drawer__guest" [routerLink]="['/guests', dc.guestId]" (click)="closeDetails()">{{ dc.guestName }}</a>
+
+      <div class="countdown-card">
+        <div class="countdown-card__head">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path transform="translate(1.333 1.333)"
+              d="M 1 6.667 C 1 3.537 3.537 1 6.667 1 C 9.796 1 12.333 3.537 12.333 6.667 C 12.333 9.796 9.796 12.333 6.667 12.333 C 3.537 12.333 1 9.796 1 6.667 Z M 6.667 0 C 2.985 0 0 2.985 0 6.667 C 0 10.349 2.985 13.333 6.667 13.333 C 10.349 13.333 13.333 10.349 13.333 6.667 C 13.333 2.985 10.349 0 6.667 0 Z M 6.662 3.099 C 6.629 2.855 6.42 2.667 6.167 2.667 C 5.891 2.667 5.667 2.891 5.667 3.167 L 5.667 7.167 L 5.671 7.234 C 5.704 7.478 5.914 7.667 6.167 7.667 L 8.833 7.667 L 8.901 7.662 C 9.145 7.629 9.333 7.42 9.333 7.167 C 9.333 6.891 9.109 6.667 8.833 6.667 L 6.667 6.667 L 6.667 3.167 L 6.662 3.099 Z"
+              fill="rgb(42,42,42)" />
+          </svg>
+          <span>72-hour countdown</span>
+        </div>
+        <span class="countdown-card__status" [class.countdown-card__status--overdue]="isOverdue(dc)">
+          {{ countdownText(dc) }}
+        </span>
+        <div class="countdown-card__track">
+          <div
+            class="countdown-card__bar"
+            [class.countdown-card__bar--overdue]="isOverdue(dc)"
+            [style.width.%]="countdownPct(dc)"></div>
+        </div>
+        <span class="countdown-card__deadline">Deadline: {{ deadlineFull(dc) }}</span>
+      </div>
+
+      <div class="info-grid">
+        <div class="info-grid__cell">
+          <span class="info-grid__label">Assigned CMHW</span>
+          <span class="info-grid__value">{{ dc.assignedCmhwName ?? 'Unassigned' }}</span>
+        </div>
+        <div class="info-grid__cell">
+          <span class="info-grid__label">Flag raised</span>
+          <span class="info-grid__value">{{ dc.escalatedAt | date: 'd MMM · h:mm a' }}</span>
+        </div>
+        <div class="info-grid__cell">
+          <span class="info-grid__label">Follow-ups logged</span>
+          <span class="info-grid__value">{{ episodeContacts().length > 0 ? 'YES (' + episodeContacts().length + ')' : 'NO' }}</span>
+        </div>
+        <div class="info-grid__cell">
+          <span class="info-grid__label">Status</span>
+          <span class="info-grid__value">{{ isOverdue(dc) ? 'Overdue' : 'Within 72h window' }}</span>
+        </div>
+      </div>
+
+      <div class="drawer__flags">
+        <span class="pill pill--urgent">Urgent</span>
+        @for (flag of activeFlags(dc); track flag.key) {
+          <span class="pill" [style.background]="flag.bg" [style.color]="flag.fg">{{ flag.label }}</span>
+        }
+      </div>
+
+      @if (detailsError()) {
+        <div class="banner banner--error">{{ detailsError() }}</div>
+      }
+      @if (detailsLoading()) {
+        <div class="loading-row">Loading case details…</div>
+      }
+
+      <section class="panel-card">
+        <div class="panel-card__head">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <path transform="translate(1.667 2.5)"
+              d="M 2.5 0 C 1.119 0 0 1.119 0 2.5 L 0 12.5 C 0 13.881 1.119 15 2.5 15 L 14.167 15 C 15.547 15 16.667 13.881 16.667 12.5 L 16.667 2.5 C 16.667 1.119 15.547 0 14.167 0 L 2.5 0 Z M 1.25 2.5 C 1.25 1.81 1.81 1.25 2.5 1.25 L 14.167 1.25 C 14.857 1.25 15.417 1.81 15.417 2.5 L 15.417 12.5 C 15.417 13.19 14.857 13.75 14.167 13.75 L 2.5 13.75 C 1.81 13.75 1.25 13.19 1.25 12.5 L 1.25 2.5 Z M 3.75 4.375 C 3.75 4.03 4.03 3.75 4.375 3.75 L 12.292 3.75 C 12.637 3.75 12.917 4.03 12.917 4.375 C 12.917 4.72 12.637 5 12.292 5 L 4.375 5 C 4.03 5 3.75 4.72 3.75 4.375 Z M 3.75 7.5 C 3.75 7.155 4.03 6.875 4.375 6.875 L 12.292 6.875 C 12.637 6.875 12.917 7.155 12.917 7.5 C 12.917 7.845 12.637 8.125 12.292 8.125 L 4.375 8.125 C 4.03 8.125 3.75 7.845 3.75 7.5 Z M 3.75 10.625 C 3.75 10.28 4.03 10 4.375 10 L 9.167 10 C 9.512 10 9.792 10.28 9.792 10.625 C 9.792 10.97 9.512 11.25 9.167 11.25 L 4.375 11.25 C 4.03 11.25 3.75 10.97 3.75 10.625 Z"
+              fill="rgb(42,42,42)" />
+          </svg>
+          <h3>Crisis Actions Taken</h3>
+        </div>
+
+        @if (overview(); as ov) {
+          @if (ov.pinnedNotes.length > 0) {
+            <ul class="panel-card__list">
+              @for (note of ov.pinnedNotes; track note.id) {
+                <li>{{ note.body }}</li>
+              }
+            </ul>
+          } @else {
+            <p class="panel-card__empty">No pinned crisis notes on this guest yet.</p>
+          }
+        }
+
+        @if (noteFormOpen()) {
+          <div class="note-form">
+            <textarea rows="3" [(ngModel)]="noteBody" placeholder="Describe the crisis action taken…"></textarea>
+            @if (noteError()) {
+              <div class="banner banner--error">{{ noteError() }}</div>
+            }
+            <div class="note-form__actions">
+              <button type="button" class="btn btn--outline" (click)="cancelCrisisNote()">Cancel</button>
+              <button type="button" class="btn btn--primary" [disabled]="savingNote()" (click)="submitCrisisNote()">
+                {{ savingNote() ? 'Saving…' : 'Save note' }}
+              </button>
+            </div>
+          </div>
+        } @else {
+          <button type="button" class="add-note-btn" (click)="noteFormOpen.set(true)">
+            <svg width="12" height="12" viewBox="0 0 10 10" fill="none">
+              <path
+                d="M 0 4.25 C -0.414 4.25 -0.75 4.586 -0.75 5 C -0.75 5.414 -0.414 5.75 0 5.75 L 0 5 L 0 4.25 Z M 10 5.75 C 10.414 5.75 10.75 5.414 10.75 5 C 10.75 4.586 10.414 4.25 10 4.25 L 10 5 L 10 5.75 Z M 5.75 0 C 5.75 -0.414 5.414 -0.75 5 -0.75 C 4.586 -0.75 4.25 -0.414 4.25 0 L 5 0 L 5.75 0 Z M 4.25 10 C 4.25 10.414 4.586 10.75 5 10.75 C 5.414 10.75 5.75 10.414 5.75 10 L 5 10 L 4.25 10 Z M 0 5 L 0 5.75 L 5 5.75 L 5 5 L 5 4.25 L 0 4.25 L 0 5 Z M 10 5 L 10 4.25 L 5 4.25 L 5 5 L 5 5.75 L 10 5.75 L 10 5 Z M 5 5 L 5.75 5 L 5.75 0 L 5 0 L 4.25 0 L 4.25 5 L 5 5 Z M 5 5 L 4.25 5 L 4.25 10 L 5 10 L 5.75 10 L 5.75 5 L 5 5 Z"
+                fill="currentColor" />
+            </svg>
+            Add Crisis Note
+          </button>
+        }
+      </section>
+
+      <section class="timeline-card">
+        <div class="timeline-card__head">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <path transform="translate(1.667 1.667)"
+              d="M 1.25 8.333 C 1.25 4.421 4.421 1.25 8.333 1.25 C 12.245 1.25 15.417 4.421 15.417 8.333 C 15.417 12.245 12.245 15.417 8.333 15.417 C 4.421 15.417 1.25 12.245 1.25 8.333 Z M 8.333 0 C 3.731 0 0 3.731 0 8.333 C 0 12.936 3.731 16.667 8.333 16.667 C 12.936 16.667 16.667 12.936 16.667 8.333 C 16.667 3.731 12.936 0 8.333 0 Z M 8.328 3.874 C 8.286 3.568 8.024 3.333 7.708 3.333 C 7.363 3.333 7.083 3.613 7.083 3.958 L 7.083 8.958 L 7.089 9.043 C 7.13 9.348 7.392 9.583 7.708 9.583 L 11.042 9.583 L 11.126 9.578 C 11.431 9.536 11.667 9.274 11.667 8.958 C 11.667 8.613 11.387 8.333 11.042 8.333 L 8.333 8.333 L 8.333 3.958 L 8.328 3.874 Z"
+              fill="rgb(42,42,42)" />
+          </svg>
+          <h3>Episode timeline</h3>
+        </div>
+
+        <div class="timeline">
+          <div class="timeline__event">
+            <span class="timeline__title">Urgent flag raised</span>
+            <p class="timeline__desc">72-hour follow-up window opened.</p>
+            <div class="timeline__meta">
+              <span class="timeline__time">{{ dc.escalatedAt | date: 'd MMM, h:mm a' }}</span>
+            </div>
+          </div>
+          @for (ct of episodeContacts(); track ct.id) {
+            <div class="timeline__event">
+              <span class="timeline__title">Follow-up contact logged</span>
+              <p class="timeline__desc">{{ pretty(ct.type) }} — {{ pretty(ct.outcome) }}</p>
+              <div class="timeline__meta">
+                <span class="timeline__author">{{ ct.createdByName }}</span>
+                <span class="timeline__sep"></span>
+                <span class="timeline__time">{{ ct.occurredAt | date: 'd MMM, h:mm a' }}</span>
+              </div>
+            </div>
+          }
+        </div>
+      </section>
+
+      <div class="drawer__actions">
+        <button type="button" class="drawer-btn drawer-btn--red" (click)="openLogContact()">Log urgent follow-up note</button>
+        <a class="drawer-btn drawer-btn--outline" [routerLink]="['/guests', dc.guestId]" (click)="closeDetails()">
+          Open full guest record
+        </a>
+      </div>
+    </aside>
+  </div>
+}
+
+<!-- "Log urgent follow-up note" — records a contact against the guest -->
+@if (contactModalOpen()) {
+  <div class="modal-overlay" (click)="closeContactModal()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal__header">
+        <h2>Log urgent follow-up note</h2>
+        <button type="button" class="modal__close" (click)="closeContactModal()" aria-label="Close">
+          <svg width="14" height="14" viewBox="0 0 10 10" fill="none">
+            <path
+              d="M 0 4.25 C -0.414 4.25 -0.75 4.586 -0.75 5 C -0.75 5.414 -0.414 5.75 0 5.75 L 0 5 L 0 4.25 Z M 10 5.75 C 10.414 5.75 10.75 5.414 10.75 5 C 10.75 4.586 10.414 4.25 10 4.25 L 10 5 L 10 5.75 Z M 5.75 0 C 5.75 -0.414 5.414 -0.75 5 -0.75 C 4.586 -0.75 4.25 -0.414 4.25 0 L 5 0 L 5.75 0 Z M 4.25 10 C 4.25 10.414 4.586 10.75 5 10.75 C 5.414 10.75 5.75 10.414 5.75 10 L 5 10 L 4.25 10 Z M 0 5 L 0 5.75 L 5 5.75 L 5 5 L 5 4.25 L 0 4.25 L 0 5 Z M 10 5 L 10 4.25 L 5 4.25 L 5 5 L 5 5.75 L 10 5.75 L 10 5 Z M 5 5 L 5.75 5 L 5.75 0 L 5 0 L 4.25 0 L 4.25 5 L 5 5 Z M 5 5 L 4.25 5 L 4.25 10 L 5 10 L 5.75 10 L 5.75 5 L 5 5 Z"
+              fill="currentColor" transform="rotate(45 5 5)" />
+          </svg>
+        </button>
+      </div>
+
+      <div class="modal__body">
+        <div class="field field--readonly">
+          <span>Guest</span>
+          <strong>{{ detailsCase()?.guestName }}</strong>
+        </div>
+        <label class="field">
+          <span>Contact type</span>
+          <select [(ngModel)]="contactForm.type">
+            @for (t of contactTypes; track t) {
+              <option [value]="t">{{ pretty(t) }}</option>
+            }
+          </select>
+        </label>
+        <label class="field">
+          <span>Outcome</span>
+          <select [(ngModel)]="contactForm.outcome">
+            @for (o of contactOutcomes; track o) {
+              <option [value]="o">{{ pretty(o) }}</option>
+            }
+          </select>
+        </label>
+        <label class="field">
+          <span>Occurred at</span>
+          <input type="datetime-local" [(ngModel)]="contactForm.occurredAt" />
+        </label>
+        <label class="field">
+          <span>Notes</span>
+          <textarea rows="3" [(ngModel)]="contactForm.notes"></textarea>
+        </label>
+
+        @if (contactError()) {
+          <div class="banner banner--error">{{ contactError() }}</div>
+        }
+      </div>
+
+      <div class="modal__footer">
+        <button type="button" class="btn btn--outline" (click)="closeContactModal()">Cancel</button>
+        <button type="button" class="btn btn--primary" [disabled]="savingContact()" (click)="submitContact()">
+          {{ savingContact() ? 'Saving…' : 'Save' }}
         </button>
       </div>
     </div>

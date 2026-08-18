@@ -2,7 +2,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
-import { PathwayReportDto } from './api-models';
+import { DialogOutcomesReportDto, PathwayReportDto } from './api-models';
 
 /** Maps 1:1 to ReportsController. */
 @Injectable({ providedIn: 'root' })
@@ -13,6 +13,11 @@ export class ReportsApiService {
   getPathwayReport(from: string, to: string): Observable<PathwayReportDto> {
     const params = new HttpParams().set('from', from).set('to', to);
     return this.http.get<PathwayReportDto>(`${this.base}/pathways`, { params });
+  }
+
+  /** "Outcome dimensions" — hub-wide DIALOG averages, baseline vs latest follow-up. */
+  getDialogOutcomes(): Observable<DialogOutcomesReportDto> {
+    return this.http.get<DialogOutcomesReportDto>(`${this.base}/dialog-outcomes`);
   }
 
   /** CSV export — fetched via HttpClient so the auth interceptor attaches the JWT

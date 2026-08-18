@@ -1,0 +1,146 @@
+// Clinical Details tab — literal colors/spacing lifted from GuestClinicalDetailsTab in
+// project/screens/Components.bundle.js (lines 22923–24837).
+@use './guest-tab-shared';
+@use './guest-workspace.tokens' as t;
+
+.columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 23px;
+  align-items: start;
+}
+
+.column {
+  display: flex;
+  flex-direction: column;
+  gap: 23px;
+  min-width: 0;
+}
+
+.card__title--spaced {
+  margin-bottom: 16px;
+}
+
+.detail-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.detail-field {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+
+  &__label {
+    font-family: t.$font-primary;
+    font-weight: 600;
+    font-size: 14px;
+    line-height: 24px;
+    color: t.$color-text-primary;
+  }
+
+  &__value {
+    margin: 0;
+    font-family: t.$font-primary;
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 24px;
+    color: t.$color-text-body;
+    overflow-wrap: anywhere;
+
+    // "No risk identified" / "Risk identified" states — rgb(0,124,56) in the source.
+    &--ok {
+      color: #007c38;
+    }
+
+    &--risk {
+      color: t.$color-brand-red;
+    }
+
+    &--muted {
+      color: t.$color-text-meta;
+    }
+  }
+}
+
+.card-divider {
+  height: 1px;
+  background: t.$color-border;
+  margin: 16px 0;
+}
+
+// "Last risk assessment" banner — bg rgb(236,253,245), 3px bar + text rgb(0,124,56).
+.risk-banner {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 24px;
+  padding: 12px 16px 12px 23px;
+  background: #ecfdf5;
+  color: #007c38;
+
+  &__bar {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: #007c38;
+  }
+
+  &__icon {
+    flex: none;
+  }
+
+  &__text {
+    font-family: t.$font-primary;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 24px;
+  }
+
+  &--risk {
+    background: t.$color-chip-red-bg;
+    color: t.$color-brand-red;
+
+    .risk-banner__bar {
+      background: t.$color-brand-red;
+    }
+  }
+}
+
+.risk-form {
+  margin-bottom: 20px;
+}
+
+.risk-flags {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.risk-flag {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: t.$font-primary;
+  font-weight: 500;
+  font-size: 14px;
+  color: t.$color-text-primary;
+}
+
+@media (max-width: 960px) {
+  .columns {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .detail-row,
+  .risk-flags {
+    grid-template-columns: 1fr;
+  }
+}

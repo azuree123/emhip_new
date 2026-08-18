@@ -6,8 +6,8 @@ import { DashboardHubManagerComponent } from './dashboard-hub-manager.component'
 
 /**
  * Per ARCHITECTURE.md: "Current user + role (CMHW vs Hub Manager) drives which dashboard is
- * home." This wrapper picks between the CMHW dashboard (Dashboard, node 356:1140) and the Hub
- * Manager "Service Overview" (Dashboard2, node 356:1438) based on the signed-in user's granted
+ * home." This wrapper picks between the CMHW dashboard (GuestDataSheet, node 1033:5531) and the
+ * Hub Manager dashboard (GuestDataSheet2, node 1034:7909) based on the signed-in user's granted
  * permissions rather than a hardcoded role name, since roles/permissions are now admin-editable.
  */
 @Component({

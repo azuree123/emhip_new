@@ -1,119 +1,72 @@
 @import 'kpi-shared';
 
-// Hub Manager "Service Overview" — geometry/colors from the `Dashboard2` section
-// (node 356:1438) of project/screens/Components.bundle.js. Two columns: 687 / 467 at
-// 1440px with a 23px gutter; cards are white, radius 12.
+// Hub Manager dashboard — geometry/colors from `GuestDataSheet2` (node 1034:7909) in
+// project/screens/Components.bundle.js. 1176px content column; sections are white
+// radius-12 cards separated by ~22px.
 
 .dashboard {
-  padding: 14px 20px 40px 17px;
+  padding: 42px 20px 40px 17px;
   font-family: 'Plus Jakarta Sans', sans-serif;
 }
 
-.state-message {
-  padding: 48px;
-  text-align: center;
-  color: #8c8c8c;
-  font-size: 14px;
-
-  &--error {
-    color: #d02537;
-  }
-}
-
-.page-title {
-  margin: 0 0 17px;
-  font-weight: 600;
-  font-size: 20px;
-  line-height: 24px;
-  color: #2a2a2a;
-}
-
-.grid {
-  display: grid;
-  grid-template-columns: minmax(0, 687fr) minmax(0, 467fr);
-  gap: 23px;
-  align-items: start;
-
-  &__col {
-    display: flex;
-    flex-direction: column;
-    gap: 23px;
-    min-width: 0;
-  }
-}
-
-.card {
-  background: #ffffff;
+// KPI row + drill-down panel wrapper. While a panel is open the whole zone gets the
+// 1px maroon outline drawn in Frame 23/38/39.
+.kpi-zone {
   border-radius: 12px;
-  padding: 24px 24px 24px 19px;
 
-  &__head {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 16px;
-    margin-bottom: 20px;
+  &--open {
+    outline: 1px solid #941c3c;
+    outline-offset: 2px;
   }
 
+  &__panel {
+    margin-top: 15px;
+  }
+}
+
+// ---- Pathway distribution (design y=264, 1176x368) ----
+
+.pathway-card {
   &__title {
-    font-weight: 600;
-    font-size: 20px;
-    line-height: 24px;
-    color: #2a2a2a;
+    text-transform: capitalize;
   }
 
-  &__subtitle {
-    margin-top: 2px;
+  &__footer {
+    margin-top: 25px;
+  }
+
+  &__total {
     font-weight: 500;
-    font-size: 12px;
-    line-height: 24px;
-    color: #2a2a2a;
+    font-size: 14px;
+    line-height: 18px;
+    color: #8c8c8c;
+
+    span {
+      font-weight: 600;
+      color: #2a2a2a;
+    }
   }
 }
 
-.link-red {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  color: #d02537;
-  font-weight: 600;
-  font-size: 14px;
-  line-height: 24px;
-  letter-spacing: -0.005em;
-  text-decoration: none;
-  white-space: nowrap;
-
-  &:hover {
-    text-decoration: underline;
-  }
-
-  svg {
-    flex-shrink: 0;
-  }
-}
-
-.empty {
-  text-align: center;
-  color: #8c8c8c;
-  font-size: 13px;
-  padding: 16px 0;
-}
-
-// Pathway distribution rows — label left; "N GUEST · P%" right; 6px track below.
 .pathway-rows {
+  margin-top: 30px;
   display: flex;
   flex-direction: column;
-  gap: 24px;
-  margin-top: 4px;
+  gap: 26px;
 }
 
 .pathway-row {
   &__top {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    margin-bottom: 10px;
+    gap: 2px;
+    margin-bottom: 6px;
+  }
+
+  &__icon {
+    display: inline-flex;
+    color: #2a2a2a;
+    flex-shrink: 0;
   }
 
   &__label {
@@ -121,43 +74,51 @@
     font-size: 14px;
     line-height: 24px;
     color: #2a2a2a;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   &__meta {
-    display: flex;
+    margin-left: auto;
+    display: inline-flex;
     align-items: center;
-    gap: 8px;
+    gap: 9px;
+    flex-shrink: 0;
   }
 
   &__count {
     font-weight: 600;
     font-size: 12px;
+    line-height: 24px;
     color: #2a2a2a;
   }
 
   &__unit {
     font-weight: 500;
     font-size: 12px;
+    line-height: 24px;
     color: #2a2a2a;
+  }
+
+  &__dot {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: #cacaca;
   }
 
   &__pct {
     font-weight: 600;
     font-size: 12px;
-    min-width: 32px;
+    line-height: 24px;
+    min-width: 28px;
     text-align: right;
   }
 
-  .dot {
-    width: 4px;
-    height: 4px;
-    border-radius: 50%;
-    background: #cacaca;
-    flex-shrink: 0;
-  }
-
+  // 8px track, radius 444, #ededed base under the colored fill.
   &__track {
-    height: 6px;
+    height: 8px;
     border-radius: 444px;
     background: #ededed;
     overflow: hidden;
@@ -169,151 +130,249 @@
   }
 }
 
-.pathway-note {
-  margin-top: 20px;
-  font-weight: 500;
-  font-size: 12px;
-  line-height: 24px;
-  color: #2a2a2a;
-}
+// ---- Guest Seen (design y=655, 1176x198) ----
 
-.pathway-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  margin-top: 36px;
-
-  &__total {
-    font-weight: 600;
-    font-size: 14px;
-    line-height: 18px;
-    color: #8c8c8c;
-
-    span {
-      color: #2a2a2a;
-    }
-  }
-}
-
-// Guest Seen — big 40px stat with a gray "this month" pill.
 .seen-card {
-  &__number {
-    margin-top: 40px;
-    font-weight: 600;
-    font-size: 40px;
-    line-height: 40px;
-    color: #2a2a2a;
+  &__row {
+    margin-top: 16px;
   }
 
-  &__pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    height: 30px;
-    margin-top: 8px;
-    margin-bottom: 3px;
-    padding: 0 14px;
-    border-radius: 444px;
+  &__glyph {
+    width: 48px;
+    height: 48px;
+    border-radius: 6px;
     background: #f0f0f0;
+    color: #2a2a2a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  &__text {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__row-title {
     font-weight: 500;
     font-size: 14px;
+    line-height: 24px;
     color: #2a2a2a;
+  }
+
+  &__row-sub {
+    font-weight: 500;
+    font-size: 12px;
+    line-height: 18px;
+    color: #8c8c8c;
+  }
+
+  &__number {
+    font-weight: 600;
+    font-size: 32px;
+    line-height: 32px;
+    color: #2a2a2a;
+    margin-right: 27px;
+  }
+
+  &__chevron {
+    width: 36px;
+    height: 36px;
+    border-radius: 6px;
+    box-shadow: inset 0 0 0 1px #dbdbdb;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #000000;
+    flex-shrink: 0;
 
     svg {
-      color: #212121;
-      flex-shrink: 0;
+      transform: rotate(90deg);
     }
   }
 }
 
-.monthly-table {
-  width: 100%;
-  border-collapse: collapse;
+// Today / Week / Month segmented control (272x32, selected segment #eb3c2c).
+.range-toggle {
+  display: inline-flex;
+  align-items: stretch;
+  height: 32px;
+  border-radius: 4px;
+  background: #ffffff;
+  box-shadow:
+    inset 0 0 0 1px #e5e5e5,
+    0 0 2px 0 rgba(15, 23, 42, 0.07),
+    0 1px 1px 0 rgba(15, 23, 42, 0.05);
+  overflow: hidden;
 
-  th {
-    text-align: left;
-    padding: 8px 10px;
-    font-size: 11px;
-    letter-spacing: 0.02em;
-    text-transform: uppercase;
-    color: #8c8c8c;
-    border-bottom: 1px solid #e8e8e8;
-  }
-
-  td {
-    padding: 10px;
-    font-size: 14px;
+  &__item {
+    border: none;
+    background: none;
+    padding: 0 27px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-weight: 500;
+    font-size: 12px;
+    line-height: 24px;
     color: #2a2a2a;
-    border-bottom: 1px solid #f0f0f0;
+    cursor: pointer;
+
+    &:disabled {
+      cursor: default;
+    }
+
+    &--active {
+      background: #eb3c2c;
+      color: #ffffff;
+      border-radius: 0 3px 3px 0;
+    }
   }
-}
 
-// Recent activity timeline — 48px circles (alternating pink/gray) joined by a
-// 1px #c5c5c5 connector, 24px event icon inside, time/actor line under the text.
-.timeline {
-  display: flex;
-  flex-direction: column;
-  gap: 27px;
-  margin-top: 8px;
-}
-
-.timeline__item {
-  position: relative;
-  display: flex;
-  gap: 17px;
-  align-items: flex-start;
-  min-height: 48px;
-
-  &:not(:last-child)::after {
-    content: '';
-    position: absolute;
-    left: 24px;
-    top: 52px;
-    height: 19px;
+  &__divider {
     width: 1px;
-    background: #c5c5c5;
+    background: #e5e5e5;
+    margin: 1px 0;
   }
 }
 
-.timeline__icon {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  background: #fff0f1;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #2a2a2a;
+// ---- Outstanding team actions (design y=2360) ----
 
-  &--alt {
-    background: #f0f0f0;
+.link-red--lower {
+  text-transform: lowercase;
+}
+
+.team-actions {
+  &__list {
+    margin-top: 22px;
   }
 }
 
-.timeline__content {
-  min-width: 0;
-  padding-top: 2px;
+.team-row {
+  cursor: pointer;
+
+  &:hover {
+    background: #fafafa;
+  }
+
+  // 16px halo ring with a 12px solid core — red overdue, yellow pending.
+  &__dot {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: rgba(157, 133, 45, 0.26);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-right: 5px;
+  }
+
+  &__dot-core {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #9d852d;
+  }
+
+  &__dot--red {
+    background: rgba(225, 38, 40, 0.24);
+
+    .team-row__dot-core {
+      background: #e12628;
+    }
+  }
+
+  &__text {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__title {
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 24px;
+    color: #2a2a2a;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &__sub {
+    font-weight: 500;
+    font-size: 12px;
+    line-height: 18px;
+    color: #8c8c8c;
+  }
+
+  &__status {
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 24px;
+    color: #9d852d;
+    flex-shrink: 0;
+
+    &--red {
+      color: #e12628;
+    }
+  }
 }
 
-.timeline__description {
-  font-weight: 500;
-  font-size: 14px;
-  line-height: 24px;
-  color: #2a2a2a;
+// ---- Staff activity (design y=2947, rows 1130x70) ----
+
+.staff-activity {
+  &__list {
+    margin-top: 30px;
+  }
 }
 
-.timeline__meta {
-  font-weight: 500;
-  font-size: 12px;
-  line-height: 18px;
-  color: #8c8c8c;
+.staff-row {
+  min-height: 70px;
+  padding: 11px 20px 11px 20px;
+
+  &__avatar {
+    width: 40px;
+    height: 40px;
+    font-size: 18px;
+  }
+
+  &__text {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__name {
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 24px;
+    color: #2a2a2a;
+  }
+
+  &__detail {
+    font-weight: 500;
+    font-size: 12px;
+    line-height: 18px;
+    color: #8c8c8c;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &__when {
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 24px;
+    color: #2a2a2a;
+    flex-shrink: 0;
+  }
 }
 
 @media (max-width: 1023px) {
-  .grid {
-    grid-template-columns: 1fr;
+  .panel-card__head {
+    flex-wrap: wrap;
+  }
+
+  .pathway-row__label {
+    white-space: normal;
   }
 }
 
@@ -322,18 +381,11 @@
     padding: 16px;
   }
 
-  .card {
-    padding: 16px;
+  .team-row__status {
+    font-size: 12px;
   }
 
-  .seen-card__number {
-    margin-top: 16px;
-    font-size: 32px;
-  }
-
-  .monthly-table {
-    display: block;
-    overflow-x: auto;
-    white-space: nowrap;
+  .staff-row__when {
+    display: none;
   }
 }

@@ -1,0 +1,54 @@
+<div class="export-overlay" (click)="closed.emit()">
+  <div class="export-dialog" role="dialog" aria-modal="true" aria-labelledby="export-dialog-title" (click)="$event.stopPropagation()">
+    <header class="export-dialog__header">
+      <div>
+        <h2 class="export-dialog__title" id="export-dialog-title">Export report</h2>
+        <p class="export-dialog__subtitle">CSV download</p>
+      </div>
+      <button type="button" class="export-dialog__close" (click)="closed.emit()" aria-label="Close export dialog">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <path d="M 2 2 L 14 14 M 14 2 L 2 14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+        </svg>
+      </button>
+    </header>
+
+    <div class="export-dialog__body">
+      <h3 class="export-dialog__section">Reporting period</h3>
+      <div class="export-dialog__period">
+        <label class="export-dialog__field">
+          <span class="export-dialog__field-caption">From</span>
+          <input type="date" [value]="draftFrom()" [max]="draftTo()" (change)="onFromChange($event)" />
+        </label>
+        <label class="export-dialog__field">
+          <span class="export-dialog__field-caption">To</span>
+          <input type="date" [value]="draftTo()" [min]="draftFrom()" [max]="maxDate" (change)="onToChange($event)" />
+        </label>
+      </div>
+
+      <p class="export-dialog__note">
+        Downloads the service report for the selected period — guest status counts, pathway referral
+        totals, monthly registrations, activity and demographic breakdowns — as a single CSV file.
+      </p>
+
+      @if (error()) {
+        <div class="error-banner export-dialog__error">{{ error() }}</div>
+      }
+    </div>
+
+    <footer class="export-dialog__footer">
+      <button type="button" class="btn btn--secondary" (click)="closed.emit()">Cancel</button>
+      <button type="button" class="btn btn--primary" [disabled]="invalid() || busy()" (click)="download()">
+        <span class="btn__icon" aria-hidden="true">
+          <svg width="12" height="15" viewBox="0 0 12 15" fill="none">
+            <path
+              d="M 6 0 C 6.31 0 6.563 0.252 6.563 0.563 L 6.563 9.545 L 9.352 6.757 C 9.571 6.537 9.928 6.537 10.147 6.757 C 10.367 6.976 10.367 7.333 10.147 7.552 L 6.398 11.302 C 6.178 11.522 5.822 11.522 5.602 11.302 L 1.853 7.552 C 1.633 7.333 1.633 6.976 1.853 6.757 C 2.072 6.537 2.429 6.537 2.648 6.757 L 5.438 9.545 L 5.438 0.563 C 5.438 0.252 5.69 0 6 0 Z M 0.563 13.5 L 11.438 13.5 C 11.748 13.5 12 13.752 12 14.063 C 12 14.373 11.748 14.625 11.438 14.625 L 0.563 14.625 C 0.252 14.625 0 14.373 0 14.063 C 0 13.752 0.252 13.5 0.563 13.5 Z"
+              fill="currentColor"
+              fill-rule="nonzero"
+            />
+          </svg>
+        </span>
+        {{ busy() ? 'Preparing…' : 'Download CSV' }}
+      </button>
+    </footer>
+  </div>
+</div>

@@ -1,47 +1,124 @@
-.steps-form {
-  display: block;
+// Step-specific styles for the Initial Conversation step (Desktop79); shared styles live in
+// _form-shared.scss.
+
+// The 550px-wide answer boxes ("what does the client report…", physical health conditions).
+.field__textarea--narrow {
+  max-width: 550px;
 }
 
-// "This step can be saved as draft..." banner — 809x72 box, bg rgb(249,250,252) with a 3px
-// rgb(52,91,177) left accent; 18px info glyph 20px in, text (14/400/24) starting 50px in.
-.info-banner {
+// Extra breathing room before the MDT "Summary *" block (the source separates it from the
+// history rows by ~66px).
+.summary-block {
+  margin-top: 40px;
+}
+
+// Risk screening rows: question | small answer select | "Add comment…" input, separated by
+// 1px rgba(0,0,0,0.1) rules exactly as drawn.
+.risk-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 120px 262px;
+  gap: 12px;
+  align-items: center;
+  padding: 14px 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+
+  &--last {
+    border-bottom: none;
+  }
+}
+
+.risk-row__label {
+  line-height: 20px;
+}
+
+.risk-row__answer {
+  width: 120px;
+}
+
+.risk-row__comment {
+  width: 262px;
+  max-width: 100%;
+}
+
+// "Escalation noted — crisis notes required" card: rgb(254,242,242) shell holding a white
+// textarea ringed rgb(255,206,211).
+.crisis-card {
+  margin: 6px 0 26px;
+  max-width: 748px;
+  padding: 10px 16px 16px;
+  background: #fef2f2;
   display: flex;
-  align-items: flex-start;
-  gap: 9px;
-  padding: 11px 16px 13px 20px;
-  margin-bottom: 30px;
-  background: #f9fafc;
-  border-left: 3px solid #345bb1;
-
-  &__icon {
-    flex-shrink: 0;
-    margin-top: 3px;
-    color: #345bb1;
-  }
-
-  p {
-    margin: 0;
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    font-weight: 400;
-    font-size: 14px;
-    line-height: 24px;
-    color: #2a2a2a;
-  }
+  flex-direction: column;
+  gap: 8px;
 }
 
-// Source vertical rhythm around the risk card: toggle row -> card 27px, card -> next field 32px.
-.risk-card {
-  margin: 27px 0 32px;
-}
-
-.risk-flags {
-  margin: -16px 0 32px;
-}
-
-.risk-flags__title {
+.crisis-card__title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
   font-family: 'Plus Jakarta Sans', sans-serif;
-  font-weight: 600;
+  font-weight: 500;
   font-size: 12px;
-  color: #2a2a2a;
-  margin-bottom: 4px;
+  line-height: 24px;
+  color: #d02537;
+
+  svg {
+    flex-shrink: 0;
+    color: #d02537;
+  }
+}
+
+.crisis-card__notes {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 104px;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  box-shadow: inset 0 0 0 1px #ffced3;
+  background: #ffffff;
+  resize: vertical;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 24px;
+  color: #323232;
+
+  &::placeholder {
+    color: #949494;
+    opacity: 1;
+  }
+
+  &:focus {
+    outline: none;
+    box-shadow: inset 0 0 0 1.5px #d02537;
+  }
+}
+
+// "Flag anything that came up in the conversation" checklist.
+.mdt-flags {
+  margin: 26px 0 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+  > .field__label {
+    margin-bottom: 6px;
+  }
+}
+
+.risk-notes {
+  margin-top: 6px;
+}
+
+@media (max-width: 720px) {
+  .risk-row {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .risk-row__answer,
+  .risk-row__comment {
+    width: 100%;
+  }
 }

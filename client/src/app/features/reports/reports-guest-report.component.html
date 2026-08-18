@@ -1,0 +1,116 @@
+<section class="report-card guest-report">
+  <!-- Search + filter row (Desktop66: search field with magnifier icon, plus
+       All Status / All Pathway / All CMHW / date filters — all real query params). -->
+  <div class="guest-report__toolbar">
+    <label class="search-field">
+      <span class="search-field__icon" aria-hidden="true">
+        <svg width="14" height="14" viewBox="0 0 13.5 13.5" fill="none">
+          <path
+            d="M 6.094 0 C 9.459 0 12.188 2.728 12.188 6.094 C 12.188 7.575 11.659 8.933 10.781 9.989 L 13.335 12.545 C 13.555 12.765 13.555 13.121 13.335 13.341 C 13.138 13.538 12.831 13.557 12.613 13.4 L 12.539 13.339 L 9.985 10.784 C 8.929 11.66 7.573 12.188 6.094 12.188 C 2.728 12.188 0 9.459 0 6.094 C 0 2.728 2.728 0 6.094 0 Z M 6.094 1.125 C 3.35 1.125 1.125 3.35 1.125 6.094 C 1.125 8.838 3.35 11.063 6.094 11.063 C 8.838 11.063 11.063 8.838 11.063 6.094 C 11.063 3.35 8.838 1.125 6.094 1.125 Z"
+            fill="currentColor"
+            fill-rule="nonzero"
+          />
+        </svg>
+      </span>
+      <input
+        type="search"
+        class="search-field__input"
+        placeholder="Search by guest name…"
+        [value]="q()"
+        (input)="onSearchInput($event)"
+        aria-label="Search guests"
+      />
+    </label>
+
+    <div class="guest-report__filters">
+      <select class="pill-select" [value]="status()" (change)="onStatusChange($event)" aria-label="Filter by status">
+        <option value="">All Status</option>
+        @for (opt of statusOptions; track opt.value) {
+          <option [value]="opt.value">{{ opt.label }}</option>
+        }
+      </select>
+
+      <select class="pill-select" [value]="pathway()" (change)="onPathwayChange($event)" aria-label="Filter by pathway">
+        <option value="">All Pathway</option>
+        @for (opt of pathwayOptions; track opt.value) {
+          <option [value]="opt.value">{{ opt.label }}</option>
+        }
+      </select>
+
+      <select class="pill-select" [value]="cmhw()" (change)="onCmhwChange($event)" aria-label="Filter by assigned CMHW">
+        <option value="">All CMHW</option>
+        @for (opt of cmhwOptions(); track opt.id) {
+          <option [value]="opt.id">{{ opt.displayName }}</option>
+        }
+      </select>
+
+      <select class="pill-select" [value]="lastActivityDays()" (change)="onActivityChange($event)" aria-label="Filter by last activity">
+        <option value="">All Dates</option>
+        @for (opt of activityOptions; track opt.value) {
+          <option [value]="opt.value">{{ opt.label }}</option>
+        }
+      </select>
+    </div>
+  </div>
+
+  @if (error()) {
+    <div class="error-banner guest-report__error">Couldn't load the guest list — {{ error() }}</div>
+  }
+
+  @if (loading()) {
+    <div class="report-card__state">Loading guests…</div>
+  } @else if (items().length === 0) {
+    <div class="report-card__state">No guests match the current filters.</div>
+  } @else {
+    <div class="table-scroll">
+      <table class="rpt-table guest-table">
+        <thead>
+          <tr>
+            <th>Guest Name</th>
+            <th>Pathway</th>
+            <th>Last Activity</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (guest of items(); track guest.id) {
+            <tr>
+              <td>
+                <span class="guest-cell">
+                  <span class="guest-cell__avatar" aria-hidden="true">{{ initials(guest) }}</span>
+                  <span class="guest-cell__text">
+                    <span class="guest-cell__name">{{ guest.firstName }} {{ guest.lastName }}</span>
+                    <span class="guest-cell__sub">{{ guest.assignedCmhwName ?? 'Unassigned' }}</span>
+                  </span>
+                </span>
+              </td>
+              <td>{{ pathwayLabel(guest.pathwayCategory) }}</td>
+              <td>{{ lastActivity(guest) }}</td>
+              <td>
+                <span [class]="'status-pill ' + statusClass(guest.status)">{{ statusLabel(guest.status) }}</span>
+              </td>
+              <td>
+                <a class="btn btn--secondary guest-table__open" [routerLink]="['/guests', guest.id]">Open</a>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Keyset paging: the endpoint returns no total count, so no numbered pages. -->
+    <div class="guest-report__footer">
+      <span class="guest-report__count">
+        Showing {{ items().length }} guest{{ items().length === 1 ? '' : 's' }} — page {{ pageIndex() + 1 }}
+        @if (hasMore()) {
+          · more available
+        }
+      </span>
+      <div class="pager">
+        <button type="button" class="pager__btn" [disabled]="pageIndex() === 0 || loading()" (click)="prevPage()">Prev</button>
+        <button type="button" class="pager__btn" [disabled]="!hasMore() || loading()" (click)="nextPage()">Next</button>
+      </div>
+    </div>
+  }
+</section>

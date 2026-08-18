@@ -1,0 +1,240 @@
+@use './guest-tab-shared';
+@use './guest-workspace.tokens' as t;
+
+// Add Contact drawer — from GuestOverviewTab2 (Components.bundle.js 50271-54563):
+// rgba(0,0,0,0.45) overlay, white 12px-radius panel (858px wide in the source), 20px
+// "Add contact" title over a 12px guest-name line, 37px inputs with an 8px radius and a
+// 1px #e5e5e5 inset border, disabled inputs on #f4f4f4, and a #eb3c2c submit button.
+
+.drawer-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 48px 16px;
+  overflow-y: auto;
+}
+
+.drawer {
+  background: #fff;
+  border-radius: t.$radius-card;
+  width: min(858px, 100%);
+  padding: 33px 40px 40px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+}
+
+.drawer__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 28px;
+}
+
+.drawer__heading {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.drawer__title {
+  margin: 0;
+  font-family: t.$font-primary;
+  font-weight: 600;
+  font-size: 20px;
+  line-height: 24px;
+  color: t.$color-text-primary;
+}
+
+.drawer__subtitle {
+  font-family: t.$font-primary;
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 24px;
+  color: t.$color-text-primary;
+}
+
+.drawer__close {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: #fff;
+  color: #212121;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+
+  &:hover {
+    background: t.$color-segment-bg;
+  }
+}
+
+.drawer__form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.drawer__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px 26px;
+}
+
+.drawer__field {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  min-width: 0;
+
+  &--full {
+    grid-column: 1 / -1;
+  }
+
+  select,
+  input,
+  textarea {
+    font-family: t.$font-primary;
+    font-size: 13px;
+    font-weight: 400;
+    color: t.$color-text-body;
+    height: 37px;
+    padding: 0 16px;
+    border-radius: 8px;
+    border: 1px solid t.$color-divider;
+    background: #fff;
+    box-sizing: border-box;
+
+    &:disabled {
+      background: #f4f4f4;
+      color: t.$color-text-meta;
+    }
+  }
+
+  textarea {
+    height: auto;
+    padding: 10px 16px;
+    resize: vertical;
+  }
+}
+
+.drawer__label {
+  font-family: t.$font-primary;
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 24px;
+  color: t.$color-text-primary;
+}
+
+.drawer__optional {
+  font-weight: 400;
+  color: t.$color-text-meta;
+}
+
+.drawer__hint {
+  font-family: t.$font-primary;
+  font-weight: 400;
+  font-size: 11px;
+  line-height: 16px;
+  color: t.$color-text-meta;
+}
+
+.drawer__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.btn-submit {
+  height: 36px;
+  padding: 0 24px;
+  border: none;
+  border-radius: 4px;
+  background: t.$color-brand-red-bright;
+  color: #fff;
+  font-family: t.$font-primary;
+  font-weight: 500;
+  font-size: 14px;
+  letter-spacing: -0.005em;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+}
+
+.drawer__log {
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid t.$color-border;
+}
+
+.drawer__log-title {
+  margin: 0 0 16px;
+  font-family: t.$font-primary;
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 24px;
+  color: t.$color-text-primary;
+}
+
+.drawer__log-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.drawer__log-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.drawer__log-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.drawer__log-type {
+  font-family: t.$font-primary;
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 24px;
+  color: t.$color-text-primary;
+}
+
+.drawer__log-meta {
+  font-family: t.$font-primary;
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 18px;
+  color: t.$color-text-meta;
+}
+
+@media (max-width: 640px) {
+  .drawer-overlay {
+    padding: 16px 8px;
+  }
+
+  .drawer {
+    padding: 24px 20px 28px;
+  }
+
+  .drawer__grid {
+    grid-template-columns: 1fr;
+  }
+}

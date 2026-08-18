@@ -1,0 +1,95 @@
+<div class="dialog-tab">
+  <!-- KPI row (Desktop47 top 428): Baselines / Follow-ups / Avg change / Missing. -->
+  <section class="stat-row">
+    <div class="stat-card">
+      <span class="stat-card__label">Baselines recorded</span>
+      <span class="stat-card__value">{{ outcomes()?.guestsWithBaseline ?? '—' }}</span>
+      <span class="stat-card__caption">Guests with a first assessment</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-card__label">Follow-up assessments</span>
+      <span class="stat-card__value">{{ outcomes()?.guestsWithFollowUp ?? '—' }}</span>
+      <span class="stat-card__caption"><strong>{{ followUpPct() }}%</strong>&nbsp;of guests with a baseline</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-card__label">Avg score change</span>
+      <span class="stat-card__value">{{ improvementLabel() }}</span>
+      <span class="stat-card__caption">Baseline vs most recent</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-card__label">Missing assessments</span>
+      <span class="stat-card__value">{{ outcomes() ? missingFollowUps() : '—' }}</span>
+      <span class="stat-card__caption stat-card__caption--maroon">No follow-up yet</span>
+    </div>
+  </section>
+
+  <div class="dialog-tab__grid">
+    <app-reports-domain-table class="dialog-tab__main" [outcomes]="outcomes()" [loading]="loading()" />
+
+    <!-- "Outcome dimensions" radar (Desktop47, right column card 466x399):
+         7 concentric rings mirror the 1..7 DIALOG scale; two series compare
+         the baseline and most-recent per-domain averages. -->
+    <section class="report-card dialog-tab__side">
+      <h2 class="report-card__title">Outcome dimensions</h2>
+      <p class="report-card__subtitle">Average score per DIALOG domain (1–7)</p>
+
+      @if (loading()) {
+        <div class="report-card__state">Loading outcome dimensions…</div>
+      } @else if (!radar()) {
+        <div class="report-card__state">No DIALOG assessments recorded yet.</div>
+      } @else {
+        @if (radar(); as chart) {
+          <svg
+            class="radar"
+            [attr.viewBox]="radarViewBox"
+            preserveAspectRatio="xMidYMid meet"
+            role="img"
+            aria-label="Average DIALOG score per domain, baseline versus most recent"
+          >
+            @for (ring of chart.rings; track ring) {
+              <circle class="radar__ring" [attr.cx]="cx" [attr.cy]="cy" [attr.r]="ring" />
+            }
+            @for (spoke of chart.spokes; track $index) {
+              <line class="radar__spoke" [attr.x1]="cx" [attr.y1]="cy" [attr.x2]="spoke.x" [attr.y2]="spoke.y" />
+            }
+
+            @if (chart.baseline.path) {
+              <path class="radar__area radar__area--baseline" [attr.d]="chart.baseline.path" />
+            }
+            @if (chart.latest.path) {
+              <path class="radar__area radar__area--latest" [attr.d]="chart.latest.path" />
+            }
+
+            @for (p of chart.baseline.points; track $index) {
+              <circle class="radar__dot radar__dot--baseline" [attr.cx]="p.x" [attr.cy]="p.y" r="4.5">
+                <title>{{ p.tip }}</title>
+              </circle>
+            }
+            @for (p of chart.latest.points; track $index) {
+              <circle class="radar__dot radar__dot--latest" [attr.cx]="p.x" [attr.cy]="p.y" r="4.5">
+                <title>{{ p.tip }}</title>
+              </circle>
+            }
+
+            @for (label of chart.labels; track label.text) {
+              <text class="radar__label" [attr.x]="label.x" [attr.y]="label.y" [attr.text-anchor]="label.anchor">
+                {{ label.text }}
+              </text>
+            }
+          </svg>
+
+          <div class="radar-legend">
+            <span class="radar-legend__item">
+              <span class="radar-legend__swatch radar-legend__swatch--baseline" aria-hidden="true"></span>
+              Baseline avg
+            </span>
+            <span class="radar-legend__item">
+              <span class="radar-legend__swatch radar-legend__swatch--latest" aria-hidden="true"></span>
+              Most recent avg
+            </span>
+          </div>
+        }
+      }
+    </section>
+  </div>
+</div>

@@ -1,0 +1,57 @@
+<section class="report-card">
+  <h2 class="report-card__title">Average DIALOG scores by domain</h2>
+  @if (subtitle()) {
+    <p class="report-card__subtitle">{{ subtitle() }}</p>
+  }
+
+  @if (loading()) {
+    <div class="report-card__state">Loading DIALOG domain averages…</div>
+  } @else if (rows().length === 0) {
+    <div class="report-card__state">No DIALOG assessments recorded yet.</div>
+  } @else {
+    <div class="table-scroll">
+      <table class="rpt-table domain-table">
+        <thead>
+          <tr>
+            <th>Domain</th>
+            <th class="domain-table__num">Baseline</th>
+            <th class="domain-table__num">Most recent</th>
+            <th class="domain-table__num">Change</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of rows(); track row.label) {
+            <tr>
+              <td>{{ row.label }}</td>
+              <td class="domain-table__num">{{ row.baseline }}</td>
+              <td class="domain-table__num">{{ row.latest }}</td>
+              <td
+                class="domain-table__num"
+                [class.domain-table__change--up]="row.trend > 0"
+                [class.domain-table__change--down]="row.trend < 0"
+              >
+                {{ row.change }}
+              </td>
+            </tr>
+          }
+        </tbody>
+        @if (totals(); as total) {
+          <tfoot>
+            <tr>
+              <td>{{ total.label }}</td>
+              <td class="domain-table__num">{{ total.baseline }}</td>
+              <td class="domain-table__num">{{ total.latest }}</td>
+              <td
+                class="domain-table__num"
+                [class.domain-table__change--up]="total.trend > 0"
+                [class.domain-table__change--down]="total.trend < 0"
+              >
+                {{ total.change }}
+              </td>
+            </tr>
+          </tfoot>
+        }
+      </table>
+    </div>
+  }
+</section>

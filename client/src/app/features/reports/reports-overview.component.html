@@ -1,0 +1,227 @@
+<div class="overview">
+  <!-- KPI tile row (source: 4 tiles 277x114 at top 483) driven by statusCounts. -->
+  <section class="stat-row">
+    @for (tile of kpiTiles(); track tile.label) {
+      <div class="stat-card">
+        <span class="stat-card__label">{{ tile.label }}</span>
+        <span class="stat-card__value">{{ tile.value ?? '—' }}</span>
+      </div>
+    }
+  </section>
+
+  <!-- "DIALOG outcome metrics" card (Desktop72 top 619): 3 outlined tiles + a
+       green improvement tile and an amber no-follow-up tile. -->
+  <section class="report-card">
+    <h2 class="report-card__title">DIALOG outcome metrics</h2>
+
+    @if (outcomesLoading()) {
+      <div class="report-card__state">Loading DIALOG outcome metrics…</div>
+    } @else if (!dialogMetrics()) {
+      <div class="report-card__state">No DIALOG assessments recorded yet.</div>
+    } @else {
+      @if (dialogMetrics(); as m) {
+        <div class="dm-tiles">
+          <div class="dm-tile">
+            <span class="dm-tile__label">Total DIALOG assessments completed</span>
+            <span class="dm-tile__value">{{ m.total }}</span>
+            <span class="dm-tile__caption"><strong>Baseline +</strong> follow-up combined</span>
+          </div>
+          <div class="dm-tile">
+            <span class="dm-tile__label">Baselines recorded</span>
+            <span class="dm-tile__value">{{ m.baselines }}</span>
+            <span class="dm-tile__caption">Guests with a first assessment</span>
+          </div>
+          <div class="dm-tile">
+            <span class="dm-tile__label">Follow-up assessments</span>
+            <span class="dm-tile__value">{{ m.followUps }}</span>
+            <span class="dm-tile__caption"><strong>{{ m.followUpPct }}%</strong>&nbsp;of guests with a baseline</span>
+          </div>
+        </div>
+        <div class="dm-tiles dm-tiles--wide">
+          <div
+            class="dm-tile"
+            [class.dm-tile--green]="m.improvement !== null && m.improvement >= 0"
+            [class.dm-tile--red]="m.improvement !== null && m.improvement < 0"
+          >
+            <span class="dm-tile__label">Avg DIALOG score change</span>
+            <span class="dm-tile__value dm-tile__value--accent">{{ improvementLabel() }}</span>
+            <span class="dm-tile__caption">
+              @if (m.improvement !== null) {
+                <strong>Baseline</strong>&nbsp;vs most recent · total across all domains
+              } @else {
+                No follow-up scores yet — no comparison possible
+              }
+            </span>
+          </div>
+          <div class="dm-tile dm-tile--amber">
+            <span class="dm-tile__label">Guests with no follow-up DIALOG yet</span>
+            <span class="dm-tile__value dm-tile__value--accent">{{ m.noFollowUp }}</span>
+            <span class="dm-tile__caption"><strong>Baseline</strong>&nbsp;only — no comparison possible yet</span>
+          </div>
+        </div>
+      }
+    }
+  </section>
+
+  <!-- Two-column card grid per Desktop72: 687px main column + 466px side column. -->
+  <div class="report-grid">
+    <div class="report-grid__main">
+      <section class="report-card">
+        <div class="report-card__head">
+          <div>
+            <h2 class="report-card__title">Pathway distribution</h2>
+            <p class="report-card__subtitle">
+              @if (totalReferrals() !== null) {
+                {{ totalReferrals() }} referrals in period
+              } @else {
+                Referrals by category
+              }
+            </p>
+          </div>
+          <span class="report-card__corner">{{ rangeLabel() }}</span>
+        </div>
+
+        @if (loading()) {
+          <div class="report-card__state">Loading pathway report…</div>
+        } @else if (categoryRows().length === 0) {
+          <div class="report-card__state">No pathway referrals recorded for this period.</div>
+        } @else {
+          @for (row of categoryRows(); track row.category) {
+            <div class="pathway-row">
+              <div class="pathway-row__top">
+                <span class="pathway-row__label">{{ row.label }}</span>
+                <span class="pathway-row__count">{{ row.count }}</span>
+                <span class="pathway-row__unit">REFERRALS</span>
+                <span class="pathway-row__dot" aria-hidden="true"></span>
+                <span class="pathway-row__percentage" [style.color]="row.color">{{ row.percentage }}%</span>
+              </div>
+              <div class="pathway-row__track">
+                <div class="pathway-row__fill" [style.width.%]="row.percentage" [style.background]="row.color"></div>
+              </div>
+            </div>
+          }
+        }
+      </section>
+
+      <section class="report-card">
+        <div class="report-card__head">
+          <div>
+            <h2 class="report-card__title">Guest registrations over time</h2>
+            <p class="report-card__subtitle">Monthly &middot; {{ rangeLabel() }}</p>
+          </div>
+          <div class="chart-legend">
+            <span class="chart-legend__swatch" aria-hidden="true"></span>
+            <span class="chart-legend__label">New registrations</span>
+          </div>
+        </div>
+
+        @if (loading()) {
+          <div class="report-card__state">Loading registrations…</div>
+        } @else {
+          @if (regChart(); as chart) {
+            <svg
+              class="reg-chart"
+              [attr.viewBox]="chartViewBox"
+              preserveAspectRatio="xMidYMid meet"
+              role="img"
+              aria-label="Guest registrations per month"
+            >
+              @for (tick of chart.ticks; track tick.y) {
+                <line class="reg-chart__grid" x1="56" x2="628" [attr.y1]="tick.y" [attr.y2]="tick.y" />
+                <text class="reg-chart__tick" x="48" [attr.y]="tick.y + 4">{{ tick.label }}</text>
+              }
+
+              <path class="reg-chart__line" [attr.d]="chart.linePath" />
+
+              @for (p of chart.points; track p.x) {
+                <circle class="reg-chart__dot" [attr.cx]="p.x" [attr.cy]="p.y" r="7" />
+              }
+
+              @for (m of chart.monthLabels; track m.x) {
+                <text class="reg-chart__month" [attr.x]="m.x" y="244">{{ m.text }}</text>
+              }
+
+              @for (p of chart.points; track p.x; let i = $index) {
+                <rect
+                  class="reg-chart__hit"
+                  [attr.x]="p.hitX"
+                  [attr.width]="p.hitW"
+                  y="8"
+                  height="220"
+                  (mouseenter)="hoveredPoint.set(i)"
+                  (mouseleave)="hoveredPoint.set(null)"
+                />
+              }
+
+              @if (regChartTip(); as tip) {
+                <g class="reg-chart__tip" aria-hidden="true">
+                  <rect class="reg-chart__tip-box" [attr.x]="tip.x - 48" [attr.y]="tip.top" width="96" height="50" rx="8" />
+                  <path class="reg-chart__tip-notch" [attr.d]="tip.notchFill" />
+                  <path class="reg-chart__tip-notch-edge" [attr.d]="tip.notchEdge" />
+                  <text class="reg-chart__tip-caption" [attr.x]="tip.x" [attr.y]="tip.top + 20">New reg.</text>
+                  <text class="reg-chart__tip-value" [attr.x]="tip.x" [attr.y]="tip.top + 40">Total: {{ tip.count }}</text>
+                </g>
+              }
+            </svg>
+          } @else {
+            <div class="report-card__state">No guest registrations recorded for this period.</div>
+          }
+        }
+      </section>
+
+      <section class="report-card">
+        <h2 class="report-card__title">Guest demographics</h2>
+        <p class="report-card__subtitle">Ethnicity breakdown</p>
+
+        @if (loading()) {
+          <div class="report-card__state">Loading demographics…</div>
+        } @else if (ethnicityRows().length === 0) {
+          <div class="report-card__state">No demographic data recorded for this period.</div>
+        } @else {
+          @for (row of ethnicityRows(); track row.label) {
+            <div class="ethnic-row">
+              <div class="ethnic-row__top">
+                <span class="ethnic-row__label">{{ row.label }}</span>
+                <span class="ethnic-row__meta">
+                  <span class="ethnic-row__count">{{ row.count }}</span>
+                  <span class="ethnic-row__unit">GUEST{{ row.count === 1 ? '' : 'S' }}</span>
+                  <span class="ethnic-row__dot" aria-hidden="true"></span>
+                  <span class="ethnic-row__percentage">{{ row.percentage }}%</span>
+                </span>
+              </div>
+              <div class="ethnic-row__track">
+                <div class="ethnic-row__fill" [style.width.%]="row.barPct"></div>
+              </div>
+            </div>
+          }
+        }
+      </section>
+
+      <app-reports-domain-table [outcomes]="outcomes()" [loading]="outcomesLoading()" />
+    </div>
+
+    <div class="report-grid__side">
+      <section class="report-card">
+        <div class="report-card__head">
+          <h2 class="report-card__title">Follow-up activity</h2>
+          <span class="report-card__corner">{{ rangeLabel() }}</span>
+        </div>
+
+        @if (loading()) {
+          <div class="report-card__state">Loading activity…</div>
+        } @else if (activityRows().length === 0) {
+          <div class="report-card__state">No activity recorded for this period.</div>
+        } @else {
+          <div class="activity-list">
+            @for (row of activityRows(); track row.label) {
+              <div class="activity-row">
+                <span class="activity-row__label">{{ row.label }}</span>
+                <span class="activity-row__value">{{ row.value }}</span>
+              </div>
+            }
+          </div>
+        }
+      </section>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,230 @@
+// Actions & Reminders tab — literal colors/spacing lifted from GuestActionTab in
+// project/screens/Components.bundle.js (lines 31430–33912).
+@use './guest-tab-shared';
+@use './guest-workspace.tokens' as t;
+
+.card__title--spaced {
+  margin-bottom: 16px;
+}
+
+// Red "Add Actions" header button — 36px, bg rgb(225,38,40), white 14/500.
+.add-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 16px;
+  border: none;
+  border-radius: 4px;
+  background: t.$color-brand-red;
+  color: #fff;
+  font-family: t.$font-primary;
+  font-weight: 500;
+  font-size: 14px;
+  letter-spacing: -0.005em;
+  cursor: pointer;
+}
+
+.action-form {
+  margin-bottom: 20px;
+}
+
+// Action / Due date / Assigned to / Actions table — header band rgb(241,241,241).
+$grid-columns: minmax(0, 1fr) 180px 160px 200px;
+
+.action-table {
+  display: flex;
+  flex-direction: column;
+
+  &__head {
+    display: grid;
+    grid-template-columns: $grid-columns;
+    gap: 16px;
+    align-items: center;
+    height: 41px;
+    padding: 0 16px 0 35px;
+    border-radius: 3px 3px 0 0;
+    background: #f1f1f1;
+  }
+
+  &__col {
+    font-family: t.$font-primary;
+    font-weight: 600;
+    font-size: 12px;
+    line-height: 24px;
+    letter-spacing: 0.01em;
+    color: t.$color-text-primary;
+    white-space: nowrap;
+  }
+}
+
+.action-row {
+  display: grid;
+  grid-template-columns: $grid-columns;
+  gap: 16px;
+  align-items: center;
+  padding: 16px;
+  box-shadow: inset 0 -1px 0 0 t.$color-border;
+
+  &__main {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    min-width: 0;
+  }
+
+  &__description {
+    font-family: t.$font-primary;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 24px;
+    letter-spacing: -0.005em;
+    color: t.$color-text-primary;
+    overflow-wrap: anywhere;
+  }
+
+  &__due {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: t.$font-primary;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 24px;
+    letter-spacing: -0.005em;
+    color: t.$color-text-primary;
+    white-space: nowrap;
+
+    // "13 May — overdue" rgb(225,38,40) / "15 May — due soon" rgb(157,133,45).
+    &--overdue {
+      color: t.$color-brand-red;
+    }
+
+    &--soon {
+      color: t.$color-gold-text;
+    }
+  }
+
+  &__assignee {
+    font-family: t.$font-primary;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 24px;
+    letter-spacing: -0.005em;
+    color: t.$color-text-primary;
+    overflow-wrap: anywhere;
+  }
+
+  &__controls {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+
+  &--completed {
+    .action-row__description,
+    .action-row__due,
+    .action-row__assignee {
+      text-decoration: line-through;
+    }
+  }
+}
+
+// CheckboxTick from the source: 22px rounded 5.2px; inactive = white with rgb(237,237,237)
+// ring; active = rgb(45,195,140) with rgb(206,241,228) halo and a white tick.
+.check {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  margin-top: 1px;
+  padding: 0;
+  border: none;
+  border-radius: 5.2px;
+  background: #fff;
+  box-shadow:
+    0 0 0 1px #ededed,
+    inset 0 -4px 2px 0 rgba(0, 0, 0, 0.02);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: transparent;
+
+  &:hover {
+    box-shadow:
+      0 3px 5px 0 rgba(0, 0, 0, 0.1),
+      0 0 0 1px #ededed,
+      inset 0 -4px 2px 0 rgba(0, 0, 0, 0.02);
+  }
+
+  &--active {
+    background: #2dc38c;
+    box-shadow:
+      0 0 0 1px #cef1e4,
+      inset 0 -2.5px 3px 0 #62eab8;
+    color: #fff;
+
+    &:hover {
+      background: #23aa79;
+      box-shadow:
+        0 0 0 1px #cef1e4,
+        inset 0 -2.5px 3px 0 #56d7a7;
+    }
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+}
+
+// Outline Edit / Delete row buttons — inset 1px rgb(217,217,217); Delete in rgb(190,18,60).
+.row-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 12px;
+  border: none;
+  border-radius: 4px;
+  background: #fff;
+  box-shadow: inset 0 0 0 1px t.$color-border-strong;
+  font-family: t.$font-primary;
+  font-weight: 500;
+  font-size: 14px;
+  letter-spacing: -0.005em;
+  color: t.$color-text-primary;
+  cursor: pointer;
+
+  svg {
+    color: t.$color-text-body;
+  }
+
+  &--danger {
+    color: #be123c;
+
+    svg {
+      color: #be123c;
+    }
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+}
+
+@media (max-width: 1100px) {
+  .action-table__head {
+    display: none;
+  }
+
+  .action-row {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .action-row__controls {
+    justify-content: flex-start;
+  }
+}

@@ -1,12 +1,18 @@
-import { Component, EventEmitter, Output, effect, inject, input, signal } from '@angular/core';
+import { Component, EventEmitter, Output, computed, effect, inject, input, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { GuestFollowUpsDto, ScheduleFollowUpRequest } from '../../core/api-models';
+import { CmhwOptionDto, FollowUpItemDto, GuestFollowUpsDto, ScheduleFollowUpRequest } from '../../core/api-models';
 import { AuthService } from '../../core/auth.service';
 import { GuestsApiService } from '../../core/guests-api.service';
 import { followUpStatusChip, formatDate, formatDateTime } from './guest-workspace.util';
 
-/** Follow-up tab — clean panel over GuestFollowUpsDto, plus a form to schedule a new
- *  follow-up (due date + assignee staff id + notes) via scheduleFollowUp. */
+/**
+ * Follow-up tab — visual language pixel-sourced from GuestFollowUpTab in
+ * project/screens/Components.bundle.js (lines 27147–29090): one wide card with a free-text
+ * keyword search, a segmented filter and a timeline rail of bordered entry tiles. The
+ * source screen's entries are activity-log samples with Casework/Activity/AFA/Hospitality
+ * categories that have no backing field here, so the segments filter by follow-up status
+ * instead and each tile renders a FollowUpItemDto (due date + status chip, notes, assignee).
+ */
 @Component({
   selector: 'app-guest-followup-tab',
   standalone: true,
@@ -22,8 +28,27 @@ export class GuestFollowUpTabComponent {
   @Output() readonly refresh = new EventEmitter<void>();
 
   readonly followUps = signal<GuestFollowUpsDto | null>(null);
+  readonly cmhwOptions = signal<CmhwOptionDto[]>([]);
   readonly loading = signal(true);
   readonly error = signal<string | null>(null);
+
+  readonly search = signal('');
+  readonly statusFilter = signal<string>('All');
+  readonly statusSegments = ['All', 'Scheduled', 'Completed', 'Overdue', 'Cancelled'];
+
+  readonly filtered = computed<FollowUpItemDto[]>(() => {
+    const items = this.followUps()?.followUps ?? [];
+    const status = this.statusFilter();
+    const query = this.search().trim().toLowerCase();
+    return items.filter((item) => {
+      if (status !== 'All' && item.status !== status) return false;
+      if (!query) return true;
+      return (
+        (item.notes ?? '').toLowerCase().includes(query) ||
+        item.assigneeName.toLowerCase().includes(query)
+      );
+    });
+  });
 
   readonly showForm = signal(false);
   readonly submitting = signal(false);
@@ -41,6 +66,10 @@ export class GuestFollowUpTabComponent {
       let cancelled = false;
       onCleanup(() => (cancelled = true));
       this.load(id, () => cancelled);
+    });
+    this.guestsApi.getCmhwOptions().subscribe({
+      next: (options) => this.cmhwOptions.set(options),
+      error: () => this.cmhwOptions.set([]),
     });
   }
 

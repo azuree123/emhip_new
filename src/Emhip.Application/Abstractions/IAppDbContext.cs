@@ -20,6 +20,9 @@ public interface IAppDbContext
     DbSet<FollowUp> FollowUps { get; }
     DbSet<CaseworkSession> CaseworkSessions { get; }
     DbSet<PathwayReferral> PathwayReferrals { get; }
+    DbSet<DialogAssessment> DialogAssessments { get; }
+    DbSet<GuestAction> GuestActions { get; }
+    DbSet<GuestClinicalProfile> GuestClinicalProfiles { get; }
     DbSet<AuditEvent> AuditEvents { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);

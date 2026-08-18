@@ -1,247 +1,326 @@
 <div class="dashboard">
   @if (data(); as d) {
-    <h1 class="page-title">Guest Overview</h1>
-
-    <div class="kpi-row">
-      <div class="kpi-card" role="button" tabindex="0" (click)="drillToStatus('Active')" (keydown.enter)="drillToStatus('Active')">
-        <div class="kpi-card__expand kpi-card__expand--up" aria-hidden="true">
-          <svg width="8" height="13" viewBox="0 0 7.364 12.728" fill="none">
-            <path
-              d="M 7.071 7.071 L 1.414 12.728 L 0 11.314 L 4.95 6.364 L 0 1.414 L 1.414 0 L 7.071 5.657 C 7.258 5.845 7.364 6.099 7.364 6.364 C 7.364 6.629 7.364 6.883 7.071 7.071 Z"
-              fill="currentColor"
-              fill-rule="evenodd"
-            />
-          </svg>
-        </div>
-        <div class="kpi-card__label">Total active</div>
-        <div class="kpi-card__number">{{ d.totalActiveGuests }}</div>
-        <div class="kpi-card__pill kpi-card__pill--green">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-            <path transform="translate(4 2.667)"
-              d="M 3.333 10.667 C 3.333 11.035 3.632 11.333 4 11.333 C 4.368 11.333 4.667 11.035 4.667 10.667 L 4 10.667 L 3.333 10.667 Z M 4 0 L 4.471 -0.471 C 4.211 -0.732 3.789 -0.732 3.529 -0.471 L 4 0 Z M -0.471 3.529 C -0.732 3.789 -0.732 4.211 -0.471 4.471 C -0.211 4.732 0.211 4.732 0.471 4.471 L 0 4 L -0.471 3.529 Z M 7.529 4.471 C 7.789 4.732 8.211 4.732 8.471 4.471 C 8.732 4.211 8.732 3.789 8.471 3.529 L 8 4 L 7.529 4.471 Z M 4 10.667 L 4.667 10.667 L 4.667 0 L 4 0 L 3.333 0 L 3.333 10.667 L 4 10.667 Z M 0 4 L 0.471 4.471 L 4.471 0.471 L 4 0 L 3.529 -0.471 L -0.471 3.529 L 0 4 Z M 4 0 L 3.529 0.471 L 7.529 4.471 L 8 4 L 8.471 3.529 L 4.471 -0.471 L 4 0 Z"
-              fill="currentColor" />
-          </svg>
-          Active guests
-        </div>
-      </div>
-      <div class="kpi-card" role="button" tabindex="0" (click)="drillToStatus('PendingConversation')" (keydown.enter)="drillToStatus('PendingConversation')">
-        <div class="kpi-card__expand" aria-hidden="true">
-          <svg width="8" height="13" viewBox="0 0 7.364 12.728" fill="none">
-            <path
-              d="M 7.071 7.071 L 1.414 12.728 L 0 11.314 L 4.95 6.364 L 0 1.414 L 1.414 0 L 7.071 5.657 C 7.258 5.845 7.364 6.099 7.364 6.364 C 7.364 6.629 7.364 6.883 7.071 7.071 Z"
-              fill="currentColor"
-              fill-rule="evenodd"
-            />
-          </svg>
-        </div>
-        <div class="kpi-card__label">New (pending conversation)</div>
-        <div class="kpi-card__number">{{ d.pendingConversationGuests }}</div>
-        <div class="kpi-card__pill kpi-card__pill--yellow">
-          <svg width="13" height="13" viewBox="0 0 13.333 13.333" fill="none" aria-hidden="true">
-            <path
-              d="M 1 6.667 C 1 3.537 3.537 1 6.667 1 C 9.796 1 12.333 3.537 12.333 6.667 C 12.333 9.796 9.796 12.333 6.667 12.333 C 3.537 12.333 1 9.796 1 6.667 Z M 6.667 0 C 2.985 0 0 2.985 0 6.667 C 0 10.349 2.985 13.333 6.667 13.333 C 10.349 13.333 13.333 10.349 13.333 6.667 C 13.333 2.985 10.349 0 6.667 0 Z M 6.662 3.099 C 6.629 2.855 6.42 2.667 6.167 2.667 C 5.891 2.667 5.667 2.891 5.667 3.167 L 5.667 7.167 L 5.671 7.234 C 5.704 7.478 5.914 7.667 6.167 7.667 L 8.833 7.667 L 8.901 7.662 C 9.145 7.629 9.333 7.42 9.333 7.167 C 9.333 6.891 9.109 6.667 8.833 6.667 L 6.667 6.667 L 6.667 3.167 L 6.662 3.099 Z"
-              fill="currentColor"
-            />
-          </svg>
-          Awaiting initial conversation
-        </div>
-      </div>
-      <div class="kpi-card" role="button" tabindex="0" (click)="drillToStatus('Inactive')" (keydown.enter)="drillToStatus('Inactive')">
-        <div class="kpi-card__expand" aria-hidden="true">
-          <svg width="8" height="13" viewBox="0 0 7.364 12.728" fill="none">
-            <path
-              d="M 7.071 7.071 L 1.414 12.728 L 0 11.314 L 4.95 6.364 L 0 1.414 L 1.414 0 L 7.071 5.657 C 7.258 5.845 7.364 6.099 7.364 6.364 C 7.364 6.629 7.364 6.883 7.071 7.071 Z"
-              fill="currentColor"
-              fill-rule="evenodd"
-            />
-          </svg>
-        </div>
-        <div class="kpi-card__label">IN ACTIVE</div>
-        <div class="kpi-card__number">{{ d.inactiveGuests }}</div>
-        <div class="kpi-card__pill kpi-card__pill--pink">
-          <!-- Design flips the trend arrow vertically on this tile (matrix(1,0,0,-1)) — downward trend. -->
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-            <path transform="translate(4 13.333) scale(1 -1)"
-              d="M 3.333 10.667 C 3.333 11.035 3.632 11.333 4 11.333 C 4.368 11.333 4.667 11.035 4.667 10.667 L 4 10.667 L 3.333 10.667 Z M 4 0 L 4.471 -0.471 C 4.211 -0.732 3.789 -0.732 3.529 -0.471 L 4 0 Z M -0.471 3.529 C -0.732 3.789 -0.732 4.211 -0.471 4.471 C -0.211 4.732 0.211 4.732 0.471 4.471 L 0 4 L -0.471 3.529 Z M 7.529 4.471 C 7.789 4.732 8.211 4.732 8.471 4.471 C 8.732 4.211 8.732 3.789 8.471 3.529 L 8 4 L 7.529 4.471 Z M 4 10.667 L 4.667 10.667 L 4.667 0 L 4 0 L 3.333 0 L 3.333 10.667 L 4 10.667 Z M 0 4 L 0.471 4.471 L 4.471 0.471 L 4 0 L 3.529 -0.471 L -0.471 3.529 L 0 4 Z M 4 0 L 3.529 0.471 L 7.529 4.471 L 8 4 L 8.471 3.529 L 4.471 -0.471 L 4 0 Z"
-              fill="currentColor" />
-          </svg>
-          Inactive guests
-        </div>
-      </div>
-      <div class="kpi-card" role="button" tabindex="0" (click)="goToUrgentCases()" (keydown.enter)="goToUrgentCases()">
-        <div class="kpi-card__expand" aria-hidden="true">
-          <svg width="8" height="13" viewBox="0 0 7.364 12.728" fill="none">
-            <path
-              d="M 7.071 7.071 L 1.414 12.728 L 0 11.314 L 4.95 6.364 L 0 1.414 L 1.414 0 L 7.071 5.657 C 7.258 5.845 7.364 6.099 7.364 6.364 C 7.364 6.629 7.364 6.883 7.071 7.071 Z"
-              fill="currentColor"
-              fill-rule="evenodd"
-            />
-          </svg>
-        </div>
-        <div class="kpi-card__label">Urgent Cases</div>
-        <div class="kpi-card__number">{{ d.urgentGuests }}</div>
-        <div class="kpi-card__pill kpi-card__pill--pink"><span class="dot"></span>Needs follow-up</div>
-      </div>
-    </div>
-
-    <div class="grid">
-      <div class="grid__col grid__col--main">
-        <div class="card">
-          <div class="card__head">
-            <div>
-              <div class="card__title">Pathway distribution</div>
-              <div class="card__subtitle">Active guest only</div>
-            </div>
-            <a class="link-red" routerLink="/guests">
-              View guest list
-              <svg width="14" height="14" viewBox="0 0 13.5 13.5" fill="none">
-                <path
-                  d="M 2.437 1.125 C 1.713 1.125 1.125 1.713 1.125 2.438 L 1.125 11.063 C 1.125 11.787 1.713 12.375 2.437 12.375 L 11.062 12.375 C 11.787 12.375 12.375 11.787 12.375 11.063 L 12.375 8.063 C 12.375 7.752 12.627 7.5 12.937 7.5 C 13.248 7.5 13.5 7.752 13.5 8.063 L 13.5 11.063 C 13.5 12.409 12.408 13.5 11.062 13.5 L 2.437 13.5 C 1.091 13.5 0 12.409 0 11.063 L 0 2.438 C 0 1.091 1.091 0 2.437 0 L 5.437 0 C 5.748 0 6 0.252 6 0.563 C 6 0.873 5.748 1.125 5.437 1.125 L 2.437 1.125 Z M 7.5 0.563 C 7.5 0.252 7.752 0 8.062 0 L 12.938 0 C 13.248 0 13.5 0.252 13.5 0.563 L 13.5 5.438 C 13.5 5.748 13.248 6 12.938 6 C 12.627 6 12.375 5.748 12.375 5.438 L 12.375 1.921 L 8.46 5.835 C 8.24 6.055 7.884 6.055 7.665 5.835 C 7.445 5.616 7.445 5.259 7.665 5.04 L 11.58 1.125 L 8.062 1.125 C 7.752 1.125 7.5 0.873 7.5 0.563 Z"
-                  fill="currentColor"
-                />
+    <!-- KPI row — expandable cards (Frame 23/38/39 drill-down panels). A maroon outline
+         wraps the row + panel while one is open, as in the expanded frames. -->
+    <div class="kpi-zone" [class.kpi-zone--open]="expanded() !== null">
+      <div class="kpi-row">
+        <div
+          class="kpi-card kpi-card--interactive"
+          [class.kpi-card--expanded]="expanded() === 'active'"
+          role="button"
+          tabindex="0"
+          (click)="toggleExpand('active')"
+          (keydown.enter)="toggleExpand('active')"
+        >
+          <button
+            type="button"
+            class="kpi-card__expand"
+            [class.kpi-card__expand--open]="expanded() === 'active'"
+            aria-label="Expand active guests"
+            tabindex="-1"
+          >
+            <svg width="8" height="13" viewBox="0 0 7.364 12.728" fill="none" aria-hidden="true">
+              <path
+                d="M 7.071 7.071 L 1.414 12.728 L 0 11.314 L 4.95 6.364 L 0 1.414 L 1.414 0 L 7.071 5.657 C 7.258 5.845 7.364 6.099 7.364 6.364 C 7.364 6.629 7.258 6.883 7.071 7.071 Z"
+                fill="currentColor"
+                fill-rule="evenodd"
+              />
+            </svg>
+          </button>
+          <div class="kpi-card__label">Active guests</div>
+          <div class="kpi-card__number">{{ d.totalActiveGuests }}</div>
+          @let trend = activeTrend();
+          @if (trend !== null) {
+            <div class="kpi-card__pill" [class.kpi-card__pill--green]="trend >= 0" [class.kpi-card__pill--pink]="trend < 0">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                @if (trend >= 0) {
+                  <path transform="translate(4 2.667)"
+                    d="M 3.333 10.667 C 3.333 11.035 3.632 11.333 4 11.333 C 4.368 11.333 4.667 11.035 4.667 10.667 L 4 10.667 L 3.333 10.667 Z M 4 0 L 4.471 -0.471 C 4.211 -0.732 3.789 -0.732 3.529 -0.471 L 4 0 Z M -0.471 3.529 C -0.732 3.789 -0.732 4.211 -0.471 4.471 C -0.211 4.732 0.211 4.732 0.471 4.471 L 0 4 L -0.471 3.529 Z M 7.529 4.471 C 7.789 4.732 8.211 4.732 8.471 4.471 C 8.732 4.211 8.732 3.789 8.471 3.529 L 8 4 L 7.529 4.471 Z M 4 10.667 L 4.667 10.667 L 4.667 0 L 4 0 L 3.333 0 L 3.333 10.667 L 4 10.667 Z M 0 4 L 0.471 4.471 L 4.471 0.471 L 4 0 L 3.529 -0.471 L -0.471 3.529 L 0 4 Z M 4 0 L 3.529 0.471 L 7.529 4.471 L 8 4 L 8.471 3.529 L 4.471 -0.471 L 4 0 Z"
+                    fill="currentColor" />
+                } @else {
+                  <path transform="translate(4 13.333) scale(1 -1)"
+                    d="M 3.333 10.667 C 3.333 11.035 3.632 11.333 4 11.333 C 4.368 11.333 4.667 11.035 4.667 10.667 L 4 10.667 L 3.333 10.667 Z M 4 0 L 4.471 -0.471 C 4.211 -0.732 3.789 -0.732 3.529 -0.471 L 4 0 Z M -0.471 3.529 C -0.732 3.789 -0.732 4.211 -0.471 4.471 C -0.211 4.732 0.211 4.732 0.471 4.471 L 0 4 L -0.471 3.529 Z M 7.529 4.471 C 7.789 4.732 8.211 4.732 8.471 4.471 C 8.732 4.211 8.732 3.789 8.471 3.529 L 8 4 L 7.529 4.471 Z M 4 10.667 L 4.667 10.667 L 4.667 0 L 4 0 L 3.333 0 L 3.333 10.667 L 4 10.667 Z M 0 4 L 0.471 4.471 L 4.471 0.471 L 4 0 L 3.529 -0.471 L -0.471 3.529 L 0 4 Z M 4 0 L 3.529 0.471 L 7.529 4.471 L 8 4 L 8.471 3.529 L 4.471 -0.471 L 4 0 Z"
+                    fill="currentColor" />
+                }
               </svg>
-            </a>
-          </div>
-
-          <div class="pathway-rows">
-            @for (row of pathwayRows(d); track row.category) {
-              <div class="pathway-row">
-                <div class="pathway-row__top">
-                  <span class="pathway-row__label">{{ row.label }}</span>
-                  <span class="pathway-row__meta">
-                    <span class="pathway-row__count">{{ row.count }}</span>
-                    <span class="pathway-row__unit">GUEST</span>
-                    <span class="dot"></span>
-                    <span class="pathway-row__pct" [style.color]="row.color">{{ row.percentage }}%</span>
-                  </span>
-                </div>
-                <div class="pathway-row__track">
-                  <div class="pathway-row__fill" [style.width.%]="row.percentage" [style.background]="row.color"></div>
-                </div>
-              </div>
-            } @empty {
-              <div class="empty">No pathway referrals recorded yet.</div>
-            }
-          </div>
-
-          <div class="pathway-note">*Advice first aid available across all pathways</div>
-          <div class="pathway-footer">
-            <div class="pathway-footer__total">Total Patient: <span>{{ d.totalGuestsAcrossHub }}</span></div>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="card__head">
-            <div>
-              <div class="card__title">Monthly stats</div>
+              {{ trendText(trend) }}
             </div>
-          </div>
-          <table class="monthly-table">
-            <thead>
-              <tr>
-                <th>Month</th>
-                <th>New</th>
-                <th>Closed</th>
-                <th>Contacts</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (m of d.monthlyStats; track m.year + '-' + m.month) {
-                <tr>
-                  <td>{{ monthLabel(m.year, m.month) }}</td>
-                  <td>{{ m.newGuests }}</td>
-                  <td>{{ m.closedGuests }}</td>
-                  <td>{{ m.contacts }}</td>
-                </tr>
-              } @empty {
-                <tr><td colspan="4" class="empty">No monthly data yet.</td></tr>
-              }
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <div class="grid__col grid__col--side">
-        <div class="card seen-card">
-          <div class="card__head">
-            <div class="card__title">Guest Seen</div>
-          </div>
-          @if (latestMonth(d); as latest) {
-            <div class="seen-card__number">{{ latest.contacts }}</div>
-            <div class="seen-card__pill">
-              <svg width="13" height="15" viewBox="0 0 12.869 14.625" fill="none">
-                <path
-                  d="M 6.375 1.875 C 9.896 1.875 12.75 4.729 12.75 8.25 C 12.75 11.771 9.896 14.625 6.375 14.625 C 2.854 14.625 0 11.771 0 8.25 C 0 4.729 2.854 1.875 6.375 1.875 Z M 6.375 3 C 3.476 3 1.125 5.351 1.125 8.25 C 1.125 11.149 3.476 13.5 6.375 13.5 C 9.274 13.5 11.625 11.149 11.625 8.25 C 11.625 5.351 9.274 3 6.375 3 Z M 6.375 4.125 C 6.66 4.125 6.895 4.337 6.932 4.611 L 6.938 4.688 L 6.938 8.063 C 6.938 8.373 6.686 8.625 6.375 8.625 C 6.09 8.625 5.855 8.413 5.818 8.139 L 5.813 8.063 L 5.813 4.688 C 5.813 4.377 6.064 4.125 6.375 4.125 Z M 11.735 1.96 L 11.797 2.005 L 12.666 2.728 C 12.905 2.927 12.937 3.282 12.739 3.52 C 12.556 3.739 12.243 3.785 12.008 3.638 L 11.946 3.593 L 11.078 2.87 C 10.839 2.671 10.806 2.316 11.005 2.078 C 11.187 1.859 11.501 1.813 11.735 1.96 Z M 8.063 0 C 8.373 0 8.625 0.252 8.625 0.563 C 8.625 0.847 8.413 1.083 8.139 1.12 L 8.063 1.125 L 4.688 1.125 C 4.377 1.125 4.125 0.873 4.125 0.563 C 4.125 0.278 4.337 0.042 4.611 0.005 L 4.688 0 L 8.063 0 Z"
-                  fill="currentColor"
-                />
-              </svg>
-              this month
-            </div>
-          } @else {
-            <div class="empty">No contact data yet.</div>
           }
         </div>
 
-        <div class="card activity-card">
-          <div class="card__head">
-            <div>
-              <div class="card__title">Recent activity</div>
-              <div class="card__subtitle">Last 24 hours</div>
-            </div>
+        <div
+          class="kpi-card kpi-card--interactive"
+          [class.kpi-card--expanded]="expanded() === 'pending'"
+          role="button"
+          tabindex="0"
+          (click)="toggleExpand('pending')"
+          (keydown.enter)="toggleExpand('pending')"
+        >
+          <button
+            type="button"
+            class="kpi-card__expand"
+            [class.kpi-card__expand--open]="expanded() === 'pending'"
+            aria-label="Expand new guests awaiting initial conversation"
+            tabindex="-1"
+          >
+            <svg width="8" height="13" viewBox="0 0 7.364 12.728" fill="none" aria-hidden="true">
+              <path
+                d="M 7.071 7.071 L 1.414 12.728 L 0 11.314 L 4.95 6.364 L 0 1.414 L 1.414 0 L 7.071 5.657 C 7.258 5.845 7.364 6.099 7.364 6.364 C 7.364 6.629 7.258 6.883 7.071 7.071 Z"
+                fill="currentColor"
+                fill-rule="evenodd"
+              />
+            </svg>
+          </button>
+          <div class="kpi-card__label">New (pending conversation)</div>
+          <div class="kpi-card__number">{{ d.pendingConversationGuests }}</div>
+          <div class="kpi-card__pill kpi-card__pill--yellow">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <path transform="translate(1.333 1.333)"
+                d="M 1 6.667 C 1 3.537 3.537 1 6.667 1 C 9.796 1 12.333 3.537 12.333 6.667 C 12.333 9.796 9.796 12.333 6.667 12.333 C 3.537 12.333 1 9.796 1 6.667 Z M 6.667 0 C 2.985 0 0 2.985 0 6.667 C 0 10.349 2.985 13.333 6.667 13.333 C 10.349 13.333 13.333 10.349 13.333 6.667 C 13.333 2.985 10.349 0 6.667 0 Z M 6.662 3.099 C 6.629 2.855 6.42 2.667 6.167 2.667 C 5.891 2.667 5.667 2.891 5.667 3.167 L 5.667 7.167 L 5.671 7.234 C 5.704 7.478 5.914 7.667 6.167 7.667 L 8.833 7.667 L 8.901 7.662 C 9.145 7.629 9.333 7.42 9.333 7.167 C 9.333 6.891 9.109 6.667 8.833 6.667 L 6.667 6.667 L 6.667 3.167 L 6.662 3.099 Z"
+                fill="currentColor" />
+            </svg>
+            awaiting initial conversation
           </div>
+        </div>
 
-          <div class="timeline">
-            @for (item of d.recentActivity; track $index) {
-              <div class="timeline__item">
-                <div class="timeline__icon" [class.timeline__icon--alt]="$index % 2 === 1">
-                  @if (activityIcon(item.description); as icon) {
-                    <svg [attr.width]="icon.width" [attr.height]="icon.height" [attr.viewBox]="icon.viewBox" fill="none">
-                      <path [attr.d]="icon.path" fill="currentColor" fill-rule="nonzero" />
-                    </svg>
-                  }
-                </div>
-                <div class="timeline__content">
-                  <div class="timeline__description">{{ item.description }}</div>
-                  <div class="timeline__meta">{{ item.actorName }} · {{ formatDateTime(item.occurredAt) }}</div>
-                </div>
-              </div>
-            } @empty {
-              <div class="empty">No recent activity.</div>
+        <div
+          class="kpi-card kpi-card--interactive"
+          [class.kpi-card--expanded]="expanded() === 'inactive'"
+          role="button"
+          tabindex="0"
+          (click)="toggleExpand('inactive')"
+          (keydown.enter)="toggleExpand('inactive')"
+        >
+          <button
+            type="button"
+            class="kpi-card__expand"
+            [class.kpi-card__expand--open]="expanded() === 'inactive'"
+            aria-label="Expand inactive guests"
+            tabindex="-1"
+          >
+            <svg width="8" height="13" viewBox="0 0 7.364 12.728" fill="none" aria-hidden="true">
+              <path
+                d="M 7.071 7.071 L 1.414 12.728 L 0 11.314 L 4.95 6.364 L 0 1.414 L 1.414 0 L 7.071 5.657 C 7.258 5.845 7.364 6.099 7.364 6.364 C 7.364 6.629 7.258 6.883 7.071 7.071 Z"
+                fill="currentColor"
+                fill-rule="evenodd"
+              />
+            </svg>
+          </button>
+          <div class="kpi-card__label">Inactive</div>
+          <div class="kpi-card__number">{{ d.inactiveGuests }}</div>
+          @let closed = closedThisMonth();
+          @if (closed !== null) {
+            <div class="kpi-card__pill kpi-card__pill--pink">
+              <!-- Design flips the trend arrow vertically on this tile (matrix(1,0,0,-1)). -->
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                <path transform="translate(4 13.333) scale(1 -1)"
+                  d="M 3.333 10.667 C 3.333 11.035 3.632 11.333 4 11.333 C 4.368 11.333 4.667 11.035 4.667 10.667 L 4 10.667 L 3.333 10.667 Z M 4 0 L 4.471 -0.471 C 4.211 -0.732 3.789 -0.732 3.529 -0.471 L 4 0 Z M -0.471 3.529 C -0.732 3.789 -0.732 4.211 -0.471 4.471 C -0.211 4.732 0.211 4.732 0.471 4.471 L 0 4 L -0.471 3.529 Z M 7.529 4.471 C 7.789 4.732 8.211 4.732 8.471 4.471 C 8.732 4.211 8.732 3.789 8.471 3.529 L 8 4 L 7.529 4.471 Z M 4 10.667 L 4.667 10.667 L 4.667 0 L 4 0 L 3.333 0 L 3.333 10.667 L 4 10.667 Z M 0 4 L 0.471 4.471 L 4.471 0.471 L 4 0 L 3.529 -0.471 L -0.471 3.529 L 0 4 Z M 4 0 L 3.529 0.471 L 7.529 4.471 L 8 4 L 8.471 3.529 L 4.471 -0.471 L 4 0 Z"
+                  fill="currentColor" />
+              </svg>
+              {{ trendText(closed) }}
+            </div>
+          }
+        </div>
+
+        <div
+          class="kpi-card kpi-card--interactive"
+          role="button"
+          tabindex="0"
+          (click)="goToUrgentCases()"
+          (keydown.enter)="goToUrgentCases()"
+        >
+          <button type="button" class="kpi-card__expand" aria-label="Open urgent cases" tabindex="-1">
+            <svg width="8" height="13" viewBox="0 0 7.364 12.728" fill="none" aria-hidden="true">
+              <path
+                d="M 7.071 7.071 L 1.414 12.728 L 0 11.314 L 4.95 6.364 L 0 1.414 L 1.414 0 L 7.071 5.657 C 7.258 5.845 7.364 6.099 7.364 6.364 C 7.364 6.629 7.258 6.883 7.071 7.071 Z"
+                fill="currentColor"
+                fill-rule="evenodd"
+              />
+            </svg>
+          </button>
+          <div class="kpi-card__label">Urgent Cases</div>
+          <div class="kpi-card__number">{{ d.urgentGuests }}</div>
+          <div class="kpi-card__pill kpi-card__pill--pink">
+            <span class="dot"></span>
+            @if (queueState() === 'ready' && overdueCount() > 0) {
+              {{ overdueCount() }} follow-up overdue
+            } @else {
+              needs follow-up
             }
           </div>
         </div>
       </div>
+
+      @if (expanded(); as panel) {
+        <app-kpi-guests-panel class="kpi-zone__panel" [variant]="panel" [total]="panelTotal(panel)" />
+      }
     </div>
 
-    @if (d.clinicalComplexity.length > 0) {
-      <h2 class="section-title">Clinical Complexity Indicators</h2>
-      <div class="clinical-row">
-        @for (indicator of d.clinicalComplexity; track indicator.label) {
-          <div class="clinical-tile">
-            <div class="clinical-tile__top">
-              <span class="clinical-tile__glyph" aria-hidden="true">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                  <path transform="translate(2 4)"
-                    d="M 3.5 4 C 3.5 2.619 4.619 1.5 6 1.5 C 7.381 1.5 8.5 2.619 8.5 4 C 8.5 5.381 7.381 6.5 6 6.5 C 4.619 6.5 3.5 5.381 3.5 4 Z M 6 0 C 3.791 0 2 1.791 2 4 C 2 6.209 3.791 8 6 8 C 8.209 8 10 6.209 10 4 C 10 1.791 8.209 0 6 0 Z M 13.5 5 C 13.5 4.172 14.172 3.5 15 3.5 C 15.828 3.5 16.5 4.172 16.5 5 C 16.5 5.828 15.828 6.5 15 6.5 C 14.172 6.5 13.5 5.828 13.5 5 Z M 15 2 C 13.343 2 12 3.343 12 5 C 12 6.657 13.343 8 15 8 C 16.657 8 18 6.657 18 5 C 18 3.343 16.657 2 15 2 Z M 12.248 15.038 C 12.951 15.323 13.852 15.5 15.001 15.5 C 17.283 15.5 18.587 14.803 19.298 13.942 C 19.643 13.524 19.819 13.103 19.908 12.779 C 19.952 12.618 19.975 12.48 19.987 12.377 C 19.994 12.325 19.997 12.282 19.999 12.249 C 20 12.232 20 12.218 20.001 12.206 L 20.001 12.19 L 20.001 12.184 L 20.001 12.181 L 20.001 12.179 C 20.001 10.975 19.026 10 17.822 10 L 12.18 10 C 12.152 10 12.125 10 12.098 10.002 C 12.492 10.413 12.779 10.927 12.914 11.5 L 17.822 11.5 C 18.194 11.5 18.496 11.799 18.501 12.169 C 18.501 12.175 18.5 12.185 18.498 12.201 C 18.493 12.239 18.483 12.302 18.462 12.381 C 18.418 12.54 18.328 12.761 18.142 12.986 C 17.79 13.412 16.969 14 15.001 14 C 14.021 14 13.325 13.854 12.83 13.655 C 12.723 14.055 12.545 14.538 12.248 15.038 Z M 2.25 10 C 1.007 10 0 11.007 0 12.25 L 0 12.501 L 0 12.502 L 0 12.505 L 0 12.511 L 0 12.528 C 0.001 12.541 0.001 12.557 0.002 12.577 C 0.004 12.617 0.007 12.67 0.014 12.736 C 0.027 12.866 0.052 13.045 0.102 13.256 C 0.2 13.678 0.397 14.24 0.792 14.805 C 1.611 15.975 3.172 17 6 17 C 8.828 17 10.389 15.975 11.208 14.805 C 11.604 14.24 11.8 13.678 11.898 13.256 C 11.948 13.045 11.973 12.866 11.986 12.736 C 11.993 12.67 11.996 12.617 11.998 12.577 C 11.999 12.557 11.999 12.541 12 12.528 L 12 12.511 L 12 12.505 L 12 12.502 L 12 12.25 C 12 11.007 10.993 10 9.75 10 L 2.25 10 Z M 1.5 12.507 L 1.5 12.495 L 1.5 12.25 C 1.5 11.836 1.836 11.5 2.25 11.5 L 9.75 11.5 C 10.164 11.5 10.5 11.836 10.5 12.25 L 10.5 12.495 L 10.5 12.507 C 10.499 12.522 10.497 12.549 10.493 12.587 C 10.486 12.661 10.47 12.775 10.438 12.916 C 10.372 13.197 10.24 13.572 9.979 13.945 C 9.486 14.65 8.422 15.5 6 15.5 C 3.578 15.5 2.514 14.65 2.021 13.945 C 1.76 13.572 1.628 13.197 1.562 12.916 C 1.53 12.775 1.514 12.661 1.507 12.587 C 1.503 12.549 1.501 12.522 1.5 12.507 Z"
-                    fill="currentColor" fill-rule="nonzero" />
-                </svg>
+    <!-- Pathway distribution (design y=264) -->
+    <div class="panel-card pathway-card">
+      <div class="panel-card__head">
+        <div>
+          <div class="panel-card__title pathway-card__title">Pathway distribution</div>
+          <div class="panel-card__subtitle">Active guest only</div>
+        </div>
+      </div>
+
+      <div class="pathway-rows">
+        @for (row of pathwayRows(); track row.category) {
+          <div class="pathway-row">
+            <div class="pathway-row__top">
+              <span class="pathway-row__icon" aria-hidden="true">
+                @switch (row.icon) {
+                  @case (1) {
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                      <path transform="translate(2.5 1.667)"
+                        d="M 6.042 1.25 L 8.958 1.25 C 9.304 1.25 9.583 1.53 9.583 1.875 L 9.583 3.333 L 5.417 3.333 L 5.417 1.875 C 5.417 1.53 5.696 1.25 6.042 1.25 Z M 4.167 1.875 L 4.167 3.333 L 2.708 3.333 C 1.213 3.333 0 4.546 0 6.042 L 0 12.292 C 0 13.787 1.213 15 2.708 15 L 12.292 15 C 13.787 15 15 13.787 15 12.292 L 15 6.042 C 15 4.546 13.787 3.333 12.292 3.333 L 10.833 3.333 L 10.833 1.875 C 10.833 0.839 9.994 0 8.958 0 L 6.042 0 C 5.006 0 4.167 0.839 4.167 1.875 Z M 12.292 4.583 C 13.097 4.583 13.75 5.236 13.75 6.042 L 13.75 12.292 C 13.75 13.097 13.097 13.75 12.292 13.75 L 2.708 13.75 C 1.903 13.75 1.25 13.097 1.25 12.292 L 1.25 6.042 C 1.25 5.236 1.903 4.583 2.708 4.583 L 12.292 4.583 Z M 7.083 7.292 L 7.083 8.75 L 5.625 8.75 C 5.28 8.75 5 9.03 5 9.375 C 5 9.72 5.28 10 5.625 10 L 7.083 10 L 7.083 11.458 C 7.083 11.804 7.363 12.083 7.708 12.083 C 8.054 12.083 8.333 11.804 8.333 11.458 L 8.333 10 L 9.792 10 C 10.137 10 10.417 9.72 10.417 9.375 C 10.417 9.03 10.137 8.75 9.792 8.75 L 8.333 8.75 L 8.333 7.292 C 8.333 6.946 8.054 6.667 7.708 6.667 C 7.363 6.667 7.083 6.946 7.083 7.292 Z"
+                        fill="currentColor" />
+                    </svg>
+                  }
+                  @case (2) {
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                      <path transform="translate(2.5 2.5)"
+                        d="M 5.625 1.25 C 5.51 1.25 5.417 1.343 5.417 1.458 L 5.417 4.792 C 5.417 5.137 5.137 5.417 4.792 5.417 L 1.458 5.417 C 1.343 5.417 1.25 5.51 1.25 5.625 L 1.25 9.375 C 1.25 9.49 1.343 9.583 1.458 9.583 L 4.792 9.583 C 5.137 9.583 5.417 9.863 5.417 10.208 L 5.417 13.542 C 5.417 13.657 5.51 13.75 5.625 13.75 L 9.375 13.75 C 9.49 13.75 9.583 13.657 9.583 13.542 L 9.583 10.208 C 9.583 9.863 9.863 9.583 10.208 9.583 L 13.542 9.583 C 13.657 9.583 13.75 9.49 13.75 9.375 L 13.75 5.625 C 13.75 5.51 13.657 5.417 13.542 5.417 L 10.208 5.417 C 9.863 5.417 9.583 5.137 9.583 4.792 L 9.583 1.458 C 9.583 1.343 9.49 1.25 9.375 1.25 L 5.625 1.25 Z M 4.167 1.458 C 4.167 0.653 4.82 0 5.625 0 L 9.375 0 C 10.18 0 10.833 0.653 10.833 1.458 L 10.833 4.167 L 13.542 4.167 C 14.347 4.167 15 4.82 15 5.625 L 15 9.375 C 15 10.18 14.347 10.833 13.542 10.833 L 10.833 10.833 L 10.833 13.542 C 10.833 14.347 10.18 15 9.375 15 L 5.625 15 C 4.82 15 4.167 14.347 4.167 13.542 L 4.167 10.833 L 1.458 10.833 C 0.653 10.833 0 10.18 0 9.375 L 0 5.625 C 0 4.82 0.653 4.167 1.458 4.167 L 4.167 4.167 L 4.167 1.458 Z"
+                        fill="currentColor" />
+                    </svg>
+                  }
+                  @default {
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                      <path transform="translate(1.667 3.335)"
+                        d="M 9.016 1.314 L 8.332 2 L 7.646 1.314 C 5.897 -0.436 3.061 -0.436 1.312 1.314 C -0.437 3.063 -0.437 5.899 1.312 7.648 L 7.891 14.228 C 8.135 14.472 8.531 14.472 8.775 14.228 L 15.36 7.647 C 17.105 5.892 17.108 3.064 15.359 1.314 C 13.606 -0.438 10.769 -0.438 9.016 1.314 Z M 14.473 6.766 L 8.333 12.902 L 2.196 6.764 C 0.935 5.503 0.935 3.459 2.196 2.198 C 3.457 0.936 5.501 0.936 6.763 2.198 L 7.894 3.329 C 8.142 3.577 8.546 3.572 8.788 3.318 L 9.9 2.198 C 11.165 0.934 13.21 0.934 14.475 2.198 C 15.736 3.46 15.734 5.498 14.473 6.766 Z"
+                        fill="currentColor" />
+                    </svg>
+                  }
+                }
               </span>
-              <span class="clinical-tile__expand" aria-hidden="true">
-                <svg width="8" height="13" viewBox="0 0 7.364 12.728" fill="none">
-                  <path
-                    d="M 7.071 7.071 L 1.414 12.728 L 0 11.314 L 4.95 6.364 L 0 1.414 L 1.414 0 L 7.071 5.657 C 7.258 5.845 7.364 6.099 7.364 6.364 C 7.364 6.629 7.258 6.883 7.071 7.071 Z"
-                    fill="currentColor"
-                    fill-rule="evenodd"
-                  />
-                </svg>
+              <span class="pathway-row__label">{{ row.label }}</span>
+              <span class="pathway-row__meta">
+                <span class="pathway-row__count">{{ row.count }}</span>
+                <span class="pathway-row__unit">GUEST</span>
+                <span class="pathway-row__dot"></span>
+                <span class="pathway-row__pct" [style.color]="row.color">{{ row.percentage }}%</span>
               </span>
             </div>
-            <div class="clinical-tile__label">{{ indicator.label }}</div>
-            <div class="clinical-tile__number">{{ indicator.count }}</div>
+            <div class="pathway-row__track">
+              <div class="pathway-row__fill" [style.width.%]="row.percentage" [style.background]="row.color"></div>
+            </div>
           </div>
+        } @empty {
+          <div class="empty">No pathway referrals recorded yet.</div>
         }
       </div>
+
+      <div class="pathway-card__footer">
+        <div class="pathway-card__total">Total Guest:<span> {{ d.totalGuestsAcrossHub }}</span></div>
+      </div>
+    </div>
+
+    <!-- Guest Seen (design y=655) -->
+    <div class="panel-card seen-card">
+      <div class="panel-card__head">
+        <div class="panel-card__title">Guest Seen</div>
+        <!-- Segmented range control — monthly stats are the only backing data,
+             so Today/Week are disabled. -->
+        <div class="range-toggle" role="group" aria-label="Guest seen range">
+          <button type="button" class="range-toggle__item" disabled title="Monthly data only">Today</button>
+          <span class="range-toggle__divider"></span>
+          <button type="button" class="range-toggle__item" disabled title="Monthly data only">Week</button>
+          <button type="button" class="range-toggle__item range-toggle__item--active">Month</button>
+        </div>
+      </div>
+
+      @if (latestMonth(); as latest) {
+        <div class="list-row seen-card__row">
+          <span class="seen-card__glyph" aria-hidden="true">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+              <path transform="translate(3.003 2)"
+                d="M 7.497 3 C 7.497 3.641 7.9 4.188 8.466 4.403 C 8.815 4.488 9.18 4.488 9.529 4.403 C 10.095 4.189 10.497 3.641 10.497 3 C 10.497 2.172 9.826 1.5 8.997 1.5 C 8.169 1.5 7.497 2.172 7.497 3 Z M 6.024 3.399 C 6.006 3.268 5.997 3.135 5.997 3 C 5.997 1.343 7.34 0 8.997 0 C 10.654 0 11.997 1.343 11.997 3 C 11.997 3.135 11.988 3.268 11.971 3.399 L 14.848 2.178 C 15.991 1.693 17.315 2.222 17.809 3.362 C 18.304 4.505 17.775 5.829 16.628 6.316 L 13 7.856 L 13 11.573 L 14.874 17.017 C 15.279 18.192 14.654 19.472 13.479 19.877 C 12.304 20.281 11.024 19.657 10.619 18.482 L 8.997 13.771 L 7.376 18.481 C 6.971 19.656 5.691 20.281 4.516 19.876 C 3.341 19.472 2.716 18.191 3.121 17.016 L 5 11.559 L 5 7.858 L 1.367 6.316 C 0.22 5.829 -0.31 4.505 0.186 3.362 C 0.679 2.222 2.004 1.693 3.147 2.178 L 6.024 3.399 Z M 8.019 5.837 C 7.854 5.792 7.691 5.736 7.532 5.669 L 2.561 3.559 C 2.177 3.395 1.728 3.575 1.562 3.958 C 1.398 4.337 1.572 4.774 1.953 4.935 L 5.738 6.542 C 6.2 6.738 6.5 7.191 6.5 7.693 L 6.5 11.601 C 6.5 11.74 6.477 11.877 6.432 12.008 L 4.539 17.505 C 4.404 17.896 4.612 18.323 5.004 18.458 C 5.396 18.593 5.823 18.385 5.957 17.993 L 8.066 11.87 C 8.371 10.982 9.625 10.986 9.929 11.87 L 12.038 17.993 C 12.172 18.385 12.599 18.593 12.991 18.458 C 13.383 18.323 13.591 17.897 13.456 17.505 L 11.568 12.022 C 11.523 11.891 11.5 11.753 11.5 11.615 L 11.5 7.691 C 11.5 7.189 11.8 6.736 12.261 6.54 L 16.042 4.935 C 16.422 4.774 16.597 4.337 16.433 3.958 C 16.266 3.575 15.818 3.395 15.434 3.559 L 10.463 5.669 C 10.303 5.736 10.14 5.793 9.975 5.837 C 9.668 5.943 9.34 6 8.997 6 C 8.655 6 8.326 5.943 8.019 5.837 Z"
+                fill="currentColor" />
+            </svg>
+          </span>
+          <div class="seen-card__text">
+            <div class="seen-card__row-title">Number of Guest</div>
+            <div class="seen-card__row-sub">This month</div>
+          </div>
+          <div class="seen-card__number">{{ latest.contacts }}</div>
+          <span class="seen-card__chevron" aria-hidden="true">
+            <svg width="8" height="13" viewBox="0 0 7.364 12.728" fill="none">
+              <path
+                d="M 7.071 7.071 L 1.414 12.728 L 0 11.314 L 4.95 6.364 L 0 1.414 L 1.414 0 L 7.071 5.657 C 7.258 5.845 7.364 6.099 7.364 6.364 C 7.364 6.629 7.258 6.883 7.071 7.071 Z"
+                fill="currentColor"
+                fill-rule="evenodd"
+              />
+            </svg>
+          </span>
+        </div>
+      } @else {
+        <div class="empty">No contact data yet.</div>
+      }
+    </div>
+
+    <!-- Outstanding team actions (design y=2360) — hub-wide open follow-ups. -->
+    @if (canViewFollowUps) {
+      <div class="panel-card team-actions">
+        <div class="panel-card__head">
+          <div class="panel-card__title">Outstanding team actions</div>
+          <a class="link-red link-red--lower" routerLink="/followups">
+            view all actions
+            <svg width="14" height="14" viewBox="0 0 13.5 13.5" fill="none" aria-hidden="true">
+              <path
+                d="M 2.437 1.125 C 1.713 1.125 1.125 1.713 1.125 2.438 L 1.125 11.063 C 1.125 11.787 1.713 12.375 2.437 12.375 L 11.062 12.375 C 11.787 12.375 12.375 11.787 12.375 11.063 L 12.375 8.063 C 12.375 7.752 12.627 7.5 12.937 7.5 C 13.248 7.5 13.5 7.752 13.5 8.063 L 13.5 11.063 C 13.5 12.409 12.408 13.5 11.062 13.5 L 2.437 13.5 C 1.091 13.5 0 12.409 0 11.063 L 0 2.438 C 0 1.091 1.091 0 2.437 0 L 5.437 0 C 5.748 0 6 0.252 6 0.563 C 6 0.873 5.748 1.125 5.437 1.125 L 2.437 1.125 Z M 7.5 0.563 C 7.5 0.252 7.752 0 8.062 0 L 12.938 0 C 13.248 0 13.5 0.252 13.5 0.563 L 13.5 5.438 C 13.5 5.748 13.248 6 12.938 6 C 12.627 6 12.375 5.748 12.375 5.438 L 12.375 1.921 L 8.46 5.835 C 8.24 6.055 7.884 6.055 7.665 5.835 C 7.445 5.616 7.445 5.259 7.665 5.04 L 11.58 1.125 L 8.062 1.125 C 7.752 1.125 7.5 0.873 7.5 0.563 Z"
+                fill="currentColor"
+              />
+            </svg>
+          </a>
+        </div>
+
+        <div class="team-actions__list">
+          @for (item of teamActions(); track item.id) {
+            <div class="list-row team-row" (click)="openGuest(item.guestId)">
+              @if (actionStatus(item); as status) {
+                <span class="team-row__dot" [class.team-row__dot--red]="status.tone === 'red'" aria-hidden="true">
+                  <span class="team-row__dot-core"></span>
+                </span>
+                <div class="team-row__text">
+                  <div class="team-row__title">Follow-up — {{ item.guestName }}</div>
+                  <div class="team-row__sub">Assigned to {{ item.assigneeName }}</div>
+                </div>
+                <span class="team-row__status" [class.team-row__status--red]="status.tone === 'red'">{{ status.text }}</span>
+              }
+            </div>
+          } @empty {
+            @if (queueState() === 'loading') {
+              <div class="empty">Loading follow-ups…</div>
+            } @else if (queueState() === 'unavailable') {
+              <div class="empty">The follow-up queue is unavailable right now.</div>
+            } @else {
+              <div class="empty">No outstanding team actions.</div>
+            }
+          }
+        </div>
+      </div>
     }
+
+    <!-- Staff activity (design y=2947) — recent activity feed. -->
+    <div class="panel-card staff-activity">
+      <div class="panel-card__title">Staff activity</div>
+
+      <div class="staff-activity__list">
+        @for (item of d.recentActivity; track $index) {
+          <div class="list-row staff-row">
+            <div class="avatar-circle staff-row__avatar">{{ initials(item.actorName) }}</div>
+            <div class="staff-row__text">
+              <div class="staff-row__name">{{ item.actorName }}</div>
+              <div class="staff-row__detail">{{ item.description }}</div>
+            </div>
+            <span class="staff-row__when">{{ formatDateTime(item.occurredAt) }}</span>
+          </div>
+        } @empty {
+          <div class="empty">No recent activity.</div>
+        }
+      </div>
+    </div>
   } @else if (loading()) {
     <div class="state-message">Loading service overview…</div>
   } @else if (error()) {

@@ -1,8 +1,22 @@
 <div class="page">
+  @if (overdueLoadedCount() > 0) {
+    <div class="alert-banner">
+      <svg class="alert-banner__icon" width="18" height="16" viewBox="0 0 15.201 13.465" fill="none">
+        <path
+          d="M 8.575 0.563 L 15.05 11.778 C 15.149 11.949 15.201 12.143 15.201 12.34 C 15.201 12.538 15.149 12.732 15.05 12.903 C 14.951 13.074 14.809 13.216 14.638 13.315 C 14.467 13.414 14.273 13.465 14.076 13.465 L 1.125 13.465 C 0.927 13.465 0.733 13.414 0.562 13.315 C 0.391 13.216 0.249 13.074 0.151 12.903 C 0.052 12.732 0 12.538 0 12.34 C 0 12.143 0.052 11.949 0.151 11.778 L 6.626 0.563 C 7.059 -0.188 8.141 -0.188 8.575 0.563 Z M 7.6 9.451 C 7.402 9.451 7.211 9.531 7.07 9.671 C 6.929 9.812 6.85 10.003 6.85 10.201 C 6.85 10.4 6.929 10.591 7.07 10.732 C 7.211 10.872 7.402 10.951 7.6 10.951 C 7.799 10.951 7.99 10.872 8.131 10.732 C 8.271 10.591 8.35 10.4 8.35 10.201 C 8.35 10.003 8.271 9.812 8.131 9.671 C 7.99 9.531 7.799 9.451 7.6 9.451 Z M 7.6 4.201 C 7.417 4.202 7.239 4.269 7.102 4.391 C 6.965 4.513 6.877 4.681 6.856 4.864 L 6.85 4.951 L 6.85 7.951 C 6.851 8.143 6.924 8.327 7.055 8.466 C 7.186 8.605 7.366 8.688 7.557 8.699 C 7.747 8.711 7.935 8.648 8.082 8.526 C 8.228 8.403 8.323 8.229 8.345 8.039 L 8.35 7.951 L 8.35 4.951 C 8.35 4.753 8.271 4.562 8.131 4.421 C 7.99 4.281 7.799 4.201 7.6 4.201 Z"
+          fill="currentColor" />
+      </svg>
+      <span class="alert-banner__text">
+        {{ overdueLoadedCount() }} follow-up{{ overdueLoadedCount() === 1 ? ' is' : 's are' }} overdue — due date has passed
+      </span>
+      <button type="button" class="alert-banner__cta" (click)="scrollToOverdue()">View now →</button>
+    </div>
+  }
+
   <header class="page-header">
     <div>
       <h1 class="page-header__title">Follow-up log</h1>
-      <p class="page-header__subtitle">All entries across all guests — most recent first</p>
+      <p class="page-header__subtitle">All scheduled follow-ups across all guests — record a contact when one falls due</p>
     </div>
     <div class="page-header__actions">
       <button type="button" class="btn btn--outline" (click)="openAddNew()">
@@ -22,52 +36,24 @@
 
   <section class="stat-cards">
     <div class="stat-card">
-      <span class="stat-card__label">Entries today</span>
+      <span class="stat-card__label">Due today</span>
       <span class="stat-card__value">{{ dueTodayCount() }}</span>
-      <span class="chip">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-          <path transform="translate(4 2.667)"
-            d="M 3.333 10.667 C 3.333 11.035 3.632 11.333 4 11.333 C 4.368 11.333 4.667 11.035 4.667 10.667 L 4 10.667 L 3.333 10.667 Z M 4 0 L 4.471 -0.471 C 4.211 -0.732 3.789 -0.732 3.529 -0.471 L 4 0 Z M -0.471 3.529 C -0.732 3.789 -0.732 4.211 -0.471 4.471 C -0.211 4.732 0.211 4.732 0.471 4.471 L 0 4 L -0.471 3.529 Z M 7.529 4.471 C 7.789 4.732 8.211 4.732 8.471 4.471 C 8.732 4.211 8.732 3.789 8.471 3.529 L 8 4 L 7.529 4.471 Z M 4 10.667 L 4.667 10.667 L 4.667 0 L 4 0 L 3.333 0 L 3.333 10.667 L 4 10.667 Z M 0 4 L 0.471 4.471 L 4.471 0.471 L 4 0 L 3.529 -0.471 L -0.471 3.529 L 0 4 Z M 4 0 L 3.529 0.471 L 7.529 4.471 L 8 4 L 8.471 3.529 L 4.471 -0.471 L 4 0 Z"
-            fill="rgb(20,113,41)" />
-        </svg>
-        Across {{ dueTodayGuests() }} guest{{ dueTodayGuests() === 1 ? '' : 's' }}
-      </span>
+      <span class="stat-card__sub">Across {{ dueTodayGuests() }} guest{{ dueTodayGuests() === 1 ? '' : 's' }}</span>
     </div>
     <div class="stat-card">
-      <span class="stat-card__label">This week</span>
+      <span class="stat-card__label">Overdue</span>
+      <span class="stat-card__value">{{ overdueLoadedCount() }}</span>
+      <span class="stat-card__sub">Due date passed</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-card__label">Due this week</span>
       <span class="stat-card__value">{{ dueThisWeekCount() }}</span>
-      <span class="chip">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-          <path transform="translate(1.333 1.333)"
-            d="M 1 6.667 C 1 3.537 3.537 1 6.667 1 C 9.796 1 12.333 3.537 12.333 6.667 C 12.333 9.796 9.796 12.333 6.667 12.333 C 3.537 12.333 1 9.796 1 6.667 Z M 6.667 0 C 2.985 0 0 2.985 0 6.667 C 0 10.349 2.985 13.333 6.667 13.333 C 10.349 13.333 13.333 10.349 13.333 6.667 C 13.333 2.985 10.349 0 6.667 0 Z M 6.662 3.099 C 6.629 2.855 6.42 2.667 6.167 2.667 C 5.891 2.667 5.667 2.891 5.667 3.167 L 5.667 7.167 L 5.671 7.234 C 5.704 7.478 5.914 7.667 6.167 7.667 L 8.833 7.667 L 8.901 7.662 C 9.145 7.629 9.333 7.42 9.333 7.167 C 9.333 6.891 9.109 6.667 8.833 6.667 L 6.667 6.667 L 6.667 3.167 L 6.662 3.099 Z"
-            fill="rgb(42,42,42)" />
-        </svg>
-        {{ weekStart | date: 'EEE d' }} — today
-      </span>
-    </div>
-    <div class="stat-card">
-      <span class="stat-card__label">This month</span>
-      <span class="stat-card__value">{{ dueThisMonthCount() }}</span>
-      <span class="chip">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-          <path transform="translate(1.333 1.333)"
-            d="M 1 6.667 C 1 3.537 3.537 1 6.667 1 C 9.796 1 12.333 3.537 12.333 6.667 C 12.333 9.796 9.796 12.333 6.667 12.333 C 3.537 12.333 1 9.796 1 6.667 Z M 6.667 0 C 2.985 0 0 2.985 0 6.667 C 0 10.349 2.985 13.333 6.667 13.333 C 10.349 13.333 13.333 10.349 13.333 6.667 C 13.333 2.985 10.349 0 6.667 0 Z M 6.662 3.099 C 6.629 2.855 6.42 2.667 6.167 2.667 C 5.891 2.667 5.667 2.891 5.667 3.167 L 5.667 7.167 L 5.671 7.234 C 5.704 7.478 5.914 7.667 6.167 7.667 L 8.833 7.667 L 8.901 7.662 C 9.145 7.629 9.333 7.42 9.333 7.167 C 9.333 6.891 9.109 6.667 8.833 6.667 L 6.667 6.667 L 6.667 3.167 L 6.662 3.099 Z"
-            fill="rgb(42,42,42)" />
-        </svg>
-        {{ now | date: 'MMMM y' }}
-      </span>
+      <span class="stat-card__sub">{{ weekStart | date: 'EEE d' }} — today</span>
     </div>
     <div class="stat-card">
       <span class="stat-card__label">Assigned to you</span>
       <span class="stat-card__value">{{ assignedToMeCount() }}</span>
-      <span class="chip">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-          <path transform="translate(2.669 1.337)"
-            d="M 9.167 7.997 C 9.995 7.997 10.666 8.668 10.666 9.496 L 10.666 9.88 C 10.666 10.476 10.453 11.052 10.066 11.505 C 9.019 12.728 7.428 13.331 5.331 13.331 C 3.234 13.331 1.643 12.728 0.599 11.505 C 0.212 11.052 0 10.476 0 9.881 L 0 9.496 C 0 8.668 0.671 7.997 1.499 7.997 L 9.167 7.997 Z M 9.167 8.997 L 1.499 8.997 C 1.224 8.997 1 9.22 1 9.496 L 1 9.881 C 1 10.238 1.127 10.584 1.359 10.855 C 2.195 11.834 3.505 12.331 5.331 12.331 C 7.157 12.331 8.468 11.834 9.306 10.855 C 9.539 10.583 9.666 10.237 9.666 9.88 L 9.666 9.496 C 9.666 9.22 9.443 8.997 9.167 8.997 Z M 5.331 0 C 7.172 0 8.664 1.492 8.664 3.333 C 8.664 5.174 7.172 6.667 5.331 6.667 C 3.49 6.667 1.998 5.174 1.998 3.333 C 1.998 1.492 3.49 0 5.331 0 Z M 5.331 1 C 4.042 1 2.998 2.045 2.998 3.333 C 2.998 4.622 4.042 5.667 5.331 5.667 C 6.62 5.667 7.664 4.622 7.664 3.333 C 7.664 2.045 6.62 1 5.331 1 Z"
-            fill="rgb(42,42,42)" />
-        </svg>
-        {{ userName || 'You' }}
-      </span>
+      <span class="stat-card__sub">{{ userName || 'You' }}</span>
     </div>
   </section>
 
@@ -83,14 +69,16 @@
           type="text"
           [ngModel]="searchText()"
           (ngModelChange)="searchText.set($event)"
-          placeholder="Search by guest name, ref number, or note content…" />
+          placeholder="Search by guest name, ref number, or assignee…" />
       </label>
 
       <div class="filter-row__group">
-        <label class="check-filter">
-          <input type="checkbox" [ngModel]="overdueOnly()" (ngModelChange)="setOverdueOnly($event)" />
-          Overdue Only
-        </label>
+        <select class="filter-select" [ngModel]="statusFilter()" (ngModelChange)="statusFilter.set($event)" aria-label="Status">
+          <option value="">Status</option>
+          @for (s of statusOptions; track s) {
+            <option [value]="s">{{ s }}</option>
+          }
+        </select>
         <input
           class="filter-input"
           type="text"
@@ -105,12 +93,11 @@
           <option value="week">This week</option>
           <option value="month">This month</option>
         </select>
-        <select class="filter-select" [ngModel]="statusFilter()" (ngModelChange)="statusFilter.set($event)" aria-label="Entry type">
-          <option value="">Entry Type</option>
-          @for (s of statusOptions; track s) {
-            <option [value]="s">{{ s }}</option>
-          }
-        </select>
+        <span class="filter-row__divider"></span>
+        <label class="check-filter">
+          <input type="checkbox" [ngModel]="overdueOnly()" (ngModelChange)="setOverdueOnly($event)" />
+          Overdue Only
+        </label>
       </div>
     </div>
 
@@ -118,12 +105,22 @@
       <div class="banner banner--error">{{ loadError() }}</div>
     }
 
+    @if (successMsg()) {
+      <div class="banner banner--success">
+        <span>{{ successMsg() }}</span>
+        <button type="button" class="banner__dismiss" (click)="successMsg.set(null)" aria-label="Dismiss">✕</button>
+      </div>
+    }
+
     <div class="rows">
       @for (item of visibleItems(); track item.id) {
-        <article class="row">
+        <article class="row" [class.row--overdue]="item.isOverdue">
           <div class="row__top">
             <a class="row__guest" [routerLink]="['/guests', item.guestId]">{{ item.guestName }}</a>
-            <span class="row__time">{{ item.dueDate | date: 'h:mm a' }}</span>
+            <div class="row__window-col">
+              <span class="row__window row__window--{{ windowLabel(item).cls }}">{{ windowLabel(item).text }}</span>
+              <span class="row__deadline">{{ deadlineLabel(item) }}</span>
+            </div>
           </div>
 
           <div class="row__meta">
@@ -139,29 +136,42 @@
           </p>
 
           <div class="row__bottom">
-            <span class="pill pill--assignee">
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <path transform="translate(2.669 1.337)"
-                  d="M 9.167 7.997 C 9.995 7.997 10.666 8.668 10.666 9.496 L 10.666 9.88 C 10.666 10.476 10.453 11.052 10.066 11.505 C 9.019 12.728 7.428 13.331 5.331 13.331 C 3.234 13.331 1.643 12.728 0.599 11.505 C 0.212 11.052 0 10.476 0 9.881 L 0 9.496 C 0 8.668 0.671 7.997 1.499 7.997 L 9.167 7.997 Z M 9.167 8.997 L 1.499 8.997 C 1.224 8.997 1 9.22 1 9.496 L 1 9.881 C 1 10.238 1.127 10.584 1.359 10.855 C 2.195 11.834 3.505 12.331 5.331 12.331 C 7.157 12.331 8.468 11.834 9.306 10.855 C 9.539 10.583 9.666 10.237 9.666 9.88 L 9.666 9.496 C 9.666 9.22 9.443 8.997 9.167 8.997 Z M 5.331 0 C 7.172 0 8.664 1.492 8.664 3.333 C 8.664 5.174 7.172 6.667 5.331 6.667 C 3.49 6.667 1.998 5.174 1.998 3.333 C 1.998 1.492 3.49 0 5.331 0 Z M 5.331 1 C 4.042 1 2.998 2.045 2.998 3.333 C 2.998 4.622 4.042 5.667 5.331 5.667 C 6.62 5.667 7.664 4.622 7.664 3.333 C 7.664 2.045 6.62 1 5.331 1 Z"
-                  fill="currentColor" />
-              </svg>
-              {{ item.assigneeName }}
-            </span>
+            <div class="row__chips">
+              <span class="pill pill--assignee">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <path transform="translate(2.669 1.337)"
+                    d="M 9.167 7.997 C 9.995 7.997 10.666 8.668 10.666 9.496 L 10.666 9.88 C 10.666 10.476 10.453 11.052 10.066 11.505 C 9.019 12.728 7.428 13.331 5.331 13.331 C 3.234 13.331 1.643 12.728 0.599 11.505 C 0.212 11.052 0 10.476 0 9.881 L 0 9.496 C 0 8.668 0.671 7.997 1.499 7.997 L 9.167 7.997 Z M 9.167 8.997 L 1.499 8.997 C 1.224 8.997 1 9.22 1 9.496 L 1 9.881 C 1 10.238 1.127 10.584 1.359 10.855 C 2.195 11.834 3.505 12.331 5.331 12.331 C 7.157 12.331 8.468 11.834 9.306 10.855 C 9.539 10.583 9.666 10.237 9.666 9.88 L 9.666 9.496 C 9.666 9.22 9.443 8.997 9.167 8.997 Z M 5.331 0 C 7.172 0 8.664 1.492 8.664 3.333 C 8.664 5.174 7.172 6.667 5.331 6.667 C 3.49 6.667 1.998 5.174 1.998 3.333 C 1.998 1.492 3.49 0 5.331 0 Z M 5.331 1 C 4.042 1 2.998 2.045 2.998 3.333 C 2.998 4.622 4.042 5.667 5.331 5.667 C 6.62 5.667 7.664 4.622 7.664 3.333 C 7.664 2.045 6.62 1 5.331 1 Z"
+                    fill="currentColor" />
+                </svg>
+                {{ item.assigneeName }}
+              </span>
+
+              @if (recordedContact()[item.id]; as recordedAt) {
+                <span class="pill pill--logged">
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <path transform="translate(4 2.667)"
+                      d="M 3.333 10.667 C 3.333 11.035 3.632 11.333 4 11.333 C 4.368 11.333 4.667 11.035 4.667 10.667 L 4 10.667 L 3.333 10.667 Z M 4 0 L 4.471 -0.471 C 4.211 -0.732 3.789 -0.732 3.529 -0.471 L 4 0 Z M -0.471 3.529 C -0.732 3.789 -0.732 4.211 -0.471 4.471 C -0.211 4.732 0.211 4.732 0.471 4.471 L 0 4 L -0.471 3.529 Z M 7.529 4.471 C 7.789 4.732 8.211 4.732 8.471 4.471 C 8.732 4.211 8.732 3.789 8.471 3.529 L 8 4 L 7.529 4.471 Z M 4 10.667 L 4.667 10.667 L 4.667 0 L 4 0 L 3.333 0 L 3.333 10.667 L 4 10.667 Z M 0 4 L 0.471 4.471 L 4.471 0.471 L 4 0 L 3.529 -0.471 L -0.471 3.529 L 0 4 Z M 4 0 L 3.529 0.471 L 7.529 4.471 L 8 4 L 8.471 3.529 L 4.471 -0.471 L 4 0 Z"
+                      fill="rgb(20,113,41)" />
+                  </svg>
+                  Follow-up logged: {{ recordedAt | date: 'd MMM' }}
+                </span>
+              }
+            </div>
 
             <div class="row__actions">
               @if (item.status === 'Scheduled' || item.status === 'Overdue') {
                 <button type="button" class="icon-btn" title="Mark complete" (click)="complete(item)">
                   <app-icon name="IconsNameCheckColorDefault" [size]="16" />
                 </button>
+                <button type="button" class="btn btn--outline" (click)="openContactForItem(item)">
+                  <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                    <path transform="translate(1.5 1.5)"
+                      d="M 13.495 2.255 L 13.499 2.346 L 13.5 2.438 L 13.5 10.763 C 13.5 12.274 12.274 13.5 10.763 13.5 L 2.438 13.5 C 2.376 13.5 2.316 13.498 2.255 13.495 C 2.687 14.174 3.447 14.625 4.313 14.625 L 10.763 14.625 C 12.896 14.625 14.625 12.896 14.625 10.763 L 14.625 4.313 C 14.625 3.447 14.174 2.688 13.495 2.255 Z M 2.438 0 C 1.091 0 0 1.091 0 2.438 L 0 10.313 C 0 11.659 1.091 12.75 2.438 12.75 L 10.313 12.75 C 11.659 12.75 12.75 11.659 12.75 10.313 L 12.75 2.438 C 12.75 1.091 11.659 0 10.313 0 L 2.438 0 Z M 1.125 4.125 L 11.625 4.125 L 11.625 10.313 C 11.625 11.037 11.037 11.625 10.313 11.625 L 2.438 11.625 C 1.713 11.625 1.125 11.037 1.125 10.313 L 1.125 4.125 Z M 2.438 1.125 L 10.313 1.125 C 11.037 1.125 11.625 1.713 11.625 2.438 L 11.625 3 L 1.125 3 L 1.125 2.438 C 1.125 1.713 1.713 1.125 2.438 1.125 Z"
+                      fill="currentColor" />
+                  </svg>
+                  Record contact
+                </button>
               }
-              <button type="button" class="btn btn--outline" (click)="openAddForGuest(item.guestId, item.guestName)">
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                  <path transform="translate(5 5)"
-                    d="M 0 4.25 C -0.414 4.25 -0.75 4.586 -0.75 5 C -0.75 5.414 -0.414 5.75 0 5.75 L 0 5 L 0 4.25 Z M 10 5.75 C 10.414 5.75 10.75 5.414 10.75 5 C 10.75 4.586 10.414 4.25 10 4.25 L 10 5 L 10 5.75 Z M 5.75 0 C 5.75 -0.414 5.414 -0.75 5 -0.75 C 4.586 -0.75 4.25 -0.414 4.25 0 L 5 0 L 5.75 0 Z M 4.25 10 C 4.25 10.414 4.586 10.75 5 10.75 C 5.414 10.75 5.75 10.414 5.75 10 L 5 10 L 4.25 10 Z M 0 5 L 0 5.75 L 5 5.75 L 5 5 L 5 4.25 L 0 4.25 L 0 5 Z M 10 5 L 10 4.25 L 5 4.25 L 5 5 L 5 5.75 L 10 5.75 L 10 5 Z M 5 5 L 5.75 5 L 5.75 0 L 5 0 L 4.25 0 L 4.25 5 L 5 5 Z M 5 5 L 4.25 5 L 4.25 10 L 5 10 L 5.75 10 L 5.75 5 L 5 5 Z"
-                    fill="currentColor" />
-                </svg>
-                Add follow-up entry
-              </button>
               <a class="btn btn--primary" [routerLink]="['/guests', item.guestId]">
                 <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
                   <path transform="translate(2.25 2.25)"
@@ -203,7 +213,7 @@
   <div class="modal-overlay" (click)="closeModal()">
     <div class="modal" (click)="$event.stopPropagation()">
       <div class="modal__header">
-        <h2>Add follow-up entry</h2>
+        <h2>{{ modalMode() === 'contact' ? 'Record contact' : 'Schedule follow-up' }}</h2>
         <button type="button" class="modal__close" (click)="closeModal()" aria-label="Close">
           <svg width="14" height="14" viewBox="0 0 10 10" fill="none">
             <path

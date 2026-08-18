@@ -1,0 +1,101 @@
+<div class="drawer-overlay" (click)="close()">
+  <div
+    class="drawer"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="add-contact-title"
+    (click)="$event.stopPropagation()"
+  >
+    <div class="drawer__header">
+      <div class="drawer__heading">
+        <h2 class="drawer__title" id="add-contact-title">Add contact</h2>
+        <span class="drawer__subtitle">{{ guestName() }}</span>
+      </div>
+      <button type="button" class="drawer__close" aria-label="Close" (click)="close()">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path
+            transform="translate(4.25,4.25)"
+            d="M 0.147 0.304 L 0.22 0.22 C 0.486 -0.047 0.903 -0.071 1.196 0.147 L 1.28 0.22 L 7.75 6.689 L 14.22 0.22 C 14.513 -0.073 14.987 -0.073 15.28 0.22 C 15.573 0.513 15.573 0.987 15.28 1.28 L 8.811 7.75 L 15.28 14.22 C 15.547 14.486 15.571 14.903 15.353 15.196 L 15.28 15.28 C 15.014 15.547 14.597 15.571 14.304 15.353 L 14.22 15.28 L 7.75 8.811 L 1.28 15.28 C 0.987 15.573 0.513 15.573 0.22 15.28 C -0.073 14.987 -0.073 14.513 0.22 14.22 L 6.689 7.75 L 0.22 1.28 C -0.047 1.014 -0.071 0.597 0.147 0.304 Z"
+            fill="currentColor"
+          />
+        </svg>
+      </button>
+    </div>
+
+    <form class="drawer__form" (ngSubmit)="submit()">
+      <div class="drawer__grid">
+        <label class="drawer__field">
+          <span class="drawer__label">Contact method&nbsp;*</span>
+          <select name="type" [(ngModel)]="contactType" required>
+            @for (t of contactTypes; track t) {
+              <option [value]="t">{{ humanize(t) }}</option>
+            }
+          </select>
+        </label>
+        <label class="drawer__field">
+          <span class="drawer__label">Outcome&nbsp;*</span>
+          <select name="outcome" [(ngModel)]="contactOutcome" required>
+            @for (o of contactOutcomes; track o) {
+              <option [value]="o">{{ humanize(o) }}</option>
+            }
+          </select>
+        </label>
+        <label class="drawer__field">
+          <span class="drawer__label">Date&nbsp;*</span>
+          <input type="datetime-local" name="occurredAt" [(ngModel)]="occurredAt" required />
+        </label>
+        <label class="drawer__field">
+          <span class="drawer__label">Logged by</span>
+          <input type="text" name="loggedBy" [value]="loggedBy" disabled />
+          <span class="drawer__hint">Pre-filled from login</span>
+        </label>
+      </div>
+
+      <label class="drawer__field drawer__field--full">
+        <span class="drawer__label">Additional notes <span class="drawer__optional">(optional)</span></span>
+        <textarea
+          name="notes"
+          rows="3"
+          [(ngModel)]="notes"
+          placeholder="Please specify the details of this contact…"
+        ></textarea>
+      </label>
+
+      @if (submitError()) {
+        <p class="form-error">{{ submitError() }}</p>
+      }
+
+      <div class="drawer__actions">
+        <button type="button" class="btn-ghost" (click)="close()">Cancel</button>
+        <button type="submit" class="btn-submit" [disabled]="submitting()">
+          {{ submitting() ? 'Saving…' : 'Save contact' }}
+        </button>
+      </div>
+    </form>
+
+    <div class="drawer__log">
+      <h3 class="drawer__log-title">Contact history</h3>
+      @if (recentContacts().length) {
+        <ul class="drawer__log-list">
+          @for (contact of recentContacts(); track contact.id) {
+            <li class="drawer__log-item">
+              <div class="drawer__log-head">
+                <span class="drawer__log-type">{{ humanize(contact.type) }}</span>
+                <span
+                  class="chip"
+                  [style.background]="outcomeChip(contact.outcome).bg"
+                  [style.color]="outcomeChip(contact.outcome).fg"
+                >
+                  {{ outcomeChip(contact.outcome).label }}
+                </span>
+              </div>
+              <span class="drawer__log-meta">{{ contact.createdByName }} · {{ formatDateTime(contact.occurredAt) }}</span>
+            </li>
+          }
+        </ul>
+      } @else {
+        <p class="empty-state">No contacts logged yet for this guest.</p>
+      }
+    </div>
+  </div>
+</div>

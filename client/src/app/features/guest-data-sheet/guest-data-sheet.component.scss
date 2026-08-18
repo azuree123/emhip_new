@@ -1,5 +1,5 @@
-// Guest Data Sheet — styled to match the Figma GuestDataSheet frame (Components.bundle.js
-// lines 8086-12158, 1440px design). All px values below are taken from that frame.
+// Guest Data Sheet — styled to match the Figma GuestDataSheet3 frame (Components.bundle.js
+// lines 9051-13375, 1440px design). All px values below are taken from that frame.
 
 $font-stack: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 $pager-font-stack: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
@@ -14,7 +14,7 @@ $pager-font-stack: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
 .page {
   display: flex;
   flex-direction: column;
-  gap: 35px; // subtitle bottom (196) → card top (231)
+  gap: 35px; // subtitle bottom (196) → content below (the frame's KPI strip is out of scope here)
   height: 100%;
   padding: 56px 21px 32px 17px;
   box-sizing: border-box;
@@ -175,16 +175,45 @@ $pager-font-stack: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
   }
 }
 
-// Right-aligned filter cluster — design chips at x 802 (Pathway 106), 914 (Status 89),
-// 1009 (Risk 74), 1089 (Assigned CMHW 163), 1258 (Last Activity 137), all 36 tall with
-// 6px gaps. Each chip: 4px radius, inset 1px rgb(229,229,229), 14px/500 label at ~+16,
-// 14px chevron box inset 10 from the right edge.
+// Right-aligned filter cluster — design: filter icon button at x 696 (36×36), then chips
+// at 737 (Pathway 106), 849 (Status 89), 944 (Assigned CMHW 163), 1113 (Last Activity 137),
+// all 36 tall with 5-6px gaps. Each chip: 4px radius, inset 1px rgb(229,229,229),
+// 14px/500 label at ~+15, 14px chevron box inset 10 from the right edge.
 .filter-cluster {
   display: flex;
   align-items: center;
   gap: 6px;
   margin-left: auto;
   flex-wrap: wrap;
+}
+
+// The 36×36 filter-lines icon button that leads the cluster — wired to reset all filters.
+.filter-reset {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 4px;
+  box-shadow: inset 0 0 0 1px rgb(229, 229, 229);
+  background: rgb(255, 255, 255);
+  color: rgb(42, 42, 42);
+  cursor: pointer;
+
+  &:hover {
+    background: rgb(250, 250, 250);
+  }
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
 }
 
 .filter {
@@ -226,10 +255,6 @@ $pager-font-stack: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
     min-width: 89px;
   }
 
-  &--risk .filter__select {
-    min-width: 74px;
-  }
-
   &--cmhw .filter__select {
     min-width: 163px;
   }
@@ -243,20 +268,19 @@ $pager-font-stack: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
 // Table head + rows
 // ---------------------------------------------------------------------------
 // Design columns (x offsets in the 1128px-wide table, first cell at +23):
-//   Guest Name 290 | Status 466 | Pathway 574 | Risk 724 | CMHW 824 | Last Activity 964
+//   Guest Name 290 | Status 486 | Pathway 614 | CMHW 784 | Last Activity 964
 //   | Next Contact 1125 | Actions 1285.
-// All eight columns are now backed by GuestListItemDto, so the grid mirrors the design
-// one-to-one (the former Registered stand-in column moved out of the table; registeredAt
-// still ships in the CSV export).
+// All seven columns are backed by GuestListItemDto, so the grid mirrors the design
+// one-to-one (registeredAt and hasRiskFlags don't appear in this frame's table but
+// still ship in the CSV export).
 
-$col-status: 108px; // 574 − 466
-$col-pathway: 150px; // 724 − 574
-$col-risk: 100px; // 824 − 724
-$col-cmhw: 140px; // 964 − 824
+$col-status: 128px; // 614 − 486
+$col-pathway: 170px; // 784 − 614
+$col-cmhw: 180px; // 964 − 784
 $col-activity: 161px; // 1125 − 964
 $col-next: 160px; // 1285 − 1125
 $col-actions: 110px; // 1395 − 1285
-$table-columns: minmax(0, 1fr) $col-status $col-pathway $col-risk $col-cmhw $col-activity $col-next $col-actions;
+$table-columns: minmax(0, 1fr) $col-status $col-pathway $col-cmhw $col-activity $col-next $col-actions;
 
 .table-head {
   display: grid;
@@ -265,7 +289,7 @@ $table-columns: minmax(0, 1fr) $col-status $col-pathway $col-risk $col-cmhw $col
   height: 41px;
   padding: 0 23px; // header rect at 267, first label at 290
   border-radius: 3px 3px 0 0; // design path: 3px top corners, square bottom
-  background: rgb(255, 240, 241);
+  background: rgb(241, 241, 241);
   flex-shrink: 0;
 
   .col {
@@ -359,8 +383,10 @@ $table-columns: minmax(0, 1fr) $col-status $col-pathway $col-risk $col-cmhw $col
   }
 }
 
-// Status pill — Active matches the Figma chip exactly (light tint, saturated text, fully
-// rounded); the other three GuestStatus values reuse the same visual language.
+// Status pill — Active matches the Figma table chip exactly (light tint, saturated text,
+// fully rounded). The frame's sample rows are all Active; the other three GuestStatus
+// values borrow the palettes of this same frame's KPI pills: yellow ("awaiting initial
+// conversation"), blue ("in active"), red ("urgent cases").
 .badge {
   display: inline-flex;
   align-items: center;
@@ -380,31 +406,18 @@ $table-columns: minmax(0, 1fr) $col-status $col-pathway $col-risk $col-cmhw $col
   }
 
   &[data-status='PendingConversation'] {
-    background: rgb(255, 251, 235);
-    color: rgb(180, 83, 9);
+    background: rgb(255, 249, 228);
+    color: rgb(157, 133, 45);
   }
 
   &[data-status='Inactive'] {
-    background: rgb(241, 245, 249);
-    color: rgb(51, 65, 85);
+    background: rgb(231, 238, 255);
+    color: rgb(52, 91, 177);
   }
 
   &[data-status='Urgent'] {
-    background: rgb(255, 237, 237);
-    color: rgb(225, 38, 40);
-  }
-
-  // Risk column pill — the design renders "LOW" with the same green chip as Active
-  // (bg rgb(234,253,238), text rgb(20,113,41)); the frame's sample rows are all low-risk,
-  // so the high-risk chip reuses the design's red (Urgent) palette.
-  &[data-risk='low'] {
-    background: rgb(234, 253, 238);
-    color: rgb(20, 113, 41);
-  }
-
-  &[data-risk='high'] {
-    background: rgb(255, 237, 237);
-    color: rgb(225, 38, 40);
+    background: rgb(255, 240, 241);
+    color: rgb(208, 37, 55);
   }
 }
 
@@ -535,7 +548,7 @@ $table-columns: minmax(0, 1fr) $col-status $col-pathway $col-risk $col-cmhw $col
 
   .table-head,
   .row {
-    min-width: 1180px; // 929px of fixed columns + padding + a usable Guest Name column
+    min-width: 1180px; // 909px of fixed columns + padding + a usable Guest Name column
   }
 
   .toolbar {

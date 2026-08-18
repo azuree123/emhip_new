@@ -93,6 +93,74 @@ public sealed class ReportReadService(EmhipDbContext db) : IReportReadService
             statusCounts, monthlyRegistrations, activity, ethnicityBreakdown);
     }
 
+    public async Task<DialogOutcomesReportDto> GetDialogOutcomesAsync(Guid hubId, CancellationToken cancellationToken = default)
+    {
+        // Baselines = version 1; follow-up cohort = each guest's highest version above 1.
+        // Guest-scoped cardinality (a handful of versions per guest), so a live aggregate is fine here.
+        var baseline = await db.DialogAssessments.AsNoTracking()
+            .Where(d => d.Version == 1 && db.Guests.Any(g => g.Id == d.GuestId && g.HubId == hubId && !g.IsDeleted))
+            .GroupBy(_ => 1)
+            .Select(g => new
+            {
+                Count = g.Count(),
+                MentalHealth = g.Average(d => (double)d.MentalHealth),
+                PhysicalHealth = g.Average(d => (double)d.PhysicalHealth),
+                JobSituation = g.Average(d => (double)d.JobSituation),
+                Accommodation = g.Average(d => (double)d.Accommodation),
+                LeisureActivities = g.Average(d => (double)d.LeisureActivities),
+                FriendshipsSocialLife = g.Average(d => (double)d.FriendshipsSocialLife),
+                RelationshipWithFamily = g.Average(d => (double)d.RelationshipWithFamily),
+                PersonalSafety = g.Average(d => (double)d.PersonalSafety),
+                PracticalHelp = g.Average(d => (double)d.PracticalHelp),
+                Medication = g.Average(d => (double)d.Medication),
+                MeetingsWithMhStaff = g.Average(d => (double)d.MeetingsWithMhStaff),
+            })
+            .FirstOrDefaultAsync(cancellationToken);
+
+        var latest = await db.DialogAssessments.AsNoTracking()
+            .Where(d => d.Version > 1
+                && d.Version == db.DialogAssessments.Where(x => x.GuestId == d.GuestId).Max(x => x.Version)
+                && db.Guests.Any(g => g.Id == d.GuestId && g.HubId == hubId && !g.IsDeleted))
+            .GroupBy(_ => 1)
+            .Select(g => new
+            {
+                Count = g.Count(),
+                MentalHealth = g.Average(d => (double)d.MentalHealth),
+                PhysicalHealth = g.Average(d => (double)d.PhysicalHealth),
+                JobSituation = g.Average(d => (double)d.JobSituation),
+                Accommodation = g.Average(d => (double)d.Accommodation),
+                LeisureActivities = g.Average(d => (double)d.LeisureActivities),
+                FriendshipsSocialLife = g.Average(d => (double)d.FriendshipsSocialLife),
+                RelationshipWithFamily = g.Average(d => (double)d.RelationshipWithFamily),
+                PersonalSafety = g.Average(d => (double)d.PersonalSafety),
+                PracticalHelp = g.Average(d => (double)d.PracticalHelp),
+                Medication = g.Average(d => (double)d.Medication),
+                MeetingsWithMhStaff = g.Average(d => (double)d.MeetingsWithMhStaff),
+            })
+            .FirstOrDefaultAsync(cancellationToken);
+
+        double? Round(double? value) => value is null ? null : Math.Round(value.Value, 2);
+
+        DialogDimensionDto Dim(string key, string label, double? b, double? l) => new(key, label, Round(b), Round(l));
+
+        return new DialogOutcomesReportDto(
+            baseline?.Count ?? 0,
+            latest?.Count ?? 0,
+            [
+                Dim("mentalHealth", "Mental health", baseline?.MentalHealth, latest?.MentalHealth),
+                Dim("physicalHealth", "Physical health", baseline?.PhysicalHealth, latest?.PhysicalHealth),
+                Dim("jobSituation", "Job situation", baseline?.JobSituation, latest?.JobSituation),
+                Dim("accommodation", "Accommodation", baseline?.Accommodation, latest?.Accommodation),
+                Dim("leisureActivities", "Leisure activities", baseline?.LeisureActivities, latest?.LeisureActivities),
+                Dim("friendshipsSocialLife", "Friendships & social life", baseline?.FriendshipsSocialLife, latest?.FriendshipsSocialLife),
+                Dim("relationshipWithFamily", "Relationship with family", baseline?.RelationshipWithFamily, latest?.RelationshipWithFamily),
+                Dim("personalSafety", "Personal safety", baseline?.PersonalSafety, latest?.PersonalSafety),
+                Dim("practicalHelp", "Practical help", baseline?.PracticalHelp, latest?.PracticalHelp),
+                Dim("medication", "Medication", baseline?.Medication, latest?.Medication),
+                Dim("meetingsWithMhStaff", "Meetings with MH staff", baseline?.MeetingsWithMhStaff, latest?.MeetingsWithMhStaff),
+            ]);
+    }
+
     public async IAsyncEnumerable<ReportExportRowDto> StreamExportAsync(
         Guid hubId, DateOnly from, DateOnly to, [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {

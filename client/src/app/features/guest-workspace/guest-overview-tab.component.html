@@ -29,24 +29,29 @@
             />
           </svg>
         </span>
-        See Follow-up tab
+        See Follow-up Log tab
       </span>
     </div>
     <div class="stat-tile">
-      <span class="stat-tile__label">Pinned notes</span>
-      <span class="stat-tile__value">{{ overview().pinnedNotes.length }}</span>
-      <span class="stat-tile__foot">
-        <span class="stat-tile__pill">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-            <path
-              transform="translate(1.333,1.333)"
-              d="M 1 6.667 C 1 3.537 3.537 1 6.667 1 C 9.796 1 12.333 3.537 12.333 6.667 C 12.333 9.796 9.796 12.333 6.667 12.333 C 3.537 12.333 1 9.796 1 6.667 Z M 6.667 0 C 2.985 0 0 2.985 0 6.667 C 0 10.349 2.985 13.333 6.667 13.333 C 10.349 13.333 13.333 10.349 13.333 6.667 C 13.333 2.985 10.349 0 6.667 0 Z M 6.662 3.099 C 6.629 2.855 6.42 2.667 6.167 2.667 C 5.891 2.667 5.667 2.891 5.667 3.167 L 5.667 7.167 L 5.671 7.234 C 5.704 7.478 5.914 7.667 6.167 7.667 L 8.833 7.667 L 8.901 7.662 C 9.145 7.629 9.333 7.42 9.333 7.167 C 9.333 6.891 9.109 6.667 8.833 6.667 L 6.667 6.667 L 6.667 3.167 L 6.662 3.099 Z"
-              fill="currentColor"
-            />
-          </svg>
+      <span class="stat-tile__label">DIALOG baseline score</span>
+      @if (dialogBaseline(); as baseline) {
+        <span class="stat-tile__value stat-tile__value--score">{{ baseline.total }}<span class="stat-tile__denominator">/77</span></span>
+        <span class="stat-tile__foot">
+          <span class="stat-tile__pill">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <path
+                transform="translate(1.333,1.333)"
+                d="M 1 6.667 C 1 3.537 3.537 1 6.667 1 C 9.796 1 12.333 3.537 12.333 6.667 C 12.333 9.796 9.796 12.333 6.667 12.333 C 3.537 12.333 1 9.796 1 6.667 Z M 6.667 0 C 2.985 0 0 2.985 0 6.667 C 0 10.349 2.985 13.333 6.667 13.333 C 10.349 13.333 13.333 10.349 13.333 6.667 C 13.333 2.985 10.349 0 6.667 0 Z M 6.662 3.099 C 6.629 2.855 6.42 2.667 6.167 2.667 C 5.891 2.667 5.667 2.891 5.667 3.167 L 5.667 7.167 L 5.671 7.234 C 5.704 7.478 5.914 7.667 6.167 7.667 L 8.833 7.667 L 8.901 7.662 C 9.145 7.629 9.333 7.42 9.333 7.167 C 9.333 6.891 9.109 6.667 8.833 6.667 L 6.667 6.667 L 6.667 3.167 L 6.662 3.099 Z"
+                fill="currentColor"
+              />
+            </svg>
+          </span>
+          {{ formatDate(baseline.assessedAt) }}
         </span>
-        See Notes tab
-      </span>
+      } @else {
+        <span class="stat-tile__value">—</span>
+        <span class="stat-tile__foot">Not yet assessed — see DIALOG Scores tab</span>
+      }
       <svg class="stat-tile__mark" width="76" height="76" viewBox="0 0 75.18 75.1" fill="none" aria-hidden="true">
         <g transform="matrix(1,0,0,-1,0,64.099)">
           <path
@@ -81,96 +86,63 @@
               <span class="field__value">{{ formatDate(overview().dateOfBirth) }}</span>
             </div>
             <div class="field">
-              <span class="field__label">Contact phone</span>
-              <span class="field__value">{{ overview().contactPhone || '—' }}</span>
+              <span class="field__label">Ethnicity</span>
+              <span class="field__value">{{ demographics()?.ethnicity || '—' }}</span>
             </div>
           </div>
           <div class="field-row">
+            <div class="field">
+              <span class="field__label">Contact phone</span>
+              <span class="field__value">{{ overview().contactPhone || '—' }}</span>
+            </div>
+            <div class="field">
+              <span class="field__label">Housing</span>
+              <span class="field__value">{{ demographics()?.housingStatus || '—' }}</span>
+            </div>
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <span class="field__label">Economic activity</span>
+              <span class="field__value">{{ demographics()?.employmentStatus || '—' }}</span>
+            </div>
             <div class="field">
               <span class="field__label">Contact email</span>
               <span class="field__value">{{ overview().contactEmail || '—' }}</span>
             </div>
-            <div class="field">
-              <span class="field__label">Assigned CMHW</span>
-              <span class="field__value">{{ overview().assignedCmhwName || 'Unassigned' }}</span>
-            </div>
           </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2 class="card__title">Pathway history</h2>
+        <div class="field-rows">
           <div class="field-row">
+            <div class="field">
+              <span class="field__label">Current pathway</span>
+              <span class="field__value">{{ pathwayLabel() || 'Not yet allocated' }}</span>
+            </div>
             <div class="field">
               <span class="field__label">Registered</span>
               <span class="field__value">{{ formatDate(overview().registeredAt) }}</span>
             </div>
           </div>
+          <div class="field-row">
+            <div class="field">
+              <span class="field__label">Assigned CMHW</span>
+              <span class="field__value">{{ overview().assignedCmhwName || 'Unassigned' }}</span>
+            </div>
+            <div class="field">
+              <span class="field__label">AFA support</span>
+              <span class="field__value">{{ overview().afaSupportNeeded ? 'Needed' : 'Not needed' }}</span>
+            </div>
+          </div>
         </div>
-      </section>
-
-      <section class="card">
-        <h2 class="card__title">Pinned notes</h2>
-        @if (overview().pinnedNotes.length) {
-          <ul class="notes-list">
-            @for (note of overview().pinnedNotes; track note.id) {
-              <li class="note-item">
-                <span class="note-item__dot" [style.background]="noteColorDot(note.color)"></span>
-                <div class="note-item__body">
-                  <p class="note-item__text">{{ note.body }}</p>
-                  <span class="note-item__meta">{{ note.authorName }} · {{ formatDate(note.createdAt) }}</span>
-                </div>
-              </li>
-            }
-          </ul>
-        } @else {
-          <p class="empty-state">No pinned notes yet — pin an important note from the Notes tab.</p>
-        }
       </section>
     </div>
 
     <div class="column column--wide">
       <section class="card">
-        <div class="card__header-row">
-          <h2 class="card__title">Recent contacts</h2>
-          <button type="button" class="btn-link" (click)="toggleAddContact()">
-            {{ showAddContact() ? 'Cancel' : '+ Add contact' }}
-          </button>
-        </div>
-
-        @if (showAddContact()) {
-          <form class="add-contact-form" (ngSubmit)="submitContact()">
-            <div class="add-contact-form__row">
-              <label class="add-contact-form__field">
-                <span>Type</span>
-                <select name="type" [(ngModel)]="contactType">
-                  @for (t of contactTypes; track t) {
-                    <option [value]="t">{{ humanize(t) }}</option>
-                  }
-                </select>
-              </label>
-              <label class="add-contact-form__field">
-                <span>Outcome</span>
-                <select name="outcome" [(ngModel)]="contactOutcome">
-                  @for (o of contactOutcomes; track o) {
-                    <option [value]="o">{{ humanize(o) }}</option>
-                  }
-                </select>
-              </label>
-              <label class="add-contact-form__field">
-                <span>When</span>
-                <input type="datetime-local" name="occurredAt" [(ngModel)]="contactOccurredAt" />
-              </label>
-            </div>
-            <label class="add-contact-form__field add-contact-form__field--full">
-              <span>Notes</span>
-              <textarea name="notes" rows="2" [(ngModel)]="contactNotes" placeholder="Optional notes about this contact…"></textarea>
-            </label>
-            @if (submitError()) {
-              <p class="form-error">{{ submitError() }}</p>
-            }
-            <div class="add-contact-form__actions">
-              <button type="submit" class="btn-primary" [disabled]="submitting()">
-                {{ submitting() ? 'Saving…' : 'Save contact' }}
-              </button>
-            </div>
-          </form>
-        }
+        <h2 class="card__title">Recent activity history</h2>
 
         @if (overview().recentContacts.length) {
           <ul class="timeline">

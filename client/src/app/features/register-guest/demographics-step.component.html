@@ -1,7 +1,58 @@
 <div [formGroup]="form" class="steps-form">
-  <div class="section" formGroupName="personal">
-    <h3 class="section__title">Personal details</h3>
-    <p class="section__desc">Please enter the personal details of the guest.</p>
+  <!-- Pre-registration form (Desktop83, card 1) -->
+  <section class="card">
+    <div class="card__header">
+      <h3 class="card__title">Pre-registration form</h3>
+    </div>
+
+    <div class="info-banner">
+      <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+        <path
+          d="M 7.5 0 C 11.642 0 15 3.359 15 7.5 C 15 11.641 11.642 15 7.5 15 C 3.358 15 0 11.641 0 7.5 C 0 3.359 3.358 0 7.5 0 Z M 7.501 9.753 C 7.088 9.753 6.752 10.088 6.752 10.502 C 6.752 10.915 7.088 11.251 7.501 11.251 C 7.915 11.251 8.25 10.915 8.25 10.502 C 8.25 10.088 7.915 9.753 7.501 9.753 Z M 7.5 3.75 C 7.115 3.75 6.798 4.04 6.755 4.413 L 6.75 4.5 L 6.751 8.251 L 6.756 8.338 C 6.8 8.711 7.117 9.001 7.502 9.001 C 7.886 9.001 8.203 8.711 8.246 8.338 L 8.251 8.25 L 8.25 4.5 L 8.245 4.412 C 8.201 4.039 7.884 3.75 7.5 3.75 Z"
+          fill="currentColor"
+        />
+      </svg>
+      <p class="info-banner__text">
+        Please alert the guest that all migration information will not be shared with any other 3rd parties e.g Home Office
+        without the guests consent
+      </p>
+    </div>
+
+    <div class="field-row">
+      <label class="field">
+        <span class="field__label">Completed by&nbsp;*</span>
+        <input class="field__input" type="text" [value]="completedBy" readonly />
+        <span class="field__hint">
+          <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+            <path
+              d="M 5.5 0.688 C 8.158 0.688 10.313 2.842 10.313 5.5 C 10.313 8.158 8.158 10.313 5.5 10.313 C 2.842 10.313 0.688 8.158 0.688 5.5 C 0.688 2.842 2.842 0.688 5.5 0.688 Z M 5.501 6.94 C 5.204 6.94 4.964 7.181 4.964 7.478 C 4.964 7.774 5.204 8.015 5.501 8.015 C 5.798 8.015 6.038 7.774 6.038 7.478 C 6.038 7.181 5.798 6.94 5.501 6.94 Z M 5.5 2.75 C 5.224 2.75 4.996 2.958 4.966 3.226 L 4.963 3.288 L 4.963 5.978 L 4.967 6.041 C 4.998 6.308 5.226 6.516 5.501 6.516 C 5.777 6.516 6.005 6.308 6.036 6.041 L 6.039 5.978 L 6.038 3.288 L 6.035 3.225 C 6.003 2.957 5.776 2.75 5.5 2.75 Z"
+              fill="currentColor"
+            />
+          </svg>
+          pre filled from your login
+        </span>
+      </label>
+      <label class="field">
+        <span class="field__label">Date&nbsp;*</span>
+        <input class="field__input" type="text" [value]="todayLabel" readonly />
+        <span class="field__hint">
+          <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+            <path
+              d="M 5.5 0.688 C 8.158 0.688 10.313 2.842 10.313 5.5 C 10.313 8.158 8.158 10.313 5.5 10.313 C 2.842 10.313 0.688 8.158 0.688 5.5 C 0.688 2.842 2.842 0.688 5.5 0.688 Z M 5.501 6.94 C 5.204 6.94 4.964 7.181 4.964 7.478 C 4.964 7.774 5.204 8.015 5.501 8.015 C 5.798 8.015 6.038 7.774 6.038 7.478 C 6.038 7.181 5.798 6.94 5.501 6.94 Z M 5.5 2.75 C 5.224 2.75 4.996 2.958 4.966 3.226 L 4.963 3.288 L 4.963 5.978 L 4.967 6.041 C 4.998 6.308 5.226 6.516 5.501 6.516 C 5.777 6.516 6.005 6.308 6.036 6.041 L 6.039 5.978 L 6.038 3.288 L 6.035 3.225 C 6.003 2.957 5.776 2.75 5.5 2.75 Z"
+              fill="currentColor"
+            />
+          </svg>
+          recorded automatically at registration
+        </span>
+      </label>
+    </div>
+  </section>
+
+  <!-- Personal details (Desktop83, card 2) -->
+  <section class="card" formGroupName="personal">
+    <div class="card__header">
+      <h3 class="card__title">Personal details</h3>
+    </div>
 
     <div class="field-row">
       <label class="field">
@@ -43,12 +94,19 @@
     <div class="field-row">
       <label class="field">
         <span class="field__label">Ethnicity&nbsp;*</span>
-        <input class="field__input" type="text" formControlName="ethnicity" placeholder="Black African" />
+        <select class="field__select" formControlName="ethnicity">
+          <option value="">Select ethnicity</option>
+          @for (option of ethnicityOptions; track option) {
+            <option [value]="option">{{ option }}</option>
+          }
+        </select>
         @if (form.get('personal.ethnicity')?.invalid && form.get('personal.ethnicity')?.touched) {
           <span class="field__error">Ethnicity is required.</span>
         }
       </label>
       <label class="field">
+        <!-- The mock labels this "Marital status *" but shows the value "Male"; no
+             maritalStatus exists in the API, so the slot captures RegisterGuestRequest.gender. -->
         <span class="field__label">Gender</span>
         <select class="field__select" formControlName="gender">
           <option value="">Select gender</option>
@@ -58,11 +116,13 @@
         </select>
       </label>
     </div>
-  </div>
+  </section>
 
-  <div class="section" formGroupName="contact">
-    <h3 class="section__title">Contact & housing</h3>
-    <p class="section__desc">Please enter the contact &amp; housing details of the guest.</p>
+  <!-- Contact & housing (Desktop83, card 3) -->
+  <section class="card" formGroupName="contact">
+    <div class="card__header">
+      <h3 class="card__title">Contact &amp; housing</h3>
+    </div>
 
     <div class="field-row field-row--single">
       <label class="field">
@@ -77,19 +137,15 @@
         <input class="field__input" type="text" formControlName="postCode" placeholder="E1 6AN" />
       </label>
       <label class="field">
-        <span class="field__label">Nationality</span>
-        <input class="field__input" type="text" formControlName="nationality" placeholder="British" />
-      </label>
-    </div>
-
-    <div class="field-row">
-      <label class="field">
         <span class="field__label">Contact email</span>
         <input class="field__input" type="email" formControlName="contactEmail" placeholder="name@gmail.com" />
         @if (form.get('contact.contactEmail')?.hasError('email')) {
           <span class="field__error">Enter a valid email address.</span>
         }
       </label>
+    </div>
+
+    <div class="field-row">
       <label class="field">
         <span class="field__label">Housing status</span>
         <select class="field__select" formControlName="housingStatus">
@@ -99,10 +155,16 @@
           }
         </select>
       </label>
+      <label class="field">
+        <!-- Mock slot "Living group" — no backend field; captures nationality instead. -->
+        <span class="field__label">Nationality</span>
+        <input class="field__input" type="text" formControlName="nationality" placeholder="British" />
+      </label>
     </div>
 
     <div class="field-row">
       <label class="field">
+        <!-- Mock label "Economic activity" — maps to employmentStatus. -->
         <span class="field__label">Employment status</span>
         <select class="field__select" formControlName="employmentStatus">
           <option value="">Select employment status</option>
@@ -112,23 +174,25 @@
         </select>
       </label>
     </div>
-  </div>
+  </section>
 
-  <div class="section" formGroupName="additional">
-    <h3 class="section__title">Additional details</h3>
-    <p class="section__desc">Optional details used for care coordination (interpreter, emergency contact, GP).</p>
+  <!-- Additional details (functional addition — carries the remaining demographics fields) -->
+  <section class="card" formGroupName="additional">
+    <div class="card__header">
+      <h3 class="card__title">Additional details</h3>
+    </div>
 
     <div class="field-row">
       <label class="field">
         <span class="field__label">Preferred language</span>
         <input class="field__input" type="text" formControlName="preferredLanguage" placeholder="English" />
       </label>
-      <label class="checkbox-field" style="align-self: end; padding-bottom: 8px;">
+      <label class="checkbox-field" style="align-self: end; padding-bottom: 6px">
         <input class="checkbox-field__input" type="checkbox" formControlName="interpreterNeeded" />
         <span class="checkbox-field__box">
-          <svg width="11" height="8" viewBox="0 0 10.5 7.5" fill="none">
+          <svg width="10" height="8" viewBox="0 0 9.231 7" fill="none">
             <path
-              d="M 0.53 3.47 C 0.237 3.177 -0.237 3.177 -0.53 3.47 C -0.823 3.763 -0.823 4.237 -0.53 4.53 L 0 4 L 0.53 3.47 Z M 3.5 7.5 L 2.97 8.03 C 3.113 8.174 3.31 8.253 3.513 8.25 C 3.716 8.246 3.91 8.16 4.048 8.012 L 3.5 7.5 Z M 11.048 0.512 C 11.331 0.209 11.315 -0.266 11.012 -0.548 C 10.709 -0.831 10.234 -0.815 9.952 -0.512 L 10.5 0 L 11.048 0.512 Z M 0 4 L -0.53 4.53 L 2.97 8.03 L 3.5 7.5 L 4.03 6.97 L 0.53 3.47 L 0 4 Z M 3.5 7.5 L 4.048 8.012 L 11.048 0.512 L 10.5 0 L 9.952 -0.512 L 2.952 6.988 L 3.5 7.5 Z"
+              d="M 0.793 2.39 C 0.456 1.953 -0.172 1.871 -0.61 2.207 C -1.047 2.544 -1.129 3.172 -0.793 3.61 L 0 3 L 0.793 2.39 Z M 9.982 0.66 C 10.346 0.245 10.306 -0.386 9.891 -0.751 C 9.476 -1.116 8.844 -1.075 8.48 -0.66 L 9.231 0 L 9.982 0.66 Z M 3.879 6.087 L 4.631 6.747 L 3.879 6.087 Z M 0 3 L -0.793 3.61 L 1.543 6.646 L 2.336 6.037 L 3.128 5.427 L 0.793 2.39 L 0 3 Z M 3.879 6.087 L 4.631 6.747 L 9.982 0.66 L 9.231 0 L 8.48 -0.66 L 3.128 5.427 L 3.879 6.087 Z"
               fill="currentColor"
             />
           </svg>
@@ -169,13 +233,15 @@
         <input class="field__input" type="text" formControlName="gpPractice" placeholder="Riverside Practice" />
       </label>
     </div>
-  </div>
+  </section>
 
-  <div class="section" formGroupName="referral">
-    <h3 class="section__title">Referral information</h3>
-    <p class="section__desc">Please enter the referral information of the guest.</p>
+  <!-- Referral information (Desktop83, card 4) + required consent -->
+  <section class="card">
+    <div class="card__header">
+      <h3 class="card__title">Referral information</h3>
+    </div>
 
-    <div class="field-row">
+    <div class="field-row" formGroupName="referral">
       <label class="field">
         <span class="field__label">Referral type&nbsp;*</span>
         <select class="field__select" formControlName="referralType">
@@ -185,23 +251,25 @@
         </select>
       </label>
     </div>
-  </div>
 
-  <div class="section" formGroupName="consent">
-    <label class="checkbox-field">
-      <input class="checkbox-field__input" type="checkbox" formControlName="consentGiven" />
-      <span class="checkbox-field__box">
-        <svg width="11" height="8" viewBox="0 0 10.5 7.5" fill="none">
-          <path
-            d="M 0.53 3.47 C 0.237 3.177 -0.237 3.177 -0.53 3.47 C -0.823 3.763 -0.823 4.237 -0.53 4.53 L 0 4 L 0.53 3.47 Z M 3.5 7.5 L 2.97 8.03 C 3.113 8.174 3.31 8.253 3.513 8.25 C 3.716 8.246 3.91 8.16 4.048 8.012 L 3.5 7.5 Z M 11.048 0.512 C 11.331 0.209 11.315 -0.266 11.012 -0.548 C 10.709 -0.831 10.234 -0.815 9.952 -0.512 L 10.5 0 L 11.048 0.512 Z M 0 4 L -0.53 4.53 L 2.97 8.03 L 3.5 7.5 L 4.03 6.97 L 0.53 3.47 L 0 4 Z M 3.5 7.5 L 4.048 8.012 L 11.048 0.512 L 10.5 0 L 9.952 -0.512 L 2.952 6.988 L 3.5 7.5 Z"
-            fill="currentColor"
-          />
-        </svg>
-      </span>
-      <span class="checkbox-field__label">The guest has given consent for their data to be recorded and processed by the service.</span>
-    </label>
-    @if (form.get('consent.consentGiven')?.invalid && form.get('consent.consentGiven')?.touched) {
-      <span class="field__error">Consent is required to register a guest.</span>
-    }
-  </div>
+    <div class="consent-block" formGroupName="consent">
+      <label class="checkbox-field">
+        <input class="checkbox-field__input" type="checkbox" formControlName="consentGiven" />
+        <span class="checkbox-field__box">
+          <svg width="10" height="8" viewBox="0 0 9.231 7" fill="none">
+            <path
+              d="M 0.793 2.39 C 0.456 1.953 -0.172 1.871 -0.61 2.207 C -1.047 2.544 -1.129 3.172 -0.793 3.61 L 0 3 L 0.793 2.39 Z M 9.982 0.66 C 10.346 0.245 10.306 -0.386 9.891 -0.751 C 9.476 -1.116 8.844 -1.075 8.48 -0.66 L 9.231 0 L 9.982 0.66 Z M 3.879 6.087 L 4.631 6.747 L 3.879 6.087 Z M 0 3 L -0.793 3.61 L 1.543 6.646 L 2.336 6.037 L 3.128 5.427 L 0.793 2.39 L 0 3 Z M 3.879 6.087 L 4.631 6.747 L 9.982 0.66 L 9.231 0 L 8.48 -0.66 L 3.128 5.427 L 3.879 6.087 Z"
+              fill="currentColor"
+            />
+          </svg>
+        </span>
+        <span class="checkbox-field__label">
+          The guest has given consent for their data to be recorded and processed by the service.
+        </span>
+      </label>
+      @if (form.get('consent.consentGiven')?.invalid && form.get('consent.consentGiven')?.touched) {
+        <span class="field__error">Consent is required to register a guest.</span>
+      }
+    </div>
+  </section>
 </div>

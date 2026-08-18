@@ -20,6 +20,9 @@ public class EmhipDbContext(DbContextOptions<EmhipDbContext> options)
     public DbSet<FollowUp> FollowUps => Set<FollowUp>();
     public DbSet<CaseworkSession> CaseworkSessions => Set<CaseworkSession>();
     public DbSet<PathwayReferral> PathwayReferrals => Set<PathwayReferral>();
+    public DbSet<DialogAssessment> DialogAssessments => Set<DialogAssessment>();
+    public DbSet<GuestAction> GuestActions => Set<GuestAction>();
+    public DbSet<GuestClinicalProfile> GuestClinicalProfiles => Set<GuestClinicalProfile>();
     public DbSet<AuditEvent> AuditEvents => Set<AuditEvent>();
     public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
 

@@ -1,0 +1,264 @@
+<div class="tab-panel">
+  @if (loading()) {
+    <div class="state-card">Loading clinical details…</div>
+  } @else if (error()) {
+    <div class="state-card state-card--error">{{ error() }}</div>
+  } @else if (profile(); as p) {
+    @if (editing()) {
+      <section class="card">
+        <div class="card__header-row">
+          <h2 class="card__title">Edit clinical details</h2>
+          <button type="button" class="btn-link" (click)="toggleEdit()">Cancel</button>
+        </div>
+        <form class="edit-form" (ngSubmit)="saveProfile()">
+          <label class="edit-form__field edit-form__field--full">
+            <span>Presenting problem</span>
+            <textarea name="presentingProblem" rows="3" [(ngModel)]="profileForm.presentingProblem" placeholder="Describe the presenting problem…"></textarea>
+          </label>
+          <div class="edit-form__grid">
+            <label class="edit-form__field">
+              <span>LT health condition</span>
+              <input type="text" name="longTermHealthCondition" [(ngModel)]="profileForm.longTermHealthCondition" />
+            </label>
+            <label class="edit-form__field">
+              <span>Physical illness</span>
+              <input type="text" name="physicalIllness" [(ngModel)]="profileForm.physicalIllness" />
+            </label>
+            <label class="edit-form__field">
+              <span>Current medications</span>
+              <input type="text" name="currentMedications" [(ngModel)]="profileForm.currentMedications" />
+            </label>
+            <label class="edit-form__field">
+              <span>Past MH difficulties</span>
+              <input type="text" name="pastMhDifficulties" [(ngModel)]="profileForm.pastMhDifficulties" />
+            </label>
+            <label class="edit-form__field">
+              <span>Family MH history</span>
+              <input type="text" name="familyMhHistory" [(ngModel)]="profileForm.familyMhHistory" />
+            </label>
+            <label class="edit-form__field">
+              <span>Diagnosis groups</span>
+              <input type="text" name="diagnosisGroups" [(ngModel)]="profileForm.diagnosisGroups" />
+            </label>
+            <label class="edit-form__field">
+              <span>MH team / clinician</span>
+              <input type="text" name="mhTeamClinician" [(ngModel)]="profileForm.mhTeamClinician" />
+            </label>
+            <label class="edit-form__field">
+              <span>Social coordinator</span>
+              <input type="text" name="socialServicesCoordinator" [(ngModel)]="profileForm.socialServicesCoordinator" />
+            </label>
+          </div>
+          <div class="edit-form__grid">
+            <label class="edit-form__field edit-form__field--checkbox">
+              <input type="checkbox" name="previousMhDiagnosis" [(ngModel)]="profileForm.previousMhDiagnosis" />
+              <span>Previous MH diagnosis</span>
+            </label>
+            <label class="edit-form__field edit-form__field--checkbox">
+              <input type="checkbox" name="cpnInvolved" [(ngModel)]="profileForm.cpnInvolved" />
+              <span>CPN involved</span>
+            </label>
+            <label class="edit-form__field edit-form__field--checkbox">
+              <input type="checkbox" name="trustInvolvement" [(ngModel)]="profileForm.trustInvolvement" />
+              <span>Trust involvement</span>
+            </label>
+            <label class="edit-form__field edit-form__field--checkbox">
+              <input type="checkbox" name="smiIndicator" [(ngModel)]="profileForm.smiIndicator" />
+              <span>SMI indicator</span>
+            </label>
+          </div>
+          @if (profileError()) {
+            <p class="form-error">{{ profileError() }}</p>
+          }
+          <div class="edit-form__actions">
+            <button type="submit" class="btn-primary" [disabled]="savingProfile()">{{ savingProfile() ? 'Saving…' : 'Save details' }}</button>
+          </div>
+        </form>
+      </section>
+    } @else {
+      <div class="columns">
+        <div class="column">
+          <section class="card">
+            <div class="card__header-row">
+              <h2 class="card__title">Presenting problem</h2>
+              <button type="button" class="btn-link" (click)="toggleEdit()">Edit details</button>
+            </div>
+            <div class="detail-field">
+              <span class="detail-field__label">Description</span>
+              <p class="detail-field__value">{{ p.presentingProblem || 'Not recorded' }}</p>
+            </div>
+            <div class="card-divider"></div>
+            <div class="detail-row">
+              <div class="detail-field">
+                <span class="detail-field__label">LT health condition</span>
+                <p class="detail-field__value">{{ p.longTermHealthCondition || 'Not recorded' }}</p>
+              </div>
+              <div class="detail-field">
+                <span class="detail-field__label">Physical illness</span>
+                <p class="detail-field__value">{{ p.physicalIllness || 'None reported' }}</p>
+              </div>
+            </div>
+          </section>
+
+          <section class="card">
+            <h2 class="card__title card__title--spaced">Mental health history</h2>
+            <div class="detail-row">
+              <div class="detail-field">
+                <span class="detail-field__label">Past MH difficulties</span>
+                <p class="detail-field__value">{{ p.pastMhDifficulties || 'Not recorded' }}</p>
+              </div>
+              <div class="detail-field">
+                <span class="detail-field__label">Family MH history</span>
+                <p class="detail-field__value">{{ p.familyMhHistory || 'Not recorded' }}</p>
+              </div>
+            </div>
+            <div class="card-divider"></div>
+            <div class="detail-row">
+              <div class="detail-field">
+                <span class="detail-field__label">Previous MH diagnosis</span>
+                <p class="detail-field__value">{{ p.previousMhDiagnosis ? 'Yes' : 'No' }}</p>
+              </div>
+              <div class="detail-field">
+                <span class="detail-field__label">Diagnosis groups</span>
+                <p class="detail-field__value">{{ p.diagnosisGroups || 'Not recorded' }}</p>
+              </div>
+            </div>
+          </section>
+
+          <section class="card">
+            <h2 class="card__title card__title--spaced">Medication</h2>
+            <div class="detail-field">
+              <span class="detail-field__label">Current medications</span>
+              <p class="detail-field__value">{{ p.currentMedications || 'None reported' }}</p>
+            </div>
+          </section>
+        </div>
+
+        <div class="column">
+          <section class="card">
+            <h2 class="card__title card__title--spaced">Current service involvement</h2>
+            <div class="detail-row">
+              <div class="detail-field">
+                <span class="detail-field__label">MH services</span>
+                <p class="detail-field__value">{{ p.mhTeamClinician ? 'Involved' : 'None currently' }}</p>
+              </div>
+              <div class="detail-field">
+                <span class="detail-field__label">MH team / clinician</span>
+                <p class="detail-field__value">{{ p.mhTeamClinician || 'N/A' }}</p>
+              </div>
+            </div>
+            <div class="card-divider"></div>
+            <div class="detail-row">
+              <div class="detail-field">
+                <span class="detail-field__label">Social services</span>
+                <p class="detail-field__value">{{ p.socialServicesCoordinator ? 'Involved' : 'None currently' }}</p>
+              </div>
+              <div class="detail-field">
+                <span class="detail-field__label">Social coordinator</span>
+                <p class="detail-field__value">{{ p.socialServicesCoordinator || 'N/A' }}</p>
+              </div>
+            </div>
+            <div class="card-divider"></div>
+            <div class="detail-row">
+              <div class="detail-field">
+                <span class="detail-field__label">CPN involved</span>
+                <p class="detail-field__value">{{ p.cpnInvolved ? 'Yes' : 'No' }}</p>
+              </div>
+              <div class="detail-field">
+                <span class="detail-field__label">Trust involvement</span>
+                <p class="detail-field__value">{{ p.trustInvolvement ? 'Yes' : 'No' }}</p>
+              </div>
+            </div>
+          </section>
+
+          <section class="card">
+            <div class="card__header-row">
+              <h2 class="card__title">Risk &amp; complexity</h2>
+              <button type="button" class="btn-link" (click)="toggleRiskForm()">
+                {{ showRiskForm() ? 'Cancel' : '+ Record assessment' }}
+              </button>
+            </div>
+
+            @if (showRiskForm()) {
+              <form class="edit-form risk-form" (ngSubmit)="saveRisk()">
+                <div class="risk-flags">
+                  <label class="risk-flag">
+                    <input type="checkbox" name="suicidalIdeation" [(ngModel)]="riskForm.suicidalIdeation" />
+                    <span>Suicidal ideation</span>
+                  </label>
+                  <label class="risk-flag">
+                    <input type="checkbox" name="selfHarm" [(ngModel)]="riskForm.selfHarm" />
+                    <span>Self-harm</span>
+                  </label>
+                  <label class="risk-flag">
+                    <input type="checkbox" name="riskToOthers" [(ngModel)]="riskForm.riskToOthers" />
+                    <span>Risk to others</span>
+                  </label>
+                  <label class="risk-flag">
+                    <input type="checkbox" name="severeDeterioration" [(ngModel)]="riskForm.severeDeterioration" />
+                    <span>Severe deterioration</span>
+                  </label>
+                  <label class="risk-flag">
+                    <input type="checkbox" name="safeguardingConcern" [(ngModel)]="riskForm.safeguardingConcern" />
+                    <span>Safeguarding concern</span>
+                  </label>
+                </div>
+                <label class="edit-form__field edit-form__field--full">
+                  <span>Notes</span>
+                  <textarea name="notes" rows="2" [(ngModel)]="riskForm.notes" placeholder="Assessment notes…"></textarea>
+                </label>
+                @if (riskError()) {
+                  <p class="form-error">{{ riskError() }}</p>
+                }
+                <div class="edit-form__actions">
+                  <button type="submit" class="btn-primary" [disabled]="savingRisk()">{{ savingRisk() ? 'Saving…' : 'Save assessment' }}</button>
+                </div>
+              </form>
+            }
+
+            <div class="detail-row">
+              <div class="detail-field">
+                <span class="detail-field__label">Immediate risk flag</span>
+                @if (!latestAssessment()) {
+                  <p class="detail-field__value detail-field__value--muted">Not assessed</p>
+                } @else if (latestHasFlags()) {
+                  <p class="detail-field__value detail-field__value--risk">Risk identified</p>
+                } @else {
+                  <p class="detail-field__value detail-field__value--ok">No risk identified</p>
+                }
+              </div>
+              <div class="detail-field">
+                <span class="detail-field__label">SMI indicator</span>
+                <p class="detail-field__value">{{ p.smiIndicator ? 'Yes' : 'No' }}</p>
+              </div>
+            </div>
+            <div class="card-divider"></div>
+            <div class="detail-row">
+              <div class="detail-field">
+                <span class="detail-field__label">Urgent episodes</span>
+                <p class="detail-field__value">{{ urgentEpisodeCount() }}&nbsp;lifetime</p>
+              </div>
+            </div>
+
+            @if (latestAssessment(); as latest) {
+              <div class="risk-banner" [class.risk-banner--risk]="latestHasFlags()">
+                <span class="risk-banner__bar"></span>
+                <svg class="risk-banner__icon" width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+                  <path
+                    d="M 9 18 C 13.971 18 18 13.971 18 9 C 18 4.029 13.971 0 9 0 C 4.029 0 0 4.029 0 9 C 0 13.971 4.029 18 9 18 Z M 5.625 7.875 L 12.375 7.875 C 12.996 7.875 13.5 8.379 13.5 9 C 13.5 9.621 12.996 10.125 12.375 10.125 L 5.625 10.125 C 5.004 10.125 4.5 9.621 4.5 9 C 4.5 8.379 5.004 7.875 5.625 7.875 Z"
+                    fill="currentColor"
+                  />
+                </svg>
+                <span class="risk-banner__text">
+                  Last risk assessment: v{{ latest.version }}, {{ formatDate(latest.assessedAt) }}{{ latestHasFlags() ? ' — active risk flags' : '' }}
+                </span>
+              </div>
+            } @else {
+              <p class="empty-state">No risk assessments recorded yet.</p>
+            }
+          </section>
+        </div>
+      </div>
+    }
+  }
+</div>

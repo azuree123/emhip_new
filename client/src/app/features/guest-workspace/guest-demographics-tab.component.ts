@@ -1,12 +1,27 @@
-import { Component, effect, inject, input, signal } from '@angular/core';
+import { Component, computed, effect, inject, input, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { GuestDemographicsDto, UpdateDemographicsRequest } from '../../core/api-models';
+import { GuestDemographicsDto, GuestOverviewDto, UpdateDemographicsRequest } from '../../core/api-models';
 import { GuestsApiService } from '../../core/guests-api.service';
+import { formatDate } from './guest-workspace.util';
+
+/** One row in the "Profile completion" side card — a demographics section and whether every
+ *  one of its (text) fields has been recorded. */
+interface CompletionSection {
+  label: string;
+  complete: boolean;
+}
 
 /**
- * Demographics tab — no exact pixel source exists for this tab in the Figma export (only
- * Overview was extracted), so this is a clean, functional panel built from the same card/type
- * tokens as the Overview tab, wired to GuestDemographicsDto via GuestsApiService.
+ * Demographics tab — layout from GuestDemographicsTab (project/screens/Components.bundle.js,
+ * lines 15849-18990): a wide column of section cards ("Personal details — captured at
+ * registration", then the phase-2 sections) beside a "Profile completion" summary card with
+ * Completed/Pending chips per section.
+ *
+ * Honest-data notes: the bundle's "Marital status", "Address", "Postcode", "Sex", "Living
+ * situation" and "Referral type" fields have no backing on GuestDemographicsDto /
+ * GuestOverviewDto and are omitted. The completion percentage is computed from the 11 real
+ * text fields of GuestDemographicsDto (interpreterNeeded is a boolean and always "recorded",
+ * so it is excluded from the count).
  */
 @Component({
   selector: 'app-guest-demographics-tab',
@@ -19,6 +34,9 @@ export class GuestDemographicsTabComponent {
   private readonly guestsApi = inject(GuestsApiService);
 
   readonly guestId = input.required<string>();
+  /** Registration-time identity fields (name, DOB, phone, email) shown in "Personal details".
+   *  Optional so the tab still renders standalone without the workspace shell. */
+  readonly overview = input<GuestOverviewDto | null>(null);
 
   readonly demographics = signal<GuestDemographicsDto | null>(null);
   readonly loading = signal(true);
@@ -29,6 +47,47 @@ export class GuestDemographicsTabComponent {
   readonly saveError = signal<string | null>(null);
 
   form: UpdateDemographicsRequest = this.emptyForm();
+
+  readonly formatDate = formatDate;
+
+  /** Sections mirrored from the design's completion list, backed by real fields only. */
+  readonly sections = computed<CompletionSection[]>(() => {
+    const d = this.demographics();
+    const filled = (...values: (string | null)[]) => values.every((v) => !!v && v.trim() !== '');
+    return [
+      { label: 'Identity & language', complete: !!d && filled(d.ethnicity, d.nationality, d.preferredLanguage) },
+      { label: 'GP & NHS details', complete: !!d && filled(d.gpName, d.gpPractice, d.nhsNumber) },
+      {
+        label: 'Emergency contact',
+        complete:
+          !!d && filled(d.emergencyContactName, d.emergencyContactPhone, d.emergencyContactRelationship),
+      },
+      { label: 'Housing & employment', complete: !!d && filled(d.housingStatus, d.employmentStatus) },
+    ];
+  });
+
+  readonly completedSectionCount = computed(() => this.sections().filter((s) => s.complete).length);
+
+  /** Percent of the 11 recordable text fields that are filled in. */
+  readonly completionPercent = computed(() => {
+    const d = this.demographics();
+    if (!d) return 0;
+    const fields = [
+      d.ethnicity,
+      d.nationality,
+      d.preferredLanguage,
+      d.housingStatus,
+      d.employmentStatus,
+      d.emergencyContactName,
+      d.emergencyContactPhone,
+      d.emergencyContactRelationship,
+      d.gpName,
+      d.gpPractice,
+      d.nhsNumber,
+    ];
+    const filled = fields.filter((v) => !!v && v.trim() !== '').length;
+    return Math.round((filled / fields.length) * 100);
+  });
 
   constructor() {
     effect((onCleanup) => {
@@ -110,7 +169,7 @@ export class GuestDemographicsTabComponent {
       },
       error: () => {
         this.saving.set(false);
-        this.saveError.set('Could not save these changes. Please try again.');
+        this.saveError.set('Could not save these changes. You may not have permission to edit guest profiles.');
       },
     });
   }

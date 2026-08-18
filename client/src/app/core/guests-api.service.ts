@@ -5,10 +5,16 @@ import { environment } from '../../environments/environment';
 import {
   AddContactRequest,
   AddNoteRequest,
+  AllocateGuestRequest,
+  ClinicalProfileDto,
   CmhwOptionDto,
   CreatePathwayReferralRequest,
+  DialogScores,
+  GuestActionDto,
+  GuestActionRequest,
   GuestClinicalDto,
   GuestDemographicsDto,
+  GuestDialogDto,
   GuestFollowUpsDto,
   GuestInitialConversationDto,
   GuestListItemDto,
@@ -21,6 +27,7 @@ import {
   RecordRiskAssessmentRequest,
   RegisterGuestRequest,
   ScheduleFollowUpRequest,
+  UpdateClinicalProfileRequest,
   UpdateDemographicsRequest,
 } from './api-models';
 
@@ -115,5 +122,44 @@ export class GuestsApiService {
 
   addNote(guestId: string, request: AddNoteRequest): Observable<{ id: string }> {
     return this.http.post<{ id: string }>(`${this.base}/${guestId}/notes`, request);
+  }
+
+  /** DIALOG tab — baseline (version 1), latest and full history. */
+  getDialog(guestId: string): Observable<GuestDialogDto> {
+    return this.http.get<GuestDialogDto>(`${this.base}/${guestId}/dialog`);
+  }
+
+  /** Records the next DIALOG version; scores are 1–7 per domain. */
+  recordDialogAssessment(guestId: string, scores: DialogScores): Observable<{ id: string }> {
+    return this.http.post<{ id: string }>(`${this.base}/${guestId}/dialog-assessments`, scores);
+  }
+
+  getActions(guestId: string): Observable<GuestActionDto[]> {
+    return this.http.get<GuestActionDto[]>(`${this.base}/${guestId}/actions`);
+  }
+
+  addAction(guestId: string, request: GuestActionRequest): Observable<{ id: string }> {
+    return this.http.post<{ id: string }>(`${this.base}/${guestId}/actions`, request);
+  }
+
+  updateAction(guestId: string, actionId: string, request: GuestActionRequest): Observable<void> {
+    return this.http.put<void>(`${this.base}/${guestId}/actions/${actionId}`, request);
+  }
+
+  deleteAction(guestId: string, actionId: string): Observable<void> {
+    return this.http.delete<void>(`${this.base}/${guestId}/actions/${actionId}`);
+  }
+
+  getClinicalProfile(guestId: string): Observable<ClinicalProfileDto> {
+    return this.http.get<ClinicalProfileDto>(`${this.base}/${guestId}/clinical-profile`);
+  }
+
+  updateClinicalProfile(guestId: string, request: UpdateClinicalProfileRequest): Observable<void> {
+    return this.http.put<void>(`${this.base}/${guestId}/clinical-profile`, request);
+  }
+
+  /** Register flow "Pathway & allocation" step. */
+  allocate(guestId: string, request: AllocateGuestRequest): Observable<void> {
+    return this.http.post<void>(`${this.base}/${guestId}/allocation`, request);
   }
 }

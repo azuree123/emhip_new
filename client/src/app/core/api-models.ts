@@ -15,6 +15,8 @@ export type PathwayCategory =
   | 'ImmigrationLegalAdvice'
   | 'OtherPracticalAdvice';
 export type PathwayStatus = 'Referred' | 'InProgress' | 'Completed' | 'Declined';
+/** Register-flow "Pathway & allocation" — the guest's overall clinical pathway. */
+export type GuestPathway = 'MentalWellbeing' | 'ClinicalSupport' | 'CommunityRecovery';
 
 export interface KeysetPage<T> {
   items: T[];
@@ -74,6 +76,8 @@ export interface GuestOverviewDto {
   registeredAt: string;
   hasActiveRiskFlags: boolean;
   openFollowUpCount: number;
+  pathway: GuestPathway | null;
+  afaSupportNeeded: boolean;
   pinnedNotes: GuestNoteDto[];
   recentContacts: GuestContactSummaryDto[];
 }
@@ -341,4 +345,102 @@ export interface UpdateDemographicsRequest {
   gpName?: string | null;
   gpPractice?: string | null;
   nhsNumber?: string | null;
+}
+
+// ---- DIALOG assessments (Guest Workspace DIALOG tab + register-flow DIALOG scale step) ----
+
+/** The 11 DIALOG domains, each scored 1–7. */
+export interface DialogScores {
+  mentalHealth: number;
+  physicalHealth: number;
+  jobSituation: number;
+  accommodation: number;
+  leisureActivities: number;
+  friendshipsSocialLife: number;
+  relationshipWithFamily: number;
+  personalSafety: number;
+  practicalHelp: number;
+  medication: number;
+  meetingsWithMhStaff: number;
+}
+
+export interface DialogAssessmentDto extends DialogScores {
+  id: string;
+  version: number;
+  assessedAt: string;
+  assessedByName: string;
+  total: number;
+}
+
+export interface GuestDialogDto {
+  baseline: DialogAssessmentDto | null;
+  latest: DialogAssessmentDto | null;
+  history: DialogAssessmentDto[];
+}
+
+// ---- Guest actions (Guest Workspace Action tab) ----
+
+export interface GuestActionDto {
+  id: string;
+  description: string;
+  dueDate: string;
+  assignedToStaffId: string | null;
+  assignedToName: string | null;
+  isCompleted: boolean;
+  isOverdue: boolean;
+  createdAt: string;
+  completedAt: string | null;
+}
+
+export interface GuestActionRequest {
+  description: string;
+  dueDate: string;
+  assignedToStaffId?: string | null;
+  isCompleted: boolean;
+}
+
+// ---- Clinical profile (Guest Workspace Clinical Details tab) ----
+
+export interface ClinicalProfileDto {
+  guestId: string;
+  previousMhDiagnosis: boolean;
+  diagnosisGroups: string | null;
+  presentingProblem: string | null;
+  pastMhDifficulties: string | null;
+  familyMhHistory: string | null;
+  longTermHealthCondition: string | null;
+  physicalIllness: string | null;
+  currentMedications: string | null;
+  mhTeamClinician: string | null;
+  socialServicesCoordinator: string | null;
+  cpnInvolved: boolean;
+  trustInvolvement: boolean;
+  smiIndicator: boolean;
+  updatedAt: string | null;
+}
+
+export type UpdateClinicalProfileRequest = Omit<ClinicalProfileDto, 'guestId' | 'updatedAt'>;
+
+// ---- DIALOG outcome-dimensions report (reports "Outcome dimensions" chart) ----
+
+export interface DialogOutcomesReportDto {
+  guestsWithBaseline: number;
+  guestsWithFollowUp: number;
+  dimensions: DialogDimensionDto[];
+}
+
+/** Averages are null when no assessments exist for that cohort. */
+export interface DialogDimensionDto {
+  key: string;
+  label: string;
+  baselineAverage: number | null;
+  latestAverage: number | null;
+}
+
+// ---- Pathway allocation (register flow step 3) ----
+
+export interface AllocateGuestRequest {
+  pathway: GuestPathway;
+  afaSupportNeeded: boolean;
+  assignedCmhwId?: string | null;
 }

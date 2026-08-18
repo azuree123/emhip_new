@@ -147,6 +147,65 @@ namespace Emhip.Infrastructure.Persistence.Migrations
                     b.ToTable("Contacts", (string)null);
                 });
 
+            modelBuilder.Entity("Emhip.Domain.Entities.DialogAssessment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Accommodation")
+                        .HasColumnType("int");
+
+                    b.Property<DateTimeOffset>("AssessedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<Guid>("AssessedByStaffId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("FriendshipsSocialLife")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("GuestId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("JobSituation")
+                        .HasColumnType("int");
+
+                    b.Property<int>("LeisureActivities")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Medication")
+                        .HasColumnType("int");
+
+                    b.Property<int>("MeetingsWithMhStaff")
+                        .HasColumnType("int");
+
+                    b.Property<int>("MentalHealth")
+                        .HasColumnType("int");
+
+                    b.Property<int>("PersonalSafety")
+                        .HasColumnType("int");
+
+                    b.Property<int>("PhysicalHealth")
+                        .HasColumnType("int");
+
+                    b.Property<int>("PracticalHelp")
+                        .HasColumnType("int");
+
+                    b.Property<int>("RelationshipWithFamily")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Version")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GuestId", "Version")
+                        .IsUnique();
+
+                    b.ToTable("DialogAssessments", (string)null);
+                });
+
             modelBuilder.Entity("Emhip.Domain.Entities.FollowUp", b =>
                 {
                     b.Property<Guid>("Id")
@@ -206,6 +265,9 @@ namespace Emhip.Infrastructure.Persistence.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
+                    b.Property<bool>("AfaSupportNeeded")
+                        .HasColumnType("bit");
+
                     b.Property<Guid?>("AssignedCmhwId")
                         .HasColumnType("uniqueidentifier");
 
@@ -246,6 +308,10 @@ namespace Emhip.Infrastructure.Persistence.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
+                    b.Property<string>("Pathway")
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
                     b.Property<string>("PostCode")
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
@@ -279,6 +345,110 @@ namespace Emhip.Infrastructure.Persistence.Migrations
                         .HasDatabaseName("IX_Guests_Keyset");
 
                     b.ToTable("Guests", (string)null);
+                });
+
+            modelBuilder.Entity("Emhip.Domain.Entities.GuestAction", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("AssignedToStaffId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset?>("CompletedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateOnly>("DueDate")
+                        .HasColumnType("date");
+
+                    b.Property<Guid>("GuestId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsCompleted")
+                        .HasColumnType("bit");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GuestId", "DueDate");
+
+                    b.ToTable("GuestActions", (string)null);
+                });
+
+            modelBuilder.Entity("Emhip.Domain.Entities.GuestClinicalProfile", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("CpnInvolved")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("CurrentMedications")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<string>("DiagnosisGroups")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("FamilyMhHistory")
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<Guid>("GuestId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("LongTermHealthCondition")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("MhTeamClinician")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("PastMhDifficulties")
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<string>("PhysicalIllness")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("PresentingProblem")
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<bool>("PreviousMhDiagnosis")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("SmiIndicator")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("SocialServicesCoordinator")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<bool>("TrustInvolvement")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GuestId")
+                        .IsUnique();
+
+                    b.ToTable("GuestClinicalProfiles", (string)null);
                 });
 
             modelBuilder.Entity("Emhip.Domain.Entities.GuestDemographics", b =>

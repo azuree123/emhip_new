@@ -1,0 +1,224 @@
+// DIALOG Scores tab — literal colors/spacing lifted from GuestDIALOGTab in
+// project/screens/Components.bundle.js (lines 24837–27147).
+@use './guest-tab-shared';
+@use './guest-workspace.tokens' as t;
+
+// "Baseline recorded …" banner — bg rgb(249,250,252), 3px bar + icon rgb(52,91,177).
+.info-banner {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 12px 16px 12px 23px;
+  background: #f9fafc;
+
+  &__bar {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: #345bb1;
+  }
+
+  &__icon {
+    flex: none;
+    color: #345bb1;
+  }
+
+  &__text {
+    font-family: t.$font-primary;
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 24px;
+    color: t.$color-text-primary;
+  }
+}
+
+.columns {
+  display: grid;
+  grid-template-columns: 581fr 573fr;
+  gap: 22px;
+  align-items: start;
+}
+
+.column {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  min-width: 0;
+}
+
+.card__title--spaced {
+  margin-bottom: 20px;
+}
+
+// Domain / Baseline / Latest table — header band rgb(241,241,241), rows split by rgb(232,232,232).
+.score-table {
+  display: flex;
+  flex-direction: column;
+
+  &__head {
+    display: grid;
+    grid-template-columns: 1fr 84px 84px;
+    align-items: center;
+    height: 41px;
+    padding: 0 24px;
+    border-radius: 3px 3px 0 0;
+    background: #f1f1f1;
+
+    span {
+      font-family: t.$font-primary;
+      font-weight: 600;
+      font-size: 12px;
+      line-height: 24px;
+      letter-spacing: 0.01em;
+      color: t.$color-text-primary;
+    }
+  }
+
+  &__row {
+    display: grid;
+    grid-template-columns: 1fr 84px 84px;
+    align-items: center;
+    min-height: 36px;
+    padding: 0 24px;
+    box-shadow: inset 0 -1px 0 0 t.$color-border;
+
+    span {
+      font-family: t.$font-primary;
+      font-weight: 500;
+      font-size: 12px;
+      line-height: 24px;
+      color: t.$color-text-primary;
+    }
+
+    &--total {
+      box-shadow: none;
+      min-height: 40px;
+
+      span {
+        font-weight: 700;
+      }
+    }
+  }
+}
+
+// "Total DIALOG score" hero card with the brand mark in the corner.
+.hero {
+  position: relative;
+  overflow: hidden;
+  min-height: 145px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  &__value {
+    margin-top: 8px;
+    font-family: t.$font-primary;
+    font-weight: 700;
+    font-size: 16px;
+    line-height: 24px;
+    color: t.$color-text-primary;
+
+    &--empty {
+      color: t.$color-text-meta;
+    }
+  }
+
+  &__meta {
+    font-family: t.$font-primary;
+    font-weight: 500;
+    font-size: 12px;
+    line-height: 24px;
+    letter-spacing: -0.005em;
+    color: t.$color-text-primary;
+  }
+
+  &__mark {
+    position: absolute;
+    right: 28px;
+    top: 20px;
+    pointer-events: none;
+  }
+}
+
+.next-due {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+
+  &__info {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  &__label {
+    font-family: t.$font-primary;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 24px;
+    color: #000;
+  }
+
+  &__value {
+    font-family: t.$font-primary;
+    font-weight: 500;
+    font-size: 12px;
+    line-height: 24px;
+    color: t.$color-gold-text;
+  }
+}
+
+.record-new {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: none;
+  background: transparent;
+  padding: 0;
+  font-family: t.$font-primary;
+  font-weight: 500;
+  font-size: 14px;
+  letter-spacing: -0.005em;
+  color: t.$color-link-red;
+  cursor: pointer;
+}
+
+.score-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.score-hint {
+  margin: 0;
+  font-family: t.$font-primary;
+  font-size: 12px;
+  color: t.$color-text-meta;
+}
+
+@media (max-width: 960px) {
+  .columns {
+    grid-template-columns: 1fr;
+  }
+
+  .score-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .score-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .score-table__head,
+  .score-table__row {
+    grid-template-columns: 1fr 64px 64px;
+    padding: 0 12px;
+  }
+}

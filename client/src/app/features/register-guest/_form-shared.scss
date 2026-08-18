@@ -1,43 +1,97 @@
-// Shared field/section styles for the Register Guest wizard steps. Values (colors, radii,
-// font sizes, spacing) are lifted verbatim from the DmegographicsTab / InitialConversationTab
-// functions in project/screens/Components.bundle.js (the "Register New Guest" panel),
-// re-expressed as normal flow/grid CSS instead of the source's absolute-positioned divs.
+// Shared card/field styles for the Register Guest wizard steps. Values (colors, radii, font
+// sizes, spacing) are lifted verbatim from the Desktop79/80/81/83/87/88 screens in
+// project/screens/Components.bundle.js (the redesigned multi-step register flow), re-expressed
+// as normal flow/grid CSS instead of the source's absolute-positioned divs.
 //
-// Source geometry: field columns are a fixed 262px wide with a 26px gutter (x 604 and 892),
-// so a full-width field spans 550px — the form deliberately does NOT stretch across the whole
-// 812px content lane. Row pitch is 90px (37px input + 20px gap + 33px label block); sections
-// are separated by 46px.
+// Source geometry: the page lays white r12 cards on a rgb(237,237,237) canvas; inside a card
+// field columns are 262px wide with a 26px gutter, large free-text answers are 550/607x99
+// boxes, and card titles are 20px/600.
 
-.section {
-  margin-bottom: 46px;
+.card {
+  box-sizing: border-box;
+  margin-bottom: 22px;
+  padding: 24px 20px;
+  border-radius: 12px;
+  background: #ffffff;
 
   &:last-child {
     margin-bottom: 0;
   }
 }
 
-.section__title {
+.card__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 26px;
+}
+
+.card__title {
+  margin: 0;
   font-family: 'Plus Jakarta Sans', sans-serif;
   font-weight: 600;
-  font-size: 16px;
+  font-size: 20px;
   line-height: 24px;
   color: #2a2a2a;
-  margin: 0 0 2px;
+}
 
-  // Step-2 sections have no description line; the source leaves ~30px between the heading
-  // and the first field label there.
-  &--solo {
-    margin-bottom: 30px;
+// Right-aligned pill next to a card title ("Guided conversation · 4 prompts",
+// "Mandatory · escalate immediately if concerned", "CMHW to complete before MDT").
+.card__badge {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 14px;
+  border-radius: 200px;
+  background: #eef1f7;
+  font-family: 'Inter', 'Plus Jakarta Sans', sans-serif;
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 16px;
+  color: #384049;
+  white-space: nowrap;
+}
+
+// Info banner: rgb(249,250,252) band with a 3px rgb(52,91,177) left bar and an info glyph.
+// The --warn variant is the yellow "Complete to the best of your ability…" band.
+.info-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  margin-bottom: 26px;
+  padding: 12px 16px 12px 20px;
+  background: #f9fafc;
+  border-left: 3px solid #345bb1;
+
+  svg {
+    flex-shrink: 0;
+    margin-top: 4px;
+    color: #345bb1;
+  }
+
+  &--warn {
+    background: #fefbea;
+    border-left-color: #9d852d;
+
+    svg {
+      color: #9d852d;
+    }
   }
 }
 
-.section__desc {
+.info-banner__text {
+  margin: 0;
   font-family: 'Plus Jakarta Sans', sans-serif;
-  font-weight: 500;
-  font-size: 12px;
+  font-weight: 400;
+  font-size: 14px;
   line-height: 24px;
   color: #2a2a2a;
-  margin: 0 0 34px;
+
+  .info-banner--warn & {
+    font-size: 12px;
+  }
 }
 
 .field-row {
@@ -58,7 +112,8 @@
 .field {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 7px;
+  min-width: 0;
 }
 
 .field__label {
@@ -86,17 +141,18 @@
   line-height: 24px;
   color: #323232;
 
-  // The source renders placeholder text in the same rgb(50,50,50) as values.
   &::placeholder {
-    color: #323232;
+    color: #9a9a9a;
     opacity: 1;
   }
 
-  &:disabled {
-    background: #ffffff;
-    color: #323232;
+  // "pre filled from your login" fields: rgb(244,244,244) shell with rgb(142,142,142) value.
+  &:disabled,
+  &[readonly] {
+    background: #f4f4f4;
+    color: #8e8e8e;
     opacity: 1;
-    -webkit-text-fill-color: #323232;
+    -webkit-text-fill-color: #8e8e8e;
   }
 
   // Focus/invalid states are not drawn in the static source; these reuse the app's brand
@@ -111,14 +167,14 @@
   }
 }
 
-// The source draws every long-text answer as a 37px single-line box; a real textarea keeps
-// that initial height but stays user-resizable so longer notes remain usable.
+// Long-answer boxes are 99px tall in the source (607x99 / 550x99), user-resizable here.
 .field__textarea {
-  height: 37px;
-  min-height: 37px;
+  height: 99px;
+  min-height: 99px;
+  max-width: 607px;
   padding: 6px 16px;
   resize: vertical;
-  line-height: 24px;
+  line-height: 19px;
 }
 
 .field__select {
@@ -128,6 +184,10 @@
   background-position: right 15px center;
   padding-right: 34px;
   cursor: pointer;
+
+  &:disabled {
+    cursor: default;
+  }
 }
 
 .field__error {
@@ -136,10 +196,11 @@
   color: #d02537;
 }
 
-// "pre filled from your login" caption: italic 10px with a small maroon info glyph.
+// Italic caption under a field ("pre filled from your login", "Record in the guest's own
+// words where possible", …) with a small maroon info glyph.
 .field__hint {
   display: inline-flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 5px;
   font-family: 'Plus Jakarta Sans', sans-serif;
   font-weight: 400;
@@ -150,11 +211,53 @@
 
   svg {
     flex-shrink: 0;
+    margin-top: 2px;
     color: #941c3c;
   }
 }
 
-// Checkbox (consent, risk flags, etc. — the checked state reuses the CTA red rgb(235,60,44)).
+// "Prompt N" tag: 93x36 rgb(241,241,241) r6 chip above each guided-conversation prompt.
+.prompt-tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 93px;
+  height: 36px;
+  border-radius: 6px;
+  background: #f1f1f1;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 24px;
+  color: #2a2a2a;
+}
+
+// Italic suggested wording under the prompt tag.
+.prompt-quote {
+  margin: 10px 0 0;
+  max-width: 688px;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-weight: 500;
+  font-style: italic;
+  font-size: 14px;
+  line-height: 24px;
+  color: #2a2a2a;
+}
+
+.prompt-block {
+  margin-bottom: 32px;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+
+  .field {
+    margin-top: 14px;
+  }
+}
+
+// Checkbox, per the MDT-flags checklist / AFA band: 20px box, r5, 1.5px rgb(140,140,140)
+// ring; checked = rgb(235,60,44) fill + soft pink inner shadow + white tick.
 .checkbox-field {
   display: flex;
   align-items: flex-start;
@@ -164,11 +267,12 @@
 
 .checkbox-field__box {
   flex-shrink: 0;
-  width: 18px;
-  height: 18px;
+  box-sizing: border-box;
+  width: 20px;
+  height: 20px;
   margin-top: 2px;
-  border-radius: 4px;
-  box-shadow: inset 0 0 0 1px #d9d9d9;
+  border-radius: 5px;
+  box-shadow: inset 0 0 0 1.5px #8c8c8c;
   background: #ffffff;
   display: flex;
   align-items: center;
@@ -188,11 +292,18 @@
 
   &:checked + .checkbox-field__box {
     background: #eb3c2c;
-    box-shadow: inset 0 0 0 1px #eb3c2c;
+    box-shadow:
+      inset 0 0 0 1.5px #eb3c2c,
+      inset 0 -2.5px 3px 0 #ffa4bc;
 
     svg {
       opacity: 1;
     }
+  }
+
+  &:focus-visible + .checkbox-field__box {
+    outline: 2px solid #941c3c;
+    outline-offset: 1px;
   }
 
   &.ng-touched.ng-invalid + .checkbox-field__box {
@@ -202,165 +313,10 @@
 
 .checkbox-field__label {
   font-family: 'Plus Jakarta Sans', sans-serif;
-  font-weight: 500;
-  font-size: 13px;
-  line-height: 18px;
-  color: #2a2a2a;
-}
-
-// "Long-term health condition?" — a 262x37 input-style shell with the "No/Yes" caption on the
-// left and the switch (43x21, off-track rgb(217,217,217), white knob w/ soft shadow) on the
-// right, exactly as drawn in the source.
-.toggle-shell {
-  box-sizing: border-box;
-  width: 262px;
-  max-width: 100%;
-  height: 37px;
-  padding: 0 14px 0 16px;
-  border-radius: 8px;
-  background: #ffffff;
-  box-shadow: inset 0 0 0 1px #e5e5e5;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  cursor: pointer;
-}
-
-.toggle-shell__caption {
-  font-family: 'Plus Jakarta Sans', sans-serif;
   font-weight: 400;
   font-size: 12px;
   line-height: 24px;
   color: #323232;
-}
-
-.toggle__track {
-  position: relative;
-  flex-shrink: 0;
-  width: 43px;
-  height: 21px;
-  border-radius: 15.5px;
-  background: #d9d9d9;
-  transition: background 0.15s ease;
-}
-
-.toggle__thumb {
-  position: absolute;
-  top: 1px;
-  left: 1px;
-  width: 19px;
-  height: 19px;
-  border-radius: 14.5px;
-  background: #ffffff;
-  box-shadow: 0 3px 8px 0 rgba(0, 0, 0, 0.15);
-  transition: left 0.15s ease;
-}
-
-.toggle__input {
-  position: absolute;
-  opacity: 0;
-  width: 0;
-  height: 0;
-
-  &:checked ~ .toggle__track {
-    background: #eb3c2c;
-  }
-
-  &:checked ~ .toggle__track .toggle__thumb {
-    left: 23px;
-  }
-}
-
-// "Immediate Risk Identified? *" — gray card (550 wide, r8, rgb(240,240,240)) holding the
-// question and two white option pills; the selected pill is marked by a red radio ring + dot
-// on its right edge (the pills themselves stay white/borderless in the source).
-.risk-card {
-  box-sizing: border-box;
-  max-width: 550px;
-  padding: 12px 16px 16px;
-  border-radius: 8px;
-  background: #f0f0f0;
-}
-
-.risk-card__title {
-  display: block;
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  font-weight: 600;
-  font-size: 14px;
-  line-height: 24px;
-  color: #2a2a2a;
-  margin-bottom: 19px;
-}
-
-.risk-choice {
-  display: flex;
-  gap: 22px;
-}
-
-.risk-pill {
-  box-sizing: border-box;
-  flex: 1;
-  max-width: 236px;
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  height: 36px;
-  padding: 0 12px 0 13px;
-  border-radius: 6px;
-  background: #ffffff;
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  font-weight: 500;
-  font-size: 12px;
-  line-height: 24px;
-  color: #323232;
-  cursor: pointer;
-
-  svg {
-    flex-shrink: 0;
-    color: #212121;
-  }
-}
-
-.risk-pill__radio {
-  box-sizing: border-box;
-  flex-shrink: 0;
-  margin-left: auto;
-  width: 15px;
-  height: 15px;
-  border-radius: 50%;
-  box-shadow: inset 0 0 0 1.5px #636366;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  &::after {
-    content: '';
-    width: 9px;
-    height: 9px;
-    border-radius: 50%;
-    background: #eb3c2c;
-    opacity: 0;
-  }
-}
-
-.risk-pill--selected .risk-pill__radio {
-  box-shadow: inset 0 0 0 1.5px #eb3c2c;
-
-  &::after {
-    opacity: 1;
-  }
-}
-
-// Risk-flag checklist (functional addition — the static source only draws the yes/no pills;
-// per the design handoff README the flags escalate the guest onto the Urgent Cases queue).
-.risk-flags {
-  margin-top: 16px;
-  padding: 16px;
-  border-radius: 8px;
-  background: #fef2f2;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
 }
 
 @media (max-width: 720px) {
@@ -368,13 +324,5 @@
   .field-row--single {
     grid-template-columns: 1fr;
     row-gap: 20px;
-  }
-
-  .risk-choice {
-    flex-direction: column;
-
-    .risk-pill {
-      max-width: none;
-    }
   }
 }

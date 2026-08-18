@@ -9,10 +9,23 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, ValidatorFn, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
-import { catchError, map, of, switchMap } from 'rxjs';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import {
+  AbstractControl,
+  FormBuilder,
+  FormControl,
+  ReactiveFormsModule,
+  ValidationErrors,
+  ValidatorFn,
+  Validators,
+} from '@angular/forms';
+import { Router } from '@angular/router';
+import { catchError, concatMap, defer, from, last, map, Observable, of, switchMap, tap, throwError } from 'rxjs';
+import {
+  AllocateGuestRequest,
+  CmhwOptionDto,
+  DialogScores,
+  GuestPathway,
   RecordInitialConversationRequest,
   RecordRiskAssessmentRequest,
   RegisterGuestRequest,
@@ -21,7 +34,10 @@ import {
 import { AuthService } from '../../core/auth.service';
 import { GuestsApiService } from '../../core/guests-api.service';
 import { DemographicsStepComponent } from './demographics-step.component';
-import { InitialConversationStepComponent } from './initial-conversation-step.component';
+import { DIALOG_DOMAINS, DialogStepComponent } from './dialog-step.component';
+import { InitialConversationStepComponent, MDT_FLAGS } from './initial-conversation-step.component';
+import { PathwayStepComponent } from './pathway-step.component';
+import { ReviewStepComponent, SubmissionCall } from './review-step.component';
 
 /** FluentValidation-equivalent rule: date of birth must be in the past. */
 function pastDateValidator(): ValidatorFn {
@@ -34,37 +50,47 @@ function pastDateValidator(): ValidatorFn {
 }
 
 /**
- * Register Guest — a 2-step wizard at route `/guests/new`:
- *   1. Demographics (DemographicsStepComponent) — core registration fields + extended
- *      demographics.
- *   2. Initial Conversation (InitialConversationStepComponent) — first contact record.
+ * Register Guest — the 5-step wizard at route `/guests/new`, redesigned per the
+ * Desktop79/80/81/83/87/88 screens in project/screens/Components.bundle.js:
+ *   1. Demographics            (Desktop83 — "Register & Continue")
+ *   2. Initial conversation    (Desktop79 — session, guided prompts, MH history, risk screening)
+ *   3. DIALOG                  (Desktop80 — 11 life areas scored 1-7)
+ *   4. Pathway & allocation    (Desktop81 — pathway cards, AFA support, CMHW)
+ *   5. REVIEW                  (Desktop87 — registration summary, Submit)
+ * followed by the Desktop88 "Success!" overlay.
  *
- * On final submit this chains three real API calls (see core/guests-api.service.ts):
- *   POST /guests                          -> GuestsApiService.register()
- *   PUT  /guests/{id}/demographics         -> GuestsApiService.updateDemographics()
- *   POST /guests/{id}/initial-conversation -> GuestsApiService.recordInitialConversation()
- * and, only if "Immediate Risk Identified? Yes" was selected on step 2, an additional
- *   POST /guests/{id}/risk-assessments     -> GuestsApiService.recordRiskAssessment()
- * per the design handoff README ("Risk flags ... escalate a guest onto the Urgent Cases
- * queue"). On success it navigates to /guests/:id (Guest Workspace).
+ * Nothing is persisted until Submit on the REVIEW step; the sequence then runs
+ *   POST /guests                            -> register()            (returns the guest id)
+ *   POST /guests/{id}/initial-conversation  -> recordInitialConversation()
+ *   POST /guests/{id}/dialog-assessments    -> recordDialogAssessment()
+ *   POST /guests/{id}/allocation            -> allocate()
+ *   PUT  /guests/{id}/demographics          -> updateDemographics()
+ * plus, only when the risk screening flagged anything,
+ *   POST /guests/{id}/risk-assessments      -> recordRiskAssessment()  (Urgent Cases escalation)
+ * Each call is tracked individually: on failure the wizard reports which call failed and
+ * "Retry" resumes from that call without repeating the ones that already succeeded.
  *
- * Presentation: this component renders as a right-anchored drawer overlay — an 858px panel
- * sliding in over the Guest Data Sheet (which stays visible behind a dimmed backdrop), per the
- * "Register New Guest" drawer in DmegographicsTab / InitialConversationTab
- * (project/screens/Components.bundle.js). The route is a child of `/guests`, rendering into
- * the guest list's `<router-outlet />`. Backdrop click, the close/Cancel actions, and Escape
- * all navigate back to `/guests` (preserving query params). While open, the page behind is
- * scroll-locked; the drawer body scrolls internally.
+ * Presentation: unchanged from before the redesign — an 858px right-anchored drawer overlay
+ * on top of the Guest Data Sheet (child route rendering into the guest list's router-outlet).
+ * The redesigned screens are full-page (1170px content lane on a rgb(237,237,237) canvas);
+ * their cards are reflowed into the drawer body, which now uses the same gray canvas.
  */
 @Component({
   selector: 'app-register-guest',
   standalone: true,
-  imports: [ReactiveFormsModule, DemographicsStepComponent, InitialConversationStepComponent],
+  imports: [
+    ReactiveFormsModule,
+    DemographicsStepComponent,
+    InitialConversationStepComponent,
+    DialogStepComponent,
+    PathwayStepComponent,
+    ReviewStepComponent,
+  ],
   templateUrl: './register-guest.component.html',
   styleUrl: './register-guest.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
-    '(document:keydown.escape)': 'cancel()',
+    '(document:keydown.escape)': 'onEscape()',
   },
 })
 export class RegisterGuestComponent {
@@ -77,36 +103,52 @@ export class RegisterGuestComponent {
   /** Scrollable drawer body — step changes reset its scroll position (not the window's). */
   private readonly panelBody = viewChild<ElementRef<HTMLElement>>('panelBody');
 
-  constructor() {
-    // Lock the page behind the drawer while it is open; restore on close/destroy.
-    const body = this.document.body;
-    const previousOverflow = body.style.overflow;
-    body.style.overflow = 'hidden';
-    inject(DestroyRef).onDestroy(() => {
-      body.style.overflow = previousOverflow;
-    });
-  }
-
   protected readonly currentUser = this.auth.current;
 
-  protected readonly step = signal<1 | 2>(1);
+  protected readonly step = signal<1 | 2 | 3 | 4 | 5>(1);
   protected readonly submitting = signal(false);
+  protected readonly submitted = signal(false);
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly draftSavedAt = signal<Date | null>(null);
 
+  /** Set after POST /guests succeeds so a retry never registers the guest twice. */
+  private readonly guestId = signal<string | null>(null);
+
+  private readonly callStates = signal<Record<SubmissionCall['key'], SubmissionCall['status']>>({
+    register: 'pending',
+    conversation: 'pending',
+    dialog: 'pending',
+    allocation: 'pending',
+    demographics: 'pending',
+    risk: 'pending',
+  });
+
+  private static readonly CALL_LABELS: Record<SubmissionCall['key'], string> = {
+    register: 'Register guest',
+    conversation: 'Initial conversation',
+    dialog: 'DIALOG assessment',
+    allocation: 'Pathway & allocation',
+    demographics: 'Demographics',
+    risk: 'Risk assessment (Urgent Cases escalation)',
+  };
+
+  /** CMHW dropdown options for the Pathway & allocation step. */
+  protected readonly cmhwOptions = toSignal(
+    this.guestsApi.getCmhwOptions().pipe(catchError(() => of([] as CmhwOptionDto[]))),
+    { initialValue: [] as CmhwOptionDto[] },
+  );
+
   /**
-   * The source stepper card shows five steps (Demographics / Initial conversation / DIALOG /
-   * Pathway & allocation / REVIEW — casing verbatim, see Components.bundle.js lines
-   * 19364-19539). Only the first two are implemented as wizard steps here; 3-5 render
-   * permanently "upcoming" for visual parity (those flows live elsewhere in the app / are out
-   * of scope for registration).
+   * Stepper order and labels exactly as in the Desktop79-88 screens (labels render uppercase
+   * there — done via CSS): Demographics, Initial conversation, DIALOG, Pathway & allocation,
+   * REVIEW.
    */
   protected readonly steps = [
     { index: 1, label: 'Demographics' },
     { index: 2, label: 'Initial conversation' },
     { index: 3, label: 'DIALOG' },
     { index: 4, label: 'Pathway & allocation' },
-    { index: 5, label: 'REVIEW' },
+    { index: 5, label: 'Review' },
   ];
 
   protected readonly draftSavedLabel = computed(() => {
@@ -114,6 +156,20 @@ export class RegisterGuestComponent {
     return at ? `Last updated at ${at.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : '';
   });
 
+  /** Today, for the read-only "Date *" of the pre-registration form (dd/mm/yyyy). */
+  protected readonly todayLabel = new Date().toLocaleDateString('en-GB');
+
+  /** "Job title" of the session-details card — pre filled from the login session's roles. */
+  protected readonly jobTitle = computed(() => {
+    const roles = this.currentUser().roles;
+    return roles.length > 0 ? roles.join(', ') : 'Hub worker';
+  });
+
+  private static todayIso(): string {
+    return new Date().toISOString().slice(0, 10);
+  }
+
+  // ---- Step 1 · Demographics (Desktop83) ----
   protected readonly demographicsForm = this.fb.group({
     personal: this.fb.nonNullable.group({
       firstName: ['', Validators.required],
@@ -149,34 +205,142 @@ export class RegisterGuestComponent {
     }),
   });
 
-  protected readonly conversationForm = this.fb.nonNullable.group({
-    placeOfInterview: ['', Validators.required],
-    presentingIssues: ['', Validators.required],
-    pastMentalHealth: [''],
-    familyMentalHealth: [''],
-    longTermHealthCondition: [false],
-    immediateRisk: [null as boolean | null, Validators.required],
-    riskFlags: this.fb.nonNullable.group({
-      suicidalIdeation: [false],
-      selfHarm: [false],
-      riskToOthers: [false],
-      severeDeterioration: [false],
-      safeguardingConcern: [false],
+  // ---- Step 2 · Initial conversation (Desktop79) ----
+  protected readonly conversationForm = this.fb.group({
+    session: this.fb.nonNullable.group({
+      sessionDate: [RegisterGuestComponent.todayIso(), Validators.required],
+      contactType: ['Phone call', Validators.required],
     }),
-    consentConfirmed: [false, Validators.requiredTrue],
+    prompts: this.fb.nonNullable.group({
+      mainConcern: ['', Validators.required],
+      durationImpact: ['', Validators.required],
+      background: [''],
+      ownUnderstanding: [''],
+    }),
+    history: this.fb.nonNullable.group({
+      previousDiagnosis: ['No'],
+      diagnosisGroups: [''],
+      reportedDiagnosis: [''],
+      inpatientAdmission: ['No'],
+      inpatientDetails: [''],
+      familyHistory: ['No'],
+      familyHistoryDetails: [''],
+    }),
+    summary: this.fb.nonNullable.control('', Validators.required),
+    physical: this.fb.nonNullable.group({
+      conditions: [''],
+      allergies: ['No'],
+      allergyDetails: [''],
+      medication: [''],
+    }),
+    risk: this.fb.nonNullable.group({
+      selfHarmHistory: ['', Validators.required],
+      selfHarmComment: [''],
+      riskToOthersHistory: ['', Validators.required],
+      riskToOthersComment: [''],
+      safeguardingHistory: ['', Validators.required],
+      safeguardingComment: [''],
+      escalationRequired: ['', Validators.required],
+      crisisNotes: [''],
+      flags: this.fb.nonNullable.group({
+        selfHarm: [false],
+        trauma: [false],
+        domesticAbuse: [false],
+        psychosis: [false],
+        substanceUse: [false],
+        childSafeguarding: [false],
+        practicalSupport: [false],
+      }),
+      riskNotes: [''],
+    }),
+    consentConfirmed: this.fb.nonNullable.control(false, Validators.requiredTrue),
   });
 
-  protected goToStep2(): void {
-    this.demographicsForm.markAllAsTouched();
-    if (this.demographicsForm.invalid) {
-      return;
+  // ---- Step 3 · DIALOG (Desktop80) ----
+  protected readonly dialogForm = this.fb.group({
+    scores: this.fb.group(
+      Object.fromEntries(
+        DIALOG_DOMAINS.map((d): [string, FormControl<number | null>] => [
+          d.key,
+          this.fb.control<number | null>(null, [Validators.required, Validators.min(1), Validators.max(7)]),
+        ]),
+      ),
+    ),
+    needHelp: this.fb.group(
+      Object.fromEntries(
+        DIALOG_DOMAINS.map((d): [string, FormControl<boolean | null>] => [d.key, this.fb.control<boolean | null>(null)]),
+      ),
+    ),
+    additionalNotes: this.fb.nonNullable.control(''),
+  });
+
+  // ---- Step 4 · Pathway & allocation (Desktop81) ----
+  protected readonly pathwayForm = this.fb.group({
+    pathway: this.fb.control<GuestPathway | null>(null, Validators.required),
+    afaSupportNeeded: this.fb.nonNullable.control(false),
+    followUpCadence: this.fb.nonNullable.control('Weekly - 7 days'),
+    assignedCmhwId: this.fb.nonNullable.control(''),
+  });
+
+  constructor() {
+    // Lock the page behind the drawer while it is open; restore on close/destroy.
+    const body = this.document.body;
+    const previousOverflow = body.style.overflow;
+    body.style.overflow = 'hidden';
+    inject(DestroyRef).onDestroy(() => {
+      body.style.overflow = previousOverflow;
+    });
+
+    // "Escalation noted — crisis notes required" (Desktop79): the crisis-notes box becomes
+    // mandatory whenever "Immediate escalation required?" is answered with a Yes option.
+    const risk = this.conversationForm.controls.risk;
+    risk.controls.escalationRequired.valueChanges.pipe(takeUntilDestroyed()).subscribe((value) => {
+      const crisisNotes = risk.controls.crisisNotes;
+      if (value.startsWith('Yes')) {
+        crisisNotes.addValidators(Validators.required);
+      } else {
+        crisisNotes.removeValidators(Validators.required);
+      }
+      crisisNotes.updateValueAndValidity({ emitEvent: false });
+    });
+  }
+
+  // ---- Wizard navigation (footer: Go Back / Save Draft / primary CTA) ----
+
+  private formForStep(step: number): AbstractControl | null {
+    switch (step) {
+      case 1:
+        return this.demographicsForm;
+      case 2:
+        return this.conversationForm;
+      case 3:
+        return this.dialogForm;
+      case 4:
+        return this.pathwayForm;
+      default:
+        return null;
     }
-    this.step.set(2);
+  }
+
+  protected continue(): void {
+    const current = this.step();
+    if (current >= 5) return;
+    const form = this.formForStep(current);
+    if (form) {
+      form.markAllAsTouched();
+      if (form.invalid) return;
+    }
+    this.step.set((current + 1) as 1 | 2 | 3 | 4 | 5);
     this.scrollToTop();
   }
 
   protected goBack(): void {
-    this.step.set(1);
+    const current = this.step();
+    if (current === 1) {
+      this.cancel();
+      return;
+    }
+    this.step.set((current - 1) as 1 | 2 | 3 | 4 | 5);
     this.scrollToTop();
   }
 
@@ -191,28 +355,147 @@ export class RegisterGuestComponent {
     this.draftSavedAt.set(new Date());
   }
 
+  protected onEscape(): void {
+    if (this.submitting()) return;
+    this.cancel();
+  }
+
   protected cancel(): void {
     // Close the drawer: back to the guest list underneath, keeping its query params
     // (search/filter/pagination state) intact.
     this.router.navigate(['/guests'], { queryParamsHandling: 'preserve' });
   }
 
+  protected goToWorkspace(): void {
+    const id = this.guestId();
+    if (id) this.router.navigate(['/guests', id]);
+  }
+
+  protected primaryLabel(): string {
+    if (this.step() === 1) return 'Register & Continue';
+    if (this.step() < 5) return 'Save & Continue';
+    if (this.submitting()) return 'Submitting…';
+    return this.hasFailedCall() ? 'Retry Submit' : 'Submit';
+  }
+
+  protected primaryAction(): void {
+    if (this.step() < 5) {
+      this.continue();
+    } else {
+      this.submit();
+    }
+  }
+
+  // ---- Submission (REVIEW step) ----
+
+  protected readonly submissionCalls = computed<SubmissionCall[]>(() => {
+    const states = this.callStates();
+    const keys: SubmissionCall['key'][] = ['register', 'conversation', 'dialog', 'allocation', 'demographics'];
+    if (this.riskAssessmentNeeded()) keys.push('risk');
+    return keys.map((key) => ({ key, label: RegisterGuestComponent.CALL_LABELS[key], status: states[key] }));
+  });
+
+  protected readonly showCallStatuses = computed(
+    () => this.submitting() || this.hasFailedCall() || this.guestId() !== null,
+  );
+
+  protected hasFailedCall(): boolean {
+    return Object.values(this.callStates()).includes('failed');
+  }
+
+  private setCallState(key: SubmissionCall['key'], status: SubmissionCall['status']): void {
+    this.callStates.update((states) => ({ ...states, [key]: status }));
+  }
+
   protected submit(): void {
-    this.conversationForm.markAllAsTouched();
-    if (this.conversationForm.invalid || this.demographicsForm.invalid) {
+    if (this.submitting() || this.submitted()) return;
+
+    const forms = [this.demographicsForm, this.conversationForm, this.dialogForm, this.pathwayForm];
+    forms.forEach((f) => f.markAllAsTouched());
+    const firstInvalid = forms.findIndex((f) => f.invalid);
+    if (firstInvalid !== -1) {
+      this.errorMessage.set('Some required fields are missing — please complete the highlighted step before submitting.');
+      this.step.set((firstInvalid + 1) as 1 | 2 | 3 | 4 | 5);
+      this.scrollToTop();
       return;
     }
 
-    this.submitting.set(true);
     this.errorMessage.set(null);
+    this.submitting.set(true);
 
-    const personal = this.demographicsForm.getRawValue().personal;
-    const contact = this.demographicsForm.getRawValue().contact;
-    const additional = this.demographicsForm.getRawValue().additional;
-    const consent = this.demographicsForm.getRawValue().consent;
-    const conversation = this.conversationForm.getRawValue();
+    const register$: Observable<string> = this.guestId()
+      ? of(this.guestId()!)
+      : defer(() => {
+          this.setCallState('register', 'running');
+          return this.guestsApi.register(this.buildRegisterRequest()).pipe(
+            map((res) => res.id),
+            tap((id) => {
+              this.guestId.set(id);
+              this.setCallState('register', 'done');
+            }),
+            catchError((err) => {
+              this.setCallState('register', 'failed');
+              return throwError(() => ({ key: 'register' as const, err }));
+            }),
+          );
+        });
 
-    const registerRequest: RegisterGuestRequest = {
+    register$
+      .pipe(
+        switchMap((id) => {
+          const plan = this.buildRemainingPlan(id);
+          if (plan.length === 0) return of(id);
+          return from(plan).pipe(
+            concatMap(({ key, call }) => {
+              this.setCallState(key, 'running');
+              return call.pipe(
+                tap(() => this.setCallState(key, 'done')),
+                catchError((err) => {
+                  this.setCallState(key, 'failed');
+                  return throwError(() => ({ key, err }));
+                }),
+              );
+            }),
+            last(),
+            map(() => id),
+          );
+        }),
+      )
+      .subscribe({
+        next: () => {
+          this.submitting.set(false);
+          this.submitted.set(true);
+        },
+        error: (failure: { key: SubmissionCall['key'] }) => {
+          this.submitting.set(false);
+          const label = RegisterGuestComponent.CALL_LABELS[failure?.key] ?? 'A step';
+          this.errorMessage.set(
+            `"${label}" could not be saved. Nothing after it was attempted — press Retry Submit to resume; steps that already saved will not be repeated.`,
+          );
+        },
+      });
+  }
+
+  private buildRemainingPlan(id: string): { key: SubmissionCall['key']; call: Observable<unknown> }[] {
+    const states = this.callStates();
+    const plan: { key: SubmissionCall['key']; call: Observable<unknown> }[] = [
+      { key: 'conversation', call: defer(() => this.guestsApi.recordInitialConversation(id, this.buildConversationRequest())) },
+      { key: 'dialog', call: defer(() => this.guestsApi.recordDialogAssessment(id, this.buildDialogScores())) },
+      { key: 'allocation', call: defer(() => this.guestsApi.allocate(id, this.buildAllocationRequest())) },
+      { key: 'demographics', call: defer(() => this.guestsApi.updateDemographics(id, this.buildDemographicsRequest())) },
+    ];
+    if (this.riskAssessmentNeeded()) {
+      plan.push({ key: 'risk', call: defer(() => this.guestsApi.recordRiskAssessment(id, this.buildRiskRequest())) });
+    }
+    return plan.filter(({ key }) => states[key] !== 'done');
+  }
+
+  // ---- Request builders (see the honest-data notes in each step component) ----
+
+  private buildRegisterRequest(): RegisterGuestRequest {
+    const { personal, contact, consent } = this.demographicsForm.getRawValue();
+    const assignedCmhwId = this.pathwayForm.getRawValue().assignedCmhwId;
+    return {
       firstName: personal.firstName,
       lastName: personal.lastName,
       dateOfBirth: personal.dateOfBirth,
@@ -222,68 +505,162 @@ export class RegisterGuestComponent {
       contactEmail: contact.contactEmail || null,
       addressLine1: contact.address || null,
       postCode: contact.postCode || null,
+      assignedCmhwId: assignedCmhwId || null,
     };
+  }
 
-    this.guestsApi
-      .register(registerRequest)
-      .pipe(
-        switchMap(({ id }) => {
-          const demographicsRequest: UpdateDemographicsRequest = {
-            ethnicity: personal.ethnicity || null,
-            nationality: contact.nationality || null,
-            preferredLanguage: additional.preferredLanguage || null,
-            interpreterNeeded: additional.interpreterNeeded,
-            housingStatus: contact.housingStatus || null,
-            employmentStatus: contact.employmentStatus || null,
-            emergencyContactName: additional.emergencyContactName || null,
-            emergencyContactPhone: additional.emergencyContactPhone || null,
-            emergencyContactRelationship: additional.emergencyContactRelationship || null,
-            gpName: additional.gpName || null,
-            gpPractice: additional.gpPractice || null,
-            nhsNumber: additional.nhsNumber || null,
-          };
-          return this.guestsApi.updateDemographics(id, demographicsRequest).pipe(map(() => id));
-        }),
-        switchMap((id) => {
-          const notes = [
-            `Place of interview: ${conversation.placeOfInterview}`,
-            conversation.pastMentalHealth && `Past mental health difficulties & treatment: ${conversation.pastMentalHealth}`,
-            conversation.familyMentalHealth && `Family mental health history: ${conversation.familyMentalHealth}`,
-            `Long-term health condition: ${conversation.longTermHealthCondition ? 'Yes' : 'No'}`,
-            `Immediate risk identified: ${conversation.immediateRisk ? 'Yes' : 'No'}`,
-          ]
-            .filter(Boolean)
-            .join('\n');
+  private buildDemographicsRequest(): UpdateDemographicsRequest {
+    const { personal, contact, additional } = this.demographicsForm.getRawValue();
+    return {
+      ethnicity: personal.ethnicity || null,
+      nationality: contact.nationality || null,
+      preferredLanguage: additional.preferredLanguage || null,
+      interpreterNeeded: additional.interpreterNeeded,
+      housingStatus: contact.housingStatus || null,
+      employmentStatus: contact.employmentStatus || null,
+      emergencyContactName: additional.emergencyContactName || null,
+      emergencyContactPhone: additional.emergencyContactPhone || null,
+      emergencyContactRelationship: additional.emergencyContactRelationship || null,
+      gpName: additional.gpName || null,
+      gpPractice: additional.gpPractice || null,
+      nhsNumber: additional.nhsNumber || null,
+    };
+  }
 
-          const conversationRequest: RecordInitialConversationRequest = {
-            presentingIssues: conversation.presentingIssues,
-            notes,
-            consentConfirmed: conversation.consentConfirmed,
-          };
+  /**
+   * The initial-conversation API only stores { presentingIssues, notes, consentConfirmed }, so
+   * (per the honest-data policy) the richer designed fields are concatenated into `notes` as
+   * labelled sections rather than invented as new API fields. presentingIssues carries the
+   * guided conversation's "Main concern and reason for coming".
+   */
+  private buildConversationRequest(): RecordInitialConversationRequest {
+    const value = this.conversationForm.getRawValue();
+    const dialog = this.dialogForm.getRawValue();
+    const referralType = this.demographicsForm.getRawValue().referral.referralType;
+    const followUpCadence = this.pathwayForm.getRawValue().followUpCadence;
 
-          return this.guestsApi.recordInitialConversation(id, conversationRequest).pipe(
-            switchMap(() => {
-              if (!conversation.immediateRisk) {
-                return of(id);
-              }
-              const riskRequest: RecordRiskAssessmentRequest = {
-                ...conversation.riskFlags,
-                notes: 'Immediate risk flagged during the initial conversation.',
-              };
-              return this.guestsApi.recordRiskAssessment(id, riskRequest).pipe(map(() => id));
-            }),
-          );
-        }),
-        catchError(() => {
-          this.errorMessage.set('Something went wrong while registering this guest. Please check your connection and try again.');
-          this.submitting.set(false);
-          return of(null);
-        }),
-      )
-      .subscribe((id) => {
-        if (id) {
-          this.router.navigate(['/guests', id]);
-        }
-      });
+    const flaggedLabels = MDT_FLAGS.filter((f) => value.risk.flags[f.key]).map((f) => f.label);
+    const needHelpLabels = DIALOG_DOMAINS.filter((d) => dialog.needHelp[d.key] === true).map((d) => d.area);
+
+    const lines: (string | false)[] = [
+      `Session date: ${value.session.sessionDate} · Type of contact: ${value.session.contactType}`,
+      `Referral type: ${referralType}`,
+      '',
+      !!value.prompts.durationImpact && `Duration, daily impact, recent triggers: ${value.prompts.durationImpact}`,
+      !!value.prompts.background && `Background (family, upbringing, early adversity): ${value.prompts.background}`,
+      !!value.prompts.ownUnderstanding &&
+        `Guest's own understanding of their distress / support hoped for: ${value.prompts.ownUnderstanding}`,
+      `MDT summary: ${value.summary}`,
+      '',
+      'Mental health & psychiatric history:',
+      `- Previous mental health diagnosis: ${value.history.previousDiagnosis}` +
+        (value.history.diagnosisGroups ? ` (groups: ${value.history.diagnosisGroups})` : ''),
+      !!value.history.reportedDiagnosis && `- Reported diagnosis (guest's words): ${value.history.reportedDiagnosis}`,
+      `- Previous inpatient admission: ${value.history.inpatientAdmission}` +
+        (value.history.inpatientDetails ? ` (${value.history.inpatientDetails})` : ''),
+      `- Family history of mental health difficulties: ${value.history.familyHistory}` +
+        (value.history.familyHistoryDetails ? ` (${value.history.familyHistoryDetails})` : ''),
+      '',
+      'Physical health:',
+      !!value.physical.conditions && `- Relevant physical health conditions: ${value.physical.conditions}`,
+      `- Known allergies: ${value.physical.allergies}` +
+        (value.physical.allergyDetails ? ` (${value.physical.allergyDetails})` : ''),
+      !!value.physical.medication && `- Current medication: ${value.physical.medication}`,
+      '',
+      'Risk screening:',
+      `- History of self-harm or suicide: ${value.risk.selfHarmHistory}` +
+        (value.risk.selfHarmComment ? ` (${value.risk.selfHarmComment})` : ''),
+      `- History of risk to others: ${value.risk.riskToOthersHistory}` +
+        (value.risk.riskToOthersComment ? ` (${value.risk.riskToOthersComment})` : ''),
+      `- History of safeguarding concerns: ${value.risk.safeguardingHistory}` +
+        (value.risk.safeguardingComment ? ` (${value.risk.safeguardingComment})` : ''),
+      `- Immediate escalation required: ${value.risk.escalationRequired}`,
+      !!value.risk.crisisNotes && `- Crisis notes: ${value.risk.crisisNotes}`,
+      flaggedLabels.length > 0 && `- Flags for MDT: ${flaggedLabels.join('; ')}`,
+      !!value.risk.riskNotes && `- Risk / safeguarding notes: ${value.risk.riskNotes}`,
+      '',
+      needHelpLabels.length > 0 && `DIALOG — areas flagged as needing help: ${needHelpLabels.join(', ')}`,
+      !!dialog.additionalNotes && `DIALOG additional notes: ${dialog.additionalNotes}`,
+      `Requested follow-up cadence: ${followUpCadence}`,
+    ];
+
+    const notes = lines
+      .filter((line): line is string => line !== false)
+      .join('\n')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim();
+
+    return {
+      presentingIssues: value.prompts.mainConcern,
+      notes,
+      consentConfirmed: value.consentConfirmed,
+    };
+  }
+
+  private buildDialogScores(): DialogScores {
+    const scores = this.dialogForm.getRawValue().scores;
+    const result = {} as Record<string, number>;
+    for (const domain of DIALOG_DOMAINS) {
+      result[domain.key] = scores[domain.key] ?? 1;
+    }
+    return result as unknown as DialogScores;
+  }
+
+  private buildAllocationRequest(): AllocateGuestRequest {
+    const value = this.pathwayForm.getRawValue();
+    return {
+      pathway: value.pathway!,
+      afaSupportNeeded: value.afaSupportNeeded,
+      assignedCmhwId: value.assignedCmhwId || null,
+    };
+  }
+
+  /**
+   * The risk-screening answers map onto the existing risk-assessment endpoint (which is what
+   * escalates a guest onto the Urgent Cases queue) — only called when something was flagged.
+   */
+  protected riskAssessmentNeeded(): boolean {
+    const risk = this.conversationForm.getRawValue().risk;
+    const flags = risk.flags;
+    return (
+      risk.selfHarmHistory.startsWith('Yes') ||
+      risk.riskToOthersHistory.startsWith('Yes') ||
+      risk.safeguardingHistory.startsWith('Yes') ||
+      risk.escalationRequired.startsWith('Yes') ||
+      flags.selfHarm ||
+      flags.trauma ||
+      flags.domesticAbuse ||
+      flags.psychosis ||
+      flags.substanceUse ||
+      flags.childSafeguarding
+    );
+  }
+
+  private buildRiskRequest(): RecordRiskAssessmentRequest {
+    const risk = this.conversationForm.getRawValue().risk;
+    const flags = risk.flags;
+    const notes = [
+      risk.crisisNotes && `Crisis notes: ${risk.crisisNotes}`,
+      risk.riskNotes && `Risk / safeguarding notes: ${risk.riskNotes}`,
+      'Recorded during the registration initial conversation.',
+    ]
+      .filter(Boolean)
+      .join('\n');
+    return {
+      suicidalIdeation: flags.selfHarm,
+      selfHarm: risk.selfHarmHistory.startsWith('Yes'),
+      riskToOthers: risk.riskToOthersHistory.startsWith('Yes'),
+      severeDeterioration: risk.escalationRequired.startsWith('Yes') || flags.psychosis,
+      safeguardingConcern:
+        risk.safeguardingHistory.startsWith('Yes') || flags.childSafeguarding || flags.domesticAbuse,
+      notes,
+    };
+  }
+
+  // ---- Success overlay (Desktop88) ----
+
+  protected successMessage(): string {
+    const firstName = this.demographicsForm.getRawValue().personal.firstName || 'The guest';
+    return `${firstName} is now successfully registered as an ACTIVE guest in the EMHIP system.`;
   }
 }

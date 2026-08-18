@@ -1,4 +1,4 @@
-import { GuestStatus } from '../../core/api-models';
+import { GuestPathway, GuestStatus } from '../../core/api-models';
 
 /** Display label + chip colors for a GuestStatus, matching the status-pill styling in
  *  GuestOverviewTab (project/screens/Components.bundle.js) — green/gold/grey/red pills. */
@@ -84,6 +84,25 @@ const FOLLOWUP_STATUS_CHIPS: Record<string, StatusChip> = {
 
 export function followUpStatusChip(status: string): StatusChip {
   return FOLLOWUP_STATUS_CHIPS[status] ?? { label: humanize(status), bg: '#f0f0f0', fg: '#646464' };
+}
+
+/** Display labels for the guest's overall pathway allocation, matching the header chip and
+ *  "Current pathway" copy in GuestOverviewTab (bundle shows "Wellbeing support"). */
+const GUEST_PATHWAY_LABELS: Record<GuestPathway, string> = {
+  MentalWellbeing: 'Wellbeing support',
+  ClinicalSupport: 'Clinical support',
+  CommunityRecovery: 'Community recovery',
+};
+
+export function guestPathwayLabel(pathway: GuestPathway | string | null | undefined): string | null {
+  if (!pathway) return null;
+  return GUEST_PATHWAY_LABELS[pathway as GuestPathway] ?? humanize(pathway);
+}
+
+/** Gold pill used for the pathway chip beside the status chip in the identity header. */
+export function guestPathwayChip(pathway: GuestPathway | string | null | undefined): StatusChip | null {
+  const label = guestPathwayLabel(pathway);
+  return label ? { label, bg: '#fff9e4', fg: '#9d852d' } : null;
 }
 
 const PATHWAY_STATUS_CHIPS: Record<string, StatusChip> = {

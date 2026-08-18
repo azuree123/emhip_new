@@ -1,0 +1,141 @@
+<div class="drill-panel">
+  <div class="drill-panel__head">
+    <div class="drill-panel__title">{{ title() }}</div>
+
+    @if (variant() === 'active') {
+      <div class="drill-panel__tools">
+        <div class="drill-search">
+          <svg width="15" height="15" viewBox="0 0 15.001 15.001" fill="none" aria-hidden="true">
+            <path
+              d="M 14.506 15.496 C 14.779 15.769 15.222 15.769 15.496 15.496 C 15.769 15.222 15.769 14.779 15.496 14.506 L 15.001 15.001 L 14.506 15.496 Z M 15.001 15.001 L 15.496 14.506 L 11.165 10.175 L 10.67 10.67 L 10.175 11.165 L 14.506 15.496 L 15.001 15.001 Z M 10.67 10.67 L 11.165 11.165 C 12.468 9.861 13.2 8.094 13.2 6.25 L 12.5 6.25 L 11.8 6.25 C 11.8 7.722 11.216 9.134 10.175 10.175 L 10.67 10.67 Z M 12.5 6.25 L 13.2 6.25 C 13.2 4.407 12.468 2.639 11.165 1.336 L 10.67 1.831 L 10.175 2.326 C 11.216 3.366 11.8 4.778 11.8 6.25 L 12.5 6.25 Z M 10.67 1.831 L 11.165 1.336 C 9.861 0.032 8.094 -0.7 6.25 -0.7 L 6.25 0 L 6.25 0.7 C 7.722 0.7 9.134 1.285 10.175 2.326 L 10.67 1.831 Z M 6.25 0 L 6.25 -0.7 C 4.407 -0.7 2.639 0.032 1.336 1.336 L 1.831 1.831 L 2.326 2.326 C 3.366 1.285 4.778 0.7 6.25 0.7 L 6.25 0 Z M 1.831 1.831 L 1.336 1.336 C 0.032 2.639 -0.7 4.407 -0.7 6.25 L 0 6.25 L 0.7 6.25 C 0.7 4.778 1.285 3.366 2.326 2.326 L 1.831 1.831 Z M 0 6.25 L -0.7 6.25 C -0.7 8.094 0.032 9.861 1.336 11.165 L 1.831 10.67 L 2.326 10.175 C 1.285 9.134 0.7 7.722 0.7 6.25 L 0 6.25 Z M 1.831 10.67 L 1.336 11.165 C 2.639 12.468 4.407 13.2 6.25 13.2 L 6.25 12.5 L 6.25 11.8 C 4.778 11.8 3.366 11.216 2.326 10.175 L 1.831 10.67 Z M 6.25 12.5 L 6.25 13.2 C 8.094 13.2 9.861 12.468 11.165 11.165 L 10.67 10.67 L 10.175 10.175 C 9.134 11.216 7.722 11.8 6.25 11.8 L 6.25 12.5 Z"
+              fill="currentColor"
+            />
+          </svg>
+          <input
+            type="text"
+            placeholder="Search guest by name, ID, phone, CMHW..."
+            aria-label="Search active guests"
+            [value]="query()"
+            (input)="query.set($any($event.target).value)"
+          />
+        </div>
+        <!-- Static dropdown affordances from Frame 23 (no backing filter data yet). -->
+        <div class="drill-chip" aria-hidden="true">
+          Pathway
+          <svg width="14" height="14" viewBox="0 0 8.75 4.375" fill="none">
+            <path
+              d="M 9.28 0.53 C 9.573 0.237 9.573 -0.237 9.28 -0.53 C 8.987 -0.823 8.513 -0.823 8.22 -0.53 L 8.75 0 L 9.28 0.53 Z M 4.375 4.375 L 3.845 4.905 C 4.138 5.198 4.612 5.198 4.905 4.905 L 4.375 4.375 Z M 0.53 -0.53 C 0.237 -0.823 -0.237 -0.823 -0.53 -0.53 C -0.823 -0.237 -0.823 0.237 -0.53 0.53 L 0 0 L 0.53 -0.53 Z M 8.75 0 L 8.22 -0.53 L 3.845 3.845 L 4.375 4.375 L 4.905 4.905 L 9.28 0.53 L 8.75 0 Z M 4.375 4.375 L 4.905 3.845 L 0.53 -0.53 L 0 0 L -0.53 0.53 L 3.845 4.905 L 4.375 4.375 Z"
+              fill="currentColor"
+            />
+          </svg>
+        </div>
+        <div class="drill-chip" aria-hidden="true">
+          Assigned CMHW
+          <svg width="14" height="14" viewBox="0 0 8.75 4.375" fill="none">
+            <path
+              d="M 9.28 0.53 C 9.573 0.237 9.573 -0.237 9.28 -0.53 C 8.987 -0.823 8.513 -0.823 8.22 -0.53 L 8.75 0 L 9.28 0.53 Z M 4.375 4.375 L 3.845 4.905 C 4.138 5.198 4.612 5.198 4.905 4.905 L 4.375 4.375 Z M 0.53 -0.53 C 0.237 -0.823 -0.237 -0.823 -0.53 -0.53 C -0.823 -0.237 -0.823 0.237 -0.53 0.53 L 0 0 L 0.53 -0.53 Z M 8.75 0 L 8.22 -0.53 L 3.845 3.845 L 4.375 4.375 L 4.905 4.905 L 9.28 0.53 L 8.75 0 Z M 4.375 4.375 L 4.905 3.845 L 0.53 -0.53 L 0 0 L -0.53 0.53 L 3.845 4.905 L 4.375 4.375 Z"
+              fill="currentColor"
+            />
+          </svg>
+        </div>
+        <div class="drill-chip" aria-hidden="true">
+          Last Activity
+          <svg width="14" height="14" viewBox="0 0 8.75 4.375" fill="none">
+            <path
+              d="M 9.28 0.53 C 9.573 0.237 9.573 -0.237 9.28 -0.53 C 8.987 -0.823 8.513 -0.823 8.22 -0.53 L 8.75 0 L 9.28 0.53 Z M 4.375 4.375 L 3.845 4.905 C 4.138 5.198 4.612 5.198 4.905 4.905 L 4.375 4.375 Z M 0.53 -0.53 C 0.237 -0.823 -0.237 -0.823 -0.53 -0.53 C -0.823 -0.237 -0.823 0.237 -0.53 0.53 L 0 0 L 0.53 -0.53 Z M 8.75 0 L 8.22 -0.53 L 3.845 3.845 L 4.375 4.375 L 4.905 4.905 L 9.28 0.53 L 8.75 0 Z M 4.375 4.375 L 4.905 3.845 L 0.53 -0.53 L 0 0 L -0.53 0.53 L 3.845 4.905 L 4.375 4.375 Z"
+              fill="currentColor"
+            />
+          </svg>
+        </div>
+        <div class="drill-chip" aria-hidden="true">
+          Next Contact
+          <svg width="14" height="14" viewBox="0 0 8.75 4.375" fill="none">
+            <path
+              d="M 9.28 0.53 C 9.573 0.237 9.573 -0.237 9.28 -0.53 C 8.987 -0.823 8.513 -0.823 8.22 -0.53 L 8.75 0 L 9.28 0.53 Z M 4.375 4.375 L 3.845 4.905 C 4.138 5.198 4.612 5.198 4.905 4.905 L 4.375 4.375 Z M 0.53 -0.53 C 0.237 -0.823 -0.237 -0.823 -0.53 -0.53 C -0.823 -0.237 -0.823 0.237 -0.53 0.53 L 0 0 L 0.53 -0.53 Z M 8.75 0 L 8.22 -0.53 L 3.845 3.845 L 4.375 4.375 L 4.905 4.905 L 9.28 0.53 L 8.75 0 Z M 4.375 4.375 L 4.905 3.845 L 0.53 -0.53 L 0 0 L -0.53 0.53 L 3.845 4.905 L 4.375 4.375 Z"
+              fill="currentColor"
+            />
+          </svg>
+        </div>
+      </div>
+    }
+  </div>
+
+  <div class="drill-table" [class.drill-table--pending]="variant() === 'pending'">
+    <div class="drill-table__header">
+      <span>Guest Name</span>
+      @switch (variant()) {
+        @case ('pending') {
+          <span>Registered</span>
+          <span>Days waiting</span>
+          <span>Action</span>
+        }
+        @case ('inactive') {
+          <span>Pathway</span>
+          <span>Last activity</span>
+          <span>Months inactive</span>
+          <span>CMHW</span>
+        }
+        @default {
+          <span>Pathway</span>
+          <span>CMHW</span>
+          <span>Last Activity</span>
+          <span>Next contact</span>
+        }
+      }
+    </div>
+
+    @for (g of rows(); track g.id) {
+      <div class="drill-table__row" (click)="openGuest(g.id)">
+        <span class="drill-guest">
+          <span class="drill-guest__avatar">{{ initials(g) }}</span>
+          <span class="drill-guest__text">
+            <span class="drill-guest__name">{{ fullName(g) }}</span>
+            <span class="drill-guest__id">{{ shortId(g) }}</span>
+          </span>
+        </span>
+        @switch (variant()) {
+          @case ('pending') {
+            <span class="drill-cell">{{ fullDate(g.registeredAt) }}</span>
+            <span class="drill-cell">{{ daysWaiting(g) }}</span>
+            <span class="drill-cell">
+              <button type="button" class="drill-action" (click)="startConversation(g.id, $event)">Start conversation</button>
+            </span>
+          }
+          @case ('inactive') {
+            <span class="drill-cell">{{ pathwayLabel(g) }}</span>
+            <span class="drill-cell">{{ fullDate(g.lastContactAt) }}</span>
+            <span class="drill-cell">{{ monthsInactive(g) }}</span>
+            <span class="drill-cell">{{ g.assignedCmhwName ?? '—' }}</span>
+          }
+          @default {
+            <span class="drill-cell">{{ pathwayLabel(g) }}</span>
+            <span class="drill-cell">{{ g.assignedCmhwName ?? '—' }}</span>
+            <span class="drill-cell">{{ dayMonth(g.lastContactAt) }}</span>
+            <span class="drill-cell">{{ dayMonth(g.nextContactDue) }}</span>
+          }
+        }
+      </div>
+    } @empty {
+      @if (state() === 'loading') {
+        <div class="empty">Loading guests…</div>
+      } @else if (state() === 'error') {
+        <div class="empty">Unable to load guests right now.</div>
+      } @else {
+        <div class="empty">No guests in this list.</div>
+      }
+    }
+  </div>
+
+  <div class="drill-panel__footer">
+    <span class="drill-panel__count">Showing {{ rows().length }} of {{ total() }} {{ footerNoun() }}</span>
+    <a class="link-red" routerLink="/guests" [queryParams]="{ status: statusParam() }">
+      View guest list
+      <svg width="14" height="14" viewBox="0 0 13.5 13.5" fill="none" aria-hidden="true">
+        <path
+          d="M 2.437 1.125 C 1.713 1.125 1.125 1.713 1.125 2.438 L 1.125 11.063 C 1.125 11.787 1.713 12.375 2.437 12.375 L 11.062 12.375 C 11.787 12.375 12.375 11.787 12.375 11.063 L 12.375 8.063 C 12.375 7.752 12.627 7.5 12.937 7.5 C 13.248 7.5 13.5 7.752 13.5 8.063 L 13.5 11.063 C 13.5 12.409 12.408 13.5 11.062 13.5 L 2.437 13.5 C 1.091 13.5 0 12.409 0 11.063 L 0 2.438 C 0 1.091 1.091 0 2.437 0 L 5.437 0 C 5.748 0 6 0.252 6 0.563 C 6 0.873 5.748 1.125 5.437 1.125 L 2.437 1.125 Z M 7.5 0.563 C 7.5 0.252 7.752 0 8.062 0 L 12.938 0 C 13.248 0 13.5 0.252 13.5 0.563 L 13.5 5.438 C 13.5 5.748 13.248 6 12.938 6 C 12.627 6 12.375 5.748 12.375 5.438 L 12.375 1.921 L 8.46 5.835 C 8.24 6.055 7.884 6.055 7.665 5.835 C 7.445 5.616 7.445 5.259 7.665 5.04 L 11.58 1.125 L 8.062 1.125 C 7.752 1.125 7.5 0.873 7.5 0.563 Z"
+          fill="currentColor"
+        />
+      </svg>
+    </a>
+  </div>
+</div>

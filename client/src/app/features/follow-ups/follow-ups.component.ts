@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+import { CommonModule, formatDate } from '@angular/common';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -27,10 +27,14 @@ const STATUS_COLORS: Record<FollowUpStatus, { bg: string; fg: string }> = {
 type DateRangeFilter = '' | 'today' | 'week' | 'month';
 
 /**
- * "Follow-up log" screen — ported from Desktop34 in project/screens/Components.bundle.js.
+ * "Follow-up log" screen — restyled after Desktop58/Desktop65 in
+ * project/screens/Components.bundle.js (the due/overdue queue design: red overdue alert banner,
+ * stat tiles with plain sub-labels, 185px row cards with a right-hand countdown column and a
+ * record-contact affordance; the post-record confirmation state reuses the design's green
+ * "Resolved" pill / "Follow-up logged" chip).
  * Backed by GET /followups (keyset/cursor pagination per ARCHITECTURE.md: we never offset-paginate,
  * we always pass the opaque `nextCursor` from the previous page back verbatim).
- * Search / entry-type / date-range filters are applied client-side over the loaded pages;
+ * Search / status / date-range filters are applied client-side over the loaded pages;
  * the overdue toggle and assignee filter are passed to the API.
  */
 @Component({
@@ -64,7 +68,6 @@ export class FollowUpsComponent implements OnInit {
   readonly statusFilter = signal<'' | FollowUpStatus>('');
   readonly dateRange = signal<DateRangeFilter>('');
 
-  readonly now = new Date();
   readonly weekStart = FollowUpsComponent.startOfWeek(new Date());
   readonly userName = this.auth.current().displayName;
 
@@ -89,16 +92,22 @@ export class FollowUpsComponent implements OnInit {
     () => new Set(this.items().filter((i) => this.inRange(i.dueDate, 'today')).map((i) => i.guestId)).size,
   );
   readonly dueThisWeekCount = computed(() => this.items().filter((i) => this.inRange(i.dueDate, 'week')).length);
-  readonly dueThisMonthCount = computed(() => this.items().filter((i) => this.inRange(i.dueDate, 'month')).length);
   readonly assignedToMeCount = computed(() => this.items().filter((i) => i.assigneeName === this.userName).length);
+  readonly overdueLoadedCount = computed(() => this.items().filter((i) => i.isOverdue).length);
 
   readonly modalOpen = signal(false);
   readonly modalMode = signal<'schedule' | 'contact'>('schedule');
   readonly modalGuestId = signal('');
   readonly modalGuestName = signal<string | null>(null);
+  /** Set when the modal was opened from a specific queue row — drives the recorded state on that row. */
+  readonly modalFollowUpId = signal<string | null>(null);
   readonly saving = signal(false);
   readonly saveError = signal<string | null>(null);
   readonly exporting = signal(false);
+
+  /** followUpId -> occurredAt ISO of a contact recorded this session (the Desktop65 recorded state). */
+  readonly recordedContact = signal<Record<string, string>>({});
+  readonly successMsg = signal<string | null>(null);
 
   scheduleForm = { dueDate: '', assigneeStaffId: this.auth.current().staffId, notes: '' };
   contactForm = { type: 'PhoneCall' as ContactType, outcome: 'Successful' as ContactOutcome, occurredAt: this.nowLocal(), notes: '' };
@@ -114,6 +123,51 @@ export class FollowUpsComponent implements OnInit {
   /** Short human-readable reference derived from the follow-up id (no ref number exists in the DTO). */
   refLabel(item: FollowUpQueueItemDto): string {
     return item.id.replace(/-/g, '').slice(0, 6).toUpperCase();
+  }
+
+  /** Right-hand countdown column, Desktop58-style: "18h overdue" / "11h left" against dueDate. */
+  windowLabel(item: FollowUpQueueItemDto): { text: string; cls: 'overdue' | 'left' | 'done' | 'muted' } {
+    if (item.status === 'Completed') return { text: 'Completed', cls: 'done' };
+    if (item.status === 'Cancelled') return { text: 'Cancelled', cls: 'muted' };
+    const hrs = (new Date(item.dueDate).getTime() - Date.now()) / 3_600_000;
+    if (hrs <= 0) return { text: `${FollowUpsComponent.formatDelta(hrs)} overdue`, cls: 'overdue' };
+    if (item.isOverdue) return { text: 'Overdue', cls: 'overdue' };
+    return { text: `${FollowUpsComponent.formatDelta(hrs)} left`, cls: 'left' };
+  }
+
+  /** Second line under the countdown: "Due by 22:00 today" / "Was due 12 May, 10:00 AM". */
+  deadlineLabel(item: FollowUpQueueItemDto): string {
+    const due = new Date(item.dueDate);
+    if (item.status === 'Completed' || item.status === 'Cancelled') {
+      return `Due ${formatDate(due, 'd MMM y', 'en-US')}`;
+    }
+    if (due.getTime() <= Date.now()) {
+      return `Was due ${formatDate(due, 'd MMM, h:mm a', 'en-US')}`;
+    }
+    const time = formatDate(due, 'HH:mm', 'en-US');
+    const today = new Date();
+    const tomorrow = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
+    if (FollowUpsComponent.sameDay(due, today)) return `Due by ${time} today`;
+    if (FollowUpsComponent.sameDay(due, tomorrow)) return `Due by ${time} tomorrow`;
+    return `Due by ${time}, ${formatDate(due, 'd MMM', 'en-US')}`;
+  }
+
+  private static formatDelta(hours: number): string {
+    const total = Math.abs(hours);
+    if (total >= 48) {
+      const d = Math.floor(total / 24);
+      const h = Math.round(total % 24);
+      return h > 0 ? `${d}d ${h}h` : `${d}d`;
+    }
+    return `${Math.max(1, Math.round(total))}h`;
+  }
+
+  private static sameDay(a: Date, b: Date): boolean {
+    return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+  }
+
+  scrollToOverdue(): void {
+    document.querySelector('.row--overdue')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
 
   private static startOfWeek(d: Date): Date {
@@ -193,16 +247,20 @@ export class FollowUpsComponent implements OnInit {
     });
   }
 
-  openAddForGuest(guestId: string, guestName: string): void {
-    this.modalGuestId.set(guestId);
-    this.modalGuestName.set(guestName);
+  /** Record-contact affordance on a due/overdue row (Desktop58's "Log follow up"). */
+  openContactForItem(item: FollowUpQueueItemDto): void {
+    this.modalGuestId.set(item.guestId);
+    this.modalGuestName.set(item.guestName);
+    this.modalFollowUpId.set(item.id);
     this.resetModalForms();
+    this.modalMode.set('contact');
     this.modalOpen.set(true);
   }
 
   openAddNew(): void {
     this.modalGuestId.set('');
     this.modalGuestName.set(null);
+    this.modalFollowUpId.set(null);
     this.resetModalForms();
     this.modalOpen.set(true);
   }
@@ -260,7 +318,25 @@ export class FollowUpsComponent implements OnInit {
         occurredAt: new Date(this.contactForm.occurredAt).toISOString(),
         notes: this.contactForm.notes || null,
       };
-      this.guestsApi.addContact(guestId, req).subscribe({ next: done, error: () => fail('Could not log the contact.') });
+      const followUpId = this.modalFollowUpId();
+      const guestName = this.modalGuestName();
+      this.guestsApi.addContact(guestId, req).subscribe({
+        next: () => {
+          this.saving.set(false);
+          this.modalOpen.set(false);
+          if (followUpId) {
+            // Recorded state (Desktop65): annotate the row in place instead of reloading, so the
+            // loaded keyset pages (and the confirmation chip) survive.
+            this.recordedContact.update((m) => ({ ...m, [followUpId]: req.occurredAt }));
+            this.successMsg.set(
+              `Contact recorded for ${guestName ?? 'guest'} — ${formatDate(req.occurredAt, 'd MMM, h:mm a', 'en-US')}.`,
+            );
+          } else {
+            this.loadFirstPage();
+          }
+        },
+        error: () => fail('Could not log the contact.'),
+      });
     }
   }
 

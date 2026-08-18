@@ -1,0 +1,144 @@
+// Export dialog — Desktop75 modal chrome (project/screens/Components.bundle.js):
+// rgba(0,0,0,0.45) overlay, white r12 dialog, rgb(240,240,240) header bar with
+// 20/600 title + 12/500 sub, 36px white close button, r8 period fields, red
+// primary download action.
+@import 'reports-shared';
+
+:host {
+  font-family: $font-body;
+}
+
+.export-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 64px 16px;
+  background: rgba(0, 0, 0, 0.45);
+  overflow-y: auto;
+}
+
+.export-dialog {
+  width: 100%;
+  max-width: 560px;
+  background: rgb(255, 255, 255);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.24);
+
+  &__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 20px 22px;
+    background: rgb(240, 240, 240);
+  }
+
+  &__title {
+    margin: 0;
+    font-weight: 600;
+    font-size: 20px;
+    line-height: 24px;
+    color: $ink;
+  }
+
+  &__subtitle {
+    margin: 4px 0 0;
+    font-weight: 500;
+    font-size: 12px;
+    line-height: 24px;
+    color: $ink;
+  }
+
+  &__close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border: none;
+    border-radius: 6px;
+    background: rgb(255, 255, 255);
+    color: rgb(33, 33, 33);
+    cursor: pointer;
+    flex-shrink: 0;
+
+    &:hover {
+      background: rgb(246, 246, 246);
+    }
+  }
+
+  &__body {
+    padding: 24px 22px 8px;
+  }
+
+  &__section {
+    margin: 0 0 12px;
+    font-weight: 600;
+    font-size: 14px;
+    line-height: 24px;
+    color: $ink;
+  }
+
+  &__period {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  &__field {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+
+    &-caption {
+      font-weight: 500;
+      font-size: 12px;
+      line-height: 24px;
+      color: $ink;
+    }
+
+    input[type='date'] {
+      height: 37px;
+      padding: 0 12px;
+      border: none;
+      border-radius: 8px;
+      box-shadow: inset 0 0 0 1px $line-soft;
+      background: transparent;
+      font-family: inherit;
+      font-weight: 500;
+      font-size: 12px;
+      letter-spacing: -0.005em;
+      color: $ink-soft;
+
+      &:focus {
+        outline: none;
+        box-shadow: inset 0 0 0 1px $maroon;
+      }
+    }
+  }
+
+  &__note {
+    margin: 20px 0 0;
+    font-weight: 400;
+    font-size: 12px;
+    line-height: 20px;
+    color: $ink-soft;
+  }
+
+  &__error {
+    margin-top: 16px;
+  }
+
+  &__footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 20px 22px 22px;
+  }
+}

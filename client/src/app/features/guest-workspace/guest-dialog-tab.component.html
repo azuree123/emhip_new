@@ -1,0 +1,127 @@
+<div class="tab-panel">
+  @if (loading()) {
+    <div class="state-card">Loading DIALOG assessments…</div>
+  } @else if (error()) {
+    <div class="state-card state-card--error">{{ error() }}</div>
+  } @else if (dialog(); as d) {
+    @if (baselineOnly() && d.baseline) {
+      <div class="info-banner">
+        <span class="info-banner__bar"></span>
+        <svg class="info-banner__icon" width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
+          <path
+            d="M 7.5 0 C 11.642 0 15 3.359 15 7.5 C 15 11.641 11.642 15 7.5 15 C 3.358 15 0 11.641 0 7.5 C 0 3.359 3.358 0 7.5 0 Z M 7.501 9.753 C 7.088 9.753 6.752 10.088 6.752 10.502 C 6.752 10.915 7.088 11.251 7.501 11.251 C 7.915 11.251 8.25 10.915 8.25 10.502 C 8.25 10.088 7.915 9.753 7.501 9.753 Z M 7.5 3.75 C 7.115 3.75 6.798 4.04 6.755 4.413 L 6.75 4.5 L 6.751 8.251 L 6.756 8.338 C 6.8 8.711 7.117 9.001 7.502 9.001 C 7.886 9.001 8.203 8.711 8.246 8.338 L 8.251 8.25 L 8.25 4.5 L 8.245 4.412 C 8.201 4.039 7.884 3.75 7.5 3.75 Z"
+            fill="currentColor"
+          />
+        </svg>
+        <span class="info-banner__text">
+          Baseline recorded {{ formatDate(d.baseline.assessedAt) }} — a comparison score will appear once a second assessment is completed
+        </span>
+      </div>
+    }
+
+    @if (showForm()) {
+      <section class="card">
+        <div class="card__header-row">
+          <h2 class="card__title">Record DIALOG assessment</h2>
+          <button type="button" class="btn-link" (click)="toggleForm()">Cancel</button>
+        </div>
+        <form class="edit-form" (ngSubmit)="submit()">
+          <div class="score-grid">
+            @for (dom of domains; track dom.key) {
+              <label class="edit-form__field">
+                <span>{{ dom.label }}</span>
+                <select [name]="dom.key" [(ngModel)]="form[dom.key]">
+                  @for (s of scoreOptions; track s) {
+                    <option [ngValue]="s">{{ s }}</option>
+                  }
+                </select>
+              </label>
+            }
+          </div>
+          <p class="score-hint">Each domain is scored 1 (worst) to 7 (best).</p>
+          @if (submitError()) {
+            <p class="form-error">{{ submitError() }}</p>
+          }
+          <div class="edit-form__actions">
+            <button type="submit" class="btn-primary" [disabled]="submitting()">{{ submitting() ? 'Saving…' : 'Save assessment' }}</button>
+          </div>
+        </form>
+      </section>
+    }
+
+    <div class="columns">
+      <section class="card score-history">
+        <h2 class="card__title card__title--spaced">Score history</h2>
+        @if (d.baseline; as base) {
+          <div class="score-table">
+            <div class="score-table__head">
+              <span>Domain</span>
+              <span>Baseline</span>
+              <span>Latest</span>
+            </div>
+            @for (dom of domains; track dom.key) {
+              <div class="score-table__row">
+                <span>{{ dom.label }}</span>
+                <span>{{ score(base, dom.key) }}</span>
+                <span>{{ baselineOnly() ? '-' : score(d.latest, dom.key) }}</span>
+              </div>
+            }
+            <div class="score-table__row score-table__row--total">
+              <span>Total</span>
+              <span>{{ base.total }}/77</span>
+              <span>{{ baselineOnly() || !d.latest ? '-' : d.latest.total + '/77' }}</span>
+            </div>
+          </div>
+        } @else {
+          <p class="empty-state">No DIALOG assessments recorded yet.</p>
+        }
+      </section>
+
+      <div class="column">
+        <section class="card hero">
+          <h2 class="card__title">Total DIALOG score</h2>
+          @if (current(); as c) {
+            <span class="hero__value">{{ c.total }}/77</span>
+            <span class="hero__meta">{{ baselineOnly() ? 'Baseline' : 'Latest · v' + c.version }} · {{ formatDate(c.assessedAt) }}</span>
+          } @else {
+            <span class="hero__value hero__value--empty">—</span>
+            <span class="hero__meta">No assessments yet</span>
+          }
+          <svg class="hero__mark" width="106" height="104" viewBox="0 0 106 104" fill="none" aria-hidden="true">
+            <g transform="matrix(1,0,0,-1,0,88.882)">
+              <path
+                d="M 52.972 88.882 C 23.764 88.882 0 65.555 0 36.882 L 19.456 36.882 C 19.456 55.024 34.491 69.783 52.972 69.783 C 71.453 69.783 86.488 55.024 86.488 36.882 C 86.488 28.056 82.976 19.768 76.597 13.547 L 90.312 0 C 100.392 9.835 105.943 22.932 105.943 36.884 C 105.944 65.556 82.18 88.882 52.972 88.882 Z"
+                fill="#eb3c2c"
+              />
+            </g>
+            <g transform="matrix(1,0,0,-1,0,104)">
+              <path
+                d="M 19.456 52 L 0 52 C 0 39.462 4.61 27.351 12.981 17.899 C 23.054 6.525 37.63 0 52.972 0 L 52.972 19.099 C 43.264 19.099 34.041 23.229 27.665 30.428 C 22.372 36.406 19.456 44.068 19.456 52 Z"
+                fill="#f6f6f6"
+              />
+            </g>
+            <g transform="matrix(1,0,0,-1,53.254,103.92)">
+              <path
+                d="M 23.629 28.667 C 20.371 25.488 16.565 23.039 12.319 21.39 C 8.403 19.87 4.259 19.099 0 19.099 L 0 0 C 6.719 0 13.271 1.222 19.474 3.63 C 26.191 6.237 32.204 10.104 37.345 15.123 L 23.629 28.667 Z"
+                fill="#f6f6f6"
+              />
+            </g>
+          </svg>
+        </section>
+
+        <section class="card next-due">
+          <div class="next-due__info">
+            <span class="next-due__label">Next DIALOG assessment due</span>
+            <span class="next-due__value">Not yet scheduled</span>
+          </div>
+          <button type="button" class="record-new" (click)="toggleForm()">
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+              <path d="M 9 3.75 L 9 14.25 M 3.75 9 L 14.25 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+            </svg>
+            {{ showForm() ? 'Cancel' : 'Record new' }}
+          </button>
+        </section>
+      </div>
+    </div>
+  }
+</div>

@@ -1,0 +1,204 @@
+@use './guest-tab-shared';
+@use './guest-workspace.tokens' as t;
+
+// Geometry from GuestInitialConversationTab / GuestInitialConversationNotCompleted
+// (Components.bundle.js 18990-22923): amber "permanent record" banner, 577/576 column
+// split, 48px pathway tiles (red when selected), and a centred dashed empty-state panel.
+
+.ic-banner {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  min-height: 48px;
+  padding: 12px 24px 12px 47px;
+  background: t.$color-amber-banner-bg;
+
+  &__bar {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: t.$color-amber-banner-bar;
+  }
+
+  &__stack {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  &__title {
+    font-family: t.$font-primary;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 24px;
+    color: t.$color-text-primary;
+  }
+
+  &__text {
+    font-family: t.$font-primary;
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 24px;
+    color: t.$color-text-primary;
+  }
+
+  // Not-completed variant sits inside the card (bundle: 12px copy under a 14px title).
+  &--inset {
+    margin-bottom: 24px;
+
+    .ic-banner__text {
+      font-size: 12px;
+      line-height: 20px;
+    }
+  }
+}
+
+.ic-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 23px;
+  align-items: start;
+}
+
+.ic-column {
+  display: flex;
+  flex-direction: column;
+  gap: 23px;
+}
+
+.card__title--spaced {
+  margin-bottom: 24px;
+}
+
+.field-grid--two {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.ic-longfields {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.ic-longtext {
+  margin: 0;
+  font-family: t.$font-primary;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 24px;
+  color: t.$color-text-body;
+  white-space: pre-line;
+}
+
+.pathway-options {
+  display: flex;
+  gap: 48px;
+}
+
+.pathway-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+
+  &__tile {
+    width: 48px;
+    height: 48px;
+    border-radius: 6px;
+    background: t.$color-tile-bg;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+
+    &--active {
+      background: t.$color-brand-red-bright;
+    }
+  }
+
+  &__label {
+    font-family: t.$font-primary;
+    font-weight: 600;
+    font-size: 14px;
+    line-height: 24px;
+    color: t.$color-text-primary;
+  }
+}
+
+.pathway-afa {
+  margin: 16px 0 0;
+  font-family: t.$font-primary;
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 18px;
+  color: t.$color-gold-text;
+}
+
+.chip--complete {
+  background: t.$color-success-bg;
+  color: t.$color-success-text;
+}
+
+.ic-empty {
+  display: flex;
+  flex-direction: column;
+}
+
+.ic-empty__box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 8px;
+  padding: 36px 24px;
+  border-radius: 4px;
+  border: 1px dashed t.$color-border-strong;
+  color: t.$color-text-primary;
+
+  .btn-primary {
+    margin-top: 16px;
+  }
+}
+
+.ic-empty__title {
+  font-family: t.$font-primary;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 24px;
+  color: t.$color-text-primary;
+}
+
+.ic-empty__copy {
+  margin: 0;
+  max-width: 576px;
+  font-family: t.$font-primary;
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 24px;
+  color: t.$color-text-primary;
+}
+
+.ic-form {
+  margin-top: 8px;
+}
+
+@media (max-width: 960px) {
+  .ic-columns {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .ic-column {
+    gap: 16px;
+  }
+
+  .pathway-options {
+    gap: 28px;
+  }
+
+  .field-grid--two {
+    grid-template-columns: 1fr;
+  }
+}

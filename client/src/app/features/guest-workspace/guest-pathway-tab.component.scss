@@ -1,1 +1,328 @@
+// Pathway tab — literal colors/spacing lifted from GuestPathwayTab in
+// project/screens/Components.bundle.js (lines 29090–31284), including the
+// Change Pathway dialog and its three pathway option cards.
 @use './guest-tab-shared';
+@use './guest-workspace.tokens' as t;
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+// Red "Add New Pathway" header button — 36px, bg rgb(225,38,40), white 14/500.
+.add-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 16px;
+  border: none;
+  border-radius: 4px;
+  background: t.$color-brand-red;
+  color: #fff;
+  font-family: t.$font-primary;
+  font-weight: 500;
+  font-size: 14px;
+  letter-spacing: -0.005em;
+  cursor: pointer;
+}
+
+.referral-form {
+  margin-bottom: 20px;
+}
+
+.entries {
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+}
+
+// History entry tile — 8px radius, inset 1px rgb(238,238,238) border.
+.pathway-entry {
+  border-radius: 8px;
+  box-shadow: inset 0 0 0 1px #eeeeee;
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 672px;
+
+  &__top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  &__heading {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  &__date {
+    font-family: t.$font-primary;
+    font-weight: 500;
+    font-size: 12px;
+    line-height: 18px;
+    color: t.$color-text-primary;
+  }
+
+  &__title {
+    font-family: t.$font-primary;
+    font-weight: 600;
+    font-size: 16px;
+    line-height: 24px;
+    letter-spacing: -0.005em;
+    color: t.$color-text-primary;
+  }
+
+  &__cols {
+    display: grid;
+    grid-template-columns: 1fr 200px;
+    gap: 16px;
+  }
+
+  &__col {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  &__label {
+    font-family: t.$font-primary;
+    font-weight: 500;
+    font-size: 12px;
+    line-height: 18px;
+    color: t.$color-text-primary;
+  }
+
+  &__value {
+    font-family: t.$font-primary;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 24px;
+    letter-spacing: -0.005em;
+    color: t.$color-text-primary;
+    overflow-wrap: anywhere;
+  }
+}
+
+// "Current Pathway" pill — bg rgb(238,241,247), text rgb(56,64,73).
+.current-pill {
+  border-radius: 200px;
+  padding: 4px 16px;
+  background: #eef1f7;
+  font-family: t.$font-primary;
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 16px;
+  color: #384049;
+  white-space: nowrap;
+}
+
+// Change Pathway dialog — white 12px-radius panel over a dimmed backdrop.
+.dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.dialog {
+  width: 858px;
+  max-width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  background: #fff;
+  border-radius: 12px;
+  padding: 32px 40px;
+  display: flex;
+  flex-direction: column;
+
+  &__title {
+    margin: 0;
+    font-family: t.$font-primary;
+    font-weight: 600;
+    font-size: 20px;
+    line-height: 24px;
+    color: t.$color-text-primary;
+  }
+
+  &__subtitle {
+    margin: 4px 0 24px;
+    font-family: t.$font-primary;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 24px;
+    color: t.$color-text-meta;
+  }
+
+  &__label {
+    font-family: t.$font-primary;
+    font-weight: 600;
+    font-size: 14px;
+    line-height: 24px;
+    color: t.$color-text-primary;
+    margin-bottom: 12px;
+  }
+
+  &__note {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 20px 0 0;
+    font-family: t.$font-primary;
+    font-style: italic;
+    font-weight: 400;
+    font-size: 10px;
+    line-height: 24px;
+    color: t.$color-text-body;
+
+    svg {
+      flex: none;
+      color: t.$color-brand;
+    }
+  }
+
+  &__actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 24px;
+  }
+
+  // "Change Pathway" submit — bg rgb(235,60,44), white 14/500.
+  &__submit {
+    height: 36px;
+    padding: 0 24px;
+    border: none;
+    border-radius: 4px;
+    background: t.$color-brand-red-bright;
+    color: #fff;
+    font-family: t.$font-primary;
+    font-weight: 500;
+    font-size: 14px;
+    letter-spacing: -0.005em;
+    cursor: pointer;
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: default;
+    }
+  }
+}
+
+.option-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 13px;
+}
+
+// Pathway option card — 157px tall, radius 8; selected ring rgb(235,60,44).
+.option-card {
+  position: relative;
+  min-height: 157px;
+  border: none;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: inset 0 0 0 1px #e5e5e5;
+  padding: 14px 16px;
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+
+  &--selected {
+    box-shadow: inset 0 0 0 1px t.$color-brand-red-bright;
+  }
+
+  // Radio in the top-right: grey ring, or red ring + dot when selected.
+  &__radio {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    box-shadow: inset 0 0 0 1.5px #636366;
+
+    &--selected {
+      box-shadow: inset 0 0 0 1.5px t.$color-brand-red-bright;
+
+      &::after {
+        content: '';
+        position: absolute;
+        left: 3px;
+        top: 3px;
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        background: t.$color-brand-red-bright;
+      }
+    }
+  }
+
+  // 48px icon tile — grey, red when selected.
+  &__tile {
+    width: 48px;
+    height: 48px;
+    border-radius: 6px;
+    background: t.$color-tile-bg;
+
+    &--selected {
+      background: t.$color-brand-red-bright;
+    }
+  }
+
+  &__name {
+    margin-top: 20px;
+    font-family: t.$font-primary;
+    font-weight: 600;
+    font-size: 14px;
+    line-height: 24px;
+    color: t.$color-text-primary;
+  }
+
+  &__desc {
+    font-family: t.$font-primary;
+    font-weight: 500;
+    font-size: 10px;
+    line-height: 14px;
+    color: t.$color-text-primary;
+  }
+}
+
+@media (max-width: 960px) {
+  .option-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .option-card {
+    min-height: 0;
+  }
+
+  .pathway-entry__cols {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .header-actions {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 10px;
+  }
+
+  .dialog {
+    padding: 24px 20px;
+  }
+}

@@ -14,6 +14,8 @@ public sealed record GuestOverviewDto(
     DateTimeOffset RegisteredAt,
     bool HasActiveRiskFlags,
     int OpenFollowUpCount,
+    GuestPathway? Pathway,
+    bool AfaSupportNeeded,
     IReadOnlyList<GuestNoteDto> PinnedNotes,
     IReadOnlyList<GuestContactSummaryDto> RecentContacts);
 

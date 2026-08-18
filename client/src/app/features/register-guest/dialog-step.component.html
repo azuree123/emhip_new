@@ -1,0 +1,102 @@
+<div [formGroup]="form" class="steps-form">
+  <section class="card">
+    <div class="card__header">
+      <h3 class="card__title">DIALOG scale</h3>
+    </div>
+
+    <div class="dialog-scroll">
+      <div class="dialog-table">
+        <!-- Header band (rgb(241,241,241)) -->
+        <div class="dialog-head">
+          <span class="dialog-head__cell dialog-head__cell--sr">Sr</span>
+          <span class="dialog-head__cell dialog-head__cell--area">Life area</span>
+          @for (label of scaleLabels; track label) {
+            <span class="dialog-head__cell dialog-head__cell--scale">{{ label }}</span>
+          }
+          <span class="dialog-head__cell dialog-head__cell--score">Score</span>
+          <span class="dialog-head__cell dialog-head__cell--need">Need help?</span>
+        </div>
+
+        @for (domain of domains; track domain.key; let lastRow = $last) {
+          <div class="dialog-row" [class.dialog-row--last]="lastRow">
+            <span class="dialog-row__sr">{{ domain.sr }}</span>
+            <span class="dialog-row__question">
+              {{ domain.question }}
+              @if (scoreMissing(domain.key)) {
+                <span class="field__error">Select a score.</span>
+              }
+            </span>
+            @for (value of scale; track value) {
+              <button
+                type="button"
+                class="dialog-score"
+                [class.dialog-score--selected]="scoreOf(domain.key) === value"
+                (click)="setScore(domain.key, value)"
+                [attr.aria-pressed]="scoreOf(domain.key) === value"
+                [attr.aria-label]="domain.area + ': ' + value + ' — ' + scaleLabels[value - 1]"
+              >
+                {{ value }}
+              </button>
+            }
+            <span class="dialog-row__score" [class.dialog-row__score--set]="scoreOf(domain.key) !== null">
+              {{ scoreOf(domain.key) ?? '-' }}
+            </span>
+            <span class="dialog-need">
+              <button
+                type="button"
+                class="dialog-need__option"
+                [class.dialog-need__option--yes]="needHelpOf(domain.key) === true"
+                (click)="setNeedHelp(domain.key, true)"
+                [attr.aria-pressed]="needHelpOf(domain.key) === true"
+              >
+                Yes
+              </button>
+              <button
+                type="button"
+                class="dialog-need__option"
+                [class.dialog-need__option--no]="needHelpOf(domain.key) === false"
+                (click)="setNeedHelp(domain.key, false)"
+                [attr.aria-pressed]="needHelpOf(domain.key) === false"
+              >
+                No
+              </button>
+            </span>
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- Results band — auto-calculated ("Auto results calculate on the basis of selecting each question") -->
+    <div class="dialog-results">
+      <div class="dialog-results__stat">
+        <span class="dialog-results__value">{{ totalScore() }}</span>
+        <span class="dialog-results__label">Total score / 77</span>
+      </div>
+      <div class="dialog-results__stat">
+        <span class="dialog-results__value">{{ pad(areasNeedingHelp()) }}</span>
+        <span class="dialog-results__label">Areas needing help</span>
+      </div>
+      <div class="dialog-results__stat">
+        <span
+          class="dialog-results__value"
+          [class.dialog-results__value--ok]="highConcern() === 0"
+          [class.dialog-results__value--alert]="highConcern() > 0"
+        >
+          {{ pad(highConcern()) }}
+        </span>
+        <span class="dialog-results__label">High concern (&le;3)</span>
+      </div>
+    </div>
+
+    <div class="field-row field-row--single dialog-notes">
+      <label class="field">
+        <span class="field__label">Additional notes</span>
+        <textarea
+          class="field__textarea"
+          formControlName="additionalNotes"
+          placeholder="Write what the guest told you in plain language....."
+        ></textarea>
+      </label>
+    </div>
+  </section>
+</div>

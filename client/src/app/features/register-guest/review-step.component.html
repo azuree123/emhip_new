@@ -1,0 +1,123 @@
+<div class="steps-form">
+  <section class="card">
+    <div class="card__header">
+      <h3 class="card__title">Registration summary</h3>
+    </div>
+
+    <!-- The mock's four cells, verbatim -->
+    <div class="summary-grid">
+      <div class="summary-cell">
+        <span class="summary-cell__label">Guest type</span>
+        <span class="summary-cell__value">New guest</span>
+      </div>
+      <div class="summary-cell">
+        <span class="summary-cell__label">Status after registration</span>
+        <span class="summary-cell__value">Active</span>
+      </div>
+    </div>
+    <div class="summary-divider" aria-hidden="true"></div>
+    <div class="summary-grid">
+      <div class="summary-cell">
+        <span class="summary-cell__label">Pathway</span>
+        <span class="summary-cell__value">{{ pathwayLabel() }}</span>
+      </div>
+      <div class="summary-cell">
+        <span class="summary-cell__label">Assigned CMHW</span>
+        <span class="summary-cell__value">{{ cmhwName() }}</span>
+      </div>
+    </div>
+
+    <!-- Entered values from the previous steps -->
+    <h4 class="summary-section">Guest</h4>
+    <div class="summary-grid">
+      <div class="summary-cell">
+        <span class="summary-cell__label">Name</span>
+        <span class="summary-cell__value">{{ guestName() }}</span>
+      </div>
+      <div class="summary-cell">
+        <span class="summary-cell__label">Date of birth</span>
+        <span class="summary-cell__value">{{ dateOfBirth() }}</span>
+      </div>
+      <div class="summary-cell">
+        <span class="summary-cell__label">Phone</span>
+        <span class="summary-cell__value">{{ phone() }}</span>
+      </div>
+      <div class="summary-cell">
+        <span class="summary-cell__label">Email</span>
+        <span class="summary-cell__value">{{ email() }}</span>
+      </div>
+      <div class="summary-cell">
+        <span class="summary-cell__label">Ethnicity</span>
+        <span class="summary-cell__value">{{ ethnicity() }}</span>
+      </div>
+      <div class="summary-cell">
+        <span class="summary-cell__label">Referral type</span>
+        <span class="summary-cell__value">{{ referralType() }}</span>
+      </div>
+    </div>
+
+    <h4 class="summary-section">Initial conversation</h4>
+    <div class="summary-grid">
+      <div class="summary-cell">
+        <span class="summary-cell__label">Session date</span>
+        <span class="summary-cell__value">{{ sessionDate() }}</span>
+      </div>
+      <div class="summary-cell">
+        <span class="summary-cell__label">Type of contact</span>
+        <span class="summary-cell__value">{{ contactType() }}</span>
+      </div>
+      <div class="summary-cell">
+        <span class="summary-cell__label">Immediate escalation required</span>
+        <span class="summary-cell__value">{{ escalation() }}</span>
+      </div>
+    </div>
+
+    <h4 class="summary-section">DIALOG &amp; allocation</h4>
+    <div class="summary-grid">
+      <div class="summary-cell">
+        <span class="summary-cell__label">DIALOG total score</span>
+        <span class="summary-cell__value">{{ dialogTotal() }}</span>
+      </div>
+      <div class="summary-cell">
+        <span class="summary-cell__label">Practical support / AFA needed</span>
+        <span class="summary-cell__value">{{ afaLabel() }}</span>
+      </div>
+      <div class="summary-cell">
+        <span class="summary-cell__label">Follow-up contact</span>
+        <span class="summary-cell__value">{{ followUpCadence() }}</span>
+      </div>
+    </div>
+  </section>
+
+  @if (showCallStatuses) {
+    <section class="card">
+      <div class="card__header">
+        <h3 class="card__title">Submission progress</h3>
+      </div>
+      <ul class="call-list">
+        @for (call of submissionCalls; track call.key) {
+          <li class="call-list__item" [class]="'call-list__item--' + call.status">
+            <span class="call-list__dot" aria-hidden="true"></span>
+            <span class="call-list__label">{{ call.label }}</span>
+            <span class="call-list__status">
+              @switch (call.status) {
+                @case ('done') {
+                  Saved
+                }
+                @case ('running') {
+                  Saving…
+                }
+                @case ('failed') {
+                  Failed
+                }
+                @default {
+                  Waiting
+                }
+              }
+            </span>
+          </li>
+        }
+      </ul>
+    </section>
+  }
+</div>

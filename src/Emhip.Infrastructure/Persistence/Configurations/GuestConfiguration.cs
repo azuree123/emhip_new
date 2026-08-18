@@ -20,6 +20,7 @@ public class GuestConfiguration : IEntityTypeConfiguration<Guest>
         builder.Property(g => g.AddressLine2).HasMaxLength(200);
         builder.Property(g => g.PostCode).HasMaxLength(20);
         builder.Property(g => g.Status).HasConversion<string>().HasMaxLength(30);
+        builder.Property(g => g.Pathway).HasConversion<string>().HasMaxLength(30);
         builder.Property(g => g.RowVersion).IsRowVersion();
 
         builder.HasQueryFilter(g => !g.IsDeleted);

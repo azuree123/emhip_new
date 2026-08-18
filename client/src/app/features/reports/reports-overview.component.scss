@@ -1,0 +1,439 @@
+// Overview tab — Desktop72/73/74 (project/screens/Components.bundle.js).
+@import 'reports-shared';
+
+:host {
+  display: block;
+  font-family: $font-body;
+}
+
+.overview {
+  display: flex;
+  flex-direction: column;
+  gap: 23px;
+}
+
+// ---- DIALOG outcome metrics tiles (365x114 r8 outlined; green/amber accents)
+
+.dm-tiles {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 30px;
+
+  &--wide {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin-top: 12px;
+  }
+}
+
+.dm-tile {
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  min-height: 114px;
+  padding: 7px 20px 10px;
+  border-radius: 8px;
+  box-shadow: inset 0 0 0 1px $line-soft;
+
+  &--green {
+    background: rgb(240, 255, 244);
+    box-shadow: inset 0 0 0 1px rgba(20, 113, 41, 0.21);
+
+    .dm-tile__value--accent {
+      color: $green;
+    }
+  }
+
+  &--red {
+    background: rgb(255, 240, 241);
+    box-shadow: inset 0 0 0 1px rgba(235, 60, 44, 0.21);
+
+    .dm-tile__value--accent {
+      color: $coral;
+    }
+  }
+
+  &--amber {
+    background: rgb(255, 252, 240);
+    box-shadow: inset 0 0 0 1px rgba(157, 133, 45, 0.21);
+
+    .dm-tile__value--accent {
+      color: rgb(157, 133, 45);
+    }
+  }
+
+  &__label {
+    font-family: $font-display;
+    font-weight: 600;
+    font-size: 10px;
+    line-height: 24px;
+    letter-spacing: -0.005em;
+    color: $ink;
+    text-transform: uppercase;
+  }
+
+  &__value {
+    margin-top: 7px;
+    font-weight: 600;
+    font-size: 32px;
+    line-height: 1;
+    color: $ink;
+  }
+
+  &__caption {
+    margin-top: 12px;
+    font-weight: 400;
+    font-size: 12px;
+    line-height: 24px;
+    letter-spacing: -0.005em;
+    color: $ink;
+
+    strong {
+      font-weight: 600;
+    }
+  }
+}
+
+// ---- Card grid (source columns: main 687px, side 466px, 23px gutters) ----
+
+.report-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 687fr) minmax(0, 466fr);
+  gap: 23px;
+  align-items: start;
+
+  &__main,
+  &__side {
+    display: flex;
+    flex-direction: column;
+    gap: 23px;
+    min-width: 0;
+  }
+}
+
+// ---- Pathway distribution rows ------------------------------------------
+
+.pathway-row {
+  margin-bottom: 24px;
+
+  &:first-of-type {
+    margin-top: 27px;
+  }
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+
+  &__top {
+    display: flex;
+    align-items: center;
+  }
+
+  &__label {
+    flex: 1 1 auto;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 24px;
+    color: $ink;
+  }
+
+  &__count {
+    font-weight: 600;
+    font-size: 12px;
+    line-height: 24px;
+    color: $ink;
+  }
+
+  &__unit {
+    margin-left: 5px;
+    font-weight: 500;
+    font-size: 12px;
+    line-height: 24px;
+    color: $ink;
+  }
+
+  &__dot {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: rgb(202, 202, 202);
+    margin: 0 11px;
+  }
+
+  &__percentage {
+    min-width: 28px;
+    text-align: right;
+    font-weight: 600;
+    font-size: 12px;
+    line-height: 24px;
+  }
+
+  &__track {
+    margin-top: 10px;
+    width: 100%;
+    height: 6px;
+    border-radius: 444px;
+    background: rgb(237, 237, 237);
+    overflow: hidden;
+  }
+
+  &__fill {
+    height: 100%;
+    border-radius: 444px;
+    transition: width 0.2s ease;
+  }
+}
+
+// ---- "Guest registrations over time" chart -------------------------------
+// Legend: 45x6 r444 maroon swatch + 10/400 rgb(50,50,50) label. Plot: dashed
+// 1px rgb(232,232,232) gridlines, 12/500 rgb(114,114,114) axis text, 2px
+// maroon line with 14px dots, white r8 tooltip with rgb(228,228,231) border.
+
+.chart-legend {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-top: 6px;
+
+  &__swatch {
+    width: 45px;
+    height: 6px;
+    border-radius: 444px;
+    background: $maroon;
+  }
+
+  &__label {
+    font-weight: 400;
+    font-size: 10px;
+    line-height: 24px;
+    color: $ink-soft;
+    white-space: nowrap;
+  }
+}
+
+.reg-chart {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin-top: 18px;
+
+  &__grid {
+    stroke: $line;
+    stroke-width: 1;
+    stroke-dasharray: 2 2;
+  }
+
+  &__tick {
+    font-family: $font-body;
+    font-weight: 500;
+    font-size: 12px;
+    letter-spacing: -0.005em;
+    fill: $ink-muted;
+    text-anchor: end;
+  }
+
+  &__month {
+    font-family: $font-display;
+    font-weight: 500;
+    font-size: 12px;
+    letter-spacing: -0.005em;
+    fill: $ink-muted;
+    text-anchor: middle;
+  }
+
+  &__line {
+    fill: none;
+    stroke: $maroon;
+    stroke-width: 2;
+    stroke-linejoin: round;
+    stroke-linecap: round;
+  }
+
+  &__dot {
+    fill: $maroon;
+  }
+
+  &__hit {
+    fill: transparent;
+  }
+
+  &__tip {
+    pointer-events: none;
+  }
+
+  &__tip-box {
+    fill: rgb(255, 255, 255);
+    stroke: rgb(228, 228, 231);
+    stroke-width: 1;
+    filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.08));
+  }
+
+  &__tip-notch {
+    fill: rgb(255, 255, 255);
+  }
+
+  &__tip-notch-edge {
+    fill: none;
+    stroke: rgb(228, 228, 231);
+    stroke-width: 1;
+  }
+
+  &__tip-caption {
+    font-family: $font-body;
+    font-weight: 500;
+    font-size: 12px;
+    fill: rgb(113, 113, 122);
+    text-anchor: middle;
+  }
+
+  &__tip-value {
+    font-family: $font-body;
+    font-weight: 700;
+    font-size: 13px;
+    fill: rgb(24, 24, 27);
+    text-anchor: middle;
+  }
+}
+
+// ---- "Follow-up activity" rows (label 14/600, value 14/400, 1px dividers) --
+
+.activity-list {
+  margin-top: 30px;
+}
+
+.activity-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0 9px;
+
+  & + & {
+    border-top: 1px solid $line;
+  }
+
+  &__label {
+    font-weight: 600;
+    font-size: 14px;
+    line-height: 24px;
+    color: $ink;
+  }
+
+  &__value {
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 24px;
+    color: $ink-soft;
+  }
+}
+
+// ---- "Guest demographics / Ethnicity breakdown" rows ---------------------
+// Label 14/500, count 12/600 + GUEST 12/500 + dot + coral 12/600 percentage;
+// 6px r444 track rgb(237,237,237) with rgb(235,60,44) fill (Desktop72).
+
+.ethnic-row {
+  margin-bottom: 20px;
+
+  &:first-of-type {
+    margin-top: 27px;
+  }
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+
+  &__top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  &__label {
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 24px;
+    color: $ink;
+  }
+
+  &__meta {
+    display: inline-flex;
+    align-items: center;
+  }
+
+  &__count {
+    font-weight: 600;
+    font-size: 12px;
+    line-height: 24px;
+    color: $ink;
+  }
+
+  &__unit {
+    margin-left: 5px;
+    font-weight: 500;
+    font-size: 12px;
+    line-height: 24px;
+    color: $ink;
+  }
+
+  &__dot {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: rgb(202, 202, 202);
+    margin: 0 11px;
+  }
+
+  &__percentage {
+    font-weight: 600;
+    font-size: 12px;
+    line-height: 24px;
+    color: $red;
+  }
+
+  &__track {
+    margin-top: 10px;
+    width: 100%;
+    height: 6px;
+    border-radius: 444px;
+    background: rgb(237, 237, 237);
+    overflow: hidden;
+  }
+
+  &__fill {
+    height: 100%;
+    border-radius: 444px;
+    background: $coral;
+    transition: width 0.2s ease;
+  }
+}
+
+// ---- Responsive ----------------------------------------------------------
+
+@media (max-width: 1100px) {
+  .report-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .stat-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dm-tiles {
+    grid-template-columns: minmax(0, 1fr);
+
+    &--wide {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+}
+
+@media (max-width: 720px) {
+  .stat-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .stat-card__label {
+    white-space: normal;
+  }
+}

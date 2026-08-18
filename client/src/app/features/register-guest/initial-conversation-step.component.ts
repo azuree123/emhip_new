@@ -1,37 +1,116 @@
-import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
 import { FormGroup, ReactiveFormsModule } from '@angular/forms';
 
 /**
- * Step 2 of the Register Guest wizard — ported from the `InitialConversationTab` function
- * (project/screens/Components.bundle.js lines 20343-25835, the "Register New Guest" panel's
- * second tab). Reflowed from the source's absolute positioning into normal flex/grid layout.
+ * The seven "Flag anything that came up in the conversation" checkboxes (Desktop79, risk
+ * screening card), in the design's vertical order. Exported so the wizard shell can fold the
+ * ticked flags into the initial-conversation notes and the risk-assessment request.
+ */
+export const MDT_FLAGS = [
+  { key: 'selfHarm', label: 'Self-harm or suicide mentioned or hinted at' },
+  { key: 'trauma', label: 'Significant trauma disclosed (abuse, violence, loss, forced migration)' },
+  { key: 'domesticAbuse', label: 'Domestic abuse or unsafe home situation' },
+  { key: 'psychosis', label: 'Possible psychosis or very unusual thinking (e.g. hearing voices, paranoid beliefs)' },
+  { key: 'substanceUse', label: 'Significant substance use affecting daily life' },
+  { key: 'childSafeguarding', label: 'Child safeguarding concern' },
+  { key: 'practicalSupport', label: 'Need for practical support (housing, benefits, immigration, money)' },
+] as const;
+
+/**
+ * Step 2 of the Register Guest wizard — "Initial conversation", ported from the Desktop79
+ * screen (project/screens/Components.bundle.js lines 33912-37844): locked-record info banner,
+ * then the "Session details", "Presenting problem" (guided conversation, 4 prompts),
+ * "Mental health & psychiatric history" (ending with the MDT Summary), "Physical health" and
+ * "Risk screening" cards.
  *
- * Field mapping to RecordInitialConversationRequest (core/api-models.ts):
- *  - "Description of problem *" -> presentingIssues (required).
- *  - "Hub worker *" is read-only/pre-filled from the signed-in user (as the source's own
- *    "pre filled from your login" caption says) — it isn't part of the request payload, the
- *    API attributes the conversation to the authenticated staff member server-side.
- *  - "Place of interview *", "Past mental health difficulties & treatment", "Family mental
- *    health history" and "Long-term health condition?" have no dedicated request fields, so
- *    their values are folded into the free-text `notes` field on submit (see
- *    RegisterGuestComponent.submit()) rather than being dropped.
- *  - "Immediate Risk Identified? *" drives the risk-flag checklist below it. Per the design
- *    handoff README ("Risk flags ... escalate a guest onto the Urgent Cases queue"), selecting
- *    "Yes, High risk" additionally posts a RecordRiskAssessmentRequest via
- *    GuestsApiService.recordRiskAssessment after the conversation is recorded.
- *  - Consent checkbox: not present in this source screen either (same reasoning as step 1) but
- *    required by RecordInitialConversationRequest.consentConfirmed.
+ * Honest-data notes: the backing endpoint (RecordInitialConversationRequest) only stores
+ * presentingIssues / notes / consentConfirmed. Prompt 1 maps to presentingIssues; every other
+ * answer here is concatenated into `notes` as labelled sections by the wizard shell, and the
+ * risk-screening answers additionally feed the existing risk-assessment endpoint when
+ * anything is flagged (see RegisterGuestComponent). "Hub worker" / "Job title" render
+ * read-only from the login session exactly as the mock's "pre filled from your login". The
+ * consent checkbox is not drawn in the mock but consentConfirmed is required by the API.
+ * "Diagnosis group(s) — select all that apply" is rendered as a single-choice dropdown;
+ * multiple groups can be spelled out in the guest's-own-words box.
  */
 @Component({
   selector: 'app-initial-conversation-step',
   standalone: true,
-  imports: [ReactiveFormsModule, NgTemplateOutlet],
+  imports: [ReactiveFormsModule],
   templateUrl: './initial-conversation-step.component.html',
   styleUrls: ['./initial-conversation-step.component.scss', './_form-shared.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class InitialConversationStepComponent {
   @Input({ required: true }) form!: FormGroup;
-  @Input() hubWorkerName = '';
+  /** "Hub worker *" — pre filled from your login. */
+  @Input({ required: true }) hubWorkerName = '';
+  /** "Job title" — pre filled from your login. */
+  @Input() jobTitle = '';
+
+  protected readonly mdtFlags = MDT_FLAGS;
+
+  protected readonly contactTypeOptions = ['Phone call', 'In person', 'Video call', 'Text message', 'Email'];
+  protected readonly previousDiagnosisOptions = ['No', 'Yes', 'Unsure'];
+  protected readonly diagnosisGroupOptions = [
+    'Depression',
+    'Anxiety disorder',
+    'Bipolar disorder',
+    'Schizophrenia / psychosis',
+    'PTSD / trauma-related',
+    'Personality disorder',
+    'Eating disorder',
+    'Other',
+  ];
+  protected readonly inpatientOptions = ['No', 'Yes - NHS', 'Yes - Private', 'Unsure'];
+  protected readonly specifyOptions = ['No', 'Yes - Specify', 'Unknown'];
+  protected readonly riskAnswerOptions = ['No', 'Yes', 'Unsure'];
+  protected readonly escalationOptions = ['No', 'Yes - Awaiting response', 'Yes - Escalated & responded'];
+
+  /** The guided conversation's four prompts, verbatim from Desktop79. */
+  protected readonly prompts = [
+    {
+      control: 'mainConcern',
+      tag: 'Prompt 1',
+      quote: '"Tell me a bit about yourself and what brings you here today. What’s been going on for you?"',
+      label: 'Main concern and reason for coming *',
+      hint: "Record in the guest's own words where possible",
+      required: true,
+      requiredError: 'The main concern is required.',
+    },
+    {
+      control: 'durationImpact',
+      tag: 'Prompt 2',
+      quote: null,
+      label: 'Duration, daily impact, and any recent trigger or stressor *',
+      hint: "Record in the guest's own words where possible",
+      required: true,
+      requiredError: 'Duration and daily impact are required.',
+    },
+    {
+      control: 'background',
+      tag: 'Prompt 3',
+      quote:
+        '"Can you tell me a little about your background and growing up — your family, where you grew up? Were there any difficult times that you feel are connected to how you’re feeling now?"',
+      label: 'Brief background — family, upbringing, any early adversity the guest mentions',
+      hint: "Record in the guest's own words where possible",
+      required: false,
+      requiredError: '',
+    },
+    {
+      control: 'ownUnderstanding',
+      tag: 'Prompt 4',
+      quote:
+        '"How do you make sense of what’s been happening to you? And what kind of support are you hoping for from us?"',
+      label: "Guest's own understanding of their distress, and what they want from the service",
+      hint: 'the guest may frame their distress spiritually, physically, or through family — record their own words and framing.',
+      required: false,
+      requiredError: '',
+    },
+  ];
+
+  /** True when "Immediate escalation required?" has a Yes answer — crisis notes become mandatory. */
+  protected get escalationNoted(): boolean {
+    return String(this.form.get('risk.escalationRequired')?.value ?? '').startsWith('Yes');
+  }
 }

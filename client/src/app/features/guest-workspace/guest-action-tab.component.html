@@ -1,0 +1,174 @@
+<div class="tab-panel">
+  @if (loading()) {
+    <div class="state-card">Loading actions…</div>
+  } @else if (error()) {
+    <div class="state-card state-card--error">{{ error() }}</div>
+  } @else if (actions() !== null) {
+    <section class="card">
+      <div class="card__header-row">
+        <h2 class="card__title">{{ openActions().length }} open actions</h2>
+        <button type="button" class="add-btn" (click)="openAddForm()">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+            <path d="M 10 4.25 L 10 15.75 M 4.25 10 L 15.75 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+          </svg>
+          Add Actions
+        </button>
+      </div>
+
+      @if (showForm()) {
+        <form class="edit-form action-form" (ngSubmit)="submit()">
+          <label class="edit-form__field edit-form__field--full">
+            <span>{{ editingId() ? 'Edit action' : 'Action' }}</span>
+            <textarea name="description" rows="2" [(ngModel)]="form.description" placeholder="Describe the action…"></textarea>
+          </label>
+          <div class="edit-form__grid">
+            <label class="edit-form__field">
+              <span>Due date</span>
+              <input type="date" name="dueDate" [(ngModel)]="form.dueDate" />
+            </label>
+            <label class="edit-form__field">
+              <span>Assigned to</span>
+              <select name="assignedToStaffId" [(ngModel)]="form.assignedToStaffId">
+                <option [ngValue]="null">Unassigned</option>
+                @for (option of cmhwOptions(); track option.id) {
+                  <option [ngValue]="option.id">{{ option.displayName }}</option>
+                }
+              </select>
+            </label>
+          </div>
+          @if (submitError()) {
+            <p class="form-error">{{ submitError() }}</p>
+          }
+          <div class="edit-form__actions">
+            <button type="button" class="btn-ghost" (click)="closeForm()">Cancel</button>
+            <button type="submit" class="btn-primary" [disabled]="submitting()">
+              {{ submitting() ? 'Saving…' : editingId() ? 'Save action' : 'Add action' }}
+            </button>
+          </div>
+        </form>
+      }
+
+      @if (openActions().length) {
+        <div class="action-table">
+          <div class="action-table__head">
+            <span class="action-table__col action-table__col--action">Action</span>
+            <span class="action-table__col">Due date</span>
+            <span class="action-table__col">Assigned to</span>
+            <span class="action-table__col action-table__col--controls">Actions</span>
+          </div>
+          @for (action of openActions(); track action.id) {
+            <div class="action-row">
+              <div class="action-row__main">
+                <button
+                  type="button"
+                  class="check"
+                  [disabled]="busyId() === action.id"
+                  (click)="toggleComplete(action)"
+                  aria-label="Mark action as completed"
+                >
+                  <svg class="check__tick" width="10" height="7" viewBox="0 0 10 7" fill="none" aria-hidden="true">
+                    <path
+                      d="M 0.768 2.36 C 0.415 1.936 -0.216 1.878 -0.64 2.232 C -1.064 2.585 -1.122 3.216 -0.768 3.64 L 0 3 L 0.768 2.36 Z M 10.724 0.69 C 11.105 0.29 11.09 -0.343 10.69 -0.724 C 10.29 -1.105 9.657 -1.09 9.276 -0.69 L 10 0 L 10.724 0.69 Z M 0 3 L -0.768 3.64 L 1.847 6.778 L 2.615 6.138 L 3.383 5.498 L 0.768 2.36 L 0 3 Z M 4.107 6.187 L 4.831 6.877 L 10.724 0.69 L 10 0 L 9.276 -0.69 L 3.383 5.498 L 4.107 6.187 Z M 2.615 6.138 L 1.847 6.778 C 2.612 7.697 4.007 7.743 4.831 6.877 L 4.107 6.187 L 3.383 5.498 L 3.383 5.498 L 2.615 6.138 Z"
+                      fill="currentColor"
+                    />
+                  </svg>
+                </button>
+                <span class="action-row__description">{{ action.description }}</span>
+              </div>
+              <span class="action-row__due" [class.action-row__due--overdue]="dueState(action) === 'overdue'" [class.action-row__due--soon]="dueState(action) === 'soon'">
+                <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
+                  <path
+                    d="M 1.125 7.5 C 1.125 3.979 3.979 1.125 7.5 1.125 C 11.021 1.125 13.875 3.979 13.875 7.5 C 13.875 11.021 11.021 13.875 7.5 13.875 C 3.979 13.875 1.125 11.021 1.125 7.5 Z M 7.5 0 C 3.358 0 0 3.358 0 7.5 C 0 11.642 3.358 15 7.5 15 C 11.642 15 15 11.642 15 7.5 C 15 3.358 11.642 0 7.5 0 Z M 7.495 3.486 C 7.458 3.212 7.222 3 6.937 3 C 6.627 3 6.375 3.252 6.375 3.562 L 6.375 8.062 L 6.38 8.139 C 6.417 8.413 6.653 8.625 6.937 8.625 L 9.937 8.625 L 10.014 8.62 C 10.288 8.583 10.5 8.347 10.5 8.062 C 10.5 7.752 10.248 7.5 9.937 7.5 L 7.5 7.5 L 7.5 3.562 L 7.495 3.486 Z"
+                    fill="currentColor"
+                  />
+                </svg>
+                {{ dueLabel(action) }}
+              </span>
+              <span class="action-row__assignee">{{ action.assignedToName || 'Unassigned' }}</span>
+              <span class="action-row__controls">
+                <button type="button" class="row-btn" [disabled]="busyId() === action.id" (click)="openEditForm(action)">
+                  <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
+                    <path
+                      d="M 14.214 0.786 C 13.166 -0.262 11.466 -0.262 10.418 0.786 L 1.456 9.75 C 1.151 10.055 0.937 10.438 0.837 10.857 L 0.015 14.308 C -0.03 14.498 0.027 14.698 0.165 14.836 C 0.303 14.974 0.503 15.031 0.693 14.986 L 4.144 14.164 C 4.563 14.064 4.947 13.85 5.251 13.545 L 14.214 4.581 C 15.262 3.533 15.262 1.834 14.214 0.786 Z M 11.214 1.582 C 11.823 0.973 12.81 0.973 13.418 1.582 C 14.027 2.19 14.027 3.177 13.418 3.786 L 12.75 4.455 L 10.545 2.25 L 11.214 1.582 Z M 9.75 3.046 L 11.955 5.25 L 4.456 12.75 C 4.298 12.907 4.1 13.018 3.883 13.07 L 1.321 13.68 L 1.931 11.118 C 1.983 10.901 2.094 10.703 2.251 10.545 L 9.75 3.046 Z"
+                      fill="currentColor"
+                    />
+                  </svg>
+                  Edit
+                </button>
+                <button type="button" class="row-btn row-btn--danger" [disabled]="busyId() === action.id" (click)="deleteAction(action)">
+                  <svg width="15" height="16" viewBox="0 0 15 15.375" fill="none" aria-hidden="true">
+                    <path
+                      d="M 6 2.625 L 9 2.625 C 9 1.797 8.328 1.125 7.5 1.125 C 6.672 1.125 6 1.797 6 2.625 Z M 4.875 2.625 C 4.875 1.175 6.05 0 7.5 0 C 8.95 0 10.125 1.175 10.125 2.625 L 14.438 2.625 C 14.748 2.625 15 2.877 15 3.188 C 15 3.498 14.748 3.75 14.438 3.75 L 13.448 3.75 L 12.569 12.833 C 12.43 14.275 11.218 15.375 9.77 15.375 L 5.23 15.375 C 3.782 15.375 2.57 14.275 2.431 12.833 L 1.552 3.75 L 0.563 3.75 C 0.252 3.75 0 3.498 0 3.188 C 0 2.877 0.252 2.625 0.563 2.625 L 4.875 2.625 Z M 6.375 6.188 C 6.375 5.877 6.123 5.625 5.813 5.625 C 5.502 5.625 5.25 5.877 5.25 6.188 L 5.25 11.813 C 5.25 12.123 5.502 12.375 5.813 12.375 C 6.123 12.375 6.375 12.123 6.375 11.813 L 6.375 6.188 Z M 9.188 5.625 C 9.498 5.625 9.75 5.877 9.75 6.188 L 9.75 11.813 C 9.75 12.123 9.498 12.375 9.188 12.375 C 8.877 12.375 8.625 12.123 8.625 11.813 L 8.625 6.188 C 8.625 5.877 8.877 5.625 9.188 5.625 Z M 3.551 12.725 C 3.634 13.59 4.361 14.25 5.23 14.25 L 9.77 14.25 C 10.639 14.25 11.366 13.59 11.449 12.725 L 12.318 3.75 L 2.682 3.75 L 3.551 12.725 Z"
+                      fill="currentColor"
+                    />
+                  </svg>
+                  Delete
+                </button>
+              </span>
+            </div>
+          }
+        </div>
+      } @else {
+        <p class="empty-state">No open actions for this guest.</p>
+      }
+    </section>
+
+    <section class="card">
+      <h2 class="card__title card__title--spaced">{{ completedActions().length }} completed actions</h2>
+      @if (completedActions().length) {
+        <div class="action-table">
+          <div class="action-table__head">
+            <span class="action-table__col action-table__col--action">Action</span>
+            <span class="action-table__col">Due date</span>
+            <span class="action-table__col">Assigned to</span>
+            <span class="action-table__col action-table__col--controls">Actions</span>
+          </div>
+          @for (action of completedActions(); track action.id) {
+            <div class="action-row action-row--completed">
+              <div class="action-row__main">
+                <button
+                  type="button"
+                  class="check check--active"
+                  [disabled]="busyId() === action.id"
+                  (click)="toggleComplete(action)"
+                  aria-label="Reopen this action"
+                >
+                  <svg class="check__tick" width="10" height="7" viewBox="0 0 10 7" fill="none" aria-hidden="true">
+                    <path
+                      d="M 0.768 2.36 C 0.415 1.936 -0.216 1.878 -0.64 2.232 C -1.064 2.585 -1.122 3.216 -0.768 3.64 L 0 3 L 0.768 2.36 Z M 10.724 0.69 C 11.105 0.29 11.09 -0.343 10.69 -0.724 C 10.29 -1.105 9.657 -1.09 9.276 -0.69 L 10 0 L 10.724 0.69 Z M 0 3 L -0.768 3.64 L 1.847 6.778 L 2.615 6.138 L 3.383 5.498 L 0.768 2.36 L 0 3 Z M 4.107 6.187 L 4.831 6.877 L 10.724 0.69 L 10 0 L 9.276 -0.69 L 3.383 5.498 L 4.107 6.187 Z M 2.615 6.138 L 1.847 6.778 C 2.612 7.697 4.007 7.743 4.831 6.877 L 4.107 6.187 L 3.383 5.498 L 3.383 5.498 L 2.615 6.138 Z"
+                      fill="currentColor"
+                    />
+                  </svg>
+                </button>
+                <span class="action-row__description">{{ action.description }}</span>
+              </div>
+              <span class="action-row__due">
+                <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
+                  <path
+                    d="M 1.125 7.5 C 1.125 3.979 3.979 1.125 7.5 1.125 C 11.021 1.125 13.875 3.979 13.875 7.5 C 13.875 11.021 11.021 13.875 7.5 13.875 C 3.979 13.875 1.125 11.021 1.125 7.5 Z M 7.5 0 C 3.358 0 0 3.358 0 7.5 C 0 11.642 3.358 15 7.5 15 C 11.642 15 15 11.642 15 7.5 C 15 3.358 11.642 0 7.5 0 Z M 7.495 3.486 C 7.458 3.212 7.222 3 6.937 3 C 6.627 3 6.375 3.252 6.375 3.562 L 6.375 8.062 L 6.38 8.139 C 6.417 8.413 6.653 8.625 6.937 8.625 L 9.937 8.625 L 10.014 8.62 C 10.288 8.583 10.5 8.347 10.5 8.062 C 10.5 7.752 10.248 7.5 9.937 7.5 L 7.5 7.5 L 7.5 3.562 L 7.495 3.486 Z"
+                    fill="currentColor"
+                  />
+                </svg>
+                {{ dueLabel(action) }}
+              </span>
+              <span class="action-row__assignee">{{ action.assignedToName || 'Unassigned' }}</span>
+              <span class="action-row__controls">
+                <button type="button" class="row-btn row-btn--danger" [disabled]="busyId() === action.id" (click)="deleteAction(action)">
+                  <svg width="15" height="16" viewBox="0 0 15 15.375" fill="none" aria-hidden="true">
+                    <path
+                      d="M 6 2.625 L 9 2.625 C 9 1.797 8.328 1.125 7.5 1.125 C 6.672 1.125 6 1.797 6 2.625 Z M 4.875 2.625 C 4.875 1.175 6.05 0 7.5 0 C 8.95 0 10.125 1.175 10.125 2.625 L 14.438 2.625 C 14.748 2.625 15 2.877 15 3.188 C 15 3.498 14.748 3.75 14.438 3.75 L 13.448 3.75 L 12.569 12.833 C 12.43 14.275 11.218 15.375 9.77 15.375 L 5.23 15.375 C 3.782 15.375 2.57 14.275 2.431 12.833 L 1.552 3.75 L 0.563 3.75 C 0.252 3.75 0 3.498 0 3.188 C 0 2.877 0.252 2.625 0.563 2.625 L 4.875 2.625 Z M 6.375 6.188 C 6.375 5.877 6.123 5.625 5.813 5.625 C 5.502 5.625 5.25 5.877 5.25 6.188 L 5.25 11.813 C 5.25 12.123 5.502 12.375 5.813 12.375 C 6.123 12.375 6.375 12.123 6.375 11.813 L 6.375 6.188 Z M 9.188 5.625 C 9.498 5.625 9.75 5.877 9.75 6.188 L 9.75 11.813 C 9.75 12.123 9.498 12.375 9.188 12.375 C 8.877 12.375 8.625 12.123 8.625 11.813 L 8.625 6.188 C 8.625 5.877 8.877 5.625 9.188 5.625 Z M 3.551 12.725 C 3.634 13.59 4.361 14.25 5.23 14.25 L 9.77 14.25 C 10.639 14.25 11.366 13.59 11.449 12.725 L 12.318 3.75 L 2.682 3.75 L 3.551 12.725 Z"
+                      fill="currentColor"
+                    />
+                  </svg>
+                  Delete
+                </button>
+              </span>
+            </div>
+          }
+        </div>
+      } @else {
+        <p class="empty-state">No completed actions yet.</p>
+      }
+    </section>
+  }
+</div>

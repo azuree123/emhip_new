@@ -1,6 +1,9 @@
 using Emhip.Application.Abstractions;
 using Emhip.Application.Contacts;
+using Emhip.Application.Guests.Actions;
+using Emhip.Application.Guests.Clinical;
 using Emhip.Application.Guests.Commands;
+using Emhip.Application.Guests.Dialog;
 using Emhip.Application.Guests.Dtos;
 using Emhip.Application.Guests.Queries;
 using Emhip.Application.Notes;
@@ -150,6 +153,83 @@ public sealed class GuestsController(IMediator mediator, ICurrentUser currentUse
         return CreatedAtAction(nameof(GetOverview), new { guestId }, new { id });
     }
 
+    /// <summary>Guest Workspace DIALOG tab — baseline, latest and full history of the 11-domain scale.</summary>
+    [HttpGet("{guestId:guid}/dialog")]
+    [Authorize(Policy = Permissions.Guests.ClinicalView)]
+    public async Task<ActionResult<GuestDialogDto>> GetDialog(Guid guestId, CancellationToken cancellationToken)
+    {
+        var result = await mediator.Send(new GetGuestDialogQuery(guestId), cancellationToken);
+        return result is null ? NotFound() : Ok(result);
+    }
+
+    /// <summary>Records the next DIALOG assessment version (version 1 = baseline, captured at registration).</summary>
+    [HttpPost("{guestId:guid}/dialog-assessments")]
+    [Authorize(Policy = Permissions.Guests.ClinicalEdit)]
+    public async Task<IActionResult> RecordDialogAssessment(Guid guestId, [FromBody] RecordDialogAssessmentRequest request, CancellationToken cancellationToken)
+    {
+        var id = await mediator.Send(request.ToCommand(guestId), cancellationToken);
+        return CreatedAtAction(nameof(GetDialog), new { guestId }, new { id });
+    }
+
+    /// <summary>Guest Workspace Action tab.</summary>
+    [HttpGet("{guestId:guid}/actions")]
+    [Authorize(Policy = Permissions.Guests.View)]
+    public async Task<ActionResult<IReadOnlyList<GuestActionDto>>> GetActions(Guid guestId, CancellationToken cancellationToken)
+    {
+        var result = await mediator.Send(new GetGuestActionsQuery(guestId), cancellationToken);
+        return Ok(result);
+    }
+
+    [HttpPost("{guestId:guid}/actions")]
+    [Authorize(Policy = Permissions.Guests.Edit)]
+    public async Task<IActionResult> AddAction(Guid guestId, [FromBody] GuestActionRequest request, CancellationToken cancellationToken)
+    {
+        var id = await mediator.Send(new AddGuestActionCommand(guestId, request.Description, request.DueDate, request.AssignedToStaffId), cancellationToken);
+        return CreatedAtAction(nameof(GetActions), new { guestId }, new { id });
+    }
+
+    [HttpPut("{guestId:guid}/actions/{actionId:guid}")]
+    [Authorize(Policy = Permissions.Guests.Edit)]
+    public async Task<IActionResult> UpdateAction(Guid guestId, Guid actionId, [FromBody] GuestActionRequest request, CancellationToken cancellationToken)
+    {
+        await mediator.Send(new UpdateGuestActionCommand(guestId, actionId, request.Description, request.DueDate, request.AssignedToStaffId, request.IsCompleted), cancellationToken);
+        return NoContent();
+    }
+
+    [HttpDelete("{guestId:guid}/actions/{actionId:guid}")]
+    [Authorize(Policy = Permissions.Guests.Edit)]
+    public async Task<IActionResult> DeleteAction(Guid guestId, Guid actionId, CancellationToken cancellationToken)
+    {
+        await mediator.Send(new DeleteGuestActionCommand(guestId, actionId), cancellationToken);
+        return NoContent();
+    }
+
+    /// <summary>Guest Workspace Clinical Details tab (MH history, physical health, care team, SMI).</summary>
+    [HttpGet("{guestId:guid}/clinical-profile")]
+    [Authorize(Policy = Permissions.Guests.ClinicalView)]
+    public async Task<ActionResult<ClinicalProfileDto>> GetClinicalProfile(Guid guestId, CancellationToken cancellationToken)
+    {
+        var result = await mediator.Send(new GetClinicalProfileQuery(guestId), cancellationToken);
+        return result is null ? NotFound() : Ok(result);
+    }
+
+    [HttpPut("{guestId:guid}/clinical-profile")]
+    [Authorize(Policy = Permissions.Guests.ClinicalEdit)]
+    public async Task<IActionResult> UpdateClinicalProfile(Guid guestId, [FromBody] UpdateClinicalProfileRequest request, CancellationToken cancellationToken)
+    {
+        await mediator.Send(request.ToCommand(guestId), cancellationToken);
+        return NoContent();
+    }
+
+    /// <summary>Register flow "Pathway &amp; allocation" step — sets pathway, AFA flag and (optionally) the assigned CMHW.</summary>
+    [HttpPost("{guestId:guid}/allocation")]
+    [Authorize(Policy = Permissions.Guests.Edit)]
+    public async Task<IActionResult> Allocate(Guid guestId, [FromBody] AllocateGuestRequest request, CancellationToken cancellationToken)
+    {
+        await mediator.Send(new AllocateGuestCommand(guestId, request.Pathway, request.AfaSupportNeeded, request.AssignedCmhwId), cancellationToken);
+        return NoContent();
+    }
+
     [HttpPost("{guestId:guid}/notes")]
     [Authorize(Policy = Permissions.Guests.NotesAdd)]
     public async Task<IActionResult> AddNote(Guid guestId, [FromBody] AddNoteRequest request, CancellationToken cancellationToken)
@@ -186,4 +266,33 @@ public sealed class GuestsController(IMediator mediator, ICurrentUser currentUse
     public sealed record AddContactRequest(ContactType Type, ContactOutcome Outcome, DateTimeOffset OccurredAt, string? Notes);
 
     public sealed record AddNoteRequest(string Body, NoteColor Color, bool IsPinned);
+
+    public sealed record RecordDialogAssessmentRequest(
+        int MentalHealth, int PhysicalHealth, int JobSituation, int Accommodation,
+        int LeisureActivities, int FriendshipsSocialLife, int RelationshipWithFamily,
+        int PersonalSafety, int PracticalHelp, int Medication, int MeetingsWithMhStaff)
+    {
+        public RecordDialogAssessmentCommand ToCommand(Guid guestId) => new(
+            guestId, MentalHealth, PhysicalHealth, JobSituation, Accommodation,
+            LeisureActivities, FriendshipsSocialLife, RelationshipWithFamily,
+            PersonalSafety, PracticalHelp, Medication, MeetingsWithMhStaff);
+    }
+
+    public sealed record GuestActionRequest(string Description, DateOnly DueDate, Guid? AssignedToStaffId, bool IsCompleted);
+
+    public sealed record UpdateClinicalProfileRequest(
+        bool PreviousMhDiagnosis, string? DiagnosisGroups, string? PresentingProblem,
+        string? PastMhDifficulties, string? FamilyMhHistory,
+        string? LongTermHealthCondition, string? PhysicalIllness, string? CurrentMedications,
+        string? MhTeamClinician, string? SocialServicesCoordinator, bool CpnInvolved, bool TrustInvolvement,
+        bool SmiIndicator)
+    {
+        public UpdateClinicalProfileCommand ToCommand(Guid guestId) => new(
+            guestId, PreviousMhDiagnosis, DiagnosisGroups, PresentingProblem,
+            PastMhDifficulties, FamilyMhHistory,
+            LongTermHealthCondition, PhysicalIllness, CurrentMedications,
+            MhTeamClinician, SocialServicesCoordinator, CpnInvolved, TrustInvolvement, SmiIndicator);
+    }
+
+    public sealed record AllocateGuestRequest(GuestPathway Pathway, bool AfaSupportNeeded, Guid? AssignedCmhwId);
 }

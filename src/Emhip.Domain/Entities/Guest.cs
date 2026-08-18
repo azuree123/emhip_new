@@ -29,6 +29,12 @@ public class Guest : AggregateRoot
     public DateTimeOffset RegisteredAt { get; private set; }
     public bool IsDeleted { get; private set; }
 
+    /// <summary>Clinical pathway allocated at the register flow's "Pathway &amp; allocation" step; null until allocated.</summary>
+    public GuestPathway? Pathway { get; private set; }
+
+    /// <summary>"Practical support / Advice First Aid also needed?" from pathway allocation.</summary>
+    public bool AfaSupportNeeded { get; private set; }
+
     private Guest() { }
 
     public Guest(
@@ -82,4 +88,10 @@ public class Guest : AggregateRoot
     }
 
     public void Reassign(Guid? cmhwId) => AssignedCmhwId = cmhwId;
+
+    public void Allocate(GuestPathway pathway, bool afaSupportNeeded)
+    {
+        Pathway = pathway;
+        AfaSupportNeeded = afaSupportNeeded;
+    }
 }

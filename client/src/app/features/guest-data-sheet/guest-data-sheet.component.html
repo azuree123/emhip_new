@@ -49,8 +49,18 @@
         />
       </div>
 
-      <!-- Design filter cluster, left→right: Pathway | Status | Risk | Assigned CMHW | Last Activity. -->
+      <!-- Design filter cluster, left→right: filter icon | Pathway | Status | Assigned CMHW | Last Activity. -->
       <div class="filter-cluster">
+        <button type="button" class="filter-reset" title="Reset filters" (click)="clearFilters()">
+          <svg width="17" height="12" viewBox="0 0 16.5 11.5" fill="none" aria-hidden="true">
+            <path
+              d="M 9.75 10 C 10.164 10 10.5 10.336 10.5 10.75 C 10.5 11.164 10.164 11.5 9.75 11.5 L 6.75 11.5 C 6.336 11.5 6 11.164 6 10.75 C 6 10.336 6.336 10 6.75 10 L 9.75 10 Z M 12.75 5 C 13.164 5 13.5 5.336 13.5 5.75 C 13.5 6.164 13.164 6.5 12.75 6.5 L 3.75 6.5 C 3.336 6.5 3 6.164 3 5.75 C 3 5.336 3.336 5 3.75 5 L 12.75 5 Z M 15.75 0 C 16.164 0 16.5 0.336 16.5 0.75 C 16.5 1.164 16.164 1.5 15.75 1.5 L 0.75 1.5 C 0.336 1.5 0 1.164 0 0.75 C 0 0.336 0.336 0 0.75 0 L 15.75 0 Z"
+              fill="currentColor"
+            />
+          </svg>
+          <span class="visually-hidden">Reset filters</span>
+        </button>
+
         <div class="filter filter--pathway">
           <select
             class="filter__select"
@@ -89,25 +99,6 @@
           </svg>
         </div>
 
-        <div class="filter filter--risk">
-          <select
-            class="filter__select"
-            aria-label="Filter by risk"
-            [value]="riskFilter()"
-            (change)="onRiskChange($any($event.target).value)"
-          >
-            @for (option of riskOptions; track option.value) {
-              <option [value]="option.value">{{ option.label }}</option>
-            }
-          </select>
-          <svg width="9" height="5" viewBox="0 0 8.75 4.375" fill="none" class="filter__chevron">
-            <path
-              d="M 9.28 0.53 C 9.573 0.237 9.573 -0.237 9.28 -0.53 C 8.987 -0.823 8.513 -0.823 8.22 -0.53 L 8.75 0 L 9.28 0.53 Z M 4.375 4.375 L 3.845 4.905 C 4.138 5.198 4.612 5.198 4.905 4.905 L 4.375 4.375 Z M 0.53 -0.53 C 0.237 -0.823 -0.237 -0.823 -0.53 -0.53 C -0.823 -0.237 -0.823 0.237 -0.53 0.53 L 0 0 L 0.53 -0.53 Z M 8.75 0 L 8.22 -0.53 L 3.845 3.845 L 4.375 4.375 L 4.905 4.905 L 9.28 0.53 L 8.75 0 Z M 4.375 4.375 L 4.905 3.845 L 0.53 -0.53 L 0 0 L -0.53 0.53 L 3.845 4.905 L 4.375 4.375 Z"
-              fill="currentColor"
-            />
-          </svg>
-        </div>
-
         <div class="filter filter--cmhw">
           <select
             class="filter__select"
@@ -115,7 +106,7 @@
             [value]="cmhwFilter()"
             (change)="onCmhwChange($any($event.target).value)"
           >
-            <option value="All">All CMHWs</option>
+            <option value="All">Assigned CMHW</option>
             @for (option of cmhwOptions(); track option.id) {
               <option [value]="option.id">{{ option.displayName }}</option>
             }
@@ -153,7 +144,6 @@
       <span class="col col--name">Guest Name</span>
       <span class="col col--status">Status</span>
       <span class="col col--pathway">Pathway</span>
-      <span class="col col--risk">Risk</span>
       <span class="col col--cmhw">CMHW</span>
       <span class="col col--activity">Last Activity</span>
       <span class="col col--next">Next Contact</span>
@@ -193,11 +183,6 @@
           </span>
 
           <span class="col col--pathway">{{ pathwayLabel(guest.pathwayCategory) }}</span>
-
-          <span class="col col--risk">
-            <span class="badge" [attr.data-risk]="guest.hasRiskFlags ? 'high' : 'low'">{{ riskLabel(guest) }}</span>
-          </span>
-
           <span class="col col--cmhw">{{ guest.assignedCmhwName ?? '—' }}</span>
           <span class="col col--activity">{{ formatActivity(guest.lastContactAt) }}</span>
           <span class="col col--next">{{ formatDate(guest.nextContactDue) }}</span>

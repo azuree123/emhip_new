@@ -1,0 +1,187 @@
+<div class="tab-panel">
+  @if (loading()) {
+    <div class="state-card">Loading initial conversation…</div>
+  } @else if (error()) {
+    <div class="state-card state-card--error">{{ error() }}</div>
+  } @else if (conversation(); as record) {
+    <div class="ic-banner">
+      <span class="ic-banner__bar"></span>
+      <span class="ic-banner__text">
+        Permanent record — read only. The initial conversation is completed once and cannot be edited.
+        It captures the intake moment exactly as it happened.
+      </span>
+    </div>
+
+    <div class="ic-columns">
+      <div class="ic-column">
+        <section class="card">
+          <h2 class="card__title card__title--spaced">Who conducted it</h2>
+          <div class="field-grid field-grid--two">
+            <div class="field">
+              <span class="field__label">Hub worker</span>
+              <span class="field__value">{{ record.conductedByName }}</span>
+            </div>
+            <div class="field">
+              <span class="field__label">Date &amp; time</span>
+              <span class="field__value">{{ formatDateTime(record.conductedAt) }}</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2 class="card__title card__title--spaced">What the guest presented with</h2>
+          <div class="ic-longfields">
+            <div class="field">
+              <span class="field__label">Presenting problem</span>
+              <p class="ic-longtext">{{ record.presentingIssues || 'Not recorded.' }}</p>
+            </div>
+            <div class="field">
+              <span class="field__label">Conversation notes</span>
+              <p class="ic-longtext">{{ record.notes || 'Not recorded.' }}</p>
+            </div>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2 class="card__title card__title--spaced">Pathway decision at intake</h2>
+          @if (currentPathway(); as pathway) {
+            <div class="pathway-options">
+              @for (option of pathwayOptions; track option.key) {
+                <div class="pathway-option">
+                  <span class="pathway-option__tile" [class.pathway-option__tile--active]="option.key === pathway">
+                    @if (option.key === pathway) {
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <path
+                          transform="translate(3.25,6.25)"
+                          d="M 1.28 6.72 C 0.987 6.427 0.513 6.427 0.22 6.72 C -0.073 7.013 -0.073 7.487 0.22 7.78 L 4.72 12.28 C 5.013 12.573 5.487 12.573 5.78 12.28 L 16.78 1.28 C 17.073 0.987 17.073 0.513 16.78 0.22 C 16.487 -0.073 16.013 -0.073 15.72 0.22 L 5.25 10.689 L 1.28 6.72 Z"
+                          fill="currentColor"
+                        />
+                      </svg>
+                    }
+                  </span>
+                  <span class="pathway-option__label">{{ option.label }}</span>
+                </div>
+              }
+            </div>
+            @if (overview()?.afaSupportNeeded) {
+              <p class="pathway-afa">AFA support needed</p>
+            }
+          } @else {
+            <p class="empty-state">No pathway has been allocated for this guest yet.</p>
+          }
+        </section>
+      </div>
+
+      <div class="ic-column">
+        <section class="card">
+          <h2 class="card__title card__title--spaced">Record status</h2>
+          <div class="field-grid field-grid--two">
+            <div class="field">
+              <span class="field__label">Status</span>
+              <span class="field__value"><span class="chip chip--complete">Completed</span></span>
+            </div>
+            <div class="field">
+              <span class="field__label">Completed by</span>
+              <span class="field__value">{{ record.conductedByName }}</span>
+            </div>
+            <div class="field">
+              <span class="field__label">Completed on</span>
+              <span class="field__value">{{ formatDate(record.conductedAt) }}</span>
+            </div>
+            <div class="field">
+              <span class="field__label">Consent confirmed</span>
+              <span class="field__value">{{ record.consentConfirmed ? 'Yes' : 'No' }}</span>
+            </div>
+            <div class="field">
+              <span class="field__label">Record state</span>
+              <span class="field__value">Locked</span>
+            </div>
+            @if (overview(); as o) {
+              <div class="field">
+                <span class="field__label">CMHW allocated</span>
+                <span class="field__value">{{ o.assignedCmhwName || 'Unassigned' }}</span>
+              </div>
+              <div class="field">
+                <span class="field__label">Guest status</span>
+                <span class="field__value">
+                  @if (guestStatusChip(); as c) {
+                    <span class="chip" [style.background]="c.bg" [style.color]="c.fg">{{ c.label }}</span>
+                  }
+                </span>
+              </div>
+            }
+          </div>
+        </section>
+      </div>
+    </div>
+  } @else if (notCompleted()) {
+    <section class="card ic-empty">
+      <div class="ic-banner ic-banner--inset">
+        <span class="ic-banner__bar"></span>
+        <div class="ic-banner__stack">
+          <span class="ic-banner__title">Initial conversation not yet completed</span>
+          <span class="ic-banner__text">
+            {{ guestFirstName() }} was registered
+            @if (overview(); as o) {
+              on {{ formatDate(o.registeredAt) }}
+            }
+            but has not yet had their initial conversation. Until it is recorded, the guest stays in
+            “Pending conversation” status.
+          </span>
+        </div>
+      </div>
+
+      @if (!showForm()) {
+        <div class="ic-empty__box">
+          <svg width="28" height="28" viewBox="0 0 28 28" fill="none" aria-hidden="true">
+            <path
+              transform="translate(4.667,2.333)"
+              d="M 13.984 2.333 C 13.839 1.021 12.726 0 11.375 0 L 7.292 0 C 5.941 0 4.828 1.021 4.683 2.333 L 2.625 2.333 C 1.175 2.333 0 3.509 0 4.958 L 0 20.708 C 0 22.158 1.175 23.333 2.625 23.333 L 16.042 23.333 C 17.491 23.333 18.667 22.158 18.667 20.708 L 18.667 4.958 C 18.667 3.509 17.491 2.333 16.042 2.333 L 13.984 2.333 Z M 13.994 2.445 L 14 2.625 C 14 2.565 13.998 2.505 13.994 2.445 Z M 7.292 5.25 L 11.375 5.25 C 12.285 5.25 13.087 4.787 13.558 4.084 L 16.042 4.083 C 16.525 4.083 16.917 4.475 16.917 4.958 L 16.917 20.708 C 16.917 21.192 16.525 21.583 16.042 21.583 L 2.625 21.583 C 2.142 21.583 1.75 21.192 1.75 20.708 L 1.75 4.958 C 1.75 4.475 2.142 4.083 2.625 4.083 L 5.109 4.084 C 5.58 4.787 6.382 5.25 7.292 5.25 Z M 7.292 1.75 L 11.375 1.75 C 11.858 1.75 12.25 2.142 12.25 2.625 C 12.25 3.108 11.858 3.5 11.375 3.5 L 7.292 3.5 C 6.808 3.5 6.417 3.108 6.417 2.625 C 6.417 2.142 6.808 1.75 7.292 1.75 Z M 14.583 14.292 C 14.583 13.808 14.192 13.417 13.708 13.417 C 13.225 13.417 12.833 13.808 12.833 14.292 L 12.833 17.792 C 12.833 18.275 13.225 18.667 13.708 18.667 C 14.192 18.667 14.583 18.275 14.583 17.792 L 14.583 14.292 Z M 9.333 10.5 C 9.817 10.5 10.208 10.892 10.208 11.375 L 10.208 17.792 C 10.208 18.275 9.817 18.667 9.333 18.667 C 8.85 18.667 8.458 18.275 8.458 17.792 L 8.458 11.375 C 8.458 10.892 8.85 10.5 9.333 10.5 Z M 5.833 9.042 C 5.833 8.558 5.442 8.167 4.958 8.167 C 4.475 8.167 4.083 8.558 4.083 9.042 L 4.083 17.792 C 4.083 18.275 4.475 18.667 4.958 18.667 C 5.442 18.667 5.833 18.275 5.833 17.792 L 5.833 9.042 Z"
+              fill="currentColor"
+            />
+          </svg>
+          <span class="ic-empty__title">No intake record on file</span>
+          <p class="ic-empty__copy">
+            Once completed, this tab will show a locked read-only record of who conducted the
+            conversation, what the guest presented with, and which pathway was chosen.
+          </p>
+          <button type="button" class="btn-primary" (click)="startConversation()">Start Initial Conversation</button>
+        </div>
+      } @else {
+        <form class="edit-form ic-form" (ngSubmit)="submit()">
+          <label class="edit-form__field edit-form__field--full">
+            <span>Presenting issues</span>
+            <textarea
+              name="presentingIssues"
+              rows="4"
+              [(ngModel)]="presentingIssues"
+              placeholder="How is the guest presenting? What are they describing as the main issue right now? Use their own words where possible…"
+            ></textarea>
+          </label>
+          <label class="edit-form__field edit-form__field--full">
+            <span>Notes</span>
+            <textarea
+              name="notes"
+              rows="3"
+              [(ngModel)]="notes"
+              placeholder="Anything else worth recording from the conversation…"
+            ></textarea>
+          </label>
+          <label class="edit-form__field edit-form__field--checkbox">
+            <input type="checkbox" name="consentConfirmed" [(ngModel)]="consentConfirmed" />
+            <span>The guest confirmed consent for EMHIP support during this conversation</span>
+          </label>
+          @if (submitError()) {
+            <p class="form-error">{{ submitError() }}</p>
+          }
+          <div class="edit-form__actions">
+            <button type="button" class="btn-ghost" (click)="cancelForm()">Cancel</button>
+            <button type="submit" class="btn-primary" [disabled]="!consentConfirmed || submitting()">
+              {{ submitting() ? 'Saving…' : 'Complete Initial Conversation' }}
+            </button>
+          </div>
+        </form>
+      }
+    </section>
+  }
+</div>

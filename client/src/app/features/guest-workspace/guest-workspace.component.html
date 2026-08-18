@@ -25,6 +25,9 @@
               @if (chip(); as c) {
                 <span class="chip" [style.background]="c.bg" [style.color]="c.fg">{{ c.label }}</span>
               }
+              @if (pathwayChip(); as p) {
+                <span class="chip" [style.background]="p.bg" [style.color]="p.fg">{{ p.label }}</span>
+              }
               @if (guest.hasActiveRiskFlags) {
                 <span class="chip chip--urgent">Active risk flag</span>
               }
@@ -33,6 +36,10 @@
               <span>Ref #{{ guest.id.slice(0, 8) }}</span>
               <span class="dot"></span>
               <span>Registered {{ registeredLabel() }}</span>
+              @if (lastActivityLabel(); as last) {
+                <span class="dot"></span>
+                <span>Last activity: {{ last }}</span>
+              }
               @if (guest.assignedCmhwName) {
                 <span class="dot"></span>
                 <span>Assigned to {{ guest.assignedCmhwName }}</span>
@@ -41,7 +48,7 @@
           </div>
         </div>
         <div class="identity-card__actions">
-          <button type="button" class="btn btn--primary" (click)="addContact()">
+          <button type="button" class="btn btn--primary" (click)="openContactDrawer()">
             <svg class="btn__icon" width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
               <path
                 transform="translate(5,5)"
@@ -105,7 +112,7 @@
         </svg>
         <span class="banner__text">
           {{ guest.openFollowUpCount }} open follow-up {{ guest.openFollowUpCount === 1 ? 'entry' : 'entries' }} —
-          check the Follow-up tab to keep the record current.
+          check the Follow-up Log tab to keep the record current.
         </span>
       </div>
     }
@@ -113,33 +120,48 @@
     <section class="tab-body">
       @switch (activeTab()) {
         @case ('overview') {
-          <app-guest-overview-tab
-            [overview]="guest"
-            [openContactForm]="pendingAction() === 'contact'"
-            (refresh)="reloadOverview()"
-            (viewFollowUps)="selectTab('followup')"
-          />
+          <app-guest-overview-tab [overview]="guest" (viewFollowUps)="selectTab('followup')" />
         }
         @case ('demographics') {
-          <app-guest-demographics-tab [guestId]="guestId()" />
+          <app-guest-demographics-tab [guestId]="guestId()" [overview]="guest" />
         }
-        @case ('clinical') {
-          <app-guest-clinical-tab
+        @case ('initial') {
+          <app-guest-initial-conversation-tab
             [guestId]="guestId()"
-            [openForm]="pendingAction() === 'risk'"
+            [overview]="guest"
             (refresh)="reloadOverview()"
           />
         }
-        @case ('pathway') {
-          <app-guest-pathway-tab [guestId]="guestId()" />
+        @case ('clinical') {
+          <emhip-guest-clinical-details-tab
+            [guestId]="guestId()"
+            [openForm]="pendingRiskForm()"
+            (refresh)="reloadOverview()"
+          />
         }
         @case ('followup') {
           <app-guest-followup-tab [guestId]="guestId()" (refresh)="reloadOverview()" />
         }
-        @case ('notes') {
-          <app-guest-notes-tab [overview]="guest" (refresh)="reloadOverview()" />
+        @case ('dialog') {
+          <emhip-guest-dialog-tab [guestId]="guestId()" (refresh)="reloadOverview()" />
+        }
+        @case ('pathway') {
+          <app-guest-pathway-tab [guestId]="guestId()" />
+        }
+        @case ('action') {
+          <emhip-guest-action-tab [guestId]="guestId()" (refresh)="reloadOverview()" />
         }
       }
     </section>
+
+    @if (contactDrawerOpen()) {
+      <app-guest-contact-log
+        [guestId]="guestId()"
+        [guestName]="fullName()"
+        [recentContacts]="guest.recentContacts"
+        (closed)="closeContactDrawer()"
+        (saved)="contactSaved()"
+      />
+    }
   }
 </div>

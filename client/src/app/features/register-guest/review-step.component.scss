@@ -1,0 +1,119 @@
+// Step-specific styles for the REVIEW step (Desktop87); shared styles live in
+// _form-shared.scss. Summary cells: 14/600 label over a 14/400 rgb(50,50,50) value, two per
+// row, separated by 1px rgb(232,232,232) rules.
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px 24px;
+}
+
+.summary-cell {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.summary-cell__label {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 24px;
+  color: #2a2a2a;
+}
+
+.summary-cell__value {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 24px;
+  color: #323232;
+  overflow-wrap: anywhere;
+}
+
+.summary-divider {
+  height: 1px;
+  margin: 18px 0;
+  background: #e8e8e8;
+}
+
+.summary-section {
+  margin: 28px 0 12px;
+  padding-top: 18px;
+  border-top: 1px solid #e8e8e8;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 24px;
+  color: #2a2a2a;
+}
+
+// Per-call submission checklist (functional addition for per-call error surfacing).
+.call-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.call-list__item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 13px;
+  color: #2a2a2a;
+}
+
+.call-list__dot {
+  flex-shrink: 0;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #d7d7d7;
+
+  .call-list__item--done & {
+    background: #147129;
+  }
+
+  .call-list__item--running & {
+    background: #9d852d;
+  }
+
+  .call-list__item--failed & {
+    background: #d02537;
+  }
+}
+
+.call-list__label {
+  flex: 1;
+  min-width: 0;
+}
+
+.call-list__status {
+  font-weight: 600;
+
+  .call-list__item--done & {
+    color: #147129;
+  }
+
+  .call-list__item--failed & {
+    color: #d02537;
+  }
+
+  .call-list__item--running & {
+    color: #9d852d;
+  }
+
+  .call-list__item--pending & {
+    color: #8c8c8c;
+  }
+}
+
+@media (max-width: 560px) {
+  .summary-grid {
+    grid-template-columns: 1fr;
+  }
+}

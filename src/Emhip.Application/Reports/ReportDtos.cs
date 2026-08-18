@@ -24,6 +24,15 @@ public sealed record ReportActivityDto(int GuestsSeen, int UrgentFlagsRaised, in
 /// <summary>"Ethnicity breakdown" chart slice (from recorded guest demographics).</summary>
 public sealed record BreakdownSliceDto(string Label, int Count, double Percentage);
 
+/// <summary>"Outcome dimensions" report — hub-wide average DIALOG score per domain, baseline vs latest follow-up.</summary>
+public sealed record DialogOutcomesReportDto(
+    int GuestsWithBaseline,
+    int GuestsWithFollowUp,
+    IReadOnlyList<DialogDimensionDto> Dimensions);
+
+/// <summary>Averages are null when no assessments exist for that cohort.</summary>
+public sealed record DialogDimensionDto(string Key, string Label, double? BaselineAverage, double? LatestAverage);
+
 /// <summary>One row of the streamed CSV export.</summary>
 public sealed record ReportExportRowDto(
     Guid GuestId,

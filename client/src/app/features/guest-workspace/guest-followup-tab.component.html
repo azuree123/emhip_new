@@ -5,23 +5,55 @@
     <div class="state-card state-card--error">{{ error() }}</div>
   } @else if (followUps(); as f) {
     <section class="card">
-      <div class="card__header-row">
-        <h2 class="card__title">Follow-up log</h2>
+      <div class="toolbar">
+        <h2 class="card__title">Follow-up Log</h2>
+        <label class="search-box">
+          <svg width="15" height="15" viewBox="0 0 15.001 15.001" fill="none" aria-hidden="true">
+            <path
+              d="M 14.506 15.496 C 14.779 15.769 15.222 15.769 15.496 15.496 C 15.769 15.222 15.769 14.779 15.496 14.506 L 15.001 15.001 L 14.506 15.496 Z M 15.001 15.001 L 15.496 14.506 L 11.165 10.175 L 10.67 10.67 L 10.175 11.165 L 14.506 15.496 L 15.001 15.001 Z M 10.67 10.67 L 11.165 11.165 C 12.468 9.861 13.2 8.094 13.2 6.25 L 12.5 6.25 L 11.8 6.25 C 11.8 7.722 11.216 9.134 10.175 10.175 L 10.67 10.67 Z M 12.5 6.25 L 13.2 6.25 C 13.2 4.407 12.468 2.639 11.165 1.336 L 10.67 1.831 L 10.175 2.326 C 11.216 3.366 11.8 4.778 11.8 6.25 L 12.5 6.25 Z M 10.67 1.831 L 11.165 1.336 C 9.861 0.032 8.094 -0.7 6.25 -0.7 L 6.25 0 L 6.25 0.7 C 7.722 0.7 9.134 1.285 10.175 2.326 L 10.67 1.831 Z M 6.25 0 L 6.25 -0.7 C 4.407 -0.7 2.639 0.032 1.336 1.336 L 1.831 1.831 L 2.326 2.326 C 3.366 1.285 4.778 0.7 6.25 0.7 L 6.25 0 Z M 1.831 1.831 L 1.336 1.336 C 0.032 2.639 -0.7 4.407 -0.7 6.25 L 0 6.25 L 0.7 6.25 C 0.7 4.778 1.285 3.366 2.326 2.326 L 1.831 1.831 Z M 0 6.25 L -0.7 6.25 C -0.7 8.094 0.032 9.861 1.336 11.165 L 1.831 10.67 L 2.326 10.175 C 1.285 9.134 0.7 7.722 0.7 6.25 L 0 6.25 Z M 1.831 10.67 L 1.336 11.165 C 2.639 12.468 4.407 13.2 6.25 13.2 L 6.25 12.5 L 6.25 11.8 C 4.778 11.8 3.366 11.216 2.326 10.175 L 1.831 10.67 Z M 6.25 12.5 L 6.25 13.2 C 8.094 13.2 9.861 12.468 11.165 11.165 L 10.67 10.67 L 10.175 10.175 C 9.134 11.216 7.722 11.8 6.25 11.8 L 6.25 12.5 Z"
+              fill="currentColor"
+            />
+          </svg>
+          <input
+            type="text"
+            name="search"
+            [ngModel]="search()"
+            (ngModelChange)="search.set($event)"
+            placeholder="Search free-text keyword..."
+            aria-label="Search free text keyword to find history"
+          />
+        </label>
+        <div class="segments" role="group" aria-label="Filter by status">
+          @for (segment of statusSegments; track segment) {
+            <button
+              type="button"
+              class="segments__item"
+              [class.segments__item--active]="statusFilter() === segment"
+              (click)="statusFilter.set(segment)"
+            >
+              {{ segment }}
+            </button>
+          }
+        </div>
         <button type="button" class="btn-link" (click)="toggleForm()">
           {{ showForm() ? 'Cancel' : '+ Schedule follow-up' }}
         </button>
       </div>
 
       @if (showForm()) {
-        <form class="edit-form" (ngSubmit)="submit()">
+        <form class="edit-form schedule-form" (ngSubmit)="submit()">
           <div class="edit-form__grid">
             <label class="edit-form__field">
               <span>Due date</span>
               <input type="date" name="dueDate" [(ngModel)]="form.dueDate" />
             </label>
             <label class="edit-form__field">
-              <span>Assignee staff ID</span>
-              <input type="text" name="assigneeStaffId" [(ngModel)]="form.assigneeStaffId" placeholder="Staff GUID" />
+              <span>Assignee</span>
+              <select name="assigneeStaffId" [(ngModel)]="form.assigneeStaffId">
+                @for (option of cmhwOptions(); track option.id) {
+                  <option [ngValue]="option.id">{{ option.displayName }}</option>
+                }
+              </select>
             </label>
           </div>
           <label class="edit-form__field edit-form__field--full">
@@ -37,28 +69,32 @@
         </form>
       }
 
-      @if (f.followUps.length) {
-        <ul class="entry-list">
-          @for (item of f.followUps; track item.id) {
-            <li class="entry">
-              <div class="entry__head">
-                <span class="entry__title">Due {{ formatDate(item.dueDate) }}</span>
-                <span class="chip" [style.background]="followUpStatusChip(item.status).bg" [style.color]="followUpStatusChip(item.status).fg">
-                  {{ followUpStatusChip(item.status).label }}
-                </span>
-              </div>
-              @if (item.notes) {
-                <p class="entry__body">{{ item.notes }}</p>
-              }
-              <div class="entry__meta">
-                <span>{{ item.assigneeName }}</span>
-                @if (item.completedAt) {
-                  <span>Completed {{ formatDateTime(item.completedAt) }}</span>
+      @if (filtered().length) {
+        <ul class="timeline">
+          @for (item of filtered(); track item.id) {
+            <li class="timeline__entry">
+              <div class="entry-tile">
+                <div class="entry-tile__head">
+                  <span class="entry-tile__title">Due {{ formatDate(item.dueDate) }}</span>
+                  <span class="chip" [style.background]="followUpStatusChip(item.status).bg" [style.color]="followUpStatusChip(item.status).fg">
+                    {{ followUpStatusChip(item.status).label }}
+                  </span>
+                </div>
+                @if (item.notes) {
+                  <p class="entry-tile__body">{{ item.notes }}</p>
                 }
+                <div class="entry-tile__meta">
+                  <span>{{ item.assigneeName }}</span>
+                  @if (item.completedAt) {
+                    <span>Completed {{ formatDateTime(item.completedAt) }}</span>
+                  }
+                </div>
               </div>
             </li>
           }
         </ul>
+      } @else if (f.followUps.length) {
+        <p class="empty-state">No follow-ups match the current search or filter.</p>
       } @else {
         <p class="empty-state">No follow-ups scheduled yet.</p>
       }

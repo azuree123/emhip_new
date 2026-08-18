@@ -1,0 +1,148 @@
+// Step-specific styles for the Pathway & allocation step (Desktop81); shared styles live in
+// _form-shared.scss.
+
+// Three 262x157 selectable tiles: r8, rgb(229,229,229) ring (selected: rgb(235,60,44) ring),
+// 48px icon square (selected: red fill + white icon), radio dot in the top-right corner.
+.pathway-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 13px;
+}
+
+.pathway-card {
+  position: relative;
+  box-sizing: border-box;
+  min-height: 157px;
+  padding: 14px 16px 16px;
+  border: none;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: inset 0 0 0 1px #e5e5e5;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid #941c3c;
+    outline-offset: 2px;
+  }
+
+  &--selected {
+    box-shadow: inset 0 0 0 1px #eb3c2c;
+  }
+}
+
+.pathway-card__icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 6px;
+  background: #f0f0f0;
+  color: #2a2a2a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  .pathway-card--selected & {
+    background: #eb3c2c;
+    color: #ffffff;
+  }
+}
+
+// 15px radio in the top-right: rgb(99,99,102) ring; selected = red ring + 9px red dot.
+.pathway-card__radio {
+  position: absolute;
+  top: 16px;
+  right: 15px;
+  box-sizing: border-box;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1.5px #636366;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &::after {
+    content: '';
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: #eb3c2c;
+    opacity: 0;
+  }
+
+  .pathway-card--selected & {
+    box-shadow: inset 0 0 0 1.5px #eb3c2c;
+
+    &::after {
+      opacity: 1;
+    }
+  }
+}
+
+.pathway-card__title {
+  margin-top: 20px;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 24px;
+  color: #2a2a2a;
+}
+
+.pathway-card__desc {
+  margin-top: 4px;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-weight: 500;
+  font-size: 10px;
+  line-height: 14px;
+  color: #2a2a2a;
+}
+
+// "Practical support / Advice First Aid also needed?" — rgb(247,247,247) band with the red
+// checkbox on the left.
+.afa-band {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin: 26px 0;
+  padding: 18px 16px;
+  background: #f7f7f7;
+  cursor: pointer;
+}
+
+.afa-band__text {
+  display: flex;
+  flex-direction: column;
+}
+
+.afa-band__title {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 24px;
+  color: #323232;
+}
+
+.afa-band__desc {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 24px;
+  color: #323232;
+}
+
+.allocation-row {
+  margin-top: 6px;
+}
+
+@media (max-width: 720px) {
+  .pathway-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .pathway-card {
+    min-height: 0;
+  }
+}
