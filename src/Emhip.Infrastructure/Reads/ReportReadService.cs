@@ -202,7 +202,7 @@ public sealed class ReportReadService(EmhipDbContext db) : IReportReadService
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
         var thirtyDaysAgo = DateTimeOffset.UtcNow.AddDays(-30);
 
-        return await db.Users.AsNoTracking()
+        var rows = await db.Users.AsNoTracking()
             .Where(u => u.HubId == hubId && u.IsActive)
             .Select(u => new CaseloadReportRowDto(
                 u.Id,
@@ -212,8 +212,10 @@ public sealed class ReportReadService(EmhipDbContext db) : IReportReadService
                 db.Guests.Count(g => g.AssignedCmhwId == u.Id && g.Status == Domain.Enums.GuestStatus.Urgent),
                 db.FollowUps.Count(f => f.AssigneeStaffId == u.Id && f.Status == Domain.Enums.FollowUpStatus.Scheduled && f.DueDate < today),
                 db.Contacts.Count(c => c.CreatedByStaffId == u.Id && c.OccurredAt >= thirtyDaysAgo)))
-            .OrderByDescending(r => r.AssignedGuests)
             .ToListAsync(cancellationToken);
+
+        // Ordering by a constructor-projected member doesn't translate — sort the (small) staff list in memory.
+        return rows.OrderByDescending(r => r.AssignedGuests).ToList();
     }
 
     public async Task<DataQualityReportDto> GetDataQualityReportAsync(Guid hubId, CancellationToken cancellationToken = default)
