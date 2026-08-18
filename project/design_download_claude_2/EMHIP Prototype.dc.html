@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="screens/fig-tokens.css">
+  <link rel="stylesheet" href="screens/fig-assets.css">
+  <script src="screens/Components.bundle.js"></script>
+  <style>
+    html, body { margin: 0; padding: 0; background: #ECECEC; }
+    a { color: #941C3C; } a:hover { color: #E12628; }
+  </style>
+</helmet>
+<div style="display: flex; flex-direction: column; height: 100vh; font-family: 'Plus Jakarta Sans', sans-serif;">
+  <div style="display: flex; flex-direction: column; gap: 0; background: #2A2A2A; flex-shrink: 0;">
+    <div style="display: flex; align-items: center; gap: 16px; padding: 10px 20px 8px;">
+      <div style="font-weight: 700; font-size: 14px; letter-spacing: 0.5px; white-space: nowrap; color: #FFFFFF;">EMHIP <span style="color: #8C8C8C; font-weight: 500;">Prototype</span></div>
+      <div style="display: flex; gap: 6px; overflow-x: auto;">
+        <sc-for list="{{ flows }}" as="fl" hint-placeholder-count="8">
+          <button onClick="{{ fl.select }}" style="border: 1px solid {{ fl.borderColor }}; background: {{ fl.bg }}; color: {{ fl.color }}; border-radius: 999px; padding: 6px 14px; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap;">{{ fl.label }}</button>
+        </sc-for>
+      </div>
+    </div>
+    <sc-if value="{{ hasSteps }}" hint-placeholder-val="{{ true }}">
+      <div style="display: flex; align-items: center; gap: 6px; padding: 0 20px 10px; overflow-x: auto;">
+        <sc-for list="{{ steps }}" as="st" hint-placeholder-count="4">
+          <button onClick="{{ st.select }}" style="border: none; background: {{ st.bg }}; color: {{ st.color }}; border-radius: 6px; padding: 4px 10px; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 11px; font-weight: 600; cursor: pointer; white-space: nowrap;">{{ st.label }}</button>
+        </sc-for>
+      </div>
+    </sc-if>
+  </div>
+  <div ref="{{ stageRef }}" style="flex: 1; overflow: auto; display: flex; justify-content: center; align-items: flex-start; padding: 24px;">
+    <div style="background: #FFFFFF; box-shadow: 0 2px 16px rgba(0,0,0,0.14); border-radius: 8px; width: {{ stageW }}px; flex-shrink: 0; zoom: {{ scale }};">
+      <x-import component-from-global-scope="{{ currentComponent }}" hint-size="1440px,900px"></x-import>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;startFlow&quot;: {&quot;editor&quot;: &quot;enum&quot;, &quot;options&quot;: [&quot;CMHW Dashboard&quot;, &quot;Hub Manager&quot;, &quot;Guest List&quot;, &quot;Register Guest&quot;, &quot;Guest Workspace&quot;, &quot;Add Contact&quot;, &quot;Follow-up&quot;, &quot;Urgent Cases&quot;, &quot;Reports&quot;], &quot;default&quot;: &quot;CMHW Dashboard&quot;, &quot;tsType&quot;: &quot;string&quot;, &quot;section&quot;: &quot;Prototype&quot;}}">
+class Component extends DCLogic {
+  state = { flow: null, step: 0, stageWidth: null };
+
+  static FLOWS = [
+    { label: 'CMHW Dashboard', steps: [{ key: 'GuestDataSheet', label: 'Dashboard' }] },
+    { label: 'Hub Manager', steps: [
+      { key: 'GuestDataSheet2', label: 'Dashboard' },
+      { key: 'Frame23', label: 'KPI expanded · Wellbeing', w: 1254 },
+      { key: 'Frame38', label: 'KPI expanded · Follow-ups', w: 1254 },
+      { key: 'Frame39', label: 'KPI expanded · Community', w: 1254 },
+    ]},
+    { label: 'Guest List', steps: [{ key: 'GuestDataSheet3', label: 'Guest List' }] },
+    { label: 'Register Guest', steps: [
+      { key: 'Desktop79', label: '1 · Details' },
+      { key: 'Desktop80', label: '2' },
+      { key: 'Desktop81', label: '3' },
+      { key: 'Desktop83', label: '4' },
+      { key: 'Desktop87', label: '5' },
+      { key: 'Desktop88', label: '6 · Done' },
+    ]},
+    { label: 'Guest Workspace', steps: [
+      { key: 'GuestOverviewTab', label: 'Overview' },
+      { key: 'GuestDemographicsTab', label: 'Demographics' },
+      { key: 'GuestInitialConversationTab', label: 'Initial Conversation' },
+      { key: 'GuestInitialConversationNotCompleted', label: 'Initial Conv. (not completed)' },
+      { key: 'GuestClinicalDetailsTab', label: 'Clinical Details' },
+      { key: 'GuestDIALOGTab', label: 'DIALOG' },
+      { key: 'GuestFollowUpTab', label: 'Follow Up' },
+      { key: 'GuestPathwayTab', label: 'Pathway' },
+      { key: 'GuestActionTab', label: 'Action' },
+    ]},
+    { label: 'Add Contact', steps: [
+      { key: 'GuestOverviewTab2', label: 'Overview' },
+      { key: 'Desktop86', label: 'Contact log' },
+    ]},
+    { label: 'Follow-up', steps: [
+      { key: 'Desktop58', label: 'Contact due' },
+      { key: 'Desktop65', label: 'Contact recorded' },
+    ]},
+    { label: 'Urgent Cases', steps: [{ key: 'Desktop57', label: 'Urgent cases' }] },
+    { label: 'Reports', steps: [
+      { key: 'Desktop72', label: 'Activity report' },
+      { key: 'Desktop73', label: 'Activity · 2' },
+      { key: 'Desktop74', label: 'Activity · 3' },
+      { key: 'Desktop75', label: 'Export flow' },
+      { key: 'Desktop66', label: 'Guest table' },
+      { key: 'Desktop45', label: 'Pathway' },
+      { key: 'Desktop68', label: 'Table · 2' },
+      { key: 'Desktop67', label: 'Table · 3' },
+      { key: 'Desktop69', label: 'Table · 4' },
+      { key: 'Desktop47', label: 'Outcome dimensions' },
+      { key: 'Desktop48', label: 'Table · 5' },
+      { key: 'Desktop70', label: 'Table · 6' },
+      { key: 'Desktop49', label: 'Table · 7' },
+    ]},
+  ];
+
+  componentDidMount() {
+    this._measure = () => {
+      const el = this._stageEl;
+      if (el && el.clientWidth !== this.state.stageWidth) this.setState({ stageWidth: el.clientWidth });
+    };
+    window.addEventListener('resize', this._measure);
+    this._measure();
+  }
+
+  componentWillUnmount() {
+    window.removeEventListener('resize', this._measure);
+  }
+
+  renderVals() {
+    const flowLabel = this.state.flow || this.props.startFlow || 'CMHW Dashboard';
+    const flowIdx = Math.max(0, Component.FLOWS.findIndex((f) => f.label === flowLabel));
+    const flow = Component.FLOWS[flowIdx];
+    const stepIdx = Math.min(this.state.step, flow.steps.length - 1);
+    const flows = Component.FLOWS.map((f) => {
+      const active = f.label === flow.label;
+      return {
+        label: f.label,
+        select: () => this.setState({ flow: f.label, step: 0 }),
+        bg: active ? '#E12628' : 'transparent',
+        color: active ? '#FFFFFF' : '#C9C9C9',
+        borderColor: active ? '#E12628' : '#505050',
+      };
+    });
+    const steps = flow.steps.map((s, i) => ({
+      label: s.label,
+      select: () => this.setState({ flow: flow.label, step: i }),
+      bg: i === stepIdx ? '#FFC629' : '#3A3A3A',
+      color: i === stepIdx ? '#2A2A2A' : '#B8B8B8',
+    }));
+    const step = flow.steps[stepIdx];
+    const stageW = step.w || 1440;
+    const w = this.state.stageWidth;
+    const scale = w ? Math.min(1, (w - 48) / stageW) : 1;
+    const stageRef = (el) => {
+      this._stageEl = el;
+      if (el && this._measure) this._measure();
+    };
+    return {
+      flows,
+      steps,
+      hasSteps: flow.steps.length > 1,
+      currentComponent: step.key,
+      stageW,
+      scale,
+      stageRef,
+    };
+  }
+}
+</script>
+</body>
+</html>
