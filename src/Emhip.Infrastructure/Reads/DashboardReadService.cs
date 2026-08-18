@@ -14,6 +14,46 @@ namespace Emhip.Infrastructure.Reads;
 /// </summary>
 public sealed class DashboardReadService(EmhipDbContext db, IUrgentCaseReadService urgentCases) : IDashboardReadService
 {
+    public async Task<GuestsSeenDto> GetGuestsSeenAsync(Guid hubId, GuestsSeenPeriod period, Guid? cmhwStaffId = null, CancellationToken cancellationToken = default)
+    {
+        // Live, but narrow: an OccurredAt-indexed range scan over at most a month of contacts.
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var from = period switch
+        {
+            GuestsSeenPeriod.Today => today,
+            GuestsSeenPeriod.Week => today.AddDays(-6),
+            _ => today.AddDays(-29),
+        };
+        var fromTs = new DateTimeOffset(from.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
+
+        var contacts = db.Contacts.AsNoTracking()
+            .Where(c => c.OccurredAt >= fromTs
+                && db.Guests.Any(g => g.Id == c.GuestId && g.HubId == hubId));
+        if (cmhwStaffId is not null)
+        {
+            contacts = contacts.Where(c => c.CreatedByStaffId == cmhwStaffId);
+        }
+
+        var rows = await contacts
+            .Select(c => new { c.GuestId, c.OccurredAt })
+            .ToListAsync(cancellationToken);
+
+        var perDay = rows
+            .GroupBy(r => DateOnly.FromDateTime(r.OccurredAt.UtcDateTime))
+            .ToDictionary(g => g.Key, g => g.Select(r => r.GuestId).Distinct().Count());
+
+        var series = Enumerable.Range(0, today.DayNumber - from.DayNumber + 1)
+            .Select(offset => from.AddDays(offset))
+            .Select(date => new GuestsSeenPointDto(date, perDay.GetValueOrDefault(date)))
+            .ToList();
+
+        return new GuestsSeenDto(
+            period, from, today,
+            rows.Select(r => r.GuestId).Distinct().Count(),
+            rows.Count,
+            series);
+    }
+
     public async Task<CmhwDashboardDto> GetCmhwDashboardAsync(Guid staffId, Guid hubId, CancellationToken cancellationToken = default)
     {
         var snapshot = await db.DashboardSnapshots.AsNoTracking()

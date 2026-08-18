@@ -20,8 +20,8 @@ import {
  * component starts exactly where the guest's own content begins.
  *
  * Honest-data notes (the bundle shows sample data with no API backing):
- * - "Sex", "Referral type" and "Next contact" have no field on any DTO — replaced with real
- *   fields (contact phone/email, AFA support) in the same slots.
+ * - "Sex" and "Next contact" have no field on any DTO — replaced with real fields (contact
+ *   phone/email, AFA support) in the same slots. "Referral type" is real: referralSource.
  * - "Total follow-up entries" tile: the API only exposes openFollowUpCount — labelled
  *   "Open follow-up entries".
  * - "DIALOG baseline score" tile is real: fetched via getDialog() (baseline.total / 77).

@@ -1,0 +1,50 @@
+<section class="report-card">
+  <h2 class="report-card__title">Export History</h2>
+  <p class="report-card__subtitle">Track previously generated reports.</p>
+
+  @if (error()) {
+    <div class="error-banner export-history__error">Couldn't load export history — {{ error() }}</div>
+  }
+
+  @if (loading()) {
+    <div class="report-card__state">Loading export history…</div>
+  } @else if (rows().length === 0) {
+    <div class="report-card__state">No exports recorded yet — use Export CSV in the header to create one.</div>
+  } @else {
+    <div class="table-scroll">
+      <table class="rpt-table history-table">
+        <thead>
+          <tr>
+            <th>Report</th>
+            <th>Period</th>
+            <th>Exported</th>
+            <th>By</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of rows(); track row.id) {
+            <tr>
+              <td>
+                <span class="history-table__report">
+                  <span class="history-table__icon" aria-hidden="true">
+                    <svg width="17" height="20" viewBox="0 0 16.5 19.5" fill="none">
+                      <path
+                        d="M 10.125 0 C 10.274 0 10.417 0.059 10.523 0.165 L 16.335 5.977 C 16.441 6.083 16.5 6.226 16.5 6.375 L 16.5 17.25 C 16.5 18.493 15.493 19.5 14.25 19.5 L 2.25 19.5 C 1.007 19.5 0 18.493 0 17.25 L 0 2.25 C 0 1.007 1.007 0 2.25 0 Z M 9.562 1.125 L 2.25 1.125 C 1.629 1.125 1.125 1.629 1.125 2.25 L 1.125 17.25 C 1.125 17.871 1.629 18.375 2.25 18.375 L 14.25 18.375 C 14.871 18.375 15.375 17.871 15.375 17.25 L 15.375 6.938 L 11.812 6.938 C 10.57 6.938 9.562 5.93 9.562 4.688 Z M 15.142 5.813 L 10.687 1.358 L 10.687 4.688 C 10.687 5.309 11.191 5.813 11.812 5.813 Z"
+                        fill="currentColor"
+                        fill-rule="nonzero"
+                      />
+                    </svg>
+                  </span>
+                  <span class="history-table__name">{{ row.exportType }}</span>
+                </span>
+              </td>
+              <td>{{ row.period }}</td>
+              <td class="history-table__when">{{ row.exportedAtLabel }}</td>
+              <td>{{ row.exportedByName }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</section>

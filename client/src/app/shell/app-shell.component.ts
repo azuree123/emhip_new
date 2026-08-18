@@ -1,6 +1,10 @@
-import { Component, OnInit, computed, effect, inject, signal } from '@angular/core';
+import { Component, ElementRef, OnInit, computed, effect, inject, signal, viewChild } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { Subject, catchError, debounceTime, distinctUntilChanged, of, switchMap } from 'rxjs';
+import { GuestStatus, GuestSuggestionDto } from '../core/api-models';
 import { AuthService } from '../core/auth.service';
+import { GuestsApiService } from '../core/guests-api.service';
 import { Permissions } from '../core/permissions';
 import { UrgentCasesApiService } from '../core/urgent-cases-api.service';
 import { UrgentCasesHubService } from '../core/urgent-cases-hub.service';
@@ -32,12 +36,17 @@ interface NavSection {
   imports: [RouterOutlet, RouterLink, RouterLinkActive],
   templateUrl: './app-shell.component.html',
   styleUrl: './app-shell.component.scss',
+  host: {
+    // Clicking anywhere outside the search box closes the suggestions dropdown.
+    '(document:click)': 'onDocumentClick($event)',
+  },
 })
 export class AppShellComponent implements OnInit {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   private readonly urgentCasesApi = inject(UrgentCasesApiService);
   private readonly urgentCasesHub = inject(UrgentCasesHubService);
+  private readonly guestsApi = inject(GuestsApiService);
 
   readonly currentUser = this.auth.current;
   readonly urgentCaseCount = signal<number | null>(null);
@@ -51,9 +60,20 @@ export class AppShellComponent implements OnInit {
   })();
   readonly mobileNavOpen = signal(false);
 
-  searchTerm = '';
+  readonly searchTerm = signal('');
   readonly canSearchGuests = this.auth.hasPermission(Permissions.Guests.View);
   readonly canViewUrgentCases = this.auth.hasPermission(Permissions.UrgentCases.View);
+
+  // --- Search autocomplete state ---------------------------------------------------------
+  /** null = nothing fetched for the current query (under 2 chars or cleared); [] = fetched, no matches. */
+  readonly suggestions = signal<GuestSuggestionDto[] | null>(null);
+  readonly suggestionsOpen = signal(false);
+  /** Keyboard/hover highlight within the dropdown; -1 = none. */
+  readonly activeSuggestionIndex = signal(-1);
+  readonly suggestionsVisible = computed(() => this.suggestionsOpen() && this.suggestions() !== null);
+
+  private readonly searchBox = viewChild<ElementRef<HTMLElement>>('searchBox');
+  private readonly suggestQuery$ = new Subject<string>();
 
   constructor() {
     // A live escalation may add a case — refresh the badge count when one arrives.
@@ -62,6 +82,21 @@ export class AppShellComponent implements OnInit {
         this.urgentCasesApi.getActive().subscribe((cases) => this.urgentCaseCount.set(cases.length));
       }
     });
+
+    // Debounced typeahead: min 2 chars, switchMap cancels stale in-flight requests.
+    this.suggestQuery$
+      .pipe(
+        debounceTime(250),
+        distinctUntilChanged(),
+        switchMap((q) =>
+          q.length < 2 ? of(null) : this.guestsApi.suggest(q).pipe(catchError(() => of<GuestSuggestionDto[]>([]))),
+        ),
+        takeUntilDestroyed(),
+      )
+      .subscribe((results) => {
+        this.suggestions.set(results);
+        this.activeSuggestionIndex.set(-1);
+      });
   }
 
   readonly visibleSections = computed(() =>
@@ -158,8 +193,90 @@ export class AppShellComponent implements OnInit {
     }
   }
 
+  onSearchInput(value: string): void {
+    this.searchTerm.set(value);
+    const q = value.trim();
+    this.suggestQuery$.next(q);
+    if (q.length < 2) {
+      // Under the server's 2-char minimum nothing is shown — drop any stale list immediately.
+      this.suggestions.set(null);
+      this.activeSuggestionIndex.set(-1);
+    } else {
+      this.suggestionsOpen.set(true);
+    }
+  }
+
+  onSearchFocus(): void {
+    // Re-focusing with a still-valid query re-opens the previously fetched list.
+    if (this.searchTerm().trim().length >= 2 && this.suggestions() !== null) {
+      this.suggestionsOpen.set(true);
+    }
+  }
+
+  onSearchKeydown(event: KeyboardEvent): void {
+    const items = this.suggestions();
+    switch (event.key) {
+      case 'ArrowDown':
+      case 'ArrowUp': {
+        if (!this.suggestionsVisible() || !items || items.length === 0) {
+          return;
+        }
+        event.preventDefault();
+        this.activeSuggestionIndex.update((i) =>
+          event.key === 'ArrowDown' ? (i + 1) % items.length : i <= 0 ? items.length - 1 : i - 1,
+        );
+        break;
+      }
+      case 'Enter': {
+        const i = this.activeSuggestionIndex();
+        if (this.suggestionsVisible() && items && i >= 0 && i < items.length) {
+          event.preventDefault();
+          this.selectSuggestion(items[i]);
+        } else {
+          // Fallback: preserve the original Enter behavior (guest list filtered by ?q=).
+          this.submitSearch();
+        }
+        break;
+      }
+      case 'Escape': {
+        if (this.suggestionsVisible()) {
+          event.preventDefault();
+          this.closeSuggestions();
+        }
+        break;
+      }
+    }
+  }
+
+  selectSuggestion(suggestion: GuestSuggestionDto): void {
+    this.searchTerm.set('');
+    // Reset distinctUntilChanged state so re-typing the same query fetches again.
+    this.suggestQuery$.next('');
+    this.suggestions.set(null);
+    this.closeSuggestions();
+    void this.router.navigate(['/guests', suggestion.id]);
+  }
+
+  closeSuggestions(): void {
+    this.suggestionsOpen.set(false);
+    this.activeSuggestionIndex.set(-1);
+  }
+
+  onDocumentClick(event: MouseEvent): void {
+    const box = this.searchBox()?.nativeElement;
+    if (this.suggestionsOpen() && box && !box.contains(event.target as Node)) {
+      this.closeSuggestions();
+    }
+  }
+
+  /** Same humanization the guest data sheet's status pills use. */
+  statusLabel(status: GuestStatus): string {
+    return status === 'PendingConversation' ? 'Pending Conversation' : status;
+  }
+
   submitSearch(): void {
-    const q = this.searchTerm.trim();
+    const q = this.searchTerm().trim();
+    this.closeSuggestions();
     void this.router.navigate(['/guests'], { queryParams: q ? { q } : {} });
   }
 

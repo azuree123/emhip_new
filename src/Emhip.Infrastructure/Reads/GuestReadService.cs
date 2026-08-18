@@ -29,7 +29,7 @@ public sealed class GuestReadService(ISqlConnectionFactory connectionFactory, Em
 
         const string sql = """
             SELECT TOP (@FetchSize)
-                g.Id, g.FirstName, g.LastName, g.DateOfBirth, g.Status,
+                g.Id, g.GuestNumber, g.FirstName, g.LastName, g.DateOfBirth, g.Status,
                 s.DisplayName AS AssignedCmhwName, g.RegisteredAt, lc.OccurredAt AS LastContactAt,
                 pw.Category AS PathwayCategory, ISNULL(rk.HasFlags, 0) AS HasRiskFlags, nf.DueDate AS NextContactDue
             FROM Guests g
@@ -90,15 +90,70 @@ public sealed class GuestReadService(ISqlConnectionFactory connectionFactory, Em
             ? KeysetCursor.Encode(new GuestCursor(page[^1].LastName, page[^1].FirstName, page[^1].Id))
             : null;
 
+        // Total only on the first page — an indexed COUNT with the same filters; later pages
+        // skip it and the client carries the first page's value forward.
+        int? totalCount = null;
+        if (decodedCursor is null)
+        {
+            // Include the per-row applies only when their filter is actually set — the common
+            // unfiltered count stays a pure index scan over Guests.
+            var applies = string.Empty;
+            var predicates = string.Empty;
+            if (pathway is not null)
+            {
+                applies += "\nOUTER APPLY (SELECT TOP 1 p.Category FROM PathwayReferrals p WHERE p.GuestId = g.Id ORDER BY p.ReferredAt DESC) pw";
+                predicates += "\n    AND pw.Category = @Pathway";
+            }
+            if (hasRiskFlags is not null)
+            {
+                applies += """
+
+                    OUTER APPLY (
+                        SELECT TOP 1 CAST(CASE WHEN r.SuicidalIdeation = 1 OR r.SelfHarm = 1 OR r.RiskToOthers = 1
+                            OR r.SevereDeterioration = 1 OR r.SafeguardingConcern = 1 THEN 1 ELSE 0 END AS bit) AS HasFlags
+                        FROM RiskAssessments r WHERE r.GuestId = g.Id ORDER BY r.Version DESC
+                    ) rk
+                    """;
+                predicates += "\n    AND ISNULL(rk.HasFlags, 0) = @HasRiskFlags";
+            }
+            if (lastActivityWithinDays.HasValue)
+            {
+                applies += "\nOUTER APPLY (SELECT TOP 1 c.OccurredAt FROM Contacts c WHERE c.GuestId = g.Id ORDER BY c.OccurredAt DESC) lc";
+                predicates += "\n    AND lc.OccurredAt >= @LastContactAfter";
+            }
+
+            var countSql = $"""
+                SELECT COUNT(*)
+                FROM Guests g{applies}
+                WHERE g.HubId = @HubId AND g.IsDeleted = 0
+                    AND (@Status IS NULL OR g.Status = @Status)
+                    AND (@SearchPattern IS NULL OR g.FirstName LIKE @SearchPattern OR g.LastName LIKE @SearchPattern)
+                    AND (@AssignedCmhwId IS NULL OR g.AssignedCmhwId = @AssignedCmhwId){predicates}
+                """;
+            totalCount = await connection.ExecuteScalarAsync<int>(countSql, new
+            {
+                HubId = hubId,
+                Status = status?.ToString(),
+                SearchPattern = string.IsNullOrWhiteSpace(searchText) ? null : $"%{searchText}%",
+                Pathway = pathway?.ToString(),
+                HasRiskFlags = hasRiskFlags,
+                AssignedCmhwId = assignedCmhwId,
+                LastContactAfter = lastActivityWithinDays.HasValue
+                    ? (DateTimeOffset?)DateTimeOffset.UtcNow.AddDays(-lastActivityWithinDays.Value)
+                    : null,
+            });
+        }
+
         return new KeysetPage<GuestListItemDto>
         {
             Items = page.Select(r => new GuestListItemDto(
-                r.Id, r.FirstName, r.LastName, DateOnly.FromDateTime(r.DateOfBirth),
+                r.Id, r.GuestNumber, r.FirstName, r.LastName, DateOnly.FromDateTime(r.DateOfBirth),
                 Enum.Parse<GuestStatus>(r.Status), r.AssignedCmhwName, r.RegisteredAt, r.LastContactAt,
                 r.PathwayCategory, r.HasRiskFlags,
                 r.NextContactDue.HasValue ? DateOnly.FromDateTime(r.NextContactDue.Value) : null)).ToList(),
             NextCursor = nextCursor,
             HasMore = hasMore,
+            TotalCount = totalCount,
         };
     }
 
@@ -108,8 +163,8 @@ public sealed class GuestReadService(ISqlConnectionFactory connectionFactory, Em
             .Where(g => g.Id == guestId)
             .Select(g => new
             {
-                g.Id, g.FirstName, g.LastName, g.DateOfBirth, g.Status, g.ContactPhone, g.ContactEmail, g.RegisteredAt,
-                g.Pathway, g.AfaSupportNeeded,
+                g.Id, g.GuestNumber, g.FirstName, g.LastName, g.DateOfBirth, g.Status, g.ContactPhone, g.ContactEmail, g.RegisteredAt,
+                g.Pathway, g.AfaSupportNeeded, g.ReferralSource,
                 AssignedCmhwName = db.Users.Where(s => s.Id == g.AssignedCmhwId).Select(s => s.DisplayName).FirstOrDefault(),
             })
             .FirstOrDefaultAsync(cancellationToken);
@@ -142,9 +197,9 @@ public sealed class GuestReadService(ISqlConnectionFactory connectionFactory, Em
             .ToListAsync(cancellationToken);
 
         return new GuestOverviewDto(
-            guest.Id, guest.FirstName, guest.LastName, guest.DateOfBirth, guest.Status,
+            guest.Id, guest.GuestNumber, guest.FirstName, guest.LastName, guest.DateOfBirth, guest.Status,
             guest.ContactPhone, guest.ContactEmail, guest.AssignedCmhwName, guest.RegisteredAt,
-            hasRiskFlags, openFollowUps, guest.Pathway, guest.AfaSupportNeeded, pinnedNotes, recentContacts);
+            hasRiskFlags, openFollowUps, guest.Pathway, guest.AfaSupportNeeded, guest.ReferralSource, pinnedNotes, recentContacts);
     }
 
     public async Task<GuestDemographicsDto?> GetDemographicsAsync(Guid guestId, CancellationToken cancellationToken = default)
@@ -231,6 +286,29 @@ public sealed class GuestReadService(ISqlConnectionFactory connectionFactory, Em
             .Select(u => new CmhwOptionDto(u.Id, u.DisplayName))
             .ToListAsync(cancellationToken);
 
+    public async Task<IReadOnlyList<GuestSuggestionDto>> SuggestAsync(Guid hubId, string query, int limit, CancellationToken cancellationToken = default)
+    {
+        var trimmed = query.Trim();
+        if (trimmed.Length < 2) return [];
+
+        // "G-1001" / plain-number queries match the guest reference; anything else matches names.
+        var numericPart = trimmed.StartsWith("G-", StringComparison.OrdinalIgnoreCase) ? trimmed[2..] : trimmed;
+        int? guestNumber = int.TryParse(numericPart, out var n) ? n : null;
+
+        var guests = db.Guests.AsNoTracking().Where(g => g.HubId == hubId);
+        guests = guestNumber is not null
+            ? guests.Where(g => g.GuestNumber == guestNumber)
+            : guests.Where(g =>
+                g.FirstName.StartsWith(trimmed) || g.LastName.StartsWith(trimmed)
+                || (g.FirstName + " " + g.LastName).StartsWith(trimmed));
+
+        return await guests
+            .OrderBy(g => g.LastName).ThenBy(g => g.FirstName)
+            .Take(Math.Clamp(limit, 1, 20))
+            .Select(g => new GuestSuggestionDto(g.Id, g.GuestNumber, g.FirstName + " " + g.LastName, g.Status))
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task<GuestDialogDto?> GetDialogAsync(Guid guestId, CancellationToken cancellationToken = default)
     {
         var guestExists = await db.Guests.AsNoTracking().AnyAsync(g => g.Id == guestId, cancellationToken);
@@ -270,6 +348,7 @@ public sealed class GuestReadService(ISqlConnectionFactory connectionFactory, Em
     private sealed class GuestListRow
     {
         public Guid Id { get; set; }
+        public int GuestNumber { get; set; }
         public string FirstName { get; set; } = default!;
         public string LastName { get; set; } = default!;
         public DateTime DateOfBirth { get; set; }

@@ -181,7 +181,7 @@ export class GuestWorkspaceComponent {
       const url = URL.createObjectURL(blob);
       const anchor = document.createElement('a');
       anchor.href = url;
-      anchor.download = `guest-record-${guest.firstName}-${guest.lastName}-${id.slice(0, 8)}.json`;
+      anchor.download = `guest-record-${guest.firstName}-${guest.lastName}-G-${guest.guestNumber}.json`;
       anchor.click();
       URL.revokeObjectURL(url);
     });

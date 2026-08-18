@@ -4,6 +4,7 @@ namespace Emhip.Application.UrgentCases;
 public sealed record UrgentCaseDto(
     Guid GuestId,
     string GuestName,
+    int GuestNumber,
     bool SuicidalIdeation,
     bool SelfHarm,
     bool RiskToOthers,

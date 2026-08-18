@@ -201,6 +201,29 @@
     </div>
 
     <div class="report-grid__side">
+      <!-- "Referral sources" card (Desktop72 side column, top 1348). -->
+      <section class="report-card">
+        <h2 class="report-card__title">Referral sources</h2>
+
+        @if (referralSourcesLoading()) {
+          <div class="report-card__state">Loading referral sources…</div>
+        } @else if (referralRows().length === 0) {
+          <div class="report-card__state">No referral sources recorded yet.</div>
+        } @else {
+          <div class="referral-rows">
+            @for (row of referralRows(); track row.label) {
+              <div class="breakdown-row">
+                <span class="breakdown-row__label">{{ row.label }}</span>
+                <div class="breakdown-row__track">
+                  <div class="breakdown-row__fill" [style.width.%]="row.barPct"></div>
+                </div>
+                <span class="breakdown-row__value">{{ row.percentage }}%</span>
+              </div>
+            }
+          </div>
+        }
+      </section>
+
       <section class="report-card">
         <div class="report-card__head">
           <h2 class="report-card__title">Follow-up activity</h2>

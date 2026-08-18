@@ -23,6 +23,8 @@ public interface IAppDbContext
     DbSet<DialogAssessment> DialogAssessments { get; }
     DbSet<GuestAction> GuestActions { get; }
     DbSet<GuestClinicalProfile> GuestClinicalProfiles { get; }
+    DbSet<UrgentEpisode> UrgentEpisodes { get; }
+    DbSet<ExportRecord> ExportRecords { get; }
     DbSet<AuditEvent> AuditEvents { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);

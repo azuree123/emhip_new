@@ -1,0 +1,63 @@
+// Pathway Analytics tab — Desktop45 (project/screens/Components.bundle.js).
+@import 'reports-shared';
+
+:host {
+  display: block;
+  font-family: $font-body;
+}
+
+.pathway-analytics {
+  &__unallocated {
+    font-weight: 500;
+    font-size: 12px;
+    line-height: 24px;
+    color: $maroon;
+    white-space: nowrap;
+
+    strong {
+      font-weight: 700;
+    }
+  }
+
+  &__error {
+    margin-bottom: 16px;
+  }
+}
+
+.pathway-table {
+  margin-top: 18px;
+
+  td {
+    padding-top: 17px;
+    padding-bottom: 17px;
+  }
+
+  &__num {
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  &__strong {
+    font-weight: 600;
+  }
+
+  &__urgent {
+    color: $coral;
+    font-weight: 600;
+  }
+
+  &__name {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  &__swatch {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+}

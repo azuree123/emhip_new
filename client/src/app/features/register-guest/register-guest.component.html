@@ -144,6 +144,9 @@
         </div>
         <h2 class="success__title" id="register-success-title">Success!</h2>
         <p class="success__message">{{ successMessage() }}</p>
+        @if (guestReference()) {
+          <p class="success__ref">Guest reference: {{ guestReference() }}</p>
+        }
         <button type="button" class="btn btn--primary success__cta" (click)="goToWorkspace()">Go to Guest Workspace</button>
       </div>
     </div>

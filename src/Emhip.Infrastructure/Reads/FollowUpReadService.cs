@@ -17,7 +17,7 @@ public sealed class FollowUpReadService(ISqlConnectionFactory connectionFactory)
 
         const string sql = """
             SELECT TOP (@FetchSize)
-                f.Id, f.GuestId, g.FirstName + ' ' + g.LastName AS GuestName, f.DueDate, f.Status,
+                f.Id, f.GuestId, g.FirstName + ' ' + g.LastName AS GuestName, g.GuestNumber, f.DueDate, f.Status,
                 s.DisplayName AS AssigneeName,
                 CASE WHEN f.Status = 'Scheduled' AND f.DueDate < CAST(SYSUTCDATETIME() AS date) THEN 1 ELSE 0 END AS IsOverdue
             FROM FollowUps f
@@ -61,7 +61,7 @@ public sealed class FollowUpReadService(ISqlConnectionFactory connectionFactory)
         return new KeysetPage<FollowUpQueueItemDto>
         {
             Items = page.Select(r => new FollowUpQueueItemDto(
-                r.Id, r.GuestId, r.GuestName, DateOnly.FromDateTime(r.DueDate), r.Status, r.AssigneeName, r.IsOverdue)).ToList(),
+                r.Id, r.GuestId, r.GuestName, r.GuestNumber, DateOnly.FromDateTime(r.DueDate), r.Status, r.AssigneeName, r.IsOverdue)).ToList(),
             NextCursor = nextCursor,
             HasMore = hasMore,
         };
@@ -72,6 +72,7 @@ public sealed class FollowUpReadService(ISqlConnectionFactory connectionFactory)
         public Guid Id { get; set; }
         public Guid GuestId { get; set; }
         public string GuestName { get; set; } = default!;
+        public int GuestNumber { get; set; }
         public DateTime DueDate { get; set; }
         public string Status { get; set; } = default!;
         public string AssigneeName { get; set; } = default!;

@@ -57,6 +57,8 @@ export class FollowUpsComponent implements OnInit {
   readonly loading = signal(false);
   readonly loadError = signal<string | null>(null);
   readonly hasMore = signal(false);
+  /** Total matching entries — only the first keyset page carries it, so we hold on to it. */
+  readonly totalCount = signal<number | null>(null);
   private cursor: string | null = null;
 
   // Server-side filters (passed to GET /followups).
@@ -120,10 +122,16 @@ export class FollowUpsComponent implements OnInit {
     return STATUS_COLORS[status as FollowUpStatus] ?? { bg: 'rgb(240,240,240)', fg: 'rgb(50,50,50)' };
   }
 
-  /** Short human-readable reference derived from the follow-up id (no ref number exists in the DTO). */
+  /** Real sequential guest reference — api-models: render as "G-{guestNumber}". */
   refLabel(item: FollowUpQueueItemDto): string {
-    return item.id.replace(/-/g, '').slice(0, 6).toUpperCase();
+    return `G-${item.guestNumber}`;
   }
+
+  /** "of Y entries" — real total from the first keyset page, else the loaded count. */
+  readonly totalLabel = computed(() => {
+    const total = this.totalCount();
+    return total !== null ? `${total}` : `${this.items().length}${this.hasMore() ? '+' : ''}`;
+  });
 
   /** Right-hand countdown column, Desktop58-style: "18h overdue" / "11h left" against dueDate. */
   windowLabel(item: FollowUpQueueItemDto): { text: string; cls: 'overdue' | 'left' | 'done' | 'muted' } {
@@ -198,6 +206,7 @@ export class FollowUpsComponent implements OnInit {
     this.cursor = null;
     this.items.set([]);
     this.hasMore.set(false);
+    this.totalCount.set(null);
     this.fetchPage(true);
   }
 
@@ -221,6 +230,7 @@ export class FollowUpsComponent implements OnInit {
           this.items.update((cur) => (reset ? page.items : [...cur, ...page.items]));
           this.cursor = page.nextCursor;
           this.hasMore.set(page.hasMore);
+          if (page.totalCount !== null) this.totalCount.set(page.totalCount);
           this.loading.set(false);
         },
         error: () => {

@@ -283,6 +283,103 @@
     line-height: 24px;
   }
 
+  // Typeahead dropdown — white card under the search field, matching the app's
+  // dropdown chrome (radius 10, subtle border + shadow, Plus Jakarta Sans rows).
+  &__suggestions {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    right: 0;
+    z-index: 60;
+    margin: 0;
+    padding: 6px;
+    list-style: none;
+    background: #ffffff;
+    border: 1px solid #e5e5e5;
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14);
+    max-height: 352px;
+    overflow-y: auto;
+  }
+
+  &__suggestion {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+
+    // Highlight driven by activeSuggestionIndex (mouseenter sets it too), so hover
+    // and arrow-key navigation share one visual state.
+    &--active {
+      background: #f7f7f7;
+    }
+
+    &--empty {
+      cursor: default;
+      color: #8c8c8c;
+      font-weight: 500;
+      font-size: 12px;
+      justify-content: center;
+    }
+  }
+
+  &__suggestion-name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: #2a2a2a;
+    font-weight: 600;
+    font-size: 13px;
+    line-height: 18px;
+  }
+
+  &__suggestion-ref {
+    flex-shrink: 0;
+    color: #8c8c8c;
+    font-weight: 500;
+    font-size: 12px;
+    line-height: 18px;
+  }
+
+  // Status pill — same palette as the guest data sheet's .badge chips
+  // (features/guest-data-sheet/guest-data-sheet.component.scss).
+  &__suggestion-status {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 8px;
+    border-radius: 200px;
+    font-weight: 500;
+    font-size: 11px;
+    line-height: 14px;
+    white-space: nowrap;
+
+    &[data-status='Active'] {
+      background: rgb(234, 253, 238);
+      color: rgb(20, 113, 41);
+    }
+
+    &[data-status='PendingConversation'] {
+      background: rgb(255, 249, 228);
+      color: rgb(157, 133, 45);
+    }
+
+    &[data-status='Inactive'] {
+      background: rgb(231, 238, 255);
+      color: rgb(52, 91, 177);
+    }
+
+    &[data-status='Urgent'] {
+      background: rgb(255, 240, 241);
+      color: rgb(208, 37, 55);
+    }
+  }
+
   &__icon-btn {
     position: relative;
     flex-shrink: 0;

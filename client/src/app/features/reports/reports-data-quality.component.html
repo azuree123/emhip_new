@@ -1,0 +1,53 @@
+<div class="data-quality">
+  @if (error()) {
+    <div class="error-banner">Couldn't load data-quality report — {{ error() }}</div>
+  }
+
+  <!-- KPI row (Desktop48 top 428): guests audited + the three largest issues. -->
+  <section class="stat-row">
+    <div class="stat-card">
+      <span class="stat-card__label">Guests audited</span>
+      <span class="stat-card__value">{{ loading() ? '—' : (totalGuests() ?? '—') }}</span>
+      <span class="stat-card__caption">All registered guests</span>
+    </div>
+    @for (issue of tileIssues(); track issue.key) {
+      <div class="stat-card">
+        <span class="stat-card__label">{{ issue.label }}</span>
+        <span class="stat-card__value">{{ issue.count }}</span>
+        <span class="stat-card__caption stat-card__caption--maroon">{{ issue.share }} of guests affected</span>
+      </div>
+    }
+  </section>
+
+  <section class="report-card">
+    <h2 class="report-card__title">Data quality issues</h2>
+    <p class="report-card__subtitle">Record completeness across the hub's guests</p>
+
+    @if (loading()) {
+      <div class="report-card__state">Auditing guest records…</div>
+    } @else if (rows().length === 0) {
+      <div class="report-card__state">No data-quality issues found — all records are complete.</div>
+    } @else {
+      <div class="table-scroll">
+        <table class="rpt-table dq-table">
+          <thead>
+            <tr>
+              <th>Issue</th>
+              <th class="dq-table__num">Number of guests</th>
+              <th class="dq-table__num">Share of guests</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of rows(); track row.key) {
+              <tr>
+                <td class="dq-table__label">{{ row.label }}</td>
+                <td class="dq-table__num dq-table__strong">{{ row.count }}</td>
+                <td class="dq-table__num">{{ row.share }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </section>
+</div>

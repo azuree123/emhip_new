@@ -35,9 +35,9 @@ const PATHWAY_SHORT: Record<string, string> = {
  * (lines 113643-117455). A 1176px white panel under the KPI row with a small guest
  * table (5 rows) for the selected status, fed live from GET /guests?status=….
  *
- * Design deviations (no backing fields): Frame 38's "Registered by" column is omitted
- * (GuestListItemDto carries no registrar) and the guest id line shows the first GUID
- * block instead of the design's "G-1001" style codes.
+ * Design deviation (no backing field): Frame 38's "Registered by" column is omitted
+ * (GuestListItemDto carries no registrar). The footer count prefers the page's
+ * `totalCount` (reflects the active search) over the dashboard DTO total.
  */
 @Component({
   selector: 'app-kpi-guests-panel',
@@ -58,6 +58,11 @@ export class KpiGuestsPanelComponent {
   protected readonly rows = signal<GuestListItemDto[]>([]);
   protected readonly state = signal<'loading' | 'ready' | 'error'>('loading');
   protected readonly query = signal('');
+  /** Server-side total for the current filters (KeysetPage.totalCount, first page only). */
+  private readonly serverTotal = signal<number | null>(null);
+
+  /** Footer "Showing X of Y" — the filtered server total when known, else the DTO count. */
+  protected readonly footerTotal = computed(() => this.serverTotal() ?? this.total());
 
   private fetchToken = 0;
 
@@ -99,9 +104,11 @@ export class KpiGuestsPanelComponent {
           if (!page) {
             this.state.set('error');
             this.rows.set([]);
+            this.serverTotal.set(null);
             return;
           }
           this.rows.set(page.items);
+          this.serverTotal.set(page.totalCount);
           this.state.set('ready');
         });
     });
@@ -116,7 +123,7 @@ export class KpiGuestsPanelComponent {
   }
 
   protected shortId(g: GuestListItemDto): string {
-    return `ID: ${g.id.split('-')[0].toUpperCase()}`;
+    return `ID: G-${g.guestNumber}`;
   }
 
   protected pathwayLabel(g: GuestListItemDto): string {

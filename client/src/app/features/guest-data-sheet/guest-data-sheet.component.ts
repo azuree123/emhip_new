@@ -83,6 +83,12 @@ export class GuestDataSheetComponent {
   protected readonly loading = signal(false);
   protected readonly loadingMore = signal(false);
   protected readonly hasMore = signal(true);
+  /**
+   * Total rows matching the current filters — the API sends it on the first (cursorless)
+   * page only, so the value is carried forward across "load more" pages and cleared
+   * whenever the filters reset. Null until the first page answers (or on older payloads).
+   */
+  protected readonly totalCount = signal<number | null>(null);
   protected readonly error = signal<string | null>(null);
   protected readonly statusFilter = signal<StatusFilterValue>('All');
   protected readonly pathwayFilter = signal<PathwayFilterValue>('All');
@@ -179,6 +185,7 @@ export class GuestDataSheetComponent {
     this.guests.set([]);
     this.nextCursor = null;
     this.hasMore.set(true);
+    this.totalCount.set(null);
     this.error.set(null);
     this.fetchPage(false);
   }
@@ -247,6 +254,10 @@ export class GuestDataSheetComponent {
         this.guests.update((current) => (append ? [...current, ...page.items] : page.items));
         this.nextCursor = page.nextCursor;
         this.hasMore.set(page.hasMore);
+        // Only the first page carries totalCount; keep the carried value on later pages.
+        if (page.totalCount !== null) {
+          this.totalCount.set(page.totalCount);
+        }
       });
   }
 
@@ -393,10 +404,6 @@ export class GuestDataSheetComponent {
       return 'Yesterday';
     }
     return this.formatDate(value);
-  }
-
-  protected shortId(id: string): string {
-    return id.replace(/-/g, '').slice(0, 8).toUpperCase();
   }
 
   protected openGuest(guestId: string): void {

@@ -10,4 +10,5 @@ namespace Emhip.Application.Abstractions;
 public interface IUrgentCaseNotifier
 {
     Task NotifyUrgentCaseAsync(Guid hubId, UrgentCaseDto urgentCase, CancellationToken cancellationToken = default);
+    Task NotifyUrgentCaseResolvedAsync(Guid hubId, Guid guestId, CancellationToken cancellationToken = default);
 }

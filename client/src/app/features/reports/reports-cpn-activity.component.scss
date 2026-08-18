@@ -1,0 +1,40 @@
+// CPN Activity tab — Desktop86 (project/screens/Components.bundle.js):
+// breakdown cards in the design's thin-bar row style.
+@import 'reports-shared';
+
+:host {
+  display: block;
+  font-family: $font-body;
+}
+
+.cpn {
+  display: flex;
+  flex-direction: column;
+  gap: 23px;
+
+  // Single real KPI tile — keep the design's 4-up sizing for the one tile.
+  &__stats {
+    grid-template-columns: minmax(0, 1fr) 2fr;
+  }
+
+  &__grid {
+    display: grid;
+    grid-template-columns: minmax(0, 687fr) minmax(0, 466fr);
+    gap: 23px;
+    align-items: start;
+  }
+
+  &__rows {
+    margin-top: 20px;
+  }
+}
+
+@media (max-width: 1100px) {
+  .cpn__grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .cpn__stats {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

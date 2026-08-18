@@ -1,0 +1,49 @@
+// Export History tab — Desktop49 (project/screens/Components.bundle.js):
+// file rows with 48px rgb(246,246,246) icon squares, name 14/500, gray meta.
+@import 'reports-shared';
+
+:host {
+  display: block;
+  font-family: $font-body;
+}
+
+.export-history__error {
+  margin: 16px 0;
+}
+
+.history-table {
+  margin-top: 18px;
+
+  td {
+    padding-top: 15px;
+    padding-bottom: 15px;
+  }
+
+  &__report {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  &__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border-radius: 8px;
+    background: rgb(246, 246, 246);
+    color: $ink;
+    flex-shrink: 0;
+  }
+
+  &__name {
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  &__when {
+    color: $ink-soft;
+    white-space: nowrap;
+  }
+}

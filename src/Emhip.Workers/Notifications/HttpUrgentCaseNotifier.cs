@@ -26,4 +26,16 @@ public sealed class HttpUrgentCaseNotifier(HttpClient httpClient, IConfiguration
         var response = await httpClient.SendAsync(request, cancellationToken);
         response.EnsureSuccessStatusCode();
     }
+
+    public async Task NotifyUrgentCaseResolvedAsync(Guid hubId, Guid guestId, CancellationToken cancellationToken = default)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Post, "internal/urgent-cases/notify-resolved")
+        {
+            Content = JsonContent.Create(new { hubId, guestId }),
+        };
+        request.Headers.Add("X-Internal-Secret", configuration["Internal:SharedSecret"] ?? string.Empty);
+
+        var response = await httpClient.SendAsync(request, cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
 }

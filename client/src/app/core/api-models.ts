@@ -19,6 +19,8 @@ export type PathwayStatus = 'Referred' | 'InProgress' | 'Completed' | 'Declined'
 export type GuestPathway = 'MentalWellbeing' | 'ClinicalSupport' | 'CommunityRecovery';
 
 export interface KeysetPage<T> {
+  /** Total rows matching the filters — present only on the first page (no cursor); carry it forward. */
+  totalCount: number | null;
   items: T[];
   nextCursor: string | null;
   hasMore: boolean;
@@ -26,6 +28,8 @@ export interface KeysetPage<T> {
 
 export interface GuestListItemDto {
   id: string;
+  /** Sequential human-friendly reference; render as "G-{guestNumber}". */
+  guestNumber: number;
   firstName: string;
   lastName: string;
   dateOfBirth: string;
@@ -64,8 +68,18 @@ export interface GuestContactSummaryDto {
   createdByName: string;
 }
 
+/** Top-bar search autocomplete row — GET /guests/suggest?q=. */
+export interface GuestSuggestionDto {
+  id: string;
+  guestNumber: number;
+  fullName: string;
+  status: GuestStatus;
+}
+
 export interface GuestOverviewDto {
   id: string;
+  /** Sequential human-friendly reference; render as "G-{guestNumber}". */
+  guestNumber: number;
   firstName: string;
   lastName: string;
   dateOfBirth: string;
@@ -78,6 +92,7 @@ export interface GuestOverviewDto {
   openFollowUpCount: number;
   pathway: GuestPathway | null;
   afaSupportNeeded: boolean;
+  referralSource: string | null;
   pinnedNotes: GuestNoteDto[];
   recentContacts: GuestContactSummaryDto[];
 }
@@ -157,6 +172,8 @@ export interface FollowUpQueueItemDto {
   id: string;
   guestId: string;
   guestName: string;
+  /** Sequential human-friendly reference; render as "G-{guestNumber}". */
+  guestNumber: number;
   dueDate: string;
   status: string;
   assigneeName: string;
@@ -166,6 +183,8 @@ export interface FollowUpQueueItemDto {
 export interface UrgentCaseDto {
   guestId: string;
   guestName: string;
+  /** Sequential human-friendly reference; render as "G-{guestNumber}". */
+  guestNumber: number;
   suicidalIdeation: boolean;
   selfHarm: boolean;
   riskToOthers: boolean;
@@ -291,6 +310,8 @@ export interface RegisterGuestRequest {
   addressLine2?: string | null;
   postCode?: string | null;
   assignedCmhwId?: string | null;
+  /** Where the guest was referred from (GP referral, CMHT, Community organisation, Self-referral, …). */
+  referralSource?: string | null;
 }
 
 export interface AddContactRequest {
@@ -435,6 +456,116 @@ export interface DialogDimensionDto {
   label: string;
   baselineAverage: number | null;
   latestAverage: number | null;
+}
+
+// ---- Urgent episodes (urgent-cases drawer: escalate to CMHT, resolve, episode record) ----
+
+export interface UrgentEpisodeDto {
+  id: string;
+  guestId: string;
+  guestName: string;
+  guestNumber: number;
+  raisedAt: string;
+  escalatedToCmhtAt: string | null;
+  escalatedToCmhtByName: string | null;
+  cmhtTeam: string | null;
+  escalationReason: string | null;
+  escalationUrgency: string | null;
+  escalationNotes: string | null;
+  resolvedAt: string | null;
+  resolvedByName: string | null;
+  resolutionNote: string | null;
+}
+
+export interface EscalateToCmhtRequest {
+  cmhtTeam: string;
+  reason?: string | null;
+  urgency?: string | null;
+  notes?: string | null;
+}
+
+export interface ResolveUrgentCaseRequest {
+  resolutionNote?: string | null;
+}
+
+// ---- New report tabs ----
+
+export interface PathwayAnalyticsDto {
+  unallocatedGuests: number;
+  pathways: PathwayAnalyticsRowDto[];
+}
+
+export interface PathwayAnalyticsRowDto {
+  pathway: GuestPathway;
+  totalGuests: number;
+  activeGuests: number;
+  urgentGuests: number;
+  inactiveGuests: number;
+  afaSupportCount: number;
+  avgLatestDialogTotal: number | null;
+}
+
+export interface CaseloadReportRowDto {
+  staffId: string;
+  displayName: string;
+  assignedGuests: number;
+  activeGuests: number;
+  urgentGuests: number;
+  overdueFollowUps: number;
+  contactsLast30Days: number;
+}
+
+export interface DataQualityReportDto {
+  totalGuests: number;
+  issues: DataQualityIssueDto[];
+}
+
+export interface DataQualityIssueDto {
+  key: string;
+  label: string;
+  count: number;
+}
+
+export interface ContactsBreakdownReportDto {
+  from: string;
+  to: string;
+  totalContacts: number;
+  byType: BreakdownSliceDto[];
+  byOutcome: BreakdownSliceDto[];
+}
+
+export interface DialogTrendPointDto {
+  year: number;
+  month: number;
+  averageTotal: number;
+  assessments: number;
+}
+
+export interface ExportHistoryItemDto {
+  id: string;
+  exportedAt: string;
+  exportedByName: string;
+  exportType: string;
+  fromDate: string;
+  toDate: string;
+}
+
+// ---- "Guest Seen" dashboard card ----
+
+export type GuestsSeenPeriod = 'Today' | 'Week' | 'Month';
+
+export interface GuestsSeenDto {
+  period: GuestsSeenPeriod;
+  from: string;
+  to: string;
+  distinctGuestsSeen: number;
+  totalContacts: number;
+  series: GuestsSeenPointDto[];
+}
+
+export interface GuestsSeenPointDto {
+  date: string;
+  guestsSeen: number;
 }
 
 // ---- Pathway allocation (register flow step 3) ----

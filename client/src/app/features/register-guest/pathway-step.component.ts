@@ -28,9 +28,11 @@ export const PATHWAY_OPTIONS: { value: GuestPathway; title: string; description:
  * First Aid also needed?" checkbox band and the "Follow-up contact date" cadence dropdown.
  *
  * Honest-data notes: pathway + AFA checkbox map 1:1 onto AllocateGuestRequest. The follow-up
- * cadence has no field on that endpoint, so the wizard shell folds it into the
- * initial-conversation notes. The "Assigned CMHW" dropdown is not drawn on Desktop81 but is
- * a real AllocateGuestRequest field (and the Desktop87 review card shows "Assigned CMHW"),
+ * cadence is echoed into the initial-conversation notes and — when a CMHW is also selected —
+ * drives a real scheduleFollowUp() call after allocate() succeeds (due date = today +
+ * cadence, assigned to that CMHW); with no CMHW selected it stays notes-only, since the
+ * endpoint requires an assignee. The "Assigned CMHW" dropdown is not drawn on Desktop81 but
+ * is a real AllocateGuestRequest field (and the Desktop87 review card shows "Assigned CMHW"),
  * so it is added here in the same field styling, fed by GET /guests/cmhws.
  */
 @Component({

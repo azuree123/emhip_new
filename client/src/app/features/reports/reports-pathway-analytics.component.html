@@ -1,0 +1,57 @@
+<section class="report-card">
+  <div class="report-card__head">
+    <div>
+      <h2 class="report-card__title">Pathway analytics</h2>
+      <p class="report-card__subtitle">Caseload and DIALOG averages per clinical pathway</p>
+    </div>
+    @if (unallocated() !== null) {
+      <span class="pathway-analytics__unallocated">
+        <strong>{{ unallocated() }}</strong>&nbsp;guest{{ unallocated() === 1 ? '' : 's' }} require allocation
+      </span>
+    }
+  </div>
+
+  @if (error()) {
+    <div class="error-banner pathway-analytics__error">Couldn't load pathway analytics — {{ error() }}</div>
+  }
+
+  @if (loading()) {
+    <div class="report-card__state">Loading pathway analytics…</div>
+  } @else if (rows().length === 0) {
+    <div class="report-card__state">No pathway allocations recorded yet.</div>
+  } @else {
+    <div class="table-scroll">
+      <table class="rpt-table pathway-table">
+        <thead>
+          <tr>
+            <th>Pathway</th>
+            <th class="pathway-table__num">Guests</th>
+            <th class="pathway-table__num">Active</th>
+            <th class="pathway-table__num">Urgent</th>
+            <th class="pathway-table__num">Inactive</th>
+            <th class="pathway-table__num">AFA support</th>
+            <th class="pathway-table__num">Avg DIALOG</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of rows(); track row.pathway) {
+            <tr>
+              <td>
+                <span class="pathway-table__name">
+                  <span class="pathway-table__swatch" [style.background]="row.color" aria-hidden="true"></span>
+                  {{ row.label }}
+                </span>
+              </td>
+              <td class="pathway-table__num pathway-table__strong">{{ row.totalGuests }}</td>
+              <td class="pathway-table__num">{{ row.activeGuests }}</td>
+              <td class="pathway-table__num" [class.pathway-table__urgent]="row.urgentGuests > 0">{{ row.urgentGuests }}</td>
+              <td class="pathway-table__num">{{ row.inactiveGuests }}</td>
+              <td class="pathway-table__num">{{ row.afaSupportCount }}</td>
+              <td class="pathway-table__num pathway-table__strong">{{ row.avgDialog }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</section>

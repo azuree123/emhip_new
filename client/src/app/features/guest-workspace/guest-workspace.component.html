@@ -33,7 +33,7 @@
               }
             </div>
             <div class="identity-card__submeta">
-              <span>Ref #{{ guest.id.slice(0, 8) }}</span>
+              <span>Ref G-{{ guest.guestNumber }}</span>
               <span class="dot"></span>
               <span>Registered {{ registeredLabel() }}</span>
               @if (lastActivityLabel(); as last) {

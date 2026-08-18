@@ -24,7 +24,85 @@
   </section>
 
   <div class="dialog-tab__grid">
-    <app-reports-domain-table class="dialog-tab__main" [outcomes]="outcomes()" [loading]="loading()" />
+    <div class="dialog-tab__main">
+      <!-- "DIALOG SCORE TREND" (Desktop47 card 687x399): monthly average total
+           score (of 77) with the design's gold gradient area and coral dots. -->
+      <section class="report-card">
+        <div class="report-card__head">
+          <div>
+            <h2 class="report-card__title">DIALOG score trend</h2>
+            <p class="report-card__subtitle">Monthly average total score (of 77)</p>
+          </div>
+          <div class="trend-legend">
+            <span class="trend-legend__swatch" aria-hidden="true"></span>
+            <span class="trend-legend__label">Avg total score</span>
+          </div>
+        </div>
+
+        @if (trendLoading()) {
+          <div class="report-card__state">Loading score trend…</div>
+        } @else {
+          @if (trendChart(); as chart) {
+            <svg
+              class="trend-chart"
+              [attr.viewBox]="trendViewBox"
+              preserveAspectRatio="xMidYMid meet"
+              role="img"
+              aria-label="Average total DIALOG score per month"
+            >
+              <defs>
+                <linearGradient id="dialog-trend-fill" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="rgba(201, 167, 35, 0)" />
+                  <stop offset="100%" stop-color="rgba(201, 167, 35, 0.23)" />
+                </linearGradient>
+              </defs>
+
+              @for (tick of chart.ticks; track tick.y) {
+                <line class="trend-chart__grid" x1="56" x2="628" [attr.y1]="tick.y" [attr.y2]="tick.y" />
+                <text class="trend-chart__tick" x="48" [attr.y]="tick.y + 4">{{ tick.label }}</text>
+              }
+
+              <path class="trend-chart__area" [attr.d]="chart.areaPath" />
+              <path class="trend-chart__line" [attr.d]="chart.linePath" />
+
+              @for (p of chart.points; track p.x) {
+                <circle class="trend-chart__dot" [attr.cx]="p.x" [attr.cy]="p.y" r="7" />
+              }
+
+              @for (m of chart.monthLabels; track m.x) {
+                <text class="trend-chart__month" [attr.x]="m.x" y="244">{{ m.text }}</text>
+              }
+
+              @for (p of chart.points; track p.x; let i = $index) {
+                <rect
+                  class="trend-chart__hit"
+                  [attr.x]="p.hitX"
+                  [attr.width]="p.hitW"
+                  y="8"
+                  height="220"
+                  (mouseenter)="hoveredTrend.set(i)"
+                  (mouseleave)="hoveredTrend.set(null)"
+                />
+              }
+
+              @if (trendTip(); as tip) {
+                <g class="trend-chart__tip" aria-hidden="true">
+                  <rect class="trend-chart__tip-box" [attr.x]="tip.x - 52" [attr.y]="tip.top" width="104" height="50" rx="8" />
+                  <path class="trend-chart__tip-notch" [attr.d]="tip.notchFill" />
+                  <path class="trend-chart__tip-notch-edge" [attr.d]="tip.notchEdge" />
+                  <text class="trend-chart__tip-caption" [attr.x]="tip.x" [attr.y]="tip.top + 20">{{ tip.month }}</text>
+                  <text class="trend-chart__tip-value" [attr.x]="tip.x" [attr.y]="tip.top + 40">{{ tip.score }}</text>
+                </g>
+              }
+            </svg>
+          } @else {
+            <div class="report-card__state">No DIALOG assessments recorded yet.</div>
+          }
+        }
+      </section>
+
+      <app-reports-domain-table [outcomes]="outcomes()" [loading]="loading()" />
+    </div>
 
     <!-- "Outcome dimensions" radar (Desktop47, right column card 466x399):
          7 concentric rings mirror the 1..7 DIALOG scale; two series compare

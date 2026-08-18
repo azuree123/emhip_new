@@ -271,6 +271,47 @@ $green: rgb(20, 113, 41);
   }
 }
 
+// ---- Breakdown rows (Desktop72 "Referral sources" / Desktop86 contact
+// breakdowns: label 14/600, 190x6 r444 track with maroon fill, 14/400 value) --
+
+.breakdown-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(80px, 190px) 48px;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 0;
+
+  &__label {
+    font-weight: 600;
+    font-size: 14px;
+    line-height: 24px;
+    color: $ink;
+  }
+
+  &__track {
+    height: 6px;
+    border-radius: 444px;
+    background: rgb(237, 237, 237);
+    overflow: hidden;
+  }
+
+  &__fill {
+    height: 100%;
+    border-radius: 444px;
+    background: $maroon;
+    transition: width 0.2s ease;
+  }
+
+  &__value {
+    text-align: right;
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 24px;
+    color: $ink-soft;
+    white-space: nowrap;
+  }
+}
+
 // ---- Error banner ---------------------------------------------------------
 
 .error-banner {

@@ -10,6 +10,14 @@ public sealed class GetCmhwDashboardQueryHandler(IDashboardReadService reads) : 
         reads.GetCmhwDashboardAsync(request.StaffId, request.HubId, cancellationToken);
 }
 
+public sealed record GetGuestsSeenQuery(Guid HubId, GuestsSeenPeriod Period, Guid? CmhwStaffId) : IRequest<GuestsSeenDto>;
+
+public sealed class GetGuestsSeenQueryHandler(IDashboardReadService reads) : IRequestHandler<GetGuestsSeenQuery, GuestsSeenDto>
+{
+    public Task<GuestsSeenDto> Handle(GetGuestsSeenQuery request, CancellationToken cancellationToken) =>
+        reads.GetGuestsSeenAsync(request.HubId, request.Period, request.CmhwStaffId, cancellationToken);
+}
+
 public sealed record GetHubManagerDashboardQuery(Guid HubId) : IRequest<HubManagerDashboardDto>;
 
 public sealed class GetHubManagerDashboardQueryHandler(IDashboardReadService reads) : IRequestHandler<GetHubManagerDashboardQuery, HubManagerDashboardDto>

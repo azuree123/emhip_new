@@ -174,7 +174,7 @@
             <span class="avatar">{{ initials(guest) }}</span>
             <span class="name-block">
               <span class="name-block__name">{{ guest.firstName }} {{ guest.lastName }}</span>
-              <span class="name-block__id">ID: {{ shortId(guest.id) }}</span>
+              <span class="name-block__id">ID: G-{{ guest.guestNumber }}</span>
             </span>
           </span>
 
@@ -203,7 +203,11 @@
 
       <div class="load-footer">
         <span class="load-footer__showing">
-          Showing 1 to {{ guests().length }} of {{ guests().length }}{{ hasMore() ? '+' : '' }} entries
+          @if (totalCount() !== null) {
+            Showing 1 to {{ guests().length }} of {{ totalCount() }} entries
+          } @else {
+            Showing 1 to {{ guests().length }} of {{ guests().length }}{{ hasMore() ? '+' : '' }} entries
+          }
         </span>
         <span class="load-footer__controls">
           @if (loadingMore()) {

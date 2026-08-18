@@ -127,7 +127,7 @@
   </div>
 
   <div class="drill-panel__footer">
-    <span class="drill-panel__count">Showing {{ rows().length }} of {{ total() }} {{ footerNoun() }}</span>
+    <span class="drill-panel__count">Showing {{ rows().length }} of {{ footerTotal() }} {{ footerNoun() }}</span>
     <a class="link-red" routerLink="/guests" [queryParams]="{ status: statusParam() }">
       View guest list
       <svg width="14" height="14" viewBox="0 0 13.5 13.5" fill="none" aria-hidden="true">

@@ -29,6 +29,7 @@ import {
   RecordInitialConversationRequest,
   RecordRiskAssessmentRequest,
   RegisterGuestRequest,
+  ScheduleFollowUpRequest,
   UpdateDemographicsRequest,
 } from '../../core/api-models';
 import { AuthService } from '../../core/auth.service';
@@ -64,9 +65,13 @@ function pastDateValidator(): ValidatorFn {
  *   POST /guests/{id}/initial-conversation  -> recordInitialConversation()
  *   POST /guests/{id}/dialog-assessments    -> recordDialogAssessment()
  *   POST /guests/{id}/allocation            -> allocate()
+ *   POST /guests/{id}/followups             -> scheduleFollowUp()      (only when a cadence AND
+ *                                              a CMHW were chosen; due date = today + cadence)
  *   PUT  /guests/{id}/demographics          -> updateDemographics()
  * plus, only when the risk screening flagged anything,
  *   POST /guests/{id}/risk-assessments      -> recordRiskAssessment()  (Urgent Cases escalation)
+ * The step-1 "Referral type" select is submitted as RegisterGuestRequest.referralSource, and
+ * after completion getOverview() supplies the "G-{guestNumber}" reference for the overlay.
  * Each call is tracked individually: on failure the wizard reports which call failed and
  * "Retry" resumes from that call without repeating the ones that already succeeded.
  *
@@ -99,6 +104,7 @@ export class RegisterGuestComponent {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   private readonly document = inject(DOCUMENT);
+  private readonly destroyRef = inject(DestroyRef);
 
   /** Scrollable drawer body — step changes reset its scroll position (not the window's). */
   private readonly panelBody = viewChild<ElementRef<HTMLElement>>('panelBody');
@@ -114,11 +120,15 @@ export class RegisterGuestComponent {
   /** Set after POST /guests succeeds so a retry never registers the guest twice. */
   private readonly guestId = signal<string | null>(null);
 
+  /** "G-{guestNumber}" reference for the Success overlay, fetched via getOverview() on completion. */
+  protected readonly guestReference = signal<string | null>(null);
+
   private readonly callStates = signal<Record<SubmissionCall['key'], SubmissionCall['status']>>({
     register: 'pending',
     conversation: 'pending',
     dialog: 'pending',
     allocation: 'pending',
+    followUp: 'pending',
     demographics: 'pending',
     risk: 'pending',
   });
@@ -128,8 +138,16 @@ export class RegisterGuestComponent {
     conversation: 'Initial conversation',
     dialog: 'DIALOG assessment',
     allocation: 'Pathway & allocation',
+    followUp: 'Schedule initial follow-up',
     demographics: 'Demographics',
     risk: 'Risk assessment (Urgent Cases escalation)',
+  };
+
+  /** Days added to today per follow-up cadence option (Pathway & allocation step). */
+  private static readonly CADENCE_DAYS: Record<string, number> = {
+    'Weekly - 7 days': 7,
+    'Fortnightly - 14 days': 14,
+    'Monthly - 28 days': 28,
   };
 
   /** CMHW dropdown options for the Pathway & allocation step. */
@@ -198,7 +216,7 @@ export class RegisterGuestComponent {
       nhsNumber: [''],
     }),
     referral: this.fb.nonNullable.group({
-      referralType: ['Open access / self referred'],
+      referralType: ['Self-referral'],
     }),
     consent: this.fb.nonNullable.group({
       consentGiven: [false, Validators.requiredTrue],
@@ -287,7 +305,7 @@ export class RegisterGuestComponent {
     const body = this.document.body;
     const previousOverflow = body.style.overflow;
     body.style.overflow = 'hidden';
-    inject(DestroyRef).onDestroy(() => {
+    this.destroyRef.onDestroy(() => {
       body.style.overflow = previousOverflow;
     });
 
@@ -390,7 +408,9 @@ export class RegisterGuestComponent {
 
   protected readonly submissionCalls = computed<SubmissionCall[]>(() => {
     const states = this.callStates();
-    const keys: SubmissionCall['key'][] = ['register', 'conversation', 'dialog', 'allocation', 'demographics'];
+    const keys: SubmissionCall['key'][] = ['register', 'conversation', 'dialog', 'allocation'];
+    if (this.followUpNeeded()) keys.push('followUp');
+    keys.push('demographics');
     if (this.riskAssessmentNeeded()) keys.push('risk');
     return keys.map((key) => ({ key, label: RegisterGuestComponent.CALL_LABELS[key], status: states[key] }));
   });
@@ -462,9 +482,20 @@ export class RegisterGuestComponent {
         }),
       )
       .subscribe({
-        next: () => {
+        next: (id) => {
           this.submitting.set(false);
           this.submitted.set(true);
+          // Best effort: fetch the sequential guest number for the Success overlay's
+          // "G-{guestNumber}" reference; the overlay shows without it if this fails.
+          this.guestsApi
+            .getOverview(id)
+            .pipe(
+              catchError(() => of(null)),
+              takeUntilDestroyed(this.destroyRef),
+            )
+            .subscribe((overview) => {
+              if (overview) this.guestReference.set(`G-${overview.guestNumber}`);
+            });
         },
         error: (failure: { key: SubmissionCall['key'] }) => {
           this.submitting.set(false);
@@ -482,8 +513,13 @@ export class RegisterGuestComponent {
       { key: 'conversation', call: defer(() => this.guestsApi.recordInitialConversation(id, this.buildConversationRequest())) },
       { key: 'dialog', call: defer(() => this.guestsApi.recordDialogAssessment(id, this.buildDialogScores())) },
       { key: 'allocation', call: defer(() => this.guestsApi.allocate(id, this.buildAllocationRequest())) },
-      { key: 'demographics', call: defer(() => this.guestsApi.updateDemographics(id, this.buildDemographicsRequest())) },
     ];
+    // Runs directly after (and only after) a successful allocate(): the follow-up is assigned
+    // to the CMHW chosen on the Pathway & allocation step.
+    if (this.followUpNeeded()) {
+      plan.push({ key: 'followUp', call: defer(() => this.guestsApi.scheduleFollowUp(id, this.buildFollowUpRequest())) });
+    }
+    plan.push({ key: 'demographics', call: defer(() => this.guestsApi.updateDemographics(id, this.buildDemographicsRequest())) });
     if (this.riskAssessmentNeeded()) {
       plan.push({ key: 'risk', call: defer(() => this.guestsApi.recordRiskAssessment(id, this.buildRiskRequest())) });
     }
@@ -506,6 +542,7 @@ export class RegisterGuestComponent {
       addressLine1: contact.address || null,
       postCode: contact.postCode || null,
       assignedCmhwId: assignedCmhwId || null,
+      referralSource: this.demographicsForm.getRawValue().referral.referralType || null,
     };
   }
 
@@ -612,6 +649,28 @@ export class RegisterGuestComponent {
       pathway: value.pathway!,
       afaSupportNeeded: value.afaSupportNeeded,
       assignedCmhwId: value.assignedCmhwId || null,
+    };
+  }
+
+  /**
+   * A real follow-up is scheduled only when a cadence was chosen AND a CMHW was selected on
+   * the Pathway & allocation step — scheduleFollowUp() requires an assignee staff GUID, which
+   * is exactly the selected CMHW's id (see getCmhwOptions()).
+   */
+  protected followUpNeeded(): boolean {
+    const value = this.pathwayForm.getRawValue();
+    return !!value.assignedCmhwId && value.followUpCadence in RegisterGuestComponent.CADENCE_DAYS;
+  }
+
+  private buildFollowUpRequest(): ScheduleFollowUpRequest {
+    const value = this.pathwayForm.getRawValue();
+    const days = RegisterGuestComponent.CADENCE_DAYS[value.followUpCadence] ?? 7;
+    const due = new Date();
+    due.setDate(due.getDate() + days);
+    return {
+      dueDate: due.toISOString().slice(0, 10),
+      assigneeStaffId: value.assignedCmhwId,
+      notes: `Initial follow-up per ${value.followUpCadence} cadence`,
     };
   }
 

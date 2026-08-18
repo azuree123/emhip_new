@@ -5,6 +5,13 @@ namespace Emhip.Application.Guests.Queries;
 
 // Each Guest Workspace tab is its own query/endpoint — never one big "get everything" call.
 
+public sealed record GetGuestSuggestionsQuery(Guid HubId, string Query, int Limit) : IRequest<IReadOnlyList<GuestSuggestionDto>>;
+public sealed class GetGuestSuggestionsQueryHandler(IGuestReadService reads) : IRequestHandler<GetGuestSuggestionsQuery, IReadOnlyList<GuestSuggestionDto>>
+{
+    public Task<IReadOnlyList<GuestSuggestionDto>> Handle(GetGuestSuggestionsQuery request, CancellationToken cancellationToken) =>
+        reads.SuggestAsync(request.HubId, request.Query, request.Limit, cancellationToken);
+}
+
 public sealed record GetGuestOverviewQuery(Guid GuestId) : IRequest<GuestOverviewDto?>;
 public sealed class GetGuestOverviewQueryHandler(IGuestReadService reads) : IRequestHandler<GetGuestOverviewQuery, GuestOverviewDto?>
 {

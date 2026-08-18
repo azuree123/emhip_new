@@ -23,6 +23,8 @@ public class EmhipDbContext(DbContextOptions<EmhipDbContext> options)
     public DbSet<DialogAssessment> DialogAssessments => Set<DialogAssessment>();
     public DbSet<GuestAction> GuestActions => Set<GuestAction>();
     public DbSet<GuestClinicalProfile> GuestClinicalProfiles => Set<GuestClinicalProfile>();
+    public DbSet<UrgentEpisode> UrgentEpisodes => Set<UrgentEpisode>();
+    public DbSet<ExportRecord> ExportRecords => Set<ExportRecord>();
     public DbSet<AuditEvent> AuditEvents => Set<AuditEvent>();
     public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
 
@@ -34,6 +36,10 @@ public class EmhipDbContext(DbContextOptions<EmhipDbContext> options)
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        // Backs Guests.GuestNumber's default. Start value is set dynamically in the migration
+        // (above the backfilled maximum), so the model start value here is never authoritative.
+        modelBuilder.HasSequence<int>("GuestNumbers", "dbo");
+
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(EmhipDbContext).Assembly);
         base.OnModelCreating(modelBuilder);
     }

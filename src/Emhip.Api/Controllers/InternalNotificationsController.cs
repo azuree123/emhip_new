@@ -33,4 +33,19 @@ public sealed class InternalNotificationsController(IHubContext<UrgentCasesHub> 
         await hubContext.Clients.Group(UrgentCasesHub.GroupName(request.HubId)).SendAsync("urgentCaseEscalated", request.UrgentCase, cancellationToken);
         return NoContent();
     }
+
+    public sealed record NotifyResolvedRequest(Guid HubId, Guid GuestId);
+
+    [HttpPost("notify-resolved")]
+    public async Task<IActionResult> NotifyResolved([FromBody] NotifyResolvedRequest request, [FromHeader(Name = "X-Internal-Secret")] string? secret, CancellationToken cancellationToken)
+    {
+        var expectedSecret = configuration["Internal:SharedSecret"];
+        if (string.IsNullOrEmpty(expectedSecret) || secret != expectedSecret)
+        {
+            return Unauthorized();
+        }
+
+        await hubContext.Clients.Group(UrgentCasesHub.GroupName(request.HubId)).SendAsync("urgentCaseResolved", request.GuestId, cancellationToken);
+        return NoContent();
+    }
 }

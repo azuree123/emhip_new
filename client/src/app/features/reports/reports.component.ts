@@ -1,31 +1,40 @@
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
-import { DialogOutcomesReportDto, PathwayReportDto } from '../../core/api-models';
+import { BreakdownSliceDto, DialogOutcomesReportDto, PathwayReportDto } from '../../core/api-models';
 import { ReportsApiService } from '../../core/reports-api.service';
 import { toIsoDate } from './report-meta';
+import { ReportsCaseloadComponent } from './reports-caseload.component';
+import { ReportsCpnActivityComponent } from './reports-cpn-activity.component';
+import { ReportsDataQualityComponent } from './reports-data-quality.component';
 import { ReportsDialogOutcomesComponent } from './reports-dialog-outcomes.component';
 import { ReportsExportDialogComponent } from './reports-export-dialog.component';
+import { ReportsExportHistoryComponent } from './reports-export-history.component';
 import { ReportsGuestReportComponent } from './reports-guest-report.component';
 import { ReportsOverviewComponent } from './reports-overview.component';
+import { ReportsPathwayAnalyticsComponent } from './reports-pathway-analytics.component';
 
-/** Tabs with a real data source behind them. */
-type ReportTabId = 'overview' | 'guest-report' | 'dialog-outcomes';
+type ReportTabId =
+  | 'overview'
+  | 'guest-report'
+  | 'pathway-analytics'
+  | 'caseload'
+  | 'dialog-outcomes'
+  | 'data-quality'
+  | 'cpn-activity'
+  | 'export-history';
 
 interface ReportTab {
-  /** null = drawn for visual parity with the design but disabled (no data source yet). */
-  id: ReportTabId | null;
+  id: ReportTabId;
   label: string;
 }
 
 /**
- * "Reports & Analytics" — ported from the report screens Desktop72-75 (overview +
- * export flow), Desktop66 (guest report) and Desktop47 (DIALOG outcomes) in
- * project/screens/Components.bundle.js lines 72729-113643. The sidebar/header
- * chrome is rendered by the shared shell; this component owns the content area:
- * header card with section tabs and date filters, plus the per-tab report bodies.
- *
- * Pathway Analytics / Caseload Reports / Data Quality / CPN Activity / Export
- * History are drawn as disabled tabs only — the API has no endpoints for those
- * screens (Desktop45/67/48/86/49) yet.
+ * "Reports & Analytics" — ported from the report screens in
+ * project/screens/Components.bundle.js: Desktop72-75 (overview + export flow),
+ * Desktop66 (guest report), Desktop45 (pathway analytics), Desktop67 (caseload),
+ * Desktop47 (DIALOG outcomes), Desktop48 (data quality), Desktop86 (CPN
+ * activity) and Desktop49 (export history). The sidebar/header chrome is
+ * rendered by the shared shell; this component owns the content area: header
+ * card with section tabs and date filters, plus the per-tab report bodies.
  */
 @Component({
   selector: 'app-reports',
@@ -33,7 +42,12 @@ interface ReportTab {
   imports: [
     ReportsOverviewComponent,
     ReportsGuestReportComponent,
+    ReportsPathwayAnalyticsComponent,
+    ReportsCaseloadComponent,
     ReportsDialogOutcomesComponent,
+    ReportsDataQualityComponent,
+    ReportsCpnActivityComponent,
+    ReportsExportHistoryComponent,
     ReportsExportDialogComponent,
   ],
   templateUrl: './reports.component.html',
@@ -46,12 +60,12 @@ export class ReportsComponent implements OnInit {
   readonly tabs: ReportTab[] = [
     { id: 'overview', label: 'Overview' },
     { id: 'guest-report', label: 'Guest Report' },
-    { id: null, label: 'Pathway Analytics' },
-    { id: null, label: 'Caseload Reports' },
+    { id: 'pathway-analytics', label: 'Pathway Analytics' },
+    { id: 'caseload', label: 'Caseload Reports' },
     { id: 'dialog-outcomes', label: 'DIALOG Outcomes' },
-    { id: null, label: 'Data Quality' },
-    { id: null, label: 'CPN Activity' },
-    { id: null, label: 'Export History' },
+    { id: 'data-quality', label: 'Data Quality' },
+    { id: 'cpn-activity', label: 'CPN Activity' },
+    { id: 'export-history', label: 'Export History' },
   ];
 
   readonly activeTab = signal<ReportTabId>('overview');
@@ -64,13 +78,18 @@ export class ReportsComponent implements OnInit {
     year: 'numeric',
   });
 
-  // Applied range (drives the loaded report) vs draft range (bound to the inputs
-  // until the design's red "Apply" button is pressed — Desktop74 filter row).
+  // Applied range (drives the date-ranged reports) vs draft range (bound to the
+  // inputs until the design's red "Apply" button is pressed — Desktop74 filter row).
   readonly from = signal<string>(this.monthsAgoIso(6));
   readonly to = signal<string>(this.maxDate);
   readonly draftFrom = signal<string>(this.from());
   readonly draftTo = signal<string>(this.to());
   readonly draftInvalid = computed(() => this.draftFrom() > this.draftTo());
+
+  /** The date filter row only applies to the date-ranged tabs. */
+  readonly showFilters = computed(
+    () => this.activeTab() === 'overview' || this.activeTab() === 'cpn-activity',
+  );
 
   readonly loading = signal(false);
   readonly error = signal<string | null>(null);
@@ -80,15 +99,29 @@ export class ReportsComponent implements OnInit {
   readonly outcomesLoading = signal(false);
   readonly outcomesError = signal<string | null>(null);
 
+  readonly referralSources = signal<BreakdownSliceDto[]>([]);
+  readonly referralSourcesLoading = signal(false);
+
+  /** Caseload "View" drill-down: preselects this CMHW on the Guest Report tab. */
+  readonly guestReportCmhw = signal('');
+
   readonly exportOpen = signal(false);
 
   ngOnInit(): void {
     this.loadReport();
     this.loadOutcomes();
+    this.loadReferralSources();
   }
 
-  selectTab(id: ReportTabId | null): void {
-    if (id) this.activeTab.set(id);
+  selectTab(id: ReportTabId): void {
+    this.guestReportCmhw.set('');
+    this.activeTab.set(id);
+  }
+
+  /** Caseload row "View" — open the Guest Report tab filtered to that CMHW. */
+  openCmhwGuests(staffId: string): void {
+    this.guestReportCmhw.set(staffId);
+    this.activeTab.set('guest-report');
   }
 
   onDraftFromChange(event: Event): void {
@@ -136,6 +169,20 @@ export class ReportsComponent implements OnInit {
         this.outcomes.set(null);
         this.outcomesError.set(err?.message ?? 'Unable to load DIALOG outcome data.');
         this.outcomesLoading.set(false);
+      },
+    });
+  }
+
+  loadReferralSources(): void {
+    this.referralSourcesLoading.set(true);
+    this.reportsApi.getReferralSources().subscribe({
+      next: (slices) => {
+        this.referralSources.set(slices);
+        this.referralSourcesLoading.set(false);
+      },
+      error: () => {
+        this.referralSources.set([]);
+        this.referralSourcesLoading.set(false);
       },
     });
   }

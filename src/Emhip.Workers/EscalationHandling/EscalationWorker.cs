@@ -21,15 +21,21 @@ public sealed class EscalationWorker(IServiceScopeFactory scopeFactory, IOutboxE
     {
         await foreach (var domainEvent in channel.ReadAllAsync(stoppingToken))
         {
-            if (domainEvent is not RiskFlagRaisedEvent riskFlagRaised) continue;
-
             try
             {
-                await HandleAsync(riskFlagRaised, stoppingToken);
+                switch (domainEvent)
+                {
+                    case RiskFlagRaisedEvent riskFlagRaised:
+                        await HandleAsync(riskFlagRaised, stoppingToken);
+                        break;
+                    case UrgentCaseResolvedEvent resolved:
+                        await HandleResolvedAsync(resolved, stoppingToken);
+                        break;
+                }
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Failed to process RiskFlagRaisedEvent for guest {GuestId}", riskFlagRaised.GuestId);
+                logger.LogError(ex, "Failed to process {EventType}", domainEvent.GetType().Name);
             }
         }
     }
@@ -69,9 +75,25 @@ public sealed class EscalationWorker(IServiceScopeFactory scopeFactory, IOutboxE
         await db.SaveChangesAsync(cancellationToken);
 
         var dto = new UrgentCaseDto(
-            readModel.GuestId, readModel.GuestName, readModel.SuicidalIdeation, readModel.SelfHarm, readModel.RiskToOthers,
-            readModel.SevereDeterioration, readModel.SafeguardingConcern, readModel.AssignedCmhwName, readModel.EscalatedAt);
+            readModel.GuestId, readModel.GuestName, guest.GuestNumber, readModel.SuicidalIdeation, readModel.SelfHarm,
+            readModel.RiskToOthers, readModel.SevereDeterioration, readModel.SafeguardingConcern,
+            readModel.AssignedCmhwName, readModel.EscalatedAt);
 
         await notifier.NotifyUrgentCaseAsync(readModel.HubId, dto, cancellationToken);
+    }
+
+    private async Task HandleResolvedAsync(UrgentCaseResolvedEvent evt, CancellationToken cancellationToken)
+    {
+        using var scope = scopeFactory.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<EmhipDbContext>();
+        var notifier = scope.ServiceProvider.GetRequiredService<IUrgentCaseNotifier>();
+
+        var readModel = await db.UrgentCases.FirstOrDefaultAsync(u => u.GuestId == evt.GuestId, cancellationToken);
+        if (readModel is null || !readModel.IsActive) return;
+
+        readModel.IsActive = false;
+        await db.SaveChangesAsync(cancellationToken);
+
+        await notifier.NotifyUrgentCaseResolvedAsync(readModel.HubId, evt.GuestId, cancellationToken);
     }
 }

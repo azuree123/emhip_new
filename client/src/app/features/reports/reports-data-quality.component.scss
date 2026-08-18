@@ -1,0 +1,53 @@
+// Data Quality tab — Desktop48 (project/screens/Components.bundle.js).
+@import 'reports-shared';
+
+:host {
+  display: block;
+  font-family: $font-body;
+}
+
+.data-quality {
+  display: flex;
+  flex-direction: column;
+  gap: 23px;
+}
+
+// Issue labels come from the backend and can be long — let tile labels wrap.
+.stat-card__label {
+  white-space: normal;
+}
+
+.dq-table {
+  margin-top: 18px;
+
+  td {
+    padding-top: 15px;
+    padding-bottom: 15px;
+  }
+
+  &__label {
+    font-weight: 600;
+  }
+
+  &__num {
+    text-align: right;
+    white-space: nowrap;
+    width: 160px;
+  }
+
+  &__strong {
+    font-weight: 600;
+  }
+}
+
+@media (max-width: 1100px) {
+  .stat-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .stat-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, inject, input, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import {
   CmhwOptionDto,
@@ -28,6 +28,9 @@ const PAGE_SIZE = 10;
 })
 export class ReportsGuestReportComponent implements OnInit, OnDestroy {
   private readonly guestsApi = inject(GuestsApiService);
+
+  /** Preselected CMHW filter — set by the Caseload tab's "View" drill-down. */
+  readonly initialCmhw = input('');
 
   readonly statusOptions: { value: GuestStatus; label: string }[] = [
     { value: 'Active', label: 'Active' },
@@ -67,6 +70,7 @@ export class ReportsGuestReportComponent implements OnInit, OnDestroy {
   private searchTimer: ReturnType<typeof setTimeout> | undefined;
 
   ngOnInit(): void {
+    if (this.initialCmhw()) this.cmhw.set(this.initialCmhw());
     this.guestsApi.getCmhwOptions().subscribe({
       next: (options) => this.cmhwOptions.set(options),
       error: () => this.cmhwOptions.set([]),

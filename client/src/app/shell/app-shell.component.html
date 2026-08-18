@@ -57,7 +57,7 @@
       </div>
       <div class="header__actions">
         @if (canSearchGuests) {
-          <div class="header__search">
+          <div class="header__search" #searchBox [attr.aria-expanded]="suggestionsVisible()" aria-haspopup="listbox">
             <svg class="header__search-icon" width="15" height="15" viewBox="0 0 15.001 15.001" fill="none">
               <path
                 d="M 14.506 15.496 C 14.779 15.769 15.222 15.769 15.496 15.496 C 15.769 15.222 15.769 14.779 15.496 14.506 L 15.001 15.001 L 14.506 15.496 Z M 15.001 15.001 L 15.496 14.506 L 11.165 10.175 L 10.67 10.67 L 10.175 11.165 L 14.506 15.496 L 15.001 15.001 Z M 10.67 10.67 L 11.165 11.165 C 12.468 9.861 13.2 8.094 13.2 6.25 L 12.5 6.25 L 11.8 6.25 C 11.8 7.722 11.216 9.134 10.175 10.175 L 10.67 10.67 Z M 12.5 6.25 L 13.2 6.25 C 13.2 4.407 12.468 2.639 11.165 1.336 L 10.67 1.831 L 10.175 2.326 C 11.216 3.366 11.8 4.778 11.8 6.25 L 12.5 6.25 Z M 10.67 1.831 L 11.165 1.336 C 9.861 0.032 8.094 -0.7 6.25 -0.7 L 6.25 0 L 6.25 0.7 C 7.722 0.7 9.134 1.285 10.175 2.326 L 10.67 1.831 Z M 6.25 0 L 6.25 -0.7 C 4.407 -0.7 2.639 0.032 1.336 1.336 L 1.831 1.831 L 2.326 2.326 C 3.366 1.285 4.778 0.7 6.25 0.7 L 6.25 0 Z M 1.831 1.831 L 1.336 1.336 C 0.032 2.639 -0.7 4.407 -0.7 6.25 L 0 6.25 L 0.7 6.25 C 0.7 4.778 1.285 3.366 2.326 2.326 L 1.831 1.831 Z M 0 6.25 L -0.7 6.25 C -0.7 8.094 0.032 9.861 1.336 11.165 L 1.831 10.67 L 2.326 10.175 C 1.285 9.134 0.7 7.722 0.7 6.25 L 0 6.25 Z M 1.831 10.67 L 1.336 11.165 C 2.639 12.468 4.407 13.2 6.25 13.2 L 6.25 12.5 L 6.25 11.8 C 4.778 11.8 3.366 11.216 2.326 10.175 L 1.831 10.67 Z M 6.25 12.5 L 6.25 13.2 C 8.094 13.2 9.861 12.468 11.165 11.165 L 10.67 10.67 L 10.175 10.175 C 9.134 11.216 7.722 11.8 6.25 11.8 L 6.25 12.5 Z"
@@ -69,9 +69,14 @@
               class="header__search-input"
               placeholder="Search guest by name, ID, phone, CMHW..."
               aria-label="Search guests"
-              [value]="searchTerm"
-              (input)="searchTerm = $any($event.target).value"
-              (keydown.enter)="submitSearch()"
+              role="combobox"
+              aria-autocomplete="list"
+              aria-controls="guest-suggestions"
+              [attr.aria-activedescendant]="activeSuggestionIndex() >= 0 ? 'guest-suggestion-' + activeSuggestionIndex() : null"
+              [value]="searchTerm()"
+              (input)="onSearchInput($any($event.target).value)"
+              (keydown)="onSearchKeydown($event)"
+              (focus)="onSearchFocus()"
             />
             <!-- ⌘K hint keys from the design's search field (GuestOverviewTab / Desktop34 / Desktop46 header chrome). -->
             <span class="header__search-kbd" aria-hidden="true">
@@ -86,6 +91,28 @@
               </span>
               <span class="header__search-kbd-key">K</span>
             </span>
+            @if (suggestionsVisible() && suggestions(); as items) {
+              <ul class="header__suggestions" id="guest-suggestions" role="listbox" aria-label="Guest suggestions">
+                @for (s of items; track s.id) {
+                  <li
+                    class="header__suggestion"
+                    role="option"
+                    [id]="'guest-suggestion-' + $index"
+                    [class.header__suggestion--active]="$index === activeSuggestionIndex()"
+                    [attr.aria-selected]="$index === activeSuggestionIndex()"
+                    (mouseenter)="activeSuggestionIndex.set($index)"
+                    (mousedown)="$event.preventDefault()"
+                    (click)="selectSuggestion(s)"
+                  >
+                    <span class="header__suggestion-name">{{ s.fullName }}</span>
+                    <span class="header__suggestion-ref">G-{{ s.guestNumber }}</span>
+                    <span class="header__suggestion-status" [attr.data-status]="s.status">{{ statusLabel(s.status) }}</span>
+                  </li>
+                } @empty {
+                  <li class="header__suggestion header__suggestion--empty" role="option" aria-disabled="true">No matches</li>
+                }
+              </ul>
+            }
           </div>
         }
         @if (canViewUrgentCases) {

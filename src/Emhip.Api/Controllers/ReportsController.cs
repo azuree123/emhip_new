@@ -32,6 +32,48 @@ public sealed class ReportsController(IMediator mediator, IReportReadService rep
         return Ok(result);
     }
 
+    /// <summary>"Pathway Analytics" tab — per-pathway guest totals, statuses, AFA and DIALOG averages.</summary>
+    [HttpGet("pathway-analytics")]
+    [Authorize(Policy = Permissions.Reports.View)]
+    public async Task<IActionResult> GetPathwayAnalytics(CancellationToken cancellationToken) =>
+        Ok(await mediator.Send(new GetPathwayAnalyticsQuery(currentUser.HubId), cancellationToken));
+
+    /// <summary>"Caseload Reports" tab — per-CMHW caseload, urgent counts, overdue follow-ups, recent contacts.</summary>
+    [HttpGet("caseload")]
+    [Authorize(Policy = Permissions.Reports.View)]
+    public async Task<IActionResult> GetCaseload(CancellationToken cancellationToken) =>
+        Ok(await mediator.Send(new GetCaseloadReportQuery(currentUser.HubId), cancellationToken));
+
+    /// <summary>"Data Quality" tab — record-completeness issue counts.</summary>
+    [HttpGet("data-quality")]
+    [Authorize(Policy = Permissions.Reports.View)]
+    public async Task<IActionResult> GetDataQuality(CancellationToken cancellationToken) =>
+        Ok(await mediator.Send(new GetDataQualityReportQuery(currentUser.HubId), cancellationToken));
+
+    /// <summary>"CPN Activity" — contacts by type and outcome within the range.</summary>
+    [HttpGet("contacts-breakdown")]
+    [Authorize(Policy = Permissions.Reports.View)]
+    public async Task<IActionResult> GetContactsBreakdown([FromQuery] DateOnly from, [FromQuery] DateOnly to, CancellationToken cancellationToken) =>
+        Ok(await mediator.Send(new GetContactsBreakdownQuery(currentUser.HubId, from, to), cancellationToken));
+
+    /// <summary>"DIALOG score trend" — monthly average total score.</summary>
+    [HttpGet("dialog-trend")]
+    [Authorize(Policy = Permissions.Reports.View)]
+    public async Task<IActionResult> GetDialogTrend(CancellationToken cancellationToken) =>
+        Ok(await mediator.Send(new GetDialogTrendQuery(currentUser.HubId), cancellationToken));
+
+    /// <summary>"Referral sources" breakdown.</summary>
+    [HttpGet("referral-sources")]
+    [Authorize(Policy = Permissions.Reports.View)]
+    public async Task<IActionResult> GetReferralSources(CancellationToken cancellationToken) =>
+        Ok(await mediator.Send(new GetReferralSourcesQuery(currentUser.HubId), cancellationToken));
+
+    /// <summary>"Export history" tab — most recent exports for the hub.</summary>
+    [HttpGet("exports")]
+    [Authorize(Policy = Permissions.Reports.View)]
+    public async Task<IActionResult> GetExportHistory(CancellationToken cancellationToken) =>
+        Ok(await mediator.Send(new GetExportHistoryQuery(currentUser.HubId), cancellationToken));
+
     /// <summary>
     /// Streams CSV rows as they're read from the database — never buffers the full export in
     /// memory, per ARCHITECTURE.md "Streaming for exports/reports".
@@ -58,6 +100,8 @@ public sealed class ReportsController(IMediator mediator, IReportReadService rep
             await Response.WriteAsync(line.ToString(), cancellationToken);
             await Response.Body.FlushAsync(cancellationToken);
         }
+
+        await mediator.Send(new RecordExportCommand("PathwayCsv", from, to), cancellationToken);
     }
 
     private static string CsvEscape(string value) =>

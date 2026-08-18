@@ -50,6 +50,14 @@ public sealed class RecordRiskAssessmentCommandHandler(IAppDbContext db, ICurren
         {
             var guest = await db.Guests.FirstAsync(g => g.Id == request.GuestId, cancellationToken);
             guest.Escalate();
+
+            // One open episode per guest — repeated flag raises update the same episode window.
+            var hasOpenEpisode = await db.UrgentEpisodes
+                .AnyAsync(e => e.GuestId == request.GuestId && e.ResolvedAt == null, cancellationToken);
+            if (!hasOpenEpisode)
+            {
+                db.UrgentEpisodes.Add(new UrgentEpisode(request.GuestId, DateTimeOffset.UtcNow));
+            }
         }
 
         await db.SaveChangesAsync(cancellationToken);

@@ -6,7 +6,7 @@ import { PATHWAY_OPTIONS } from './pathway-step.component';
 
 /** One backend call of the final submission sequence, tracked for per-call error surfacing. */
 export interface SubmissionCall {
-  key: 'register' | 'conversation' | 'dialog' | 'allocation' | 'demographics' | 'risk';
+  key: 'register' | 'conversation' | 'dialog' | 'allocation' | 'followUp' | 'demographics' | 'risk';
   label: string;
   status: 'pending' | 'running' | 'done' | 'failed';
 }

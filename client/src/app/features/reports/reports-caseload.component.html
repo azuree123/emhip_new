@@ -1,0 +1,85 @@
+<div class="caseload">
+  @if (error()) {
+    <div class="error-banner">Couldn't load caseload data — {{ error() }}</div>
+  }
+
+  <!-- KPI row (Desktop67 top 428). -->
+  <section class="stat-row">
+    <div class="stat-card">
+      <span class="stat-card__label">Total CMHW staff</span>
+      <span class="stat-card__value">{{ loading() ? '—' : totalStaff() }}</span>
+      <span class="stat-card__caption">Workers with assigned guests</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-card__label">Avg caseload</span>
+      <span class="stat-card__value">{{ loading() ? '—' : avgCaseload() }}</span>
+      <span class="stat-card__caption">Guests per worker</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-card__label">Highest caseload</span>
+      <span class="stat-card__value">{{ loading() ? '—' : highestCaseload() }}</span>
+      <span class="stat-card__caption">Busiest worker</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-card__label">Overdue follow-ups</span>
+      <span class="stat-card__value">{{ loading() ? '—' : overdueFollowUps() }}</span>
+      <span class="stat-card__caption stat-card__caption--maroon">Across all caseloads</span>
+    </div>
+  </section>
+
+  <section class="report-card">
+    <h2 class="report-card__title">Caseload per CMHW</h2>
+    <p class="report-card__subtitle">Click View to open a worker's guests in the Guest Report</p>
+
+    @if (loading()) {
+      <div class="report-card__state">Loading caseloads…</div>
+    } @else if (rows().length === 0) {
+      <div class="report-card__state">No caseload data recorded yet.</div>
+    } @else {
+      <div class="table-scroll">
+        <table class="rpt-table caseload-table">
+          <thead>
+            <tr>
+              <th>Worker</th>
+              <th class="caseload-table__num">Assigned</th>
+              <th class="caseload-table__num">Active</th>
+              <th class="caseload-table__num">Urgent</th>
+              <th class="caseload-table__num">Overdue follow-ups</th>
+              <th class="caseload-table__num">Contacts (30d)</th>
+              <th>Load</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of rows(); track row.staffId) {
+              <tr>
+                <td>
+                  <span class="worker-cell">
+                    <span class="worker-cell__avatar" aria-hidden="true">{{ row.initials }}</span>
+                    <span class="worker-cell__name">{{ row.displayName }}</span>
+                  </span>
+                </td>
+                <td class="caseload-table__num caseload-table__strong">{{ row.assignedGuests }}</td>
+                <td class="caseload-table__num">{{ row.activeGuests }}</td>
+                <td class="caseload-table__num" [class.caseload-table__urgent]="row.urgentGuests > 0">{{ row.urgentGuests }}</td>
+                <td class="caseload-table__num" [class.caseload-table__urgent]="row.overdueFollowUps > 0">{{ row.overdueFollowUps }}</td>
+                <td class="caseload-table__num">{{ row.contactsLast30Days }}</td>
+                <td>
+                  <span class="load-cell">
+                    <span class="load-cell__track"><span class="load-cell__fill" [style.width.%]="row.loadPct"></span></span>
+                    <span class="load-cell__pct">{{ row.loadPct }}%</span>
+                  </span>
+                </td>
+                <td>
+                  <button type="button" class="btn btn--secondary caseload-table__view" (click)="viewGuests.emit(row.staffId)">
+                    View
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </section>
+</div>

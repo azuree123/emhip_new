@@ -9,4 +9,7 @@ public sealed class SignalRUrgentCaseNotifier(IHubContext<UrgentCasesHub> hubCon
 {
     public Task NotifyUrgentCaseAsync(Guid hubId, UrgentCaseDto urgentCase, CancellationToken cancellationToken = default) =>
         hubContext.Clients.Group(UrgentCasesHub.GroupName(hubId)).SendAsync("urgentCaseEscalated", urgentCase, cancellationToken);
+
+    public Task NotifyUrgentCaseResolvedAsync(Guid hubId, Guid guestId, CancellationToken cancellationToken = default) =>
+        hubContext.Clients.Group(UrgentCasesHub.GroupName(hubId)).SendAsync("urgentCaseResolved", guestId, cancellationToken);
 }

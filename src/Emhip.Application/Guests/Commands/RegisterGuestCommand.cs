@@ -16,7 +16,8 @@ public sealed record RegisterGuestCommand(
     string? AddressLine1,
     string? AddressLine2,
     string? PostCode,
-    Guid? AssignedCmhwId) : IRequest<Guid>;
+    Guid? AssignedCmhwId,
+    string? ReferralSource = null) : IRequest<Guid>;
 
 public sealed class RegisterGuestCommandValidator : AbstractValidator<RegisterGuestCommand>
 {
@@ -48,7 +49,8 @@ public sealed class RegisterGuestCommandHandler(IAppDbContext db, ICurrentUser c
             request.AddressLine1,
             request.AddressLine2,
             request.PostCode,
-            request.AssignedCmhwId);
+            request.AssignedCmhwId,
+            request.ReferralSource);
 
         db.Guests.Add(guest);
         await db.SaveChangesAsync(cancellationToken);

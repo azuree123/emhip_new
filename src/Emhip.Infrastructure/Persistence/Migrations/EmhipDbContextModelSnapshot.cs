@@ -22,6 +22,8 @@ namespace Emhip.Infrastructure.Persistence.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.HasSequence<int>("GuestNumbers", "dbo");
+
             modelBuilder.Entity("Emhip.Domain.Entities.AuditEvent", b =>
                 {
                     b.Property<Guid>("Id")
@@ -206,6 +208,39 @@ namespace Emhip.Infrastructure.Persistence.Migrations
                     b.ToTable("DialogAssessments", (string)null);
                 });
 
+            modelBuilder.Entity("Emhip.Domain.Entities.ExportRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ExportType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTimeOffset>("ExportedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<Guid>("ExportedByStaffId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateOnly>("FromDate")
+                        .HasColumnType("date");
+
+                    b.Property<Guid>("HubId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateOnly>("ToDate")
+                        .HasColumnType("date");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("HubId", "ExportedAt");
+
+                    b.ToTable("ExportRecords", (string)null);
+                });
+
             modelBuilder.Entity("Emhip.Domain.Entities.FollowUp", b =>
                 {
                     b.Property<Guid>("Id")
@@ -297,6 +332,11 @@ namespace Emhip.Infrastructure.Persistence.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
+                    b.Property<int>("GuestNumber")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValueSql("NEXT VALUE FOR dbo.GuestNumbers");
+
                     b.Property<Guid>("HubId")
                         .HasColumnType("uniqueidentifier");
 
@@ -315,6 +355,10 @@ namespace Emhip.Infrastructure.Persistence.Migrations
                     b.Property<string>("PostCode")
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("ReferralSource")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<DateTimeOffset>("RegisteredAt")
                         .HasColumnType("datetimeoffset");
@@ -337,6 +381,10 @@ namespace Emhip.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("AssignedCmhwId")
                         .HasDatabaseName("IX_Guests_AssignedCmhwId");
+
+                    b.HasIndex("GuestNumber")
+                        .IsUnique()
+                        .HasDatabaseName("IX_Guests_GuestNumber");
 
                     b.HasIndex("HubId", "Status")
                         .HasDatabaseName("IX_Guests_HubId_Status");
@@ -732,6 +780,59 @@ namespace Emhip.Infrastructure.Persistence.Migrations
                         .HasDatabaseName("IX_RiskAssessments_GuestId_Version");
 
                     b.ToTable("RiskAssessments", (string)null);
+                });
+
+            modelBuilder.Entity("Emhip.Domain.Entities.UrgentEpisode", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("CmhtTeam")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTimeOffset?>("EscalatedToCmhtAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<Guid?>("EscalatedToCmhtByStaffId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("EscalationNotes")
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<string>("EscalationReason")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<string>("EscalationUrgency")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<Guid>("GuestId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("RaisedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("ResolutionNote")
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<DateTimeOffset?>("ResolvedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<Guid?>("ResolvedByStaffId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ResolvedAt");
+
+                    b.HasIndex("GuestId", "ResolvedAt");
+
+                    b.ToTable("UrgentEpisodes", (string)null);
                 });
 
             modelBuilder.Entity("Emhip.Infrastructure.Identity.ApplicationRole", b =>

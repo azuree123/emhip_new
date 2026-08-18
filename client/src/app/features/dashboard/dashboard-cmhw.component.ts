@@ -6,6 +6,7 @@ import { DashboardsApiService } from '../../core/dashboards-api.service';
 import { FollowUpsApiService } from '../../core/follow-ups-api.service';
 import { Permissions } from '../../core/permissions';
 import { CmhwDashboardDto, FollowUpQueueItemDto } from '../../core/api-models';
+import { GuestSeenCardComponent } from './guest-seen-card.component';
 
 /** "Contact Status" pill filters in the design's Filter contacts card. */
 type ContactChip = 'all' | 'overdue' | 'today' | 'week';
@@ -25,9 +26,10 @@ function isoDay(date: Date): string {
  * shell; this component is the content area only.
  *
  * Sections: static KPI row (design note: "Static KPI cards - no interaction"), overdue-contact
- * banner, "Filter contacts" card, and the "Actions pending today" follow-up list (Mark done →
- * POST /followups/{id}/complete). The design's "Pathway distribution" and "Guest Seen" cards
- * have no backing fields on CmhwDashboardDto and are omitted (see feature report). The urgent
+ * banner, "Filter contacts" card, the "Guest Seen" card (GET /dashboards/guests-seen with
+ * mine=true — the worker's own contacts) and the "Actions pending today" follow-up list
+ * (Mark done → POST /followups/{id}/complete). The design's "Pathway distribution" card has
+ * no backing fields on CmhwDashboardDto and is omitted (see feature report). The urgent
  * banner from the previous iteration is kept — it is real data (urgentBanner) the new design
  * gives no other surface for.
  */
@@ -35,6 +37,7 @@ function isoDay(date: Date): string {
   selector: 'app-dashboard-cmhw',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [GuestSeenCardComponent],
   templateUrl: './dashboard-cmhw.component.html',
   styleUrl: './dashboard-cmhw.component.scss',
 })

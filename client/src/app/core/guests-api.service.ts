@@ -21,6 +21,7 @@ import {
   GuestOverviewDto,
   GuestPathwayDto,
   GuestStatus,
+  GuestSuggestionDto,
   KeysetPage,
   PathwayCategory,
   RecordInitialConversationRequest,
@@ -61,6 +62,12 @@ export class GuestsApiService {
     if (opts.cursor) params = params.set('cursor', opts.cursor);
     if (opts.pageSize) params = params.set('pageSize', opts.pageSize);
     return this.http.get<KeysetPage<GuestListItemDto>>(this.base, { params });
+  }
+
+  /** Top-bar search autocomplete — matches names or "G-1001" references within the caller's hub. */
+  suggest(q: string, limit = 8): Observable<GuestSuggestionDto[]> {
+    const params = new HttpParams().set('q', q).set('limit', limit);
+    return this.http.get<GuestSuggestionDto[]>(`${this.base}/suggest`, { params });
   }
 
   /** CMHW options for the guest list's "Assigned CMHW" filter — current hub only. */

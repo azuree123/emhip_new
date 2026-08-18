@@ -1,5 +1,14 @@
-import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
-import { DialogOutcomesReportDto } from '../../core/api-models';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  OnInit,
+  computed,
+  inject,
+  input,
+  signal,
+} from '@angular/core';
+import { DialogOutcomesReportDto, DialogTrendPointDto } from '../../core/api-models';
+import { ReportsApiService } from '../../core/reports-api.service';
 import { ReportsDomainTableComponent } from './reports-domain-table.component';
 
 interface RadarPoint {
@@ -24,6 +33,34 @@ interface RadarChart {
   latest: RadarSeries;
 }
 
+interface TrendPoint {
+  x: number;
+  y: number;
+  average: number;
+  assessments: number;
+  monthLabel: string;
+  /** Left edge / width of the invisible hover strip for this month. */
+  hitX: number;
+  hitW: number;
+}
+
+interface TrendChart {
+  linePath: string;
+  areaPath: string;
+  points: TrendPoint[];
+  ticks: { y: number; label: string }[];
+  monthLabels: { x: number; text: string }[];
+}
+
+interface TrendTip {
+  x: number;
+  top: number;
+  month: string;
+  score: string;
+  notchFill: string;
+  notchEdge: string;
+}
+
 // ---- Radar geometry (SVG viewBox units) -----------------------------------
 const VB_W = 640;
 const VB_H = 470;
@@ -34,12 +71,24 @@ const R = 150;
 const MAX_SCORE = 7;
 const LABEL_R = R + 20;
 
+// ---- "DIALOG SCORE TREND" chart geometry (same frame as the registrations
+// chart on the Overview tab). Y axis is the total DIALOG score (max 77),
+// drawn to a clean 0-80 scale. --------------------------------------------
+const T_VB_W = 648;
+const T_VB_H = 256;
+const T_PLOT_L = 56;
+const T_PLOT_R = 628;
+const T_PLOT_T = 16;
+const T_PLOT_B = 216;
+const T_AXIS_MAX = 80;
+const T_TICK_STEP = 20;
+const T_POINT_INSET = 8;
+
 /**
  * DIALOG Outcomes tab — Desktop47 in project/screens/Components.bundle.js
- * (lines 103895-107266): KPI tiles, the "Outcome dimensions" radar and the
- * per-domain averages table, all driven by the real /reports/dialog-outcomes
- * endpoint. The source's "DIALOG SCORE TREND" line chart (monthly average
- * score) is omitted — the API exposes no score time series.
+ * (lines 103895-107266): KPI tiles, the "DIALOG SCORE TREND" line chart
+ * (monthly average total score from the real /reports/dialog-trend endpoint),
+ * the "Outcome dimensions" radar and the per-domain averages table.
  */
 @Component({
   selector: 'app-reports-dialog-outcomes',
@@ -49,11 +98,33 @@ const LABEL_R = R + 20;
   styleUrl: './reports-dialog-outcomes.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ReportsDialogOutcomesComponent {
+export class ReportsDialogOutcomesComponent implements OnInit {
+  private readonly reportsApi = inject(ReportsApiService);
+
   readonly outcomes = input.required<DialogOutcomesReportDto | null>();
   readonly loading = input(false);
 
   readonly radarViewBox = `0 0 ${VB_W} ${VB_H}`;
+  readonly trendViewBox = `0 0 ${T_VB_W} ${T_VB_H}`;
+
+  readonly trend = signal<DialogTrendPointDto[]>([]);
+  readonly trendLoading = signal(false);
+  /** Index into trendChart().points of the month the pointer is over, or null. */
+  readonly hoveredTrend = signal<number | null>(null);
+
+  ngOnInit(): void {
+    this.trendLoading.set(true);
+    this.reportsApi.getDialogTrend().subscribe({
+      next: (points) => {
+        this.trend.set(points);
+        this.trendLoading.set(false);
+      },
+      error: () => {
+        this.trend.set([]);
+        this.trendLoading.set(false);
+      },
+    });
+  }
 
   readonly followUpPct = computed<number>(() => {
     const o = this.outcomes();
@@ -80,6 +151,74 @@ export class ReportsDialogOutcomesComponent {
     const v = this.improvement();
     if (v === null) return '—';
     return `${v >= 0 ? '+' : ''}${v.toFixed(1)}`;
+  });
+
+  readonly trendChart = computed<TrendChart | null>(() => {
+    const data = [...this.trend()].sort((a, b) => a.year - b.year || a.month - b.month);
+    if (data.length === 0) return null;
+
+    const plotH = T_PLOT_B - T_PLOT_T;
+    const n = data.length;
+    const x0 = T_PLOT_L + T_POINT_INSET;
+    const x1 = T_PLOT_R - T_POINT_INSET;
+    const step = n > 1 ? (x1 - x0) / (n - 1) : 0;
+    const multiYear = new Set(data.map((d) => d.year)).size > 1;
+    const monthName = (d: DialogTrendPointDto) =>
+      new Date(d.year, d.month - 1, 1).toLocaleDateString('en-GB', { month: 'short' });
+
+    const points: TrendPoint[] = data.map((d, i) => {
+      const x = n > 1 ? x0 + i * step : (T_PLOT_L + T_PLOT_R) / 2;
+      const hitX = n > 1 ? Math.max(T_PLOT_L, x - step / 2) : T_PLOT_L;
+      const hitEnd = n > 1 ? Math.min(T_PLOT_R, x + step / 2) : T_PLOT_R;
+      return {
+        x,
+        y: T_PLOT_B - (Math.min(d.averageTotal, T_AXIS_MAX) / T_AXIS_MAX) * plotH,
+        average: d.averageTotal,
+        assessments: d.assessments,
+        monthLabel: multiYear ? `${monthName(d)} ${d.year}` : monthName(d),
+        hitX,
+        hitW: hitEnd - hitX,
+      };
+    });
+
+    const linePath = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
+    const areaPath = `${linePath} L ${points[points.length - 1].x} ${T_PLOT_B} L ${points[0].x} ${T_PLOT_B} Z`;
+
+    const tickCount = T_AXIS_MAX / T_TICK_STEP;
+    const ticks = Array.from({ length: tickCount + 1 }, (_, k) => ({
+      y: T_PLOT_B - (k / tickCount) * plotH,
+      label: String(k * T_TICK_STEP),
+    }));
+
+    const labelStep = Math.ceil(n / 12);
+    const monthLabels = data
+      .map((d, i) => ({ d, i }))
+      .filter(({ i }) => i % labelStep === 0)
+      .map(({ d, i }) => ({
+        x: points[i].x,
+        text: multiYear ? `${monthName(d)} ${String(d.year).slice(2)}` : monthName(d),
+      }));
+
+    return { linePath, areaPath, points, ticks, monthLabels };
+  });
+
+  /** Design-styled tooltip ("April" / "Score: 69.2") clamped inside the plot. */
+  readonly trendTip = computed<TrendTip | null>(() => {
+    const chart = this.trendChart();
+    const i = this.hoveredTrend();
+    if (!chart || i === null || !chart.points[i]) return null;
+    const p = chart.points[i];
+    const x = Math.min(Math.max(p.x, T_PLOT_L + 52), T_PLOT_R - 52);
+    const top = Math.max(p.y - 68, 2);
+    const base = top + 50;
+    return {
+      x,
+      top,
+      month: p.monthLabel,
+      score: `Score: ${p.average.toFixed(1)}`,
+      notchFill: `M ${x - 6} ${base - 1} L ${x + 6} ${base - 1} L ${x} ${base + 5} Z`,
+      notchEdge: `M ${x - 6} ${base} L ${x} ${base + 6} L ${x + 6} ${base}`,
+    };
   });
 
   readonly radar = computed<RadarChart | null>(() => {

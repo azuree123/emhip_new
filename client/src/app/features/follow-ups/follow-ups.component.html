@@ -124,7 +124,7 @@
           </div>
 
           <div class="row__meta">
-            <span class="row__ref">Ref #{{ refLabel(item) }}</span>
+            <span class="row__ref">Ref {{ refLabel(item) }}</span>
             <span class="pill" [style.background]="statusColor(item.status).bg" [style.color]="statusColor(item.status).fg">
               {{ item.status }}
             </span>
@@ -197,7 +197,7 @@
     @if (!loading() && items().length > 0) {
       <div class="list-footer">
         <span class="list-footer__summary">
-          Showing 1 to {{ visibleItems().length }} of {{ items().length }}{{ hasMore() ? '+' : '' }} entries
+          Showing 1 to {{ visibleItems().length }} of {{ totalLabel() }} entries
         </span>
         @if (hasMore()) {
           <button type="button" class="pager-btn" (click)="loadMore()" [disabled]="loading()">

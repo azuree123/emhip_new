@@ -16,6 +16,8 @@ export class UrgentCasesHubService implements OnDestroy {
   private connection: signalR.HubConnection | null = null;
 
   readonly latestEscalation = signal<UrgentCaseDto | null>(null);
+  /** GuestId of the most recently resolved urgent case (pushed when someone resolves an episode). */
+  readonly latestResolution = signal<string | null>(null);
   readonly connectionState = signal<signalR.HubConnectionState>(signalR.HubConnectionState.Disconnected);
 
   connect(): void {
@@ -30,6 +32,10 @@ export class UrgentCasesHubService implements OnDestroy {
 
     this.connection.on('urgentCaseEscalated', (urgentCase: UrgentCaseDto) => {
       this.latestEscalation.set(urgentCase);
+    });
+
+    this.connection.on('urgentCaseResolved', (guestId: string) => {
+      this.latestResolution.set(guestId);
     });
 
     this.connection.onreconnected(() => this.connectionState.set(signalR.HubConnectionState.Connected));

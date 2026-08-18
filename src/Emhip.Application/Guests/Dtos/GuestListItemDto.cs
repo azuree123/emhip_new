@@ -8,6 +8,7 @@ namespace Emhip.Application.Guests.Dtos;
 /// </summary>
 public sealed record GuestListItemDto(
     Guid Id,
+    int GuestNumber,
     string FirstName,
     string LastName,
     DateOnly DateOfBirth,
@@ -21,3 +22,6 @@ public sealed record GuestListItemDto(
 
 /// <summary>Option for the guest list's "Assigned CMHW" filter dropdown.</summary>
 public sealed record CmhwOptionDto(Guid Id, string DisplayName);
+
+/// <summary>Top-bar search suggestion row.</summary>
+public sealed record GuestSuggestionDto(Guid Id, int GuestNumber, string FullName, GuestStatus Status);

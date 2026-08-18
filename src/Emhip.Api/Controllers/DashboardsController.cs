@@ -21,6 +21,16 @@ public sealed class DashboardsController(IMediator mediator, ICurrentUser curren
         return Ok(result);
     }
 
+    /// <summary>"Guest Seen" card + expanded view. Any authenticated staff; scope to the caller with mine=true (CMHW dashboard).</summary>
+    [HttpGet("guests-seen")]
+    public async Task<IActionResult> GetGuestsSeen(
+        [FromQuery] GuestsSeenPeriod period = GuestsSeenPeriod.Month, [FromQuery] bool mine = false, CancellationToken cancellationToken = default)
+    {
+        var result = await mediator.Send(
+            new GetGuestsSeenQuery(currentUser.HubId, period, mine ? currentUser.StaffId : null), cancellationToken);
+        return Ok(result);
+    }
+
     [HttpGet("hub-manager")]
     [Authorize(Policy = Permissions.Dashboard.ViewHubManager)]
     public async Task<IActionResult> GetHubManagerDashboard(CancellationToken cancellationToken)

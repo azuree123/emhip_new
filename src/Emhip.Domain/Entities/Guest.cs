@@ -11,6 +11,9 @@ namespace Emhip.Domain.Entities;
 /// </summary>
 public class Guest : AggregateRoot
 {
+    /// <summary>Sequential human-friendly reference (rendered "G-1001"). DB-generated from the GuestNumbers sequence.</summary>
+    public int GuestNumber { get; private set; }
+
     public Guid HubId { get; private set; }
     public string FirstName { get; private set; } = default!;
     public string LastName { get; private set; } = default!;
@@ -35,6 +38,9 @@ public class Guest : AggregateRoot
     /// <summary>"Practical support / Advice First Aid also needed?" from pathway allocation.</summary>
     public bool AfaSupportNeeded { get; private set; }
 
+    /// <summary>Where the guest was referred from (GP referral, CMHT, Community organisation, Self-referral, …).</summary>
+    public string? ReferralSource { get; private set; }
+
     private Guest() { }
 
     public Guest(
@@ -50,7 +56,8 @@ public class Guest : AggregateRoot
         string? addressLine1 = null,
         string? addressLine2 = null,
         string? postCode = null,
-        Guid? assignedCmhwId = null)
+        Guid? assignedCmhwId = null,
+        string? referralSource = null)
     {
         HubId = hubId;
         FirstName = firstName;
@@ -66,6 +73,7 @@ public class Guest : AggregateRoot
         ConsentGivenAt = consentGiven ? DateTimeOffset.UtcNow : null;
         Status = GuestStatus.PendingConversation;
         AssignedCmhwId = assignedCmhwId;
+        ReferralSource = referralSource;
         RegisteredByStaffId = registeredByStaffId;
         RegisteredAt = DateTimeOffset.UtcNow;
 
@@ -93,5 +101,12 @@ public class Guest : AggregateRoot
     {
         Pathway = pathway;
         AfaSupportNeeded = afaSupportNeeded;
+    }
+
+    /// <summary>Closes the urgent state: guest returns to Active and the read model is deactivated via the raised event.</summary>
+    public void ResolveUrgent()
+    {
+        Status = GuestStatus.Active;
+        Raise(new UrgentCaseResolvedEvent(Id, DateTimeOffset.UtcNow));
     }
 }

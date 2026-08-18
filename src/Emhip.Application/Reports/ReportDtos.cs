@@ -33,6 +33,50 @@ public sealed record DialogOutcomesReportDto(
 /// <summary>Averages are null when no assessments exist for that cohort.</summary>
 public sealed record DialogDimensionDto(string Key, string Label, double? BaselineAverage, double? LatestAverage);
 
+/// <summary>"Pathway Analytics" tab — per allocated clinical pathway.</summary>
+public sealed record PathwayAnalyticsDto(
+    int UnallocatedGuests,
+    IReadOnlyList<PathwayAnalyticsRowDto> Pathways);
+
+public sealed record PathwayAnalyticsRowDto(
+    string Pathway,
+    int TotalGuests,
+    int ActiveGuests,
+    int UrgentGuests,
+    int InactiveGuests,
+    int AfaSupportCount,
+    double? AvgLatestDialogTotal);
+
+/// <summary>"Caseload Reports" tab — per CMHW in the hub.</summary>
+public sealed record CaseloadReportRowDto(
+    Guid StaffId,
+    string DisplayName,
+    int AssignedGuests,
+    int ActiveGuests,
+    int UrgentGuests,
+    int OverdueFollowUps,
+    int ContactsLast30Days);
+
+/// <summary>"Data Quality" tab — completeness issues across the hub's guests.</summary>
+public sealed record DataQualityReportDto(int TotalGuests, IReadOnlyList<DataQualityIssueDto> Issues);
+
+public sealed record DataQualityIssueDto(string Key, string Label, int Count);
+
+/// <summary>"CPN Activity" / contacts breakdown — counts per contact type and outcome in the range.</summary>
+public sealed record ContactsBreakdownReportDto(
+    DateOnly From,
+    DateOnly To,
+    int TotalContacts,
+    IReadOnlyList<BreakdownSliceDto> ByType,
+    IReadOnlyList<BreakdownSliceDto> ByOutcome);
+
+/// <summary>"DIALOG score trend" — average total score of assessments recorded in each month.</summary>
+public sealed record DialogTrendPointDto(int Year, int Month, double AverageTotal, int Assessments);
+
+/// <summary>One "Export history" row.</summary>
+public sealed record ExportHistoryItemDto(
+    Guid Id, DateTimeOffset ExportedAt, string ExportedByName, string ExportType, DateOnly FromDate, DateOnly ToDate);
+
 /// <summary>One row of the streamed CSV export.</summary>
 public sealed record ReportExportRowDto(
     Guid GuestId,

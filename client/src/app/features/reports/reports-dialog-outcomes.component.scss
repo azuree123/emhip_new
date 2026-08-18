@@ -25,6 +25,126 @@
   &__side {
     min-width: 0;
   }
+
+  &__main {
+    display: flex;
+    flex-direction: column;
+    gap: 23px;
+  }
+}
+
+// ---- "DIALOG SCORE TREND" chart (Desktop47: gold gradient area, coral dots,
+// dashed gridlines, 12/500 rgb(114,114,114) axis text, white r8 tooltip) ----
+
+.trend-legend {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-top: 6px;
+
+  &__swatch {
+    width: 45px;
+    height: 6px;
+    border-radius: 444px;
+    background: $gold;
+  }
+
+  &__label {
+    font-weight: 400;
+    font-size: 10px;
+    line-height: 24px;
+    color: $ink-soft;
+    white-space: nowrap;
+  }
+}
+
+.trend-chart {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin-top: 18px;
+
+  &__grid {
+    stroke: rgb(232, 232, 232);
+    stroke-width: 1;
+    stroke-dasharray: 2 2;
+  }
+
+  &__tick {
+    font-family: $font-body;
+    font-weight: 500;
+    font-size: 12px;
+    letter-spacing: -0.005em;
+    fill: $ink-muted;
+    text-anchor: end;
+  }
+
+  &__month {
+    font-family: $font-body;
+    font-weight: 500;
+    font-size: 12px;
+    letter-spacing: -0.005em;
+    fill: $ink-muted;
+    text-anchor: middle;
+  }
+
+  &__area {
+    fill: url('#dialog-trend-fill');
+    stroke: none;
+  }
+
+  &__line {
+    fill: none;
+    stroke: $gold;
+    stroke-width: 2;
+    stroke-linejoin: round;
+    stroke-linecap: round;
+  }
+
+  &__dot {
+    fill: $coral;
+  }
+
+  &__hit {
+    fill: transparent;
+  }
+
+  &__tip {
+    pointer-events: none;
+  }
+
+  &__tip-box {
+    fill: rgb(255, 255, 255);
+    stroke: rgb(228, 228, 231);
+    stroke-width: 1;
+    filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.08));
+  }
+
+  &__tip-notch {
+    fill: rgb(255, 255, 255);
+  }
+
+  &__tip-notch-edge {
+    fill: none;
+    stroke: rgb(228, 228, 231);
+    stroke-width: 1;
+  }
+
+  &__tip-caption {
+    font-family: $font-body;
+    font-weight: 500;
+    font-size: 12px;
+    fill: rgb(113, 113, 122);
+    text-anchor: middle;
+  }
+
+  &__tip-value {
+    font-family: $font-body;
+    font-weight: 700;
+    font-size: 13px;
+    fill: rgb(24, 24, 27);
+    text-anchor: middle;
+  }
 }
 
 .radar {

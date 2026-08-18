@@ -4,6 +4,7 @@ namespace Emhip.Application.Guests.Dtos;
 
 public sealed record GuestOverviewDto(
     Guid Id,
+    int GuestNumber,
     string FirstName,
     string LastName,
     DateOnly DateOfBirth,
@@ -16,6 +17,7 @@ public sealed record GuestOverviewDto(
     int OpenFollowUpCount,
     GuestPathway? Pathway,
     bool AfaSupportNeeded,
+    string? ReferralSource,
     IReadOnlyList<GuestNoteDto> PinnedNotes,
     IReadOnlyList<GuestContactSummaryDto> RecentContacts);
 

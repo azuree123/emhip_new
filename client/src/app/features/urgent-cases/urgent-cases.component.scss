@@ -245,6 +245,16 @@
     color: rgb(225, 38, 40);
   }
 
+  &--resolved {
+    background: rgb(234, 255, 239);
+    color: rgb(20, 113, 41);
+  }
+
+  &--cmht {
+    background: rgb(236, 242, 255);
+    color: rgb(52, 91, 177);
+  }
+
   &--muted {
     background: rgb(240, 240, 240);
     color: rgb(50, 50, 50);
@@ -329,6 +339,29 @@
     white-space: nowrap;
   }
 
+  // Resolved rows (Desktop57): shorter card, green status in the right-hand column.
+  &--resolved {
+    min-height: 155px;
+  }
+
+  &__resolved-flag {
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 24px;
+    letter-spacing: -0.005em;
+    color: rgb(20, 113, 41);
+    white-space: nowrap;
+  }
+
+  &__note {
+    margin: 2px 0 0;
+    max-width: 760px;
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 24px;
+    color: rgb(50, 50, 50);
+  }
+
   &__meta {
     display: flex;
     align-items: center;
@@ -404,6 +437,11 @@
     background: rgb(255, 255, 255);
     color: rgb(42, 42, 42);
     box-shadow: inset 0 0 0 1px rgb(217, 217, 217);
+  }
+
+  &--maroon {
+    background: rgb(148, 28, 60);
+    color: rgb(255, 255, 255);
   }
 }
 
@@ -921,11 +959,102 @@
     color: rgb(255, 255, 255);
   }
 
+  &--maroon {
+    background: rgb(148, 28, 60);
+    color: rgb(255, 255, 255);
+  }
+
+  &--dark {
+    background: rgb(42, 42, 42);
+    color: rgb(255, 255, 255);
+  }
+
   &--outline {
     background: rgb(255, 255, 255);
     color: rgb(42, 42, 42);
     box-shadow: inset 0 0 0 1px rgb(217, 217, 217);
   }
+}
+
+// "Escalated to {team} on {date}" note in the drawer, once an escalation exists.
+.escalation-note {
+  border-radius: 8px;
+  background: rgb(236, 242, 255);
+  color: rgb(52, 91, 177);
+  padding: 10px 16px;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 20px;
+}
+
+// "Episode resolved and locked" box (Desktop57 — pink hairline border).
+.locked-box {
+  border-radius: 8px;
+  box-shadow: inset 0 0 0 1px rgb(255, 206, 211);
+  padding: 12px 18px;
+  display: flex;
+  flex-direction: column;
+
+  &__title {
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 24px;
+    color: rgb(42, 42, 42);
+  }
+
+  &__sub {
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 20px;
+    color: rgb(143, 143, 143);
+  }
+}
+
+// Desktop65 urgency selector — three bordered boxes, active one outlined maroon.
+.radio-row {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.radio-box {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 110px;
+  height: 37px;
+  padding: 0 14px;
+  border-radius: 8px;
+  box-shadow: inset 0 0 0 1px rgb(229, 229, 229);
+  font-size: 12px;
+  font-weight: 400;
+  color: rgb(50, 50, 50);
+  cursor: pointer;
+
+  input {
+    width: 13px;
+    height: 13px;
+    margin: 0;
+    accent-color: rgb(148, 28, 60);
+  }
+
+  &--active {
+    box-shadow: inset 0 0 0 1px rgb(148, 28, 60);
+  }
+}
+
+.field__hint {
+  font-size: 11px;
+  font-weight: 400;
+  color: rgb(143, 143, 143);
+}
+
+.modal--wide {
+  width: 520px;
+}
+
+.timeline__desc--secondary {
+  color: rgb(114, 114, 114);
 }
 
 @media (max-width: 1279px) {

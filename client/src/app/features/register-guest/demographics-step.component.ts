@@ -24,7 +24,8 @@ import { FormGroup, ReactiveFormsModule } from '@angular/forms';
  *  - "Additional details" is a functional addition (not in the mock) so every remaining
  *    UpdateDemographicsRequest field (preferred language, interpreter, emergency contact,
  *    GP, NHS number) has a real place to be captured, in the same field styling.
- *  - "Referral type *" has no API field; it is concatenated into the initial-conversation
+ *  - "Referral type *" maps to RegisterGuestRequest.referralSource (options match the
+ *    backend's seeded sources) and is additionally echoed into the initial-conversation
  *    notes on submit (see RegisterGuestComponent.buildConversationRequest).
  *  - The consent checkbox is not drawn on any of the redesigned screens, but
  *    RegisterGuestRequest.consentGiven is required — kept at the bottom of this step.
@@ -82,11 +83,13 @@ export class DemographicsStepComponent {
     'Retired',
     'Unable to Work',
   ];
+  /** Matches the backend's seeded referral sources — submitted as RegisterGuestRequest.referralSource. */
   protected readonly referralTypeOptions = [
-    'Open access / self referred',
-    'GP Referral',
-    'Hospital Referral',
-    'Social Services Referral',
-    'Other Agency Referral',
+    'GP referral',
+    'CMHT',
+    'Community organisation',
+    'Self-referral',
+    'Family / carer',
+    'Hospital discharge',
   ];
 }

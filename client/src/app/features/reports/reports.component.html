@@ -27,18 +27,16 @@
     <div class="header-card__divider"></div>
 
     <div class="tab-bar" role="tablist" aria-label="Report sections">
-      @for (tab of tabs; track tab.label; let first = $first) {
+      @for (tab of tabs; track tab.id; let first = $first) {
         @if (!first) {
           <span class="tab-bar__sep" aria-hidden="true"></span>
         }
         <button
           type="button"
           class="tab-bar__tab"
-          [class.tab-bar__tab--active]="tab.id !== null && tab.id === activeTab()"
+          [class.tab-bar__tab--active]="tab.id === activeTab()"
           role="tab"
-          [attr.aria-selected]="tab.id !== null && tab.id === activeTab()"
-          [disabled]="tab.id === null"
-          [title]="tab.id === null ? 'No report data source yet' : null"
+          [attr.aria-selected]="tab.id === activeTab()"
           (click)="selectTab(tab.id)"
         >
           {{ tab.label }}
@@ -48,9 +46,9 @@
 
     <!-- Date-range filter row (Desktop74): From / To fields + red Apply button.
          The source's All CMHW / All Hub / All Pathway dropdowns are omitted here —
-         the pathway-report endpoint only accepts a date range. Only the Overview
-         report is date-ranged, so the row hides on the other tabs. -->
-    @if (activeTab() === 'overview') {
+         the date-ranged report endpoints only accept from/to. Shown only on the
+         date-ranged tabs (Overview, CPN Activity). -->
+    @if (showFilters()) {
       <div class="filters">
         <span class="filters__label">Filters:</span>
 
@@ -85,15 +83,32 @@
         [loading]="loading()"
         [outcomes]="outcomes()"
         [outcomesLoading]="outcomesLoading()"
+        [referralSources]="referralSources()"
+        [referralSourcesLoading]="referralSourcesLoading()"
         [from]="from()"
         [to]="to()"
       />
     }
     @case ('guest-report') {
-      <app-reports-guest-report />
+      <app-reports-guest-report [initialCmhw]="guestReportCmhw()" />
+    }
+    @case ('pathway-analytics') {
+      <app-reports-pathway-analytics />
+    }
+    @case ('caseload') {
+      <app-reports-caseload (viewGuests)="openCmhwGuests($event)" />
     }
     @case ('dialog-outcomes') {
       <app-reports-dialog-outcomes [outcomes]="outcomes()" [loading]="outcomesLoading()" />
+    }
+    @case ('data-quality') {
+      <app-reports-data-quality />
+    }
+    @case ('cpn-activity') {
+      <app-reports-cpn-activity [from]="from()" [to]="to()" />
+    }
+    @case ('export-history') {
+      <app-reports-export-history />
     }
   }
 </div>

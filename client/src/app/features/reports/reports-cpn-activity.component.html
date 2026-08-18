@@ -1,0 +1,73 @@
+<div class="cpn">
+  @if (error()) {
+    <div class="error-banner">Couldn't load contact activity — {{ error() }}</div>
+  }
+
+  <!-- The source's KPI row is CPN-pipeline data with no backend; the one real
+       headline figure (total contacts in range) is drawn in its tile style. -->
+  <section class="stat-row cpn__stats">
+    <div class="stat-card">
+      <span class="stat-card__label">Total contacts recorded</span>
+      <span class="stat-card__value">{{ loading() ? '—' : (totalContacts() ?? '—') }}</span>
+      <span class="stat-card__caption">{{ rangeLabel() }} · all recorded contacts</span>
+    </div>
+  </section>
+
+  <div class="cpn__grid">
+    <section class="report-card">
+      <div class="report-card__head">
+        <div>
+          <h2 class="report-card__title">Contacts by type</h2>
+          <p class="report-card__subtitle">All recorded contacts — CPN-specific tracking is not yet captured</p>
+        </div>
+        <span class="report-card__corner">{{ rangeLabel() }}</span>
+      </div>
+
+      @if (loading()) {
+        <div class="report-card__state">Loading contact breakdown…</div>
+      } @else if (typeRows().length === 0) {
+        <div class="report-card__state">No contacts recorded for this period.</div>
+      } @else {
+        <div class="cpn__rows">
+          @for (row of typeRows(); track row.label) {
+            <div class="breakdown-row">
+              <span class="breakdown-row__label">{{ row.prettyLabel }}</span>
+              <div class="breakdown-row__track">
+                <div class="breakdown-row__fill" [style.width.%]="row.barPct"></div>
+              </div>
+              <span class="breakdown-row__value">{{ row.count }}</span>
+            </div>
+          }
+        </div>
+      }
+    </section>
+
+    <section class="report-card">
+      <div class="report-card__head">
+        <div>
+          <h2 class="report-card__title">Contacts by outcome</h2>
+          <p class="report-card__subtitle">All recorded contacts</p>
+        </div>
+        <span class="report-card__corner">{{ rangeLabel() }}</span>
+      </div>
+
+      @if (loading()) {
+        <div class="report-card__state">Loading contact breakdown…</div>
+      } @else if (outcomeRows().length === 0) {
+        <div class="report-card__state">No contacts recorded for this period.</div>
+      } @else {
+        <div class="cpn__rows">
+          @for (row of outcomeRows(); track row.label) {
+            <div class="breakdown-row">
+              <span class="breakdown-row__label">{{ row.prettyLabel }}</span>
+              <div class="breakdown-row__track">
+                <div class="breakdown-row__fill" [style.width.%]="row.barPct"></div>
+              </div>
+              <span class="breakdown-row__value">{{ row.count }}</span>
+            </div>
+          }
+        </div>
+      }
+    </section>
+  </div>
+</div>

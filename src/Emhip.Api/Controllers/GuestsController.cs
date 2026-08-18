@@ -35,6 +35,15 @@ public sealed class GuestsController(IMediator mediator, ICurrentUser currentUse
         return Ok(result);
     }
 
+    /// <summary>Top-bar search autocomplete — name or "G-1001" reference matches within the caller's hub.</summary>
+    [HttpGet("suggest")]
+    [Authorize(Policy = Permissions.Guests.View)]
+    public async Task<IActionResult> Suggest([FromQuery] string q, [FromQuery] int limit = 8, CancellationToken cancellationToken = default)
+    {
+        var result = await mediator.Send(new GetGuestSuggestionsQuery(currentUser.HubId, q ?? string.Empty, limit), cancellationToken);
+        return Ok(result);
+    }
+
     /// <summary>Options for the guest list's "Assigned CMHW" filter — active staff in the caller's hub.</summary>
     [HttpGet("cmhws")]
     [Authorize(Policy = Permissions.Guests.View)]

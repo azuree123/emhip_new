@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, input, signal } from '@angular/core';
 import {
+  BreakdownSliceDto,
   DialogOutcomesReportDto,
   PathwayCategoryTotalDto,
   PathwayReportDto,
@@ -108,6 +109,8 @@ export class ReportsOverviewComponent {
   readonly loading = input(false);
   readonly outcomes = input.required<DialogOutcomesReportDto | null>();
   readonly outcomesLoading = input(false);
+  readonly referralSources = input<BreakdownSliceDto[]>([]);
+  readonly referralSourcesLoading = input(false);
   readonly from = input.required<string>();
   readonly to = input.required<string>();
 
@@ -165,6 +168,17 @@ export class ReportsOverviewComponent {
    */
   readonly ethnicityRows = computed<EthnicityRow[]>(() => {
     const rows = [...(this.report()?.ethnicityBreakdown ?? [])].sort((a, b) => b.count - a.count);
+    const max = rows[0]?.count ?? 0;
+    return rows.map((r) => ({ ...r, barPct: max > 0 ? (r.count / max) * 100 : 0 }));
+  });
+
+  /**
+   * "Referral sources" rows (Desktop72 side column), largest first. Bars are
+   * scaled to the largest slice, as in the source card; the printed percentage
+   * is the true share.
+   */
+  readonly referralRows = computed<(BreakdownSliceDto & { barPct: number })[]>(() => {
+    const rows = [...this.referralSources()].sort((a, b) => b.count - a.count);
     const max = rows[0]?.count ?? 0;
     return rows.map((r) => ({ ...r, barPct: max > 0 ? (r.count / max) * 100 : 0 }));
   });

@@ -21,7 +21,15 @@ public class GuestConfiguration : IEntityTypeConfiguration<Guest>
         builder.Property(g => g.PostCode).HasMaxLength(20);
         builder.Property(g => g.Status).HasConversion<string>().HasMaxLength(30);
         builder.Property(g => g.Pathway).HasConversion<string>().HasMaxLength(30);
+        builder.Property(g => g.ReferralSource).HasMaxLength(100);
         builder.Property(g => g.RowVersion).IsRowVersion();
+
+        // Human-friendly sequential reference ("G-1001"), assigned by the DB from the
+        // GuestNumbers sequence (created + backfilled in the AddUrgentEpisodesGuestNumbers migration).
+        builder.Property(g => g.GuestNumber)
+            .ValueGeneratedOnAdd()
+            .HasDefaultValueSql("NEXT VALUE FOR dbo.GuestNumbers");
+        builder.HasIndex(g => g.GuestNumber).IsUnique().HasDatabaseName("IX_Guests_GuestNumber");
 
         builder.HasQueryFilter(g => !g.IsDeleted);
 

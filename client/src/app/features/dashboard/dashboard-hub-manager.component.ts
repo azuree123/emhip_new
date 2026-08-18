@@ -6,6 +6,7 @@ import { DashboardsApiService } from '../../core/dashboards-api.service';
 import { FollowUpsApiService } from '../../core/follow-ups-api.service';
 import { Permissions } from '../../core/permissions';
 import { FollowUpQueueItemDto, HubManagerDashboardDto, MonthlyStatDto, PathwayDistributionDto } from '../../core/api-models';
+import { GuestSeenCardComponent } from './guest-seen-card.component';
 import { KpiGuestsPanelComponent, KpiPanelVariant } from './kpi-guests-panel.component';
 
 /**
@@ -49,7 +50,7 @@ interface PathwayRow extends PathwayDistributionDto {
   selector: 'app-dashboard-hub-manager',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, KpiGuestsPanelComponent],
+  imports: [RouterLink, KpiGuestsPanelComponent, GuestSeenCardComponent],
   templateUrl: './dashboard-hub-manager.component.html',
   styleUrl: './dashboard-hub-manager.component.scss',
 })
