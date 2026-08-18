@@ -41,6 +41,11 @@ Logs: `journalctl -u emhip-deploy.service -n 100`.
 - Backups go to `/opt/emhip-backups` (gzipped `.bak`): before every deploy, and
   nightly at 03:00 via `emhip-backup.timer`. Retention is 14 days.
 - Restore: see the header comment in [backup.sh](backup.sh).
+- Uploaded documents live in `/opt/emhip-documents` (bind-mounted into the API at
+  `/var/emhip/documents`) while the storage provider on the Settings page is "Local".
+  They are tarred into the same backup directory alongside each DB backup. Switching the
+  provider to S3/Contabo/Azure/GCS moves *new* uploads to that provider; existing files stay
+  readable from local disk, so keep the directory and its backups either way.
 
 ## Secrets
 

@@ -1,0 +1,153 @@
+// Right-anchored drawer chrome and the upload progress bar — only the upload and detail
+// drawers use these, so they layer on top of the shared form controls.
+@import 'documents-forms';
+
+// ---- Right-anchored drawer (same chrome as the Register Guest drawer) -----
+
+.drawer {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  justify-content: flex-end;
+  font-family: $font-body;
+}
+
+.drawer__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  border: none;
+  padding: 0;
+  animation: doc-fade-in 0.2s ease-out both;
+}
+
+.drawer__panel {
+  position: relative; // above the backdrop
+  box-sizing: border-box;
+  width: 640px;
+  max-width: 100vw;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: $surface;
+  border-radius: 8px 0 0 8px;
+  box-shadow: -8px 4px 51.2px rgba(0, 0, 0, 0.1);
+  animation: doc-slide-in 0.25s ease-out both;
+
+  &--wide {
+    width: 860px;
+  }
+}
+
+.drawer__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-shrink: 0;
+  padding: 20px 24px;
+  border-bottom: 1px solid $line;
+}
+
+.drawer__title {
+  margin: 0;
+  font-weight: 600;
+  font-size: 20px;
+  line-height: 26px;
+  color: $ink;
+  overflow-wrap: anywhere;
+}
+
+.drawer__subtitle {
+  margin: 3px 0 0;
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 20px;
+  color: $ink-muted;
+  overflow-wrap: anywhere;
+}
+
+.drawer__body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 20px 24px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.drawer__foot {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  padding: 14px 24px;
+  border-top: 1px solid $line;
+  background: $surface;
+}
+
+@keyframes doc-slide-in {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes doc-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .drawer__backdrop,
+  .drawer__panel {
+    animation: none;
+  }
+}
+
+@media (max-width: 1023px) {
+  .drawer__panel,
+  .drawer__panel--wide {
+    width: 100vw;
+    border-radius: 0;
+  }
+}
+
+// ---- Upload progress bar (shared by the upload drawer and "new version") --
+
+.progress {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  &__track {
+    height: 6px;
+    border-radius: 444px;
+    background: rgb(237, 237, 237);
+    overflow: hidden;
+  }
+
+  &__fill {
+    height: 100%;
+    border-radius: 444px;
+    background: $maroon;
+    transition: width 0.15s linear;
+  }
+
+  &__label {
+    font-weight: 500;
+    font-size: 11px;
+    line-height: 16px;
+    color: $ink-muted;
+  }
+}

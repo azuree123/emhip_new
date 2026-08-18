@@ -25,6 +25,10 @@ public interface IAppDbContext
     DbSet<GuestClinicalProfile> GuestClinicalProfiles { get; }
     DbSet<UrgentEpisode> UrgentEpisodes { get; }
     DbSet<ExportRecord> ExportRecords { get; }
+    DbSet<Document> Documents { get; }
+    DbSet<DocumentVersion> DocumentVersions { get; }
+    DbSet<AppSetting> AppSettings { get; }
+    DbSet<LookupItem> LookupItems { get; }
     DbSet<AuditEvent> AuditEvents { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);

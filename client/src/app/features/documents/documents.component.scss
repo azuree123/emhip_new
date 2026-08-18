@@ -1,0 +1,504 @@
+// Document Management — the header band, toolbar and pager are the guest data sheet's
+// (guest-data-sheet.component.scss); the KPI tiles and r12 white card come from the reports
+// suite (_reports-shared.scss). Only the register table's own cells and the row action menu
+// are new here.
+@import 'documents-shared';
+
+$pager-font-stack: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+
+:host {
+  display: block;
+  font-family: $font-body;
+}
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 56px 21px 32px 17px;
+  box-sizing: border-box;
+}
+
+// ---- Header band ---------------------------------------------------------
+
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+
+  &__text {
+    min-width: 0;
+  }
+
+  &__title {
+    margin: 0;
+    font-weight: 600;
+    font-size: 20px;
+    line-height: 24px;
+    color: $ink;
+  }
+
+  &__subtitle {
+    margin: 6px 0 0;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 24px;
+    color: $ink;
+  }
+
+  &__actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+}
+
+.flash {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 14px;
+  border-radius: 8px;
+  background: rgb(234, 253, 238);
+  font-weight: 500;
+  font-size: 13px;
+  line-height: 20px;
+  color: $green;
+
+  &__close {
+    display: inline-flex;
+    padding: 4px;
+    border: none;
+    border-radius: 4px;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+  }
+}
+
+// ---- KPI strip -----------------------------------------------------------
+
+.stat-row {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.stat-card {
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  min-height: 104px;
+  padding: 12px 18px 16px;
+  border-radius: 12px;
+  background: $surface;
+
+  &__label {
+    font-family: $font-display;
+    font-weight: 600;
+    font-size: 10px;
+    line-height: 22px;
+    letter-spacing: -0.005em;
+    text-transform: uppercase;
+    color: $ink;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &__value {
+    margin-top: 6px;
+    font-weight: 600;
+    font-size: 30px;
+    line-height: 1.1;
+    color: $ink;
+
+    // "1.4 GB" needs to fit the same tile a bare count sits in.
+    &--compact {
+      font-size: 24px;
+    }
+  }
+
+  &__caption {
+    margin-top: 10px;
+  }
+
+  &__message {
+    margin: 8px 0 12px;
+    font-weight: 500;
+    font-size: 13px;
+    line-height: 20px;
+    color: $red;
+  }
+
+  &--skeleton {
+    opacity: 0.5;
+
+    .stat-card__value {
+      color: $ink-faint;
+    }
+  }
+
+  // The stats error takes the whole strip rather than pretending to be one tile.
+  &--full {
+    grid-column: 1 / -1;
+    align-items: flex-start;
+  }
+}
+
+// ---- Card + toolbar ------------------------------------------------------
+
+.card {
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  background: $surface;
+  border-radius: 12px;
+  padding: 20px 24px 8px;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.search-box {
+  position: relative;
+  width: 390px;
+  height: 36px;
+  border-radius: 4px;
+  box-shadow: inset 0 0 0 1px $line-soft;
+  background: $surface;
+  display: flex;
+  align-items: center;
+
+  &__icon {
+    position: absolute;
+    left: 16px;
+    color: $ink-muted;
+    pointer-events: none;
+  }
+
+  &__input {
+    width: 100%;
+    height: 100%;
+    border: none;
+    outline: none;
+    background: transparent;
+    padding: 0 12px 0 44px;
+    box-sizing: border-box;
+    font-family: $font-body;
+    font-weight: 500;
+    font-size: 12px;
+    color: $ink;
+
+    &::placeholder {
+      color: $ink-faint;
+    }
+  }
+}
+
+.filter-cluster {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  flex-wrap: wrap;
+}
+
+.filter-reset {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 4px;
+  box-shadow: inset 0 0 0 1px $line-soft;
+  background: $surface;
+  color: $ink;
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    background: $surface-alt;
+  }
+
+  &:disabled {
+    color: rgb(190, 190, 190);
+    cursor: default;
+  }
+}
+
+// Recycle-bin toggle — a filter chip that latches on, in the same 36px shape as the selects.
+.toggle-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 36px;
+  padding: 0 15px;
+  border: none;
+  border-radius: 4px;
+  background: $surface;
+  box-shadow: inset 0 0 0 1px $line-soft;
+  font-family: $font-body;
+  font-weight: 500;
+  font-size: 14px;
+  letter-spacing: -0.005em;
+  color: $ink;
+  white-space: nowrap;
+  cursor: pointer;
+
+  &:hover {
+    background: $surface-alt;
+  }
+
+  &--on {
+    background: rgb(255, 240, 241);
+    box-shadow: inset 0 0 0 1px rgb(247, 200, 205);
+    color: $maroon;
+  }
+}
+
+// ---- Register table cells ------------------------------------------------
+
+.doc-table {
+  tbody tr:hover {
+    background: rgb(250, 250, 250);
+  }
+}
+
+.title-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  max-width: 280px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  font-family: $font-body;
+  text-align: left;
+  cursor: pointer;
+
+  &__title {
+    font-weight: 600;
+    font-size: 13px;
+    line-height: 20px;
+    color: $ink;
+    overflow-wrap: anywhere;
+  }
+
+  &__file {
+    font-weight: 500;
+    font-size: 11px;
+    line-height: 16px;
+    color: $ink-faint;
+    overflow-wrap: anywhere;
+  }
+
+  &:hover .title-cell__title {
+    color: $maroon;
+    text-decoration: underline;
+  }
+}
+
+.guest-link {
+  color: $maroon;
+  font-size: 13px;
+  text-decoration: none;
+  white-space: nowrap;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.muted {
+  color: $ink-faint;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.nowrap {
+  white-space: nowrap;
+}
+
+.align-right {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.status-stack {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+// ---- Row action menu -----------------------------------------------------
+
+.menu-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+}
+
+.row-menu {
+  position: relative;
+  display: inline-flex;
+
+  &__list {
+    position: absolute;
+    top: calc(100% + 4px);
+    right: 0;
+    z-index: 50; // above .menu-backdrop so the items stay clickable
+    min-width: 190px;
+    padding: 4px;
+    border-radius: 8px;
+    background: $surface;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.16);
+  }
+
+  &__item {
+    display: block;
+    width: 100%;
+    padding: 8px 10px;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    font-family: $font-body;
+    font-weight: 500;
+    font-size: 13px;
+    line-height: 20px;
+    color: $ink;
+    text-align: left;
+    white-space: nowrap;
+    cursor: pointer;
+
+    &:hover:not(:disabled) {
+      background: $surface-alt;
+    }
+
+    &:disabled {
+      color: $ink-faint;
+      cursor: default;
+    }
+
+    &--danger {
+      color: $maroon;
+
+      &:hover:not(:disabled) {
+        background: rgb(255, 240, 241);
+      }
+    }
+  }
+}
+
+// ---- Pager ---------------------------------------------------------------
+
+.load-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  min-height: 62px;
+
+  &__showing {
+    font-weight: 500;
+    font-size: 12px;
+    line-height: 24px;
+    letter-spacing: -0.005em;
+    color: $ink-soft;
+  }
+
+  &__controls {
+    display: flex;
+    align-items: center;
+  }
+
+  &__note {
+    font-weight: 500;
+    font-size: 12px;
+    color: $ink-soft;
+  }
+}
+
+.load-more-btn {
+  height: 38px;
+  padding: 0 16px;
+  border-radius: 8px;
+  border: 1px solid $line-soft;
+  background: $surface-alt;
+  font-family: $pager-font-stack;
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 24px;
+  letter-spacing: 0.005em;
+  color: $ink-soft;
+  cursor: pointer;
+
+  &:hover {
+    background: rgb(238, 238, 238);
+  }
+}
+
+// ---- Responsive ----------------------------------------------------------
+
+@media (max-width: 1279px) {
+  .stat-row {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 1023px) {
+  .page {
+    padding: 16px 16px 24px;
+    gap: 20px;
+  }
+
+  .card {
+    padding: 16px 16px 4px;
+  }
+
+  .search-box {
+    width: auto;
+    flex: 1 1 280px;
+    max-width: 390px;
+  }
+
+  .filter-cluster {
+    margin-left: 0;
+  }
+
+  // The register has nine columns; scroll it horizontally rather than stack the cells.
+  .doc-table {
+    min-width: 1080px;
+  }
+}
+
+@media (max-width: 640px) {
+  .stat-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .search-box {
+    flex-basis: 100%;
+    max-width: none;
+  }
+
+  .page-header__actions {
+    width: 100%;
+  }
+
+  .page-header__actions .btn {
+    flex: 1;
+  }
+}

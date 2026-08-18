@@ -575,3 +575,174 @@ export interface AllocateGuestRequest {
   afaSupportNeeded: boolean;
   assignedCmhwId?: string | null;
 }
+
+// ---- Document management ----
+
+export type DocumentStatus = 'Draft' | 'Active' | 'Archived';
+
+export type DocumentStorageProvider = 'Local' | 'AwsS3' | 'S3Compatible' | 'AzureBlob' | 'GoogleCloudStorage';
+
+export interface DocumentListItemDto {
+  id: string;
+  guestId: string | null;
+  guestName: string | null;
+  guestNumber: number | null;
+  title: string;
+  category: string;
+  tags: string | null;
+  status: DocumentStatus;
+  currentVersionNumber: number;
+  fileName: string;
+  contentType: string;
+  sizeBytes: number;
+  updatedAt: string;
+  createdByName: string;
+  retainUntil: string | null;
+  /** Set while the document is checked out (locked for editing) by that staff member. */
+  checkedOutByName: string | null;
+  isDeleted: boolean;
+  deletedAt: string | null;
+  deletedByName: string | null;
+}
+
+export interface DocumentVersionDto {
+  id: string;
+  versionNumber: number;
+  fileName: string;
+  contentType: string;
+  sizeBytes: number;
+  /** SHA-256 recorded at upload; the download response echoes it in X-Document-Sha256. */
+  sha256: string;
+  changeNote: string | null;
+  uploadedByName: string;
+  uploadedAt: string;
+  storageProvider: DocumentStorageProvider;
+  isCurrent: boolean;
+}
+
+export interface DocumentDetailDto {
+  id: string;
+  guestId: string | null;
+  guestName: string | null;
+  guestNumber: number | null;
+  title: string;
+  description: string | null;
+  category: string;
+  tags: string | null;
+  status: DocumentStatus;
+  currentVersionNumber: number;
+  retainUntil: string | null;
+  checkedOutByStaffId: string | null;
+  checkedOutByName: string | null;
+  checkedOutAt: string | null;
+  createdByName: string;
+  createdAt: string;
+  updatedAt: string;
+  isDeleted: boolean;
+  deletedAt: string | null;
+  deletedByName: string | null;
+  deleteReason: string | null;
+  versions: DocumentVersionDto[];
+}
+
+export interface DocumentStatsDto {
+  totalDocuments: number;
+  activeDocuments: number;
+  archivedDocuments: number;
+  deletedDocuments: number;
+  totalVersions: number;
+  totalSizeBytes: number;
+  activeStorageProvider: string;
+  byCategory: DocumentCategoryCountDto[];
+}
+
+export interface DocumentCategoryCountDto {
+  category: string;
+  count: number;
+  sizeBytes: number;
+}
+
+export interface UploadDocumentRequest {
+  file: File;
+  title: string;
+  category: string;
+  guestId?: string | null;
+  description?: string | null;
+  tags?: string | null;
+  /** yyyy-MM-dd; defaults from the retention setting when omitted. */
+  retainUntil?: string | null;
+}
+
+export interface UpdateDocumentRequest {
+  title: string;
+  description?: string | null;
+  category: string;
+  tags?: string | null;
+  status: DocumentStatus;
+  retainUntil?: string | null;
+}
+
+// ---- Settings ----
+
+export type SettingKind = 'Text' | 'Number' | 'Boolean' | 'Select' | 'Secret' | 'MultilineText';
+
+export interface SettingOption {
+  value: string;
+  label: string;
+}
+
+export interface SettingFieldDto {
+  key: string;
+  section: string;
+  label: string;
+  description: string | null;
+  kind: SettingKind;
+  /** Null for secrets — they are never sent to the browser; use hasValue instead. */
+  value: string | null;
+  default: string | null;
+  isSecret: boolean;
+  hasValue: boolean;
+  options: SettingOption[] | null;
+  /** Show this field only when the field named here holds one of visibleWhenValues. */
+  visibleWhenKey: string | null;
+  visibleWhenValues: string[] | null;
+}
+
+export interface SettingsSectionDto {
+  section: string;
+  fields: SettingFieldDto[];
+}
+
+export interface StorageTestResultDto {
+  success: boolean;
+  message: string;
+}
+
+/** Non-secret settings the SPA reads at startup, keyed by setting key. */
+export type PublicSettings = Record<string, string | null>;
+
+// ---- Lookups ----
+
+export interface LookupItemDto {
+  id: string;
+  category: string;
+  code: string;
+  label: string;
+  sortOrder: number;
+  isActive: boolean;
+  /** Built-in options can be relabelled or deactivated, never deleted. */
+  isSystem: boolean;
+}
+
+export interface CreateLookupRequest {
+  category: string;
+  code: string;
+  label: string;
+  sortOrder: number;
+}
+
+export interface UpdateLookupRequest {
+  label: string;
+  sortOrder: number;
+  isActive: boolean;
+}

@@ -1,0 +1,302 @@
+// Shared chrome for Document Management. Colours/fonts/radii are the same values the rest of
+// the portal already uses — the guest data sheet (guest-data-sheet.component.scss) for the
+// header band, toolbar chips, table strip and "Load more" pager, and the reports suite
+// (_reports-shared.scss) for the r12 white cards, KPI tiles, buttons and status pills — so this
+// screen reads as part of the same app rather than a bolted-on module.
+
+$font-body: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+$font-display: 'Wix Madefor Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+
+$ink: rgb(42, 42, 42);
+$ink-soft: rgb(50, 50, 50);
+$ink-muted: rgb(114, 114, 114);
+$ink-faint: rgb(140, 140, 140);
+$line: rgb(232, 232, 232);
+$line-soft: rgb(229, 229, 229);
+$surface: rgb(255, 255, 255);
+$surface-alt: rgb(246, 246, 246);
+$strip: rgb(241, 241, 241);
+$red: rgb(225, 38, 40);
+$coral: rgb(235, 60, 44);
+$maroon: rgb(148, 28, 60);
+$green: rgb(20, 113, 41);
+
+// ---- Buttons (red primary r4 h36, white secondary with inset border) ------
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  height: 36px;
+  padding: 0 17px;
+  border: none;
+  border-radius: 4px;
+  font-family: $font-body;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 24px;
+  letter-spacing: -0.005em;
+  white-space: nowrap;
+  cursor: pointer;
+
+  &--primary {
+    background: $red;
+    color: $surface;
+
+    &:hover:not(:disabled) {
+      background: rgb(200, 32, 34);
+    }
+  }
+
+  &--secondary {
+    background: $surface;
+    color: $ink;
+    box-shadow: inset 0 0 0 1px rgb(217, 217, 217);
+
+    &:hover:not(:disabled) {
+      background: $surface-alt;
+    }
+  }
+
+  // Destructive confirmations (purge) — maroon rather than the primary red so the two
+  // never sit side by side reading as the same action.
+  &--danger {
+    background: $maroon;
+    color: $surface;
+
+    &:hover:not(:disabled) {
+      background: rgb(124, 22, 50);
+    }
+  }
+
+  &--small {
+    height: 30px;
+    padding: 0 12px;
+    font-size: 12px;
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+
+  &:focus-visible {
+    outline: 2px solid $maroon;
+    outline-offset: 1px;
+  }
+}
+
+// 36px square icon-only button (drawer close, row menu trigger, copy hash).
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 4px;
+  background: $surface;
+  box-shadow: inset 0 0 0 1px $line-soft;
+  color: $ink;
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    background: $surface-alt;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+
+  &--small {
+    width: 26px;
+    height: 26px;
+    border-radius: 3px;
+  }
+}
+
+// ---- Filter chips / form controls ----------------------------------------
+
+.pill-select {
+  height: 36px;
+  padding: 0 34px 0 15px;
+  border: none;
+  border-radius: 4px;
+  background-color: $surface;
+  box-shadow: inset 0 0 0 1px $line-soft;
+  font-family: $font-body;
+  font-weight: 500;
+  font-size: 14px;
+  letter-spacing: -0.005em;
+  color: $ink;
+  appearance: none;
+  cursor: pointer;
+  // The 8.75x4.375 chevron-down the guest data sheet's filter chips use, in rgb(114,114,114).
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='rgb(114,114,114)' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+
+  &:focus-visible {
+    outline: 2px solid $maroon;
+    outline-offset: 1px;
+  }
+}
+
+// ---- Status pills (r200, palettes shared with the guest table's badges) ----
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  padding: 0 12px;
+  border-radius: 200px;
+  font-family: $font-body;
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 16px;
+  white-space: nowrap;
+
+  // Keyed off DocumentStatus the same way the guest table's badges key off GuestStatus.
+  &[data-status='Active'] {
+    background: rgb(234, 253, 238);
+    color: $green;
+  }
+
+  &[data-status='Draft'] {
+    background: rgb(255, 249, 228);
+    color: rgb(157, 133, 45);
+  }
+
+  &[data-status='Archived'] {
+    background: $surface-alt;
+    color: $ink-muted;
+  }
+
+  &--deleted {
+    background: rgb(255, 240, 241);
+    color: $coral;
+  }
+}
+
+// Small neutral chip — storage provider, tags, "current version", check-out holder.
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 22px;
+  padding: 0 9px;
+  border-radius: 200px;
+  background: $surface-alt;
+  box-shadow: inset 0 0 0 1px $line-soft;
+  font-family: $font-body;
+  font-weight: 600;
+  font-size: 11px;
+  line-height: 16px;
+  color: $ink-soft;
+  white-space: nowrap;
+
+  &--current {
+    background: rgb(234, 253, 238);
+    box-shadow: none;
+    color: $green;
+  }
+
+  &--lock {
+    background: rgb(255, 249, 228);
+    box-shadow: none;
+    color: rgb(157, 133, 45);
+  }
+}
+
+// ---- Tables (header strip rgb(241,241,241) h41, 12/600 heads, 1px dividers)
+
+.table-scroll {
+  overflow-x: auto;
+}
+
+.doc-table {
+  width: 100%;
+  border-collapse: collapse;
+
+  th {
+    background: $strip;
+    padding: 8px 16px;
+    text-align: left;
+    font-family: $font-body;
+    font-weight: 600;
+    font-size: 12px;
+    line-height: 24px;
+    letter-spacing: 0.01em;
+    color: $ink;
+    white-space: nowrap;
+
+    &:first-child {
+      border-radius: 4px 0 0 4px;
+    }
+
+    &:last-child {
+      border-radius: 0 4px 4px 0;
+    }
+  }
+
+  td {
+    padding: 12px 16px;
+    font-family: $font-body;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 22px;
+    letter-spacing: -0.005em;
+    color: $ink;
+    vertical-align: middle;
+  }
+
+  tbody tr + tr td {
+    border-top: 1px solid $line;
+  }
+}
+
+// ---- Loading / empty / error states --------------------------------------
+
+.state-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 40px 16px;
+  font-family: $font-body;
+  font-weight: 500;
+  font-size: 14px;
+  color: $ink-muted;
+  text-align: center;
+
+  &--error {
+    color: $red;
+  }
+}
+
+.error-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  background: rgb(255, 234, 236);
+  font-family: $font-body;
+  font-weight: 500;
+  font-size: 13px;
+  line-height: 20px;
+  color: $maroon;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}

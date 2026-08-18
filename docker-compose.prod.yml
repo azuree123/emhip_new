@@ -32,6 +32,10 @@ services:
     restart: unless-stopped
     ports: !override
       - "127.0.0.1:5299:8080"
+    volumes:
+      # Uploaded documents when the storage provider is "Local" — a host bind mount so files
+      # survive container rebuilds. Cloud providers (S3/Contabo/Azure/GCS) bypass this entirely.
+      - /opt/emhip-documents:/var/emhip/documents
     environment:
       # Same-origin via the client's nginx proxy — the public origin is the client.
       Cors__AllowedOrigins__0: "${PUBLIC_ORIGIN:?Set PUBLIC_ORIGIN in .env, e.g. http://81.0.221.206}"

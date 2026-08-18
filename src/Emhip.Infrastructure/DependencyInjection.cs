@@ -1,5 +1,6 @@
 using Emhip.Application.Abstractions;
 using Emhip.Application.Dashboards;
+using Emhip.Application.Documents;
 using Emhip.Application.FollowUps;
 using Emhip.Application.Guests;
 using Emhip.Application.Reports;
@@ -7,6 +8,8 @@ using Emhip.Application.UrgentCases;
 using Emhip.Infrastructure.Persistence;
 using Emhip.Infrastructure.Persistence.Interceptors;
 using Emhip.Infrastructure.Reads;
+using Emhip.Infrastructure.Settings;
+using Emhip.Infrastructure.Storage;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -37,12 +40,20 @@ public static class DependencyInjection
         services.AddScoped<Application.Abstractions.IAppDbContext>(sp => sp.GetRequiredService<EmhipDbContext>());
 
         services.AddScoped<IGuestReadService, GuestReadService>();
+        services.AddScoped<IDocumentReadService, DocumentReadService>();
         services.AddScoped<IFollowUpReadService, FollowUpReadService>();
         services.AddScoped<IUrgentCaseReadService, UrgentCaseReadService>();
         services.AddScoped<IDashboardReadService, DashboardReadService>();
         services.AddScoped<IReportReadService, ReportReadService>();
 
         services.AddSingleton<IDateTimeProvider, SystemDateTimeProvider>();
+
+        // Settings + pluggable document storage. The client cache is a singleton because cloud
+        // SDK clients own connection pools that shouldn't be rebuilt per request.
+        services.AddMemoryCache();
+        services.AddScoped<IAppSettingsService, AppSettingsService>();
+        services.AddSingleton<DocumentStorageClientCache>();
+        services.AddScoped<IDocumentStorageFactory, DocumentStorageFactory>();
 
         return services;
     }

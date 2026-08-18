@@ -60,9 +60,16 @@ public static class IdentitySeeder
         Permissions.FollowUps.View, Permissions.FollowUps.Manage,
         Permissions.UrgentCases.View,
         Permissions.Reports.View,
+        Permissions.Documents.View, Permissions.Documents.Upload, Permissions.Documents.Edit,
     ];
 
-    private static readonly string[] HubManagerPermissions = [.. CmhwPermissions, Permissions.Dashboard.ViewHubManager, Permissions.Reports.Export];
+    private static readonly string[] HubManagerPermissions =
+    [
+        .. CmhwPermissions,
+        Permissions.Dashboard.ViewHubManager, Permissions.Reports.Export,
+        Permissions.Documents.Delete, Permissions.Documents.Restore,
+        Permissions.Settings.View,
+    ];
 
     private static async Task EnsureRoleAsync(RoleManager<ApplicationRole> roleManager, string name, string description, IReadOnlyList<string> permissions)
     {

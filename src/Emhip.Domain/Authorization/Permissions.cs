@@ -50,6 +50,24 @@ public static class Permissions
         public const string Export = "reports.export";
     }
 
+    public static class Documents
+    {
+        public const string View = "documents.view";
+        public const string Upload = "documents.upload";
+        public const string Edit = "documents.edit";
+        public const string Delete = "documents.delete";
+        public const string Restore = "documents.restore";
+        /// <summary>Permanent deletion including the stored file — deliberately separate from soft delete.</summary>
+        public const string Purge = "documents.purge";
+    }
+
+    public static class Settings
+    {
+        public const string View = "settings.view";
+        public const string Manage = "settings.manage";
+        public const string ManageLookups = "settings.lookups.manage";
+    }
+
     public static class Admin
     {
         public const string ManageUsers = "admin.manageusers";
@@ -66,6 +84,8 @@ public static class Permissions
         FollowUps.View, FollowUps.Manage,
         UrgentCases.View,
         Reports.View, Reports.Export,
+        Documents.View, Documents.Upload, Documents.Edit, Documents.Delete, Documents.Restore, Documents.Purge,
+        Settings.View, Settings.Manage, Settings.ManageLookups,
         Admin.ManageUsers, Admin.ManageRoles,
     ];
 
@@ -82,6 +102,8 @@ public static class Permissions
         ["Follow-ups"] = [FollowUps.View, FollowUps.Manage],
         ["Urgent Cases"] = [UrgentCases.View],
         ["Reports"] = [Reports.View, Reports.Export],
+        ["Documents"] = [Documents.View, Documents.Upload, Documents.Edit, Documents.Delete, Documents.Restore, Documents.Purge],
+        ["Settings"] = [Settings.View, Settings.Manage, Settings.ManageLookups],
         ["Administration"] = [Admin.ManageUsers, Admin.ManageRoles],
     };
 }

@@ -1,0 +1,273 @@
+<div class="tab-panel">
+  @if (!canView) {
+    <div class="state-card">You do not have permission to view documents for this guest.</div>
+  } @else if (loading()) {
+    <div class="state-card">Loading documents…</div>
+  } @else if (error()) {
+    <div class="state-card state-card--error">{{ error() }}</div>
+  } @else if (documents(); as docs) {
+    <section class="card">
+      <div class="card__header-row">
+        <h2 class="card__title">{{ docs.length }} {{ docs.length === 1 ? 'document' : 'documents' }}</h2>
+        @if (canUpload) {
+          <button type="button" class="add-btn" (click)="toggleUpload()">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+              <path d="M 10 4.25 L 10 15.75 M 4.25 10 L 15.75 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+            </svg>
+            Upload document
+          </button>
+        }
+      </div>
+
+      @if (showUpload()) {
+        <form class="edit-form upload-form" (ngSubmit)="submitUpload()">
+          <div
+            class="dropzone"
+            [class.dropzone--active]="dragging()"
+            (dragover)="onDragOver($event)"
+            (dragleave)="onDragLeave($event)"
+            (drop)="onDrop($event)"
+          >
+            <svg class="dropzone__icon" width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path
+                d="M 12 16 L 12 4 M 7.5 8.5 L 12 4 L 16.5 8.5 M 4 15 L 4 18.5 C 4 19.328 4.672 20 5.5 20 L 18.5 20 C 19.328 20 20 19.328 20 18.5 L 20 15"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+            @if (selectedFile(); as file) {
+              <p class="dropzone__file">{{ file.name }} · {{ formatSize(file.size) }}</p>
+            } @else {
+              <p class="dropzone__text">Drag a file here, or</p>
+            }
+            <label class="dropzone__browse">
+              {{ selectedFile() ? 'Choose a different file' : 'Browse files' }}
+              <input type="file" [attr.accept]="acceptAttr()" (change)="onFileInput($event)" />
+            </label>
+            <p class="dropzone__hint">{{ uploadHint() }}</p>
+          </div>
+
+          <div class="edit-form__grid">
+            <label class="edit-form__field">
+              <span>Title</span>
+              <input type="text" name="title" [(ngModel)]="form.title" placeholder="e.g. Referral letter" />
+            </label>
+            <label class="edit-form__field">
+              <span>Category</span>
+              <select name="category" [(ngModel)]="form.category">
+                <option value="">Select a category…</option>
+                @for (category of categories(); track category.id) {
+                  <option [value]="category.code">{{ category.label }}</option>
+                }
+              </select>
+            </label>
+            <label class="edit-form__field">
+              <span>Tags (comma separated)</span>
+              <input type="text" name="tags" [(ngModel)]="form.tags" placeholder="e.g. consent, gp" />
+            </label>
+            <label class="edit-form__field edit-form__field--full">
+              <span>Description (optional)</span>
+              <textarea name="description" rows="2" [(ngModel)]="form.description" placeholder="What is this document?"></textarea>
+            </label>
+          </div>
+
+          @if (uploading()) {
+            <div class="progress" role="progressbar" [attr.aria-valuenow]="uploadPercent()" aria-valuemin="0" aria-valuemax="100">
+              <span class="progress__bar" [style.width.%]="uploadPercent()"></span>
+            </div>
+            <p class="progress__label">Uploading… {{ uploadPercent() }}%</p>
+          }
+          @if (uploadError()) {
+            <p class="form-error">{{ uploadError() }}</p>
+          }
+
+          <div class="edit-form__actions">
+            <button type="button" class="btn-ghost" [disabled]="uploading()" (click)="closeUpload()">Cancel</button>
+            <button type="submit" class="btn-primary" [disabled]="uploading()">
+              {{ uploading() ? 'Uploading…' : 'Upload document' }}
+            </button>
+          </div>
+        </form>
+      }
+
+      @if (rowError()) {
+        <p class="form-error form-error--row">{{ rowError() }}</p>
+      }
+
+      @if (docs.length) {
+        <div class="doc-table">
+          <div class="doc-table__head">
+            <span class="doc-table__col doc-table__col--title">Document</span>
+            <span class="doc-table__col">Category</span>
+            <span class="doc-table__col">Version</span>
+            <span class="doc-table__col">Size</span>
+            <span class="doc-table__col">Uploaded</span>
+            <span class="doc-table__col doc-table__col--controls">Actions</span>
+          </div>
+
+          @for (doc of docs; track doc.id) {
+            <div class="doc-row" [class.doc-row--expanded]="expandedId() === doc.id">
+              <div class="doc-row__main">
+                <button
+                  type="button"
+                  class="expander"
+                  [class.expander--open]="expandedId() === doc.id"
+                  [attr.aria-expanded]="expandedId() === doc.id"
+                  [attr.aria-label]="'Show version history for ' + doc.title"
+                  (click)="toggleExpand(doc)"
+                >
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                    <path d="M 4 2 L 8 6 L 4 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                  </svg>
+                </button>
+                <span class="doc-row__text">
+                  <span class="doc-row__title">{{ doc.title }}</span>
+                  <span class="doc-row__filename">{{ doc.fileName }}</span>
+                  @if (splitTags(doc.tags).length) {
+                    <span class="doc-row__tags">
+                      @for (tag of splitTags(doc.tags); track $index) {
+                        <span class="tag">{{ tag }}</span>
+                      }
+                    </span>
+                  }
+                </span>
+              </div>
+              <span class="doc-row__category">
+                <span class="chip chip--category">{{ categoryLabel(doc.category) }}</span>
+              </span>
+              <span class="doc-row__version">v{{ doc.currentVersionNumber }}</span>
+              <span class="doc-row__size">{{ formatSize(doc.sizeBytes) }}</span>
+              <span class="doc-row__uploaded">
+                <span class="doc-row__uploaded-by">{{ doc.createdByName }}</span>
+                <span class="doc-row__uploaded-at">{{ formatDate(doc.updatedAt) }}</span>
+              </span>
+              <span class="doc-row__controls">
+                <button type="button" class="row-btn" [disabled]="busyId() === doc.id" (click)="download(doc)">
+                  <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
+                    <path
+                      d="M 7.5 1 L 7.5 10 M 4 6.5 L 7.5 10 L 11 6.5 M 1.5 11 L 1.5 12.5 C 1.5 13.328 2.172 14 3 14 L 12 14 C 12.828 14 13.5 13.328 13.5 12.5 L 13.5 11"
+                      stroke="currentColor"
+                      stroke-width="1.2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                  Download
+                </button>
+                @if (canDelete) {
+                  <button type="button" class="row-btn row-btn--danger" [disabled]="busyId() === doc.id" (click)="deleteDocument(doc)">
+                    <svg width="15" height="16" viewBox="0 0 15 15.375" fill="none" aria-hidden="true">
+                      <path
+                        d="M 6 2.625 L 9 2.625 C 9 1.797 8.328 1.125 7.5 1.125 C 6.672 1.125 6 1.797 6 2.625 Z M 4.875 2.625 C 4.875 1.175 6.05 0 7.5 0 C 8.95 0 10.125 1.175 10.125 2.625 L 14.438 2.625 C 14.748 2.625 15 2.877 15 3.188 C 15 3.498 14.748 3.75 14.438 3.75 L 13.448 3.75 L 12.569 12.833 C 12.43 14.275 11.218 15.375 9.77 15.375 L 5.23 15.375 C 3.782 15.375 2.57 14.275 2.431 12.833 L 1.552 3.75 L 0.563 3.75 C 0.252 3.75 0 3.498 0 3.188 C 0 2.877 0.252 2.625 0.563 2.625 L 4.875 2.625 Z M 6.375 6.188 C 6.375 5.877 6.123 5.625 5.813 5.625 C 5.502 5.625 5.25 5.877 5.25 6.188 L 5.25 11.813 C 5.25 12.123 5.502 12.375 5.813 12.375 C 6.123 12.375 6.375 12.123 6.375 11.813 L 6.375 6.188 Z M 9.188 5.625 C 9.498 5.625 9.75 5.877 9.75 6.188 L 9.75 11.813 C 9.75 12.123 9.498 12.375 9.188 12.375 C 8.877 12.375 8.625 12.123 8.625 11.813 L 8.625 6.188 C 8.625 5.877 8.877 5.625 9.188 5.625 Z M 3.551 12.725 C 3.634 13.59 4.361 14.25 5.23 14.25 L 9.77 14.25 C 10.639 14.25 11.366 13.59 11.449 12.725 L 12.318 3.75 L 2.682 3.75 L 3.551 12.725 Z"
+                        fill="currentColor"
+                      />
+                    </svg>
+                    Delete
+                  </button>
+                }
+              </span>
+            </div>
+
+            @if (expandedId() === doc.id) {
+              <div class="doc-detail">
+                @if (detailLoading()) {
+                  <p class="empty-state">Loading version history…</p>
+                } @else if (detailError()) {
+                  <p class="form-error">{{ detailError() }}</p>
+                } @else if (detail(); as detailDto) {
+                  <div class="doc-detail__head">
+                    <h3 class="doc-detail__title">Version history</h3>
+                    @if (canEdit) {
+                      <button type="button" class="row-btn" (click)="toggleVersionForm()">
+                        {{ showVersionForm() ? 'Cancel' : 'Upload new version' }}
+                      </button>
+                    }
+                  </div>
+
+                  @if (detailDto.description) {
+                    <p class="doc-detail__description">{{ detailDto.description }}</p>
+                  }
+
+                  @if (showVersionForm()) {
+                    <form class="edit-form version-form" (ngSubmit)="submitVersion()">
+                      <div class="edit-form__grid version-form__grid">
+                        <label class="edit-form__field">
+                          <span>Replacement file</span>
+                          <input type="file" [attr.accept]="acceptAttr()" (change)="onVersionFileInput($event)" />
+                        </label>
+                        <label class="edit-form__field">
+                          <span>Change note (optional)</span>
+                          <input type="text" name="versionNote" [(ngModel)]="versionNote" placeholder="What changed?" />
+                        </label>
+                      </div>
+                      @if (versionFile(); as file) {
+                        <p class="version-form__file">{{ file.name }} · {{ formatSize(file.size) }}</p>
+                      }
+                      @if (versionUploading()) {
+                        <div class="progress" role="progressbar" [attr.aria-valuenow]="versionPercent()" aria-valuemin="0" aria-valuemax="100">
+                          <span class="progress__bar" [style.width.%]="versionPercent()"></span>
+                        </div>
+                        <p class="progress__label">Uploading… {{ versionPercent() }}%</p>
+                      }
+                      @if (versionError()) {
+                        <p class="form-error">{{ versionError() }}</p>
+                      }
+                      <div class="edit-form__actions">
+                        <button type="submit" class="btn-primary" [disabled]="versionUploading()">
+                          {{ versionUploading() ? 'Uploading…' : 'Upload version' }}
+                        </button>
+                      </div>
+                    </form>
+                  }
+
+                  <ul class="version-list">
+                    @for (version of detailDto.versions; track version.id) {
+                      <li class="version">
+                        <span class="version__number">v{{ version.versionNumber }}</span>
+                        <span class="version__text">
+                          <span class="version__filename">
+                            {{ version.fileName }}
+                            @if (version.isCurrent) {
+                              <span class="chip chip--current">Current</span>
+                            }
+                          </span>
+                          <span class="version__meta">
+                            {{ formatSize(version.sizeBytes) }} · {{ version.uploadedByName }} ·
+                            {{ formatDateTime(version.uploadedAt) }}
+                          </span>
+                          @if (version.changeNote) {
+                            <span class="version__note">{{ version.changeNote }}</span>
+                          }
+                        </span>
+                        <button
+                          type="button"
+                          class="row-btn"
+                          [disabled]="busyId() === doc.id"
+                          (click)="download(doc, version.versionNumber, version.fileName)"
+                        >
+                          Download
+                        </button>
+                      </li>
+                    }
+                  </ul>
+                }
+              </div>
+            }
+          }
+        </div>
+
+        @if (nextCursor()) {
+          <div class="load-more">
+            <button type="button" class="btn-ghost" [disabled]="loadingMore()" (click)="loadMore()">
+              {{ loadingMore() ? 'Loading…' : 'Load more documents' }}
+            </button>
+          </div>
+        }
+      } @else {
+        <p class="empty-state">No documents for this guest yet.</p>
+      }
+    </section>
+  }
+</div>

@@ -31,6 +31,19 @@ export const Permissions = {
     View: 'reports.view',
     Export: 'reports.export',
   },
+  Documents: {
+    View: 'documents.view',
+    Upload: 'documents.upload',
+    Edit: 'documents.edit',
+    Delete: 'documents.delete',
+    Restore: 'documents.restore',
+    Purge: 'documents.purge',
+  },
+  Settings: {
+    View: 'settings.view',
+    Manage: 'settings.manage',
+    ManageLookups: 'settings.lookups.manage',
+  },
   Admin: {
     ManageUsers: 'admin.manageusers',
     ManageRoles: 'admin.manageroles',

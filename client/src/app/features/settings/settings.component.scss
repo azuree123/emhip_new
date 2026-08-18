@@ -1,0 +1,583 @@
+// Settings screen. Reuses the visual vocabulary established by the other screens — the white r12
+// header card and section cards from Reports (_reports-shared.scss), the btn/chip/modal shapes
+// from the admin screens — with a left-hand section rail instead of a horizontal tab bar, since
+// the catalog's sections are few and long rather than many and short.
+
+$font-body: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+
+$ink: rgb(42, 42, 42);
+$ink-soft: rgb(50, 50, 50);
+$ink-muted: rgb(114, 114, 114);
+$ink-faint: rgb(140, 140, 140);
+$line: rgb(232, 232, 232);
+$line-soft: rgb(229, 229, 229);
+$red: rgb(225, 38, 40);
+$maroon: rgb(148, 28, 60);
+$green: rgb(20, 113, 41);
+
+:host {
+  display: block;
+  padding: 24px 32px 48px;
+  font-family: $font-body;
+}
+
+.settings-page {
+  display: flex;
+  flex-direction: column;
+  gap: 23px;
+  max-width: 1176px;
+}
+
+// ---- Header card ---------------------------------------------------------
+
+.header-card {
+  background: rgb(255, 255, 255);
+  border-radius: 12px;
+  padding: 22px 24px 24px;
+
+  &__top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+
+  &__intro {
+    flex: 1 1 320px;
+    min-width: 0;
+  }
+
+  &__title {
+    margin: 0;
+    font-weight: 600;
+    font-size: 20px;
+    line-height: 24px;
+    color: $ink;
+  }
+
+  &__subtitle {
+    margin: 7px 0 0;
+    max-width: 620px;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 22px;
+    color: $ink;
+  }
+
+  &__actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 4px;
+    flex-wrap: wrap;
+  }
+}
+
+.readonly-note {
+  margin: 16px 0 0;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: rgb(255, 252, 240);
+  color: rgb(157, 133, 45);
+  font-weight: 500;
+  font-size: 13px;
+  line-height: 20px;
+
+  code {
+    font-family: 'SFMono-Regular', Consolas, monospace;
+    font-size: 12px;
+  }
+}
+
+.save-state {
+  font-weight: 500;
+  font-size: 13px;
+  line-height: 20px;
+  white-space: nowrap;
+
+  &--busy,
+  &--dirty {
+    color: $ink-muted;
+  }
+
+  &--ok {
+    color: $green;
+  }
+
+  &--error {
+    max-width: 320px;
+    white-space: normal;
+    color: $maroon;
+  }
+}
+
+// ---- Buttons (r4 h36, red primary / white secondary with inset border) ----
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 36px;
+  padding: 0 17px;
+  border: none;
+  border-radius: 4px;
+  font-family: inherit;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 24px;
+  letter-spacing: -0.005em;
+  cursor: pointer;
+  white-space: nowrap;
+
+  &--primary {
+    background: $red;
+    color: rgb(255, 255, 255);
+
+    &:hover:not(:disabled) {
+      background: rgb(200, 32, 34);
+    }
+  }
+
+  &--secondary {
+    background: rgb(255, 255, 255);
+    color: $ink;
+    box-shadow: inset 0 0 0 1px rgb(217, 217, 217);
+
+    &:hover:not(:disabled) {
+      background: rgb(246, 246, 246);
+    }
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+// ---- Loading / error states ----------------------------------------------
+
+.state-card {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  background: rgb(255, 255, 255);
+  border-radius: 12px;
+  padding: 40px 24px;
+  font-weight: 500;
+  font-size: 14px;
+  color: $ink-faint;
+
+  &--error {
+    color: $maroon;
+  }
+}
+
+// ---- Body: section rail + panel -------------------------------------------
+
+.settings-body {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: 23px;
+  align-items: start;
+}
+
+.tab-rail {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: rgb(255, 255, 255);
+  border-radius: 12px;
+  padding: 12px;
+  position: sticky;
+  top: 24px;
+
+  &__tab {
+    height: 38px;
+    padding: 0 14px;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    font-family: inherit;
+    font-weight: 600;
+    font-size: 13px;
+    line-height: 24px;
+    letter-spacing: -0.005em;
+    color: $ink;
+    text-align: left;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    cursor: pointer;
+
+    &:hover:not(&--active) {
+      background: rgb(246, 246, 246);
+    }
+
+    &--active {
+      background: $red;
+      color: rgb(255, 255, 255);
+    }
+  }
+
+  &__empty {
+    margin: 0;
+    padding: 8px 14px;
+    font-size: 13px;
+    color: $ink-faint;
+  }
+}
+
+.panel {
+  background: rgb(255, 255, 255);
+  border-radius: 12px;
+  padding: 24px;
+  min-width: 0;
+
+  &__head {
+    padding-bottom: 18px;
+    border-bottom: 1px solid $line;
+  }
+
+  &__title {
+    margin: 0;
+    font-weight: 600;
+    font-size: 18px;
+    line-height: 24px;
+    color: $ink;
+  }
+
+  &__note {
+    margin: 8px 0 0;
+    max-width: 720px;
+    font-weight: 500;
+    font-size: 13px;
+    line-height: 20px;
+    color: $ink-muted;
+  }
+
+  &__foot {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 1px solid $line;
+  }
+
+  &__foot-hint {
+    font-weight: 500;
+    font-size: 12px;
+    line-height: 18px;
+    color: $ink-faint;
+  }
+}
+
+// ---- Fields ---------------------------------------------------------------
+
+.fields {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  padding-top: 22px;
+
+  &__empty {
+    margin: 0;
+    padding: 24px 0;
+    text-align: center;
+    font-weight: 500;
+    font-size: 14px;
+    color: $ink-faint;
+  }
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-width: 560px;
+
+  &__label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    font-weight: 600;
+    font-size: 13px;
+    line-height: 20px;
+    color: $ink;
+  }
+
+  &__hint {
+    margin: 0;
+    font-weight: 500;
+    font-size: 12px;
+    line-height: 18px;
+    color: $ink-muted;
+  }
+}
+
+.control {
+  box-sizing: border-box;
+  width: 100%;
+  height: 38px;
+  padding: 0 12px;
+  border: none;
+  border-radius: 4px;
+  box-shadow: inset 0 0 0 1px $line-soft;
+  background: rgb(255, 255, 255);
+  font-family: inherit;
+  font-weight: 500;
+  font-size: 14px;
+  letter-spacing: -0.005em;
+  color: $ink-soft;
+
+  &::placeholder {
+    color: rgb(170, 170, 170);
+  }
+
+  &:focus {
+    outline: none;
+    box-shadow: inset 0 0 0 1px $maroon;
+  }
+
+  &:disabled {
+    background: rgb(248, 248, 248);
+    color: $ink-muted;
+    cursor: not-allowed;
+  }
+
+  &--number {
+    max-width: 200px;
+  }
+
+  &--textarea {
+    height: auto;
+    padding: 10px 12px;
+    line-height: 20px;
+    font-family: 'SFMono-Regular', Consolas, monospace;
+    font-size: 12px;
+    resize: vertical;
+  }
+
+  // Same chevron treatment as the report filter selects.
+  &--select {
+    padding-right: 34px;
+    appearance: none;
+    cursor: pointer;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='rgb(114,114,114)' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+  }
+}
+
+// ---- Boolean toggle -------------------------------------------------------
+
+.toggle {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  width: fit-content;
+
+  // Visually hidden but still focusable, so the native checkbox stays the accessible control.
+  &__input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  &__track {
+    position: relative;
+    flex-shrink: 0;
+    width: 42px;
+    height: 24px;
+    border-radius: 200px;
+    background: rgb(226, 226, 226);
+    transition: background 0.15s ease;
+  }
+
+  &__thumb {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: rgb(255, 255, 255);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+    transition: transform 0.15s ease;
+  }
+
+  &__caption {
+    font-weight: 500;
+    font-size: 13px;
+    line-height: 20px;
+    color: $ink-soft;
+  }
+
+  &__input:checked + &__track {
+    background: $green;
+  }
+
+  &__input:checked + &__track &__thumb {
+    transform: translateX(18px);
+  }
+
+  &__input:focus-visible + &__track {
+    outline: 2px solid $maroon;
+    outline-offset: 2px;
+  }
+
+  &__input:disabled + &__track {
+    opacity: 0.5;
+  }
+
+  &:has(&__input:disabled) {
+    cursor: not-allowed;
+  }
+}
+
+// ---- Chips ----------------------------------------------------------------
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+  padding: 0 8px;
+  border-radius: 200px;
+  font-weight: 500;
+  font-size: 11px;
+  line-height: 16px;
+  white-space: nowrap;
+
+  &--ok {
+    background: rgb(234, 253, 238);
+    color: $green;
+  }
+
+  &--muted {
+    background: rgb(246, 246, 246);
+    color: $ink-muted;
+  }
+
+  &--dirty {
+    background: rgb(255, 252, 240);
+    color: rgb(157, 133, 45);
+  }
+}
+
+// ---- Storage test result ---------------------------------------------------
+
+.test-result {
+  flex-basis: 100%;
+  margin: 0;
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-weight: 500;
+  font-size: 13px;
+  line-height: 20px;
+  word-break: break-word;
+
+  &--ok {
+    background: rgb(234, 253, 238);
+    color: $green;
+  }
+
+  &--fail {
+    background: rgb(255, 234, 236);
+    color: $maroon;
+  }
+}
+
+// ---- Discard-changes prompt (same shape as the admin modals) --------------
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 16px;
+}
+
+.modal {
+  width: 420px;
+  max-width: calc(100vw - 32px);
+  background: rgb(255, 255, 255);
+  border-radius: 12px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+
+  &__header {
+    padding: 20px 24px 0;
+
+    h2 {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 600;
+      color: $ink;
+    }
+  }
+
+  &__body {
+    padding: 12px 24px 4px;
+
+    p {
+      margin: 0;
+      font-weight: 500;
+      font-size: 14px;
+      line-height: 22px;
+      color: $ink-soft;
+    }
+  }
+
+  &__footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 20px 24px 24px;
+  }
+}
+
+// ---- Responsive ------------------------------------------------------------
+
+@media (max-width: 900px) {
+  .settings-body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .tab-rail {
+    position: static;
+    flex-direction: row;
+    overflow-x: auto;
+    padding: 8px;
+  }
+
+  .field {
+    max-width: none;
+  }
+}
+
+@media (max-width: 720px) {
+  :host {
+    padding: 16px;
+  }
+
+  .header-card__top {
+    flex-direction: column;
+  }
+
+  .panel {
+    padding: 20px 16px;
+  }
+}

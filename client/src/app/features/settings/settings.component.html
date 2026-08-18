@@ -1,0 +1,235 @@
+<div class="settings-page">
+  <section class="header-card">
+    <div class="header-card__top">
+      <div class="header-card__intro">
+        <h1 class="header-card__title">Settings</h1>
+        <p class="header-card__subtitle">
+          Portal configuration — organisation details, document storage, upload limits, clinical thresholds and the
+          drop-down lists used across the app.
+        </p>
+      </div>
+
+      @if (!loading() && !loadError() && activeTab() !== lookupsTab) {
+        <div class="header-card__actions">
+          @if (saving()) {
+            <span class="save-state save-state--busy">Saving…</span>
+          } @else if (saveError()) {
+            <span class="save-state save-state--error">{{ saveError() }}</span>
+          } @else if (saved()) {
+            <span class="save-state save-state--ok">Saved</span>
+          } @else if (isDirty()) {
+            <span class="save-state save-state--dirty">
+              {{ changedKeys().length }} unsaved {{ changedKeys().length === 1 ? 'change' : 'changes' }}
+            </span>
+          }
+
+          @if (canManage) {
+            <button type="button" class="btn btn--secondary" [disabled]="!isDirty() || saving()" (click)="discardChanges()">
+              Discard
+            </button>
+            <button type="button" class="btn btn--primary" [disabled]="!isDirty() || saving()" (click)="save()">
+              {{ saving() ? 'Saving…' : 'Save changes' }}
+            </button>
+          }
+        </div>
+      }
+    </div>
+
+    @if (!canManage) {
+      <p class="readonly-note">
+        You can view these settings but not change them — the <code>settings.manage</code> permission is required to edit.
+      </p>
+    }
+  </section>
+
+  @if (loading()) {
+    <section class="state-card">Loading settings…</section>
+  } @else if (loadError()) {
+    <section class="state-card state-card--error">
+      <span>{{ loadError() }}</span>
+      <button type="button" class="btn btn--secondary" (click)="load()">Try again</button>
+    </section>
+  } @else {
+    <div class="settings-body">
+      <nav class="tab-rail" role="tablist" aria-label="Settings sections">
+        @for (tab of tabs(); track tab) {
+          <button
+            type="button"
+            class="tab-rail__tab"
+            [class.tab-rail__tab--active]="tab === activeTab()"
+            role="tab"
+            [attr.aria-selected]="tab === activeTab()"
+            (click)="selectTab(tab)"
+          >
+            {{ tab }}
+          </button>
+        } @empty {
+          <p class="tab-rail__empty">No sections available.</p>
+        }
+      </nav>
+
+      <section class="panel">
+        @if (activeTab() === lookupsTab) {
+          <emhip-lookups-manager />
+        } @else if (activeSection(); as section) {
+          <header class="panel__head">
+            <h2 class="panel__title">{{ section.section }}</h2>
+            @if (isStorageTab()) {
+              <p class="panel__note">
+                Choose where newly uploaded documents are written. Existing files stay readable on the provider they were
+                uploaded to. Secret fields are never sent back to the browser — leave one blank to keep the value already
+                stored, including when running a connection test.
+              </p>
+            }
+          </header>
+
+          <div class="fields">
+            @for (field of activeFields(); track field.key) {
+              <div class="field" [class.field--changed]="isChanged(field.key)">
+                <label class="field__label" [attr.for]="'setting-' + field.key">
+                  <span class="field__label-text">{{ field.label }}</span>
+                  @if (field.isSecret && field.hasValue) {
+                    <span class="chip chip--ok">Configured</span>
+                  }
+                  @if (field.isSecret && !field.hasValue) {
+                    <span class="chip chip--muted">Not set</span>
+                  }
+                  @if (isChanged(field.key)) {
+                    <span class="chip chip--dirty">Unsaved</span>
+                  }
+                </label>
+
+                @if (field.description) {
+                  <p class="field__hint">{{ field.description }}</p>
+                }
+
+                @switch (field.kind) {
+                  @case ('Boolean') {
+                    <label class="toggle" [attr.for]="'setting-' + field.key">
+                      <input
+                        class="toggle__input"
+                        type="checkbox"
+                        [id]="'setting-' + field.key"
+                        [checked]="isChecked(field.key)"
+                        [disabled]="!canManage"
+                        (change)="onToggleChange(field.key, $event)"
+                      />
+                      <span class="toggle__track" aria-hidden="true"><span class="toggle__thumb"></span></span>
+                      <span class="toggle__caption">{{ isChecked(field.key) ? 'Enabled' : 'Disabled' }}</span>
+                    </label>
+                  }
+                  @case ('Select') {
+                    <select
+                      class="control control--select"
+                      [id]="'setting-' + field.key"
+                      [value]="valueOf(field.key)"
+                      [disabled]="!canManage"
+                      (change)="onSelectChange(field.key, $event)"
+                    >
+                      @if (!valueOf(field.key)) {
+                        <option value="" [selected]="true">Select…</option>
+                      }
+                      @for (option of field.options ?? []; track option.value) {
+                        <option [value]="option.value" [selected]="option.value === valueOf(field.key)">
+                          {{ option.label }}
+                        </option>
+                      }
+                    </select>
+                  }
+                  @case ('Secret') {
+                    <input
+                      class="control"
+                      type="password"
+                      autocomplete="new-password"
+                      [id]="'setting-' + field.key"
+                      [value]="valueOf(field.key)"
+                      [placeholder]="secretPlaceholder(field)"
+                      [disabled]="!canManage"
+                      (input)="onTextInput(field.key, $event)"
+                    />
+                  }
+                  @case ('MultilineText') {
+                    <textarea
+                      class="control control--textarea"
+                      rows="6"
+                      [id]="'setting-' + field.key"
+                      [value]="valueOf(field.key)"
+                      [placeholder]="field.default ?? ''"
+                      [disabled]="!canManage"
+                      (input)="onTextareaInput(field.key, $event)"
+                    ></textarea>
+                  }
+                  @case ('Number') {
+                    <input
+                      class="control control--number"
+                      type="number"
+                      [id]="'setting-' + field.key"
+                      [value]="valueOf(field.key)"
+                      [placeholder]="field.default ?? ''"
+                      [disabled]="!canManage"
+                      (input)="onTextInput(field.key, $event)"
+                    />
+                  }
+                  @default {
+                    <input
+                      class="control"
+                      type="text"
+                      [id]="'setting-' + field.key"
+                      [value]="valueOf(field.key)"
+                      [placeholder]="field.default ?? ''"
+                      [disabled]="!canManage"
+                      (input)="onTextInput(field.key, $event)"
+                    />
+                  }
+                }
+              </div>
+            } @empty {
+              <p class="fields__empty">Nothing to configure in this section.</p>
+            }
+          </div>
+
+          <!-- Storage credentials are worth proving before an upload relies on them: the server
+               writes and removes a probe object using these values (blanks fall back to stored). -->
+          @if (isStorageTab()) {
+            <footer class="panel__foot">
+              <button type="button" class="btn btn--secondary" [disabled]="!canManage || testing()" (click)="testStorage()">
+                {{ testing() ? 'Testing…' : 'Test connection' }}
+              </button>
+              @if (isDirty()) {
+                <span class="panel__foot-hint">Unsaved changes are used for the test, but still need saving to take effect.</span>
+              }
+              @if (testResult(); as result) {
+                <p class="test-result" [class.test-result--ok]="result.success" [class.test-result--fail]="!result.success">
+                  {{ result.message }}
+                </p>
+              }
+            </footer>
+          }
+        } @else {
+          <p class="fields__empty">This section is no longer available.</p>
+        }
+      </section>
+    </div>
+  }
+</div>
+
+<!-- Dirty-state guard: the working values are shared across tabs, so moving away would strand edits. -->
+@if (pendingTab(); as target) {
+  <div class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="settings-discard-title">
+    <div class="modal">
+      <div class="modal__header">
+        <h2 id="settings-discard-title">Discard unsaved changes?</h2>
+      </div>
+      <div class="modal__body">
+        <p>
+          You have {{ changedKeys().length }} unsaved {{ changedKeys().length === 1 ? 'change' : 'changes' }}. Opening
+          <strong>{{ target }}</strong> will discard {{ changedKeys().length === 1 ? 'it' : 'them' }}.
+        </p>
+      </div>
+      <div class="modal__footer">
+        <button type="button" class="btn btn--secondary" (click)="cancelTabSwitch()">Keep editing</button>
+        <button type="button" class="btn btn--primary" (click)="confirmTabSwitch()">Discard and switch</button>
+      </div>
+    </div>
+  </div>
+}

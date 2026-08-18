@@ -65,6 +65,18 @@ export const routes: Routes = [
         canActivate: [permissionGuard],
       },
       {
+        path: 'documents',
+        loadComponent: () => import('./features/documents/documents.component').then((m) => m.DocumentsComponent),
+        data: { permission: Permissions.Documents.View },
+        canActivate: [permissionGuard],
+      },
+      {
+        path: 'settings',
+        loadComponent: () => import('./features/settings/settings.component').then((m) => m.SettingsComponent),
+        data: { permission: Permissions.Settings.View },
+        canActivate: [permissionGuard],
+      },
+      {
         path: 'hub-workers',
         loadComponent: () => import('./features/admin/hub-workers.component').then((m) => m.HubWorkersComponent),
         data: { permission: Permissions.Admin.ManageUsers },

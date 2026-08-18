@@ -1,0 +1,435 @@
+<div class="drawer" role="dialog" aria-modal="true" aria-label="Document details">
+  <button type="button" class="drawer__backdrop" aria-label="Close document details" (click)="close()"></button>
+
+  <div class="drawer__panel drawer__panel--wide">
+    @if (loading()) {
+      <div class="drawer__head">
+        <h2 class="drawer__title">Document</h2>
+        <button type="button" class="icon-btn" (click)="close()" aria-label="Close">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+            <path d="M 1 1 L 11 11 M 11 1 L 1 11" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+          </svg>
+        </button>
+      </div>
+      <div class="drawer__body">
+        <p class="state-banner">Loading document…</p>
+      </div>
+    } @else if (loadError()) {
+      <div class="drawer__head">
+        <h2 class="drawer__title">Document</h2>
+        <button type="button" class="icon-btn" (click)="close()" aria-label="Close">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+            <path d="M 1 1 L 11 11 M 11 1 L 1 11" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+          </svg>
+        </button>
+      </div>
+      <div class="drawer__body">
+        <div class="state-banner state-banner--error">
+          <span>{{ loadError() }}</span>
+          <button type="button" class="btn btn--secondary btn--small" (click)="load()">Retry</button>
+        </div>
+      </div>
+    } @else if (detail(); as doc) {
+      <div class="drawer__head">
+        <div class="head-text">
+          <h2 class="drawer__title">{{ doc.title }}</h2>
+          <p class="drawer__subtitle">
+            {{ categoryLabel(doc.category) }} · v{{ doc.currentVersionNumber }} ·
+            @if (doc.guestId) {
+              <a class="head-link" [routerLink]="['/guests', doc.guestId]">G-{{ doc.guestNumber }} · {{ doc.guestName }}</a>
+            } @else {
+              Hub document
+            }
+          </p>
+          <div class="head-chips">
+            <span class="status-pill" [attr.data-status]="doc.status">{{ doc.status }}</span>
+            @if (doc.isDeleted) {
+              <span class="status-pill status-pill--deleted">In recycle bin</span>
+            }
+            @if (lock(); as held) {
+              <span class="chip chip--lock">{{ held.mine ? 'Checked out by you' : 'Checked out by ' + held.name }}</span>
+            }
+          </div>
+        </div>
+        <button type="button" class="icon-btn" (click)="close()" [disabled]="versionBusy()" aria-label="Close">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+            <path d="M 1 1 L 11 11 M 11 1 L 1 11" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+          </svg>
+        </button>
+      </div>
+
+      <div class="drawer__body">
+        <!-- Recycle bin: who removed it, when and why, with the recovery actions. -->
+        @if (doc.isDeleted) {
+          <section class="panel panel--deleted">
+            <h3 class="panel__title">Removed from the register</h3>
+            <dl class="meta-grid">
+              <div class="meta-grid__cell">
+                <dt>Deleted by</dt>
+                <dd>{{ doc.deletedByName ?? '—' }}</dd>
+              </div>
+              <div class="meta-grid__cell">
+                <dt>Deleted</dt>
+                <dd>{{ formatDateTime(doc.deletedAt) }}</dd>
+              </div>
+              <div class="meta-grid__cell meta-grid__cell--wide">
+                <dt>Reason</dt>
+                <dd>{{ doc.deleteReason || 'No reason recorded.' }}</dd>
+              </div>
+            </dl>
+            @if (restoreError()) {
+              <p class="error-banner" role="alert">{{ restoreError() }}</p>
+            }
+            <div class="panel__actions">
+              @if (canRestore) {
+                <button type="button" class="btn btn--secondary btn--small" (click)="restore()" [disabled]="restoring()">
+                  {{ restoring() ? 'Restoring…' : 'Restore document' }}
+                </button>
+              }
+              @if (canPurge) {
+                <button type="button" class="btn btn--danger btn--small" (click)="requestPurge()">Permanently delete</button>
+              }
+              @if (!canRestore && !canPurge) {
+                <span class="panel__note">You don't have permission to restore or permanently delete documents.</span>
+              }
+            </div>
+          </section>
+        }
+
+        <!-- Check-out lock. Only editors can take or release it. -->
+        @if (canEdit && !doc.isDeleted) {
+          <section class="panel">
+            <div class="panel__head">
+              <h3 class="panel__title">Check-out</h3>
+              @if (lock(); as held) {
+                <span class="panel__note">{{ held.mine ? 'You' : held.name }} since {{ held.at }}</span>
+              } @else {
+                <span class="panel__note">Not checked out — anyone with edit rights can replace the file.</span>
+              }
+            </div>
+            @if (lockError()) {
+              <p class="error-banner" role="alert">{{ lockError() }}</p>
+            }
+            <div class="panel__actions">
+              @if (lock(); as held) {
+                @if (held.mine) {
+                  <button type="button" class="btn btn--secondary btn--small" (click)="checkIn(false)" [disabled]="lockBusy()">
+                    {{ lockBusy() ? 'Working…' : 'Check in' }}
+                  </button>
+                } @else {
+                  <button type="button" class="btn btn--secondary btn--small" (click)="checkIn(true)" [disabled]="lockBusy()">
+                    {{ lockBusy() ? 'Working…' : 'Force check-in' }}
+                  </button>
+                }
+              } @else {
+                <button type="button" class="btn btn--secondary btn--small" (click)="checkOut()" [disabled]="lockBusy()">
+                  {{ lockBusy() ? 'Working…' : 'Check out' }}
+                </button>
+              }
+            </div>
+          </section>
+        }
+
+        <!-- Metadata: read-only summary, or the inline edit form for documents.edit. -->
+        <section class="panel">
+          <div class="panel__head">
+            <h3 class="panel__title">Details</h3>
+            @if (canEdit && !editing() && !doc.isDeleted) {
+              <button type="button" class="btn btn--secondary btn--small" (click)="startEdit()">Edit details</button>
+            }
+          </div>
+
+          @if (editing()) {
+            <div class="edit-grid">
+              <label class="field edit-grid__wide">
+                <span class="field__label">Title</span>
+                <input type="text" class="input" maxlength="200" [value]="draftTitle()" (input)="onDraftTitle($event)" [disabled]="saving()" />
+                @if (!draftTitle().trim()) {
+                  <span class="field__error">A title is required.</span>
+                }
+              </label>
+
+              <label class="field edit-grid__wide">
+                <span class="field__label">Description</span>
+                <textarea class="textarea" rows="3" maxlength="1000" [value]="draftDescription()" (input)="onDraftDescription($event)" [disabled]="saving()"></textarea>
+              </label>
+
+              <label class="field">
+                <span class="field__label">Category</span>
+                <select class="pill-select" [value]="draftCategory()" (change)="onDraftCategory($event)" [disabled]="saving()">
+                  <option value="">Select a category…</option>
+                  @for (option of categories(); track option.id) {
+                    <option [value]="option.code">{{ option.label }}</option>
+                  }
+                  @if (draftCategory() && !categories().length) {
+                    <option [value]="draftCategory()">{{ draftCategory() }}</option>
+                  }
+                </select>
+              </label>
+
+              <label class="field">
+                <span class="field__label">Status</span>
+                <select class="pill-select" [value]="draftStatus()" (change)="onDraftStatus($event)" [disabled]="saving()">
+                  @for (option of statuses; track option) {
+                    <option [value]="option">{{ option }}</option>
+                  }
+                </select>
+              </label>
+
+              <label class="field">
+                <span class="field__label">Tags</span>
+                <input type="text" class="input" placeholder="Comma separated" [value]="draftTags()" (input)="onDraftTags($event)" [disabled]="saving()" />
+              </label>
+
+              <label class="field">
+                <span class="field__label">Retain until</span>
+                <input type="date" class="input" [value]="draftRetainUntil()" (input)="onDraftRetainUntil($event)" [disabled]="saving()" />
+              </label>
+            </div>
+
+            @if (saveError()) {
+              <p class="error-banner" role="alert">{{ saveError() }}</p>
+            }
+
+            <div class="panel__actions">
+              <button type="button" class="btn btn--secondary btn--small" (click)="cancelEdit()" [disabled]="saving()">Cancel</button>
+              <button
+                type="button"
+                class="btn btn--primary btn--small"
+                (click)="saveMetadata()"
+                [disabled]="saving() || !draftTitle().trim() || !draftCategory()"
+              >
+                {{ saving() ? 'Saving…' : 'Save changes' }}
+              </button>
+            </div>
+          } @else {
+            <dl class="meta-grid">
+              <div class="meta-grid__cell meta-grid__cell--wide">
+                <dt>Description</dt>
+                <dd>{{ doc.description || '—' }}</dd>
+              </div>
+              <div class="meta-grid__cell">
+                <dt>Category</dt>
+                <dd>{{ categoryLabel(doc.category) }}</dd>
+              </div>
+              <div class="meta-grid__cell">
+                <dt>Status</dt>
+                <dd><span class="status-pill" [attr.data-status]="doc.status">{{ doc.status }}</span></dd>
+              </div>
+              <div class="meta-grid__cell">
+                <dt>Linked guest</dt>
+                <dd>
+                  @if (doc.guestId) {
+                    <a [routerLink]="['/guests', doc.guestId]">G-{{ doc.guestNumber }} · {{ doc.guestName }}</a>
+                  } @else {
+                    Hub document
+                  }
+                </dd>
+              </div>
+              <div class="meta-grid__cell">
+                <dt>Retain until</dt>
+                <dd>{{ formatDate(doc.retainUntil) }}</dd>
+              </div>
+              <div class="meta-grid__cell">
+                <dt>Uploaded by</dt>
+                <dd>{{ doc.createdByName }} · {{ formatDateTime(doc.createdAt) }}</dd>
+              </div>
+              <div class="meta-grid__cell">
+                <dt>Last updated</dt>
+                <dd>{{ formatDateTime(doc.updatedAt) }}</dd>
+              </div>
+              <div class="meta-grid__cell meta-grid__cell--wide">
+                <dt>Tags</dt>
+                <dd>
+                  @if (tagList().length) {
+                    <span class="tag-list">
+                      @for (tag of tagList(); track tag) {
+                        <span class="chip">{{ tag }}</span>
+                      }
+                    </span>
+                  } @else {
+                    —
+                  }
+                </dd>
+              </div>
+            </dl>
+          }
+        </section>
+
+        <!-- Version history. Every version stays downloadable with its SHA-256 for integrity checks. -->
+        <section class="panel">
+          <div class="panel__head">
+            <h3 class="panel__title">Version history</h3>
+            @if (canUpload && !doc.isDeleted) {
+              <button type="button" class="btn btn--secondary btn--small" (click)="toggleVersionPanel()">
+                {{ versionPanelOpen() ? 'Cancel new version' : 'Upload new version' }}
+              </button>
+            }
+          </div>
+
+          @if (versionPanelOpen()) {
+            <div class="new-version">
+              <div class="new-version__row">
+                @if (versionFile(); as picked) {
+                  <span class="new-version__file">{{ picked.name }} · {{ formatBytes(picked.size) }}</span>
+                  <button type="button" class="btn btn--secondary btn--small" (click)="clearVersionFile()" [disabled]="versionBusy()">
+                    Remove
+                  </button>
+                } @else {
+                  <label class="btn btn--secondary btn--small">
+                    Choose replacement file
+                    <input type="file" class="visually-hidden" (change)="onVersionFile($event)" [disabled]="versionBusy()" />
+                  </label>
+                  <span class="panel__note">
+                    @if (maxUploadMb() > 0) {
+                      Up to {{ maxUploadMb() }} MB
+                    } @else {
+                      Any size
+                    }
+                  </span>
+                }
+              </div>
+
+              @if (versionFileError()) {
+                <p class="field__error" role="alert">{{ versionFileError() }}</p>
+              }
+
+              <label class="field">
+                <span class="field__label">Change note <span class="field__optional">(optional)</span></span>
+                <textarea
+                  class="textarea"
+                  rows="2"
+                  maxlength="500"
+                  placeholder="What changed in this version?"
+                  [value]="versionNote()"
+                  (input)="onVersionNote($event)"
+                  [disabled]="versionBusy()"
+                ></textarea>
+              </label>
+
+              @if (versionBusy()) {
+                <div class="progress" role="status">
+                  <div class="progress__track">
+                    <div class="progress__fill" [style.width.%]="versionPercent()"></div>
+                  </div>
+                  <span class="progress__label">Uploading — {{ versionPercent() }}%</span>
+                </div>
+              }
+
+              @if (versionError()) {
+                <p class="error-banner" role="alert">{{ versionError() }}</p>
+              }
+
+              <div class="panel__actions">
+                <button
+                  type="button"
+                  class="btn btn--primary btn--small"
+                  (click)="uploadVersion()"
+                  [disabled]="versionBusy() || !versionFile() || !!versionFileError()"
+                >
+                  {{ versionBusy() ? 'Uploading…' : 'Upload version ' + (doc.currentVersionNumber + 1) }}
+                </button>
+              </div>
+            </div>
+          }
+
+          @if (downloadError()) {
+            <p class="error-banner" role="alert">{{ downloadError() }}</p>
+          }
+
+          @if (doc.versions.length === 0) {
+            <p class="state-banner">No versions recorded for this document.</p>
+          } @else {
+            <div class="table-scroll">
+              <table class="doc-table">
+                <thead>
+                  <tr>
+                    <th scope="col">Version</th>
+                    <th scope="col">File</th>
+                    <th scope="col">Size</th>
+                    <th scope="col">Uploaded</th>
+                    <th scope="col">Change note</th>
+                    <th scope="col">SHA-256</th>
+                    <th scope="col"><span class="visually-hidden">Download</span></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (version of doc.versions; track version.id) {
+                    <tr>
+                      <td>
+                        <span class="version-cell">
+                          <span class="version-cell__number">v{{ version.versionNumber }}</span>
+                          @if (version.isCurrent) {
+                            <span class="chip chip--current">Current</span>
+                          }
+                        </span>
+                      </td>
+                      <td>
+                        <span class="file-cell">
+                          <span class="file-cell__name">{{ version.fileName }}</span>
+                          <span class="file-cell__meta">{{ providerLabel(version.storageProvider) }}</span>
+                        </span>
+                      </td>
+                      <td>{{ formatBytes(version.sizeBytes) }}</td>
+                      <td>
+                        <span class="file-cell">
+                          <span class="file-cell__name">{{ version.uploadedByName }}</span>
+                          <span class="file-cell__meta">{{ formatDateTime(version.uploadedAt) }}</span>
+                        </span>
+                      </td>
+                      <td class="note-cell">{{ version.changeNote || '—' }}</td>
+                      <td>
+                        <span class="sha-cell">
+                          <code class="sha-cell__value" [attr.title]="version.sha256">{{ shortSha(version.sha256) }}</code>
+                          @if (version.sha256) {
+                            <button
+                              type="button"
+                              class="icon-btn icon-btn--small"
+                              (click)="copySha(version)"
+                              [attr.aria-label]="'Copy SHA-256 for version ' + version.versionNumber"
+                            >
+                              @if (copiedVersionId() === version.id) {
+                                <svg width="11" height="11" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                                  <path d="M 1.5 6.5 L 4.5 9.5 L 10.5 2.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" />
+                                </svg>
+                              } @else {
+                                <svg width="11" height="11" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                                  <rect x="3.6" y="3.6" width="7.4" height="7.4" rx="1.4" stroke="currentColor" stroke-width="1.2" />
+                                  <path d="M 8.4 1 L 2.4 1 A 1.4 1.4 0 0 0 1 2.4 L 1 8.4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" />
+                                </svg>
+                              }
+                            </button>
+                          }
+                        </span>
+                      </td>
+                      <td class="align-right">
+                        <button
+                          type="button"
+                          class="btn btn--secondary btn--small"
+                          (click)="download(version)"
+                          [disabled]="downloading() !== null"
+                        >
+                          {{ downloading() === version.versionNumber ? 'Downloading…' : 'Download' }}
+                        </button>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        </section>
+      </div>
+
+      <div class="drawer__foot">
+        @if (canDelete && !doc.isDeleted) {
+          <button type="button" class="btn btn--secondary" (click)="requestDelete()">Delete</button>
+        }
+        <button type="button" class="btn btn--secondary" (click)="close()" [disabled]="versionBusy()">Close</button>
+        <button type="button" class="btn btn--primary" (click)="download(null)" [disabled]="downloading() !== null">
+          {{ downloading() !== null ? 'Downloading…' : 'Download current' }}
+        </button>
+      </div>
+    }
+  </div>
+</div>

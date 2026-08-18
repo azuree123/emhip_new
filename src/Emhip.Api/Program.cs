@@ -105,7 +105,17 @@ builder.Services.AddSignalR()
     .AddJsonProtocol(o => o.PayloadSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter()));
 
 builder.Services.AddExceptionHandler<ValidationExceptionHandler>();
+builder.Services.AddExceptionHandler<DomainExceptionHandler>();
 builder.Services.AddProblemDetails();
+
+// Document uploads are multipart streams; the per-endpoint [RequestSizeLimit] and the
+// configurable "max file size" setting are what actually bound them, this just lifts the
+// framework's 128 MB multipart ceiling out of the way.
+builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(o =>
+{
+    o.MultipartBodyLengthLimit = 524_288_000;
+    o.ValueLengthLimit = int.MaxValue;
+});
 
 builder.Services.AddCors(options => options.AddPolicy(AngularClientCorsPolicy, policy =>
     policy.WithOrigins(builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? ["http://localhost:4200"])
@@ -124,8 +134,11 @@ var app = builder.Build();
 if (builder.Configuration.GetValue<bool>("ApplyMigrationsOnStartup"))
 {
     using var migrationScope = app.Services.CreateScope();
-    await migrationScope.ServiceProvider.GetRequiredService<EmhipDbContext>().Database.MigrateAsync();
+    var db = migrationScope.ServiceProvider.GetRequiredService<EmhipDbContext>();
+    await db.Database.MigrateAsync();
     await IdentitySeeder.SeedAsync(migrationScope.ServiceProvider);
+    // Built-in dropdown options; only inserts what's missing, so admin edits survive redeploys.
+    await LookupSeeder.SeedAsync(db);
 }
 
 app.UseExceptionHandler();

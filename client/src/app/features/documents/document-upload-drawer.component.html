@@ -1,0 +1,222 @@
+<div class="drawer" role="dialog" aria-modal="true" aria-label="Upload document">
+  <button type="button" class="drawer__backdrop" aria-label="Close upload panel" (click)="close()"></button>
+
+  <div class="drawer__panel">
+    <div class="drawer__head">
+      <div>
+        <h2 class="drawer__title">Upload document</h2>
+        <p class="drawer__subtitle">Stored as version 1 and added to the document register.</p>
+      </div>
+      <button type="button" class="icon-btn" (click)="close()" [disabled]="busy()" aria-label="Close">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+          <path d="M 1 1 L 11 11 M 11 1 L 1 11" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+        </svg>
+      </button>
+    </div>
+
+    <div class="drawer__body">
+      <!-- File picker with drag-and-drop. Validated against the hub's upload settings on drop. -->
+      <div
+        class="dropzone"
+        [class.dropzone--active]="dragging()"
+        [class.dropzone--invalid]="!!fileError()"
+        (dragover)="onDragOver($event)"
+        (dragleave)="onDragLeave($event)"
+        (drop)="onDrop($event)"
+      >
+        @if (file(); as picked) {
+          <div class="picked">
+            <span class="picked__icon" aria-hidden="true">
+              <svg width="22" height="26" viewBox="0 0 22 26" fill="none">
+                <path
+                  d="M 3 0 L 14 0 L 22 8 L 22 26 L 3 26 A 3 3 0 0 1 0 23 L 0 3 A 3 3 0 0 1 3 0 Z M 14 0 L 14 8 L 22 8"
+                  stroke="currentColor"
+                  stroke-width="1.6"
+                  fill="none"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </span>
+            <span class="picked__text">
+              <span class="picked__name">{{ picked.name }}</span>
+              <span class="picked__meta">{{ fileSize() }}</span>
+            </span>
+            <button type="button" class="icon-btn icon-btn--small" (click)="clearFile()" [disabled]="busy()" aria-label="Remove file">
+              <svg width="10" height="10" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                <path d="M 1 1 L 11 11 M 11 1 L 1 11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+              </svg>
+            </button>
+          </div>
+        } @else {
+          <app-icon name="IconsNameUploadCloud01Color" [size]="30" />
+          <p class="dropzone__lead">Drag a file here, or</p>
+          <label class="btn btn--secondary btn--small dropzone__browse">
+            Browse files
+            <input type="file" class="visually-hidden" (change)="onFileInput($event)" [disabled]="busy()" />
+          </label>
+        }
+
+        <p class="dropzone__rules">
+          @if (extensionSummary()) {
+            {{ extensionSummary() }}
+          } @else {
+            Any file type
+          }
+          @if (maxUploadMb() > 0) {
+            · up to {{ maxUploadMb() }} MB
+          }
+        </p>
+      </div>
+
+      @if (fileError()) {
+        <p class="field__error" role="alert">{{ fileError() }}</p>
+      } @else if (submitted() && !file()) {
+        <p class="field__error" role="alert">Choose a file to upload.</p>
+      }
+
+      <label class="field">
+        <span class="field__label">Title</span>
+        <input
+          type="text"
+          class="input"
+          maxlength="200"
+          placeholder="e.g. Discharge summary — March 2026"
+          [value]="title()"
+          (input)="onTitle($event)"
+          [disabled]="busy()"
+        />
+        @if (submitted() && !title().trim()) {
+          <span class="field__error">A title is required.</span>
+        }
+      </label>
+
+      <label class="field">
+        <span class="field__label">Category</span>
+        <select class="pill-select" [value]="category()" (change)="onCategory($event)" [disabled]="busy()">
+          <option value="">Select a category…</option>
+          @for (option of categories(); track option.id) {
+            <option [value]="option.code">{{ option.label }}</option>
+          }
+        </select>
+        @if (categories().length === 0) {
+          <span class="field__hint">No document categories are configured yet.</span>
+        }
+        @if (submitted() && !category()) {
+          <span class="field__error">Choose a category.</span>
+        }
+      </label>
+
+      <label class="field">
+        <span class="field__label">Description <span class="field__optional">(optional)</span></span>
+        <textarea
+          class="textarea"
+          rows="3"
+          maxlength="1000"
+          placeholder="What does this document contain?"
+          [value]="description()"
+          (input)="onDescription($event)"
+          [disabled]="busy()"
+        ></textarea>
+      </label>
+
+      <div class="field">
+        <span class="field__label">Tags <span class="field__optional">(optional)</span></span>
+        <div class="tag-input" [class.tag-input--disabled]="busy()">
+          @for (tag of tags(); track tag) {
+            <span class="chip">
+              {{ tag }}
+              <button type="button" class="chip__remove" (click)="removeTag(tag)" [attr.aria-label]="'Remove tag ' + tag">
+                <svg width="8" height="8" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                  <path d="M 1 1 L 11 11 M 11 1 L 1 11" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                </svg>
+              </button>
+            </span>
+          }
+          <input
+            type="text"
+            class="tag-input__field"
+            placeholder="Add a tag and press Enter"
+            [value]="tagDraft()"
+            (input)="onTagDraft($event)"
+            (keydown)="onTagKeydown($event)"
+            (blur)="commitTag()"
+            [disabled]="busy()"
+          />
+        </div>
+      </div>
+
+      <label class="field">
+        <span class="field__label">Retain until <span class="field__optional">(optional)</span></span>
+        <input type="date" class="input" [value]="retainUntil()" (input)="onRetainUntil($event)" [disabled]="busy()" />
+        <span class="field__hint">Leave blank to use the hub's default retention period.</span>
+      </label>
+
+      @if (canLinkGuest) {
+        <div class="field">
+          <span class="field__label">Linked guest <span class="field__optional">(optional)</span></span>
+          @if (guest(); as linked) {
+            <div class="guest-picked">
+              <span class="guest-picked__ref">G-{{ linked.guestNumber }}</span>
+              <span class="guest-picked__name">{{ linked.fullName }}</span>
+              <button type="button" class="icon-btn icon-btn--small" (click)="clearGuest()" [disabled]="busy()" aria-label="Unlink guest">
+                <svg width="10" height="10" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                  <path d="M 1 1 L 11 11 M 11 1 L 1 11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                </svg>
+              </button>
+            </div>
+          } @else {
+            <div class="guest-search">
+              <input
+                type="text"
+                class="input"
+                placeholder="Search by name or G-1001…"
+                autocomplete="off"
+                [value]="guestQuery()"
+                (input)="onGuestQuery($event)"
+                [disabled]="busy()"
+              />
+              @if (guestSearching()) {
+                <p class="field__hint">Searching…</p>
+              } @else if (guestResults().length > 0) {
+                <ul class="guest-results">
+                  @for (result of guestResults(); track result.id) {
+                    <li>
+                      <button type="button" class="guest-results__item" (click)="selectGuest(result)">
+                        <span class="guest-results__ref">G-{{ result.guestNumber }}</span>
+                        <span class="guest-results__name">{{ result.fullName }}</span>
+                      </button>
+                    </li>
+                  }
+                </ul>
+              } @else if (guestQuery().trim().length >= 2) {
+                <p class="field__hint">No guests match that search.</p>
+              } @else {
+                <p class="field__hint">Leave blank to file this as a hub document.</p>
+              }
+            </div>
+          }
+        </div>
+      }
+
+      @if (busy()) {
+        <div class="progress" role="status">
+          <div class="progress__track">
+            <div class="progress__fill" [style.width.%]="percent()"></div>
+          </div>
+          <span class="progress__label">Uploading — {{ percent() }}%</span>
+        </div>
+      }
+
+      @if (error()) {
+        <p class="error-banner" role="alert">{{ error() }}</p>
+      }
+    </div>
+
+    <div class="drawer__foot">
+      <button type="button" class="btn btn--secondary" (click)="close()" [disabled]="busy()">Cancel</button>
+      <button type="button" class="btn btn--primary" (click)="submit()" [disabled]="busy()">
+        {{ busy() ? 'Uploading…' : 'Upload document' }}
+      </button>
+    </div>
+  </div>
+</div>

@@ -30,4 +30,15 @@ docker compose exec -T sqlserver /opt/mssql-tools18/bin/sqlcmd -C -S localhost -
 gzip -f "${BACKUP_DIR}/${FILE}"
 echo "[backup] wrote ${BACKUP_DIR}/${FILE}.gz"
 
+# Uploaded documents when the storage provider is "Local" — the database only holds their
+# metadata, so the files need their own copy. Skipped when the directory is empty (i.e. a cloud
+# provider is configured in Settings, where the provider keeps its own durability guarantees).
+DOCS_DIR=/opt/emhip-documents
+if [ -d "$DOCS_DIR" ] && [ -n "$(ls -A "$DOCS_DIR" 2>/dev/null)" ]; then
+    DOCS_FILE="emhip-documents-${TAG}-${STAMP}.tar.gz"
+    tar -czf "${BACKUP_DIR}/${DOCS_FILE}" -C "$DOCS_DIR" .
+    echo "[backup] wrote ${BACKUP_DIR}/${DOCS_FILE}"
+fi
+
 find "$BACKUP_DIR" -name 'emhip-*.bak.gz' -mtime +14 -delete
+find "$BACKUP_DIR" -name 'emhip-documents-*.tar.gz' -mtime +14 -delete

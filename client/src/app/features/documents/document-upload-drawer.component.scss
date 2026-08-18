@@ -1,0 +1,233 @@
+// Upload drawer — the shared right-anchored panel chrome plus the drop zone, tag chips and
+// guest picker that only this drawer needs.
+@import 'documents-drawer';
+
+:host {
+  font-family: $font-body;
+}
+
+// ---- Drop zone -----------------------------------------------------------
+
+.dropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 26px 20px 20px;
+  border: 1px dashed rgb(206, 206, 206);
+  border-radius: 10px;
+  background: $surface-alt;
+  color: $ink-muted;
+  text-align: center;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease;
+
+  &--active {
+    border-color: $maroon;
+    background: rgb(252, 244, 247);
+  }
+
+  &--invalid {
+    border-color: $red;
+    background: rgb(255, 244, 245);
+  }
+
+  &__lead {
+    margin: 0;
+    font-weight: 500;
+    font-size: 13px;
+    line-height: 20px;
+    color: $ink-soft;
+  }
+
+  // The "Browse files" control is a <label> wrapping a hidden <input type="file">.
+  &__browse {
+    position: relative;
+  }
+
+  &__rules {
+    margin: 4px 0 0;
+    font-weight: 500;
+    font-size: 11px;
+    line-height: 16px;
+    color: $ink-faint;
+  }
+}
+
+.picked {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: $surface;
+  box-shadow: inset 0 0 0 1px $line-soft;
+  text-align: left;
+
+  &__icon {
+    display: inline-flex;
+    color: $maroon;
+    flex-shrink: 0;
+  }
+
+  &__text {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    flex: 1;
+  }
+
+  &__name {
+    font-weight: 600;
+    font-size: 13px;
+    line-height: 20px;
+    color: $ink;
+    overflow-wrap: anywhere;
+  }
+
+  &__meta {
+    font-weight: 500;
+    font-size: 11px;
+    line-height: 16px;
+    color: $ink-faint;
+  }
+}
+
+// ---- Tag chips -----------------------------------------------------------
+
+.tag-input {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 5px 8px;
+  border-radius: 4px;
+  background: $surface;
+  box-shadow: inset 0 0 0 1px $line-soft;
+
+  &--disabled {
+    background: $surface-alt;
+  }
+
+  &__field {
+    flex: 1 1 140px;
+    min-width: 120px;
+    height: 24px;
+    border: none;
+    outline: none;
+    background: transparent;
+    font-family: $font-body;
+    font-weight: 500;
+    font-size: 13px;
+    color: $ink;
+
+    &::placeholder {
+      color: $ink-faint;
+    }
+  }
+}
+
+.chip__remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: $ink-muted;
+  cursor: pointer;
+
+  &:hover {
+    color: $red;
+  }
+}
+
+// ---- Guest link picker ---------------------------------------------------
+
+.guest-search {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.guest-results {
+  list-style: none;
+  margin: 0;
+  padding: 4px;
+  max-height: 190px;
+  overflow-y: auto;
+  border-radius: 8px;
+  background: $surface;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+
+  &__item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 8px 10px;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    font-family: $font-body;
+    text-align: left;
+    cursor: pointer;
+
+    &:hover {
+      background: $surface-alt;
+    }
+  }
+
+  &__ref {
+    font-weight: 600;
+    font-size: 11px;
+    line-height: 16px;
+    color: $ink-faint;
+    white-space: nowrap;
+  }
+
+  &__name {
+    font-weight: 500;
+    font-size: 13px;
+    line-height: 20px;
+    color: $ink;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+.guest-picked {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 8px 7px 12px;
+  border-radius: 4px;
+  background: $surface;
+  box-shadow: inset 0 0 0 1px $line-soft;
+
+  &__ref {
+    font-weight: 600;
+    font-size: 11px;
+    line-height: 16px;
+    color: $ink-faint;
+  }
+
+  &__name {
+    flex: 1;
+    min-width: 0;
+    font-weight: 500;
+    font-size: 13px;
+    line-height: 20px;
+    color: $ink;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}

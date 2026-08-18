@@ -1,0 +1,95 @@
+// Confirmation modal — same chrome as the reports export dialog: rgba(0,0,0,0.45) overlay,
+// white r12 card, rgb(240,240,240) header bar with a 20/600 title and a 36px close button.
+@import 'documents-forms';
+
+:host {
+  font-family: $font-body;
+}
+
+.confirm-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1100; // above the drawers, which purge/delete can be launched from
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 80px 16px 32px;
+  background: rgba(0, 0, 0, 0.45);
+  overflow-y: auto;
+}
+
+.confirm-dialog {
+  width: 100%;
+  max-width: 520px;
+  background: $surface;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.24);
+
+  &__bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 14px 16px 14px 20px;
+    background: rgb(240, 240, 240);
+  }
+
+  &__title {
+    margin: 0;
+    font-weight: 600;
+    font-size: 20px;
+    line-height: 26px;
+    color: $ink;
+  }
+
+  &__body {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 20px;
+  }
+
+  &__message {
+    margin: 0;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 22px;
+    color: $ink-soft;
+    overflow-wrap: anywhere;
+  }
+
+  &__warning {
+    margin: 0;
+    padding: 12px 14px;
+    border-radius: 8px;
+    background: rgb(255, 240, 241);
+    font-weight: 600;
+    font-size: 13px;
+    line-height: 20px;
+    color: $maroon;
+  }
+
+  &__foot {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 14px 20px;
+    border-top: 1px solid $line;
+  }
+
+  &--danger .confirm-dialog__bar {
+    background: rgb(255, 240, 241);
+  }
+}
+
+@media (max-width: 600px) {
+  .confirm-overlay {
+    padding: 32px 12px;
+  }
+
+  .confirm-dialog__foot .btn {
+    flex: 1;
+  }
+}

@@ -393,11 +393,8 @@
     align-items: center;
     justify-content: center;
     cursor: pointer;
-
-    &--settings:disabled {
-      cursor: default;
-      opacity: 1;
-    }
+    // The settings gear is an <a> to /settings; the notifications one stays a <button>.
+    text-decoration: none;
 
     &__dot {
       position: absolute;

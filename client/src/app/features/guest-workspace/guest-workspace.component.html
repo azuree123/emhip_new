@@ -148,6 +148,9 @@
         @case ('pathway') {
           <app-guest-pathway-tab [guestId]="guestId()" />
         }
+        @case ('documents') {
+          <emhip-guest-documents-tab [guestId]="guestId()" (refresh)="reloadOverview()" />
+        }
         @case ('action') {
           <emhip-guest-action-tab [guestId]="guestId()" (refresh)="reloadOverview()" />
         }

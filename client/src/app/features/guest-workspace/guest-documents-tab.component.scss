@@ -1,0 +1,479 @@
+// Documents tab — reuses the card/table/pill language of the other workspace tabs
+// (guest-tab-shared.scss + the Actions & Reminders table) so the tab bar reads as one screen.
+@use './guest-tab-shared';
+@use './guest-workspace.tokens' as t;
+
+// Red "Upload document" header button — same 36px pill as "Add Actions".
+.add-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 16px;
+  border: none;
+  border-radius: 4px;
+  background: t.$color-brand-red;
+  color: #fff;
+  font-family: t.$font-primary;
+  font-weight: 500;
+  font-size: 14px;
+  letter-spacing: -0.005em;
+  cursor: pointer;
+}
+
+.upload-form {
+  margin-bottom: 20px;
+}
+
+.dropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 24px 16px;
+  border: 1px dashed t.$color-border-strong;
+  border-radius: 8px;
+  background: #fafafa;
+  text-align: center;
+
+  &--active {
+    border-color: t.$color-brand-red;
+    background: t.$color-chip-red-bg;
+  }
+
+  &__icon {
+    color: t.$color-text-meta;
+  }
+
+  &__text,
+  &__file,
+  &__hint {
+    margin: 0;
+    font-family: t.$font-primary;
+    font-size: 14px;
+    color: t.$color-text-body;
+  }
+
+  &__file {
+    font-weight: 600;
+    color: t.$color-text-primary;
+    overflow-wrap: anywhere;
+  }
+
+  &__hint {
+    font-size: 12px;
+    color: t.$color-text-meta;
+  }
+
+  // The <input type="file"> is visually hidden — the label is the control.
+  &__browse {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    height: 32px;
+    padding: 0 16px;
+    border-radius: 4px;
+    background: #fff;
+    box-shadow: inset 0 0 0 1px t.$color-border-strong;
+    font-family: t.$font-primary;
+    font-weight: 500;
+    font-size: 14px;
+    color: t.$color-text-primary;
+    cursor: pointer;
+
+    input {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      opacity: 0;
+      pointer-events: none;
+    }
+  }
+}
+
+.progress {
+  height: 6px;
+  border-radius: 200px;
+  background: t.$color-tile-bg;
+  overflow: hidden;
+
+  &__bar {
+    display: block;
+    height: 100%;
+    background: t.$color-brand-red;
+    transition: width 0.15s linear;
+  }
+
+  &__label {
+    margin: 0;
+    font-family: t.$font-primary;
+    font-size: 12px;
+    color: t.$color-text-meta;
+  }
+}
+
+.form-error--row {
+  margin-bottom: 12px;
+}
+
+// Document / Category / Version / Size / Uploaded / Actions table.
+$grid-columns: minmax(0, 1fr) 150px 80px 90px 150px 200px;
+
+.doc-table {
+  display: flex;
+  flex-direction: column;
+
+  &__head {
+    display: grid;
+    grid-template-columns: $grid-columns;
+    gap: 16px;
+    align-items: center;
+    height: 41px;
+    padding: 0 16px;
+    border-radius: 3px 3px 0 0;
+    background: #f1f1f1;
+  }
+
+  &__col {
+    font-family: t.$font-primary;
+    font-weight: 600;
+    font-size: 12px;
+    line-height: 24px;
+    letter-spacing: 0.01em;
+    color: t.$color-text-primary;
+    white-space: nowrap;
+
+    &--controls {
+      text-align: right;
+    }
+  }
+}
+
+.doc-row {
+  display: grid;
+  grid-template-columns: $grid-columns;
+  gap: 16px;
+  align-items: center;
+  padding: 16px;
+  box-shadow: inset 0 -1px 0 0 t.$color-border;
+
+  &--expanded {
+    background: #fbfbfb;
+    box-shadow: none;
+  }
+
+  &__main {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    min-width: 0;
+  }
+
+  &__text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  &__title {
+    font-family: t.$font-primary;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 24px;
+    letter-spacing: -0.005em;
+    color: t.$color-text-primary;
+    overflow-wrap: anywhere;
+  }
+
+  &__filename {
+    font-family: t.$font-primary;
+    font-weight: 400;
+    font-size: 12px;
+    line-height: 18px;
+    color: t.$color-text-meta;
+    overflow-wrap: anywhere;
+  }
+
+  &__tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 4px;
+  }
+
+  &__version,
+  &__size {
+    font-family: t.$font-primary;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 24px;
+    letter-spacing: -0.005em;
+    color: t.$color-text-primary;
+    white-space: nowrap;
+  }
+
+  &__uploaded {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  &__uploaded-by {
+    font-family: t.$font-primary;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 20px;
+    color: t.$color-text-primary;
+    overflow-wrap: anywhere;
+  }
+
+  &__uploaded-at {
+    font-family: t.$font-primary;
+    font-weight: 400;
+    font-size: 12px;
+    line-height: 18px;
+    color: t.$color-text-meta;
+    white-space: nowrap;
+  }
+
+  &__controls {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+}
+
+.expander {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  margin-top: 1px;
+  padding: 0;
+  border: none;
+  border-radius: 5.2px;
+  background: #fff;
+  box-shadow: 0 0 0 1px #ededed;
+  color: t.$color-text-body;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  svg {
+    transition: transform 0.15s ease;
+  }
+
+  &--open svg {
+    transform: rotate(90deg);
+  }
+}
+
+.tag {
+  border-radius: t.$radius-pill;
+  padding: 2px 8px;
+  background: t.$color-neutral-bg;
+  color: t.$color-neutral-text;
+  font-family: t.$font-primary;
+  font-weight: 500;
+  font-size: 11px;
+  line-height: 16px;
+}
+
+.chip--category {
+  background: t.$color-gold-bg;
+  color: t.$color-gold-text;
+}
+
+.chip--current {
+  margin-left: 6px;
+  background: t.$color-success-bg;
+  color: t.$color-success-text;
+}
+
+.doc-detail {
+  padding: 0 16px 20px 50px;
+  background: #fbfbfb;
+  box-shadow: inset 0 -1px 0 0 t.$color-border;
+
+  &__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  &__title {
+    margin: 0;
+    font-family: t.$font-primary;
+    font-weight: 600;
+    font-size: 14px;
+    line-height: 24px;
+    color: t.$color-text-primary;
+  }
+
+  &__description {
+    margin: 0 0 12px;
+    font-family: t.$font-primary;
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 22px;
+    color: t.$color-text-body;
+    overflow-wrap: anywhere;
+  }
+}
+
+.version-form {
+  margin-bottom: 16px;
+  padding: 16px;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: inset 0 0 0 1px t.$color-divider;
+
+  &__grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  &__file {
+    margin: 0;
+    font-family: t.$font-primary;
+    font-weight: 600;
+    font-size: 12px;
+    color: t.$color-text-primary;
+    overflow-wrap: anywhere;
+  }
+}
+
+.version-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.version {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: inset 0 0 0 1px t.$color-divider;
+
+  &__number {
+    flex: none;
+    font-family: t.$font-primary;
+    font-weight: 600;
+    font-size: 14px;
+    line-height: 24px;
+    color: t.$color-text-primary;
+  }
+
+  &__text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__filename {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    font-family: t.$font-primary;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 24px;
+    color: t.$color-text-primary;
+    overflow-wrap: anywhere;
+  }
+
+  &__meta {
+    font-family: t.$font-primary;
+    font-weight: 400;
+    font-size: 12px;
+    line-height: 18px;
+    color: t.$color-text-meta;
+  }
+
+  &__note {
+    font-family: t.$font-primary;
+    font-weight: 400;
+    font-size: 12px;
+    line-height: 18px;
+    color: t.$color-text-body;
+    overflow-wrap: anywhere;
+  }
+}
+
+.load-more {
+  display: flex;
+  justify-content: center;
+  margin-top: 16px;
+}
+
+// Outline row buttons, matching the Actions & Reminders table.
+.row-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 12px;
+  border: none;
+  border-radius: 4px;
+  background: #fff;
+  box-shadow: inset 0 0 0 1px t.$color-border-strong;
+  font-family: t.$font-primary;
+  font-weight: 500;
+  font-size: 14px;
+  letter-spacing: -0.005em;
+  color: t.$color-text-primary;
+  cursor: pointer;
+  white-space: nowrap;
+
+  svg {
+    color: t.$color-text-body;
+  }
+
+  &--danger {
+    color: #be123c;
+
+    svg {
+      color: #be123c;
+    }
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+}
+
+@media (max-width: 1200px) {
+  .doc-table__head {
+    display: none;
+  }
+
+  .doc-row {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .doc-row__controls {
+    justify-content: flex-start;
+  }
+
+  .doc-detail {
+    padding-left: 16px;
+  }
+}
+
+@media (max-width: 640px) {
+  .version-form__grid {
+    grid-template-columns: 1fr;
+  }
+}

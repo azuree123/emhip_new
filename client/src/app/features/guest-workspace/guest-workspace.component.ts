@@ -11,6 +11,7 @@ import { GuestInitialConversationTabComponent } from './guest-initial-conversati
 import { GuestClinicalDetailsTabComponent } from './guest-clinical-details-tab.component';
 import { GuestDialogTabComponent } from './guest-dialog-tab.component';
 import { GuestPathwayTabComponent } from './guest-pathway-tab.component';
+import { GuestDocumentsTabComponent } from './guest-documents-tab.component';
 import { GuestFollowUpTabComponent } from './guest-followup-tab.component';
 import { GuestActionTabComponent } from './guest-action-tab.component';
 import { GuestContactLogComponent } from './guest-contact-log.component';
@@ -24,6 +25,7 @@ type TabId =
   | 'followup'
   | 'dialog'
   | 'pathway'
+  | 'documents'
   | 'action';
 
 interface TabDef {
@@ -42,7 +44,9 @@ interface TabDef {
  * Initial Conversation · Clinical Details · Follow-up Log · DIALOG Scores · Pathway History ·
  * Actions & Reminders. (The source uses three label variants for the 5th slot — "Activity
  * History", "Follow Up Log", "Contact History" — we standardise on "Follow-up Log".) The old
- * Notes tab is not part of the design's tab bar and is no longer rendered.
+ * Notes tab is not part of the design's tab bar and is no longer rendered. "Documents" sits
+ * between Pathway History and Actions & Reminders — it has no slot in the bundle, but the
+ * guest-scoped document store (DocumentsController) belongs on the record.
  *
  * The sidebar/top header bar from the source are intentionally omitted — those are
  * rendered once by AppShellComponent around every routed screen.
@@ -57,6 +61,7 @@ interface TabDef {
     GuestClinicalDetailsTabComponent,
     GuestDialogTabComponent,
     GuestPathwayTabComponent,
+    GuestDocumentsTabComponent,
     GuestFollowUpTabComponent,
     GuestActionTabComponent,
     GuestContactLogComponent,
@@ -79,6 +84,7 @@ export class GuestWorkspaceComponent {
     { id: 'followup', label: 'Follow-up Log' },
     { id: 'dialog', label: 'DIALOG Scores' },
     { id: 'pathway', label: 'Pathway History' },
+    { id: 'documents', label: 'Documents' },
     { id: 'action', label: 'Actions & Reminders' },
   ];
   readonly activeTab = signal<TabId>('overview');
