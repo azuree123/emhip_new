@@ -41,7 +41,7 @@
               <span class="picked__name">{{ picked.name }}</span>
               <span class="picked__meta">{{ fileSize() }}</span>
             </span>
-            <button type="button" class="icon-btn icon-btn--small" (click)="clearFile()" [disabled]="busy()" aria-label="Remove file">
+            <button type="button" class="icon-btn icon-btn--small" (click)="clearFile()" [disabled]="formLocked()" aria-label="Remove file">
               <svg width="10" height="10" viewBox="0 0 12 12" fill="none" aria-hidden="true">
                 <path d="M 1 1 L 11 11 M 11 1 L 1 11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
               </svg>
@@ -52,7 +52,7 @@
           <p class="dropzone__lead">Drag a file here, or</p>
           <label class="btn btn--secondary btn--small dropzone__browse">
             Browse files
-            <input type="file" class="visually-hidden" (change)="onFileInput($event)" [disabled]="busy()" />
+            <input type="file" class="visually-hidden" (change)="onFileInput($event)" [disabled]="formLocked()" />
           </label>
         }
 
@@ -83,7 +83,7 @@
           placeholder="e.g. Discharge summary — March 2026"
           [value]="title()"
           (input)="onTitle($event)"
-          [disabled]="busy()"
+          [disabled]="formLocked()"
         />
         @if (submitted() && !title().trim()) {
           <span class="field__error">A title is required.</span>
@@ -92,7 +92,7 @@
 
       <label class="field">
         <span class="field__label">Category</span>
-        <select class="pill-select" [value]="category()" (change)="onCategory($event)" [disabled]="busy()">
+        <select class="pill-select" [value]="category()" (change)="onCategory($event)" [disabled]="formLocked()">
           <option value="">Select a category…</option>
           @for (option of categories(); track option.id) {
             <option [value]="option.code">{{ option.label }}</option>
@@ -115,13 +115,13 @@
           placeholder="What does this document contain?"
           [value]="description()"
           (input)="onDescription($event)"
-          [disabled]="busy()"
+          [disabled]="formLocked()"
         ></textarea>
       </label>
 
       <div class="field">
         <span class="field__label">Tags <span class="field__optional">(optional)</span></span>
-        <div class="tag-input" [class.tag-input--disabled]="busy()">
+        <div class="tag-input" [class.tag-input--disabled]="formLocked()">
           @for (tag of tags(); track tag) {
             <span class="chip">
               {{ tag }}
@@ -140,14 +140,14 @@
             (input)="onTagDraft($event)"
             (keydown)="onTagKeydown($event)"
             (blur)="commitTag()"
-            [disabled]="busy()"
+            [disabled]="formLocked()"
           />
         </div>
       </div>
 
       <label class="field">
         <span class="field__label">Retain until <span class="field__optional">(optional)</span></span>
-        <input type="date" class="input" [value]="retainUntil()" (input)="onRetainUntil($event)" [disabled]="busy()" />
+        <input type="date" class="input" [value]="retainUntil()" (input)="onRetainUntil($event)" [disabled]="formLocked()" />
         <span class="field__hint">Leave blank to use the hub's default retention period.</span>
       </label>
 
@@ -159,11 +159,24 @@
             placeholder="Search by name or G-1001…"
             [ngModel]="guestId()"
             (ngModelChange)="onGuestChange($event)"
-            [disabled]="busy()"
+            [disabled]="formLocked()"
           />
           <span class="field__hint">Leave blank to file this as a hub document.</span>
         </div>
       }
+
+      <!--
+        Admin-defined extra fields. Kept in the DOM (never wrapped in an @if on its own query) so
+        hasFields() stays readable; the wrapper collapses to nothing when none are configured.
+      -->
+      <div class="extra-fields" [class.extra-fields--empty]="!hasExtraFields()">
+        <emhip-custom-fields
+          entityType="Document"
+          [entityId]="null"
+          [showSaveButton]="false"
+          heading="Additional information"
+        />
+      </div>
 
       @if (busy()) {
         <div class="progress" role="status">
@@ -182,7 +195,7 @@
     <div class="drawer__foot">
       <button type="button" class="btn btn--secondary" (click)="close()" [disabled]="busy()">Cancel</button>
       <button type="button" class="btn btn--primary" (click)="submit()" [disabled]="busy()">
-        {{ busy() ? 'Uploading…' : 'Upload document' }}
+        {{ submitLabel() }}
       </button>
     </div>
   </div>

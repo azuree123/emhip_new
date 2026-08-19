@@ -1,10 +1,11 @@
-import { ChangeDetectionStrategy, Component, OnInit, computed, inject, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, computed, effect, inject, input, output, signal, viewChild } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
 import { DocumentDetailDto, DocumentStatus, DocumentVersionDto, LookupItemDto } from '../../core/api-models';
 import { AuthService } from '../../core/auth.service';
 import { DocumentsApiService, documentErrorMessage } from '../../core/documents-api.service';
 import { Permissions } from '../../core/permissions';
+import { CustomFieldsComponent } from '../../shared/custom-fields.component';
 import {
   DOCUMENT_STATUSES,
   fileExtension,
@@ -31,7 +32,7 @@ import {
 @Component({
   selector: 'app-document-detail-drawer',
   standalone: true,
-  imports: [RouterLink],
+  imports: [RouterLink, CustomFieldsComponent],
   templateUrl: './document-detail-drawer.component.html',
   styleUrl: './document-detail-drawer.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -108,6 +109,16 @@ export class DocumentDetailDrawerComponent implements OnInit {
   /** Restore lives in the drawer (nothing to confirm); delete/purge go up to the parent. */
   protected readonly restoring = signal(false);
   protected readonly restoreError = signal<string | null>(null);
+
+  // ---- Admin-defined extra fields ----------------------------------------
+
+  private readonly customFields = viewChild(CustomFieldsComponent);
+  /** Mirrors the panel's own hasFields(), so the section can collapse when none are configured. */
+  protected readonly hasExtraFields = signal(false);
+
+  constructor() {
+    effect(() => this.hasExtraFields.set(this.customFields()?.hasFields() ?? false));
+  }
 
   protected readonly tagList = computed(() => splitTags(this.detail()?.tags));
 

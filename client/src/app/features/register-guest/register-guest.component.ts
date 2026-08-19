@@ -34,6 +34,7 @@ import {
 } from '../../core/api-models';
 import { AuthService } from '../../core/auth.service';
 import { GuestsApiService } from '../../core/guests-api.service';
+import { CustomFieldsComponent } from '../../shared/custom-fields.component';
 import { DemographicsStepComponent } from './demographics-step.component';
 import { DIALOG_DOMAINS, DialogStepComponent } from './dialog-step.component';
 import { InitialConversationStepComponent, MDT_FLAGS } from './initial-conversation-step.component';
@@ -62,6 +63,10 @@ function pastDateValidator(): ValidatorFn {
  *
  * Nothing is persisted until Submit on the REVIEW step; the sequence then runs
  *   POST /guests                            -> register()            (returns the guest id)
+ *   PUT  /custom-fields/values/Guest/{id}   -> customFields.saveFor() (only when the admin has
+ *                                              configured extra Guest fields — the answers are
+ *                                              typed on step 1 but have nothing to hang off
+ *                                              until the guest exists)
  *   POST /guests/{id}/initial-conversation  -> recordInitialConversation()
  *   POST /guests/{id}/dialog-assessments    -> recordDialogAssessment()
  *   POST /guests/{id}/allocation            -> allocate()
@@ -85,6 +90,7 @@ function pastDateValidator(): ValidatorFn {
   standalone: true,
   imports: [
     ReactiveFormsModule,
+    CustomFieldsComponent,
     DemographicsStepComponent,
     InitialConversationStepComponent,
     DialogStepComponent,
@@ -109,6 +115,15 @@ export class RegisterGuestComponent {
   /** Scrollable drawer body — step changes reset its scroll position (not the window's). */
   private readonly panelBody = viewChild<ElementRef<HTMLElement>>('panelBody');
 
+  /**
+   * Admin-defined extra Guest fields. They belong to the Demographics step visually, but the
+   * panel is rendered by this component (outside the step @switch) so the answers typed on
+   * step 1 survive stepping back and forth and are still there when Submit runs saveFor().
+   */
+  private readonly customFields = viewChild(CustomFieldsComponent);
+  /** False when nothing is configured — the whole card and its submission step are skipped. */
+  protected readonly hasCustomFields = computed(() => this.customFields()?.hasFields() ?? false);
+
   protected readonly currentUser = this.auth.current;
 
   protected readonly step = signal<1 | 2 | 3 | 4 | 5>(1);
@@ -125,6 +140,7 @@ export class RegisterGuestComponent {
 
   private readonly callStates = signal<Record<SubmissionCall['key'], SubmissionCall['status']>>({
     register: 'pending',
+    customFields: 'pending',
     conversation: 'pending',
     dialog: 'pending',
     allocation: 'pending',
@@ -135,6 +151,7 @@ export class RegisterGuestComponent {
 
   private static readonly CALL_LABELS: Record<SubmissionCall['key'], string> = {
     register: 'Register guest',
+    customFields: 'Additional information',
     conversation: 'Initial conversation',
     dialog: 'DIALOG assessment',
     allocation: 'Pathway & allocation',
@@ -348,6 +365,8 @@ export class RegisterGuestComponent {
       form.markAllAsTouched();
       if (form.invalid) return;
     }
+    // The extra fields live on step 1, so they are checked with the rest of that step.
+    if (current === 1 && !this.customFieldsValid()) return;
     this.step.set((current + 1) as 1 | 2 | 3 | 4 | 5);
     this.scrollToTop();
   }
@@ -408,7 +427,10 @@ export class RegisterGuestComponent {
 
   protected readonly submissionCalls = computed<SubmissionCall[]>(() => {
     const states = this.callStates();
-    const keys: SubmissionCall['key'][] = ['register', 'conversation', 'dialog', 'allocation'];
+    const keys: SubmissionCall['key'][] = ['register'];
+    // Straight after the guest exists, before anything else is written against it.
+    if (this.hasCustomFields()) keys.push('customFields');
+    keys.push('conversation', 'dialog', 'allocation');
     if (this.followUpNeeded()) keys.push('followUp');
     keys.push('demographics');
     if (this.riskAssessmentNeeded()) keys.push('risk');
@@ -427,6 +449,17 @@ export class RegisterGuestComponent {
     this.callStates.update((states) => ({ ...states, [key]: status }));
   }
 
+  /**
+   * True when the custom-fields panel has no required answer outstanding (always true when the
+   * admin has configured no extra fields). Turns the panel's per-field messages on when not.
+   */
+  private customFieldsValid(): boolean {
+    const panel = this.customFields();
+    if (!panel?.hasFields() || panel.isValid()) return true;
+    panel.showErrors.set(true);
+    return false;
+  }
+
   protected submit(): void {
     if (this.submitting() || this.submitted()) return;
 
@@ -436,6 +469,15 @@ export class RegisterGuestComponent {
     if (firstInvalid !== -1) {
       this.errorMessage.set('Some required fields are missing — please complete the highlighted step before submitting.');
       this.step.set((firstInvalid + 1) as 1 | 2 | 3 | 4 | 5);
+      this.scrollToTop();
+      return;
+    }
+
+    // A required extra field left empty would only fail once the guest had already been
+    // created, so it is caught here alongside the wizard's own required fields.
+    if (!this.customFieldsValid()) {
+      this.errorMessage.set('Some required fields are missing — please complete the highlighted step before submitting.');
+      this.step.set(1);
       this.scrollToTop();
       return;
     }
@@ -509,11 +551,20 @@ export class RegisterGuestComponent {
 
   private buildRemainingPlan(id: string): { key: SubmissionCall['key']; call: Observable<unknown> }[] {
     const states = this.callStates();
-    const plan: { key: SubmissionCall['key']; call: Observable<unknown> }[] = [
+    const plan: { key: SubmissionCall['key']; call: Observable<unknown> }[] = [];
+    // The step-1 answers only become saveable once the guest id exists, so they are written
+    // immediately after register() — and, like every other call, skipped on retry once done.
+    if (this.hasCustomFields()) {
+      plan.push({
+        key: 'customFields',
+        call: defer(() => this.customFields()?.saveFor(id) ?? of(void 0)),
+      });
+    }
+    plan.push(
       { key: 'conversation', call: defer(() => this.guestsApi.recordInitialConversation(id, this.buildConversationRequest())) },
       { key: 'dialog', call: defer(() => this.guestsApi.recordDialogAssessment(id, this.buildDialogScores())) },
       { key: 'allocation', call: defer(() => this.guestsApi.allocate(id, this.buildAllocationRequest())) },
-    ];
+    );
     // Runs directly after (and only after) a successful allocate(): the follow-up is assigned
     // to the CMHW chosen on the Pathway & allocation step.
     if (this.followUpNeeded()) {

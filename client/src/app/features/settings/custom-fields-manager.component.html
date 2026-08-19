@@ -1,0 +1,338 @@
+<section class="cfields">
+  <header class="cfields__intro">
+    <div>
+      <h2 class="cfields__title">Custom fields</h2>
+      <p class="cfields__subtitle">
+        Extra questions of your own, added to the forms below. They appear in an
+        <strong>Additional information</strong> panel at the bottom of the matching form, under the standard fields.
+        The standardised clinical instruments — DIALOG scores and the risk assessment — are intentionally not
+        extensible, so their wording and scoring stay comparable across guests and over time.
+      </p>
+    </div>
+    <label class="switch">
+      <input type="checkbox" [checked]="showInactive()" (change)="toggleShowInactive()" />
+      <span>Show inactive fields</span>
+    </label>
+  </header>
+
+  @if (!canManage()) {
+    <div class="banner banner--info">
+      You have read-only access to custom fields. The <code>settings.manage</code> permission is required to change them.
+    </div>
+  }
+
+  @if (loadError()) {
+    <div class="banner banner--error">
+      <span>{{ loadError() }}</span>
+      <button type="button" class="btn btn--outline btn--sm" (click)="loadAll()">Try again</button>
+    </div>
+  }
+
+  @if (loading()) {
+    <div class="card state-row">Loading custom fields…</div>
+  } @else {
+    <div class="panes">
+      <!-- Left pane: one row per form, with a count that follows the visibility filter. -->
+      <nav class="scope-list card" aria-label="Forms that accept custom fields">
+        @for (scope of scopes; track scope.key) {
+          <button
+            type="button"
+            class="scope"
+            [class.scope--active]="scope.key === selectedScope()"
+            [attr.aria-current]="scope.key === selectedScope() ? 'true' : null"
+            (click)="selectScope(scope.key)"
+          >
+            <span class="scope__name">{{ scope.name }}</span>
+            <span class="scope__count">{{ countFor(scope.key) }}</span>
+          </button>
+        }
+      </nav>
+
+      <!-- Right pane: the selected form's field definitions. -->
+      <div class="fields card">
+        <div class="fields__head">
+          <div>
+            <h3 class="fields__title">{{ selectedTab().name }}</h3>
+            <p class="fields__hint">{{ selectedTab().hint }}</p>
+          </div>
+          @if (canManage() && !editorOpen()) {
+            <button type="button" class="btn btn--primary btn--sm" (click)="openAdd()">Add field</button>
+          }
+        </div>
+
+        @if (deleteNotice()) {
+          <!-- The server's own sentence: it says whether the field was deleted or only hidden. -->
+          <div class="banner banner--info">
+            <span>{{ deleteNotice() }}</span>
+            <button type="button" class="btn btn--outline btn--sm" (click)="dismissDeleteNotice()">Dismiss</button>
+          </div>
+        }
+
+        @if (editorOpen()) {
+          <form class="editor" (ngSubmit)="saveField()">
+            <h4 class="editor__title">
+              @if (isAdding()) {
+                Add a field to {{ selectedTab().name }}
+              } @else {
+                Edit “{{ editingField()?.label }}”
+              }
+            </h4>
+
+            <div class="editor__grid">
+              <label class="field">
+                <span>Label</span>
+                <input
+                  type="text"
+                  name="label"
+                  autocomplete="off"
+                  maxlength="150"
+                  placeholder="e.g. Preferred pronoun"
+                  [ngModel]="formLabel()"
+                  (ngModelChange)="formLabel.set($event)"
+                />
+                @if (isAdding()) {
+                  <small class="field__hint">
+                    The reference name is worked out from the label — this one would be saved as
+                    <code class="mono">{{ derivedKey() }}</code>. It is stored on every answer, so it is fixed once the
+                    field is created; renaming the label later leaves it unchanged.
+                  </small>
+                } @else {
+                  <small class="field__hint">
+                    Reference name <code class="mono">{{ editingField()?.key }}</code> — fixed when the field was
+                    created, so renaming the label here won't change it.
+                  </small>
+                }
+              </label>
+
+              <label class="field">
+                <span>Type</span>
+                <select
+                  name="fieldType"
+                  [disabled]="typeLocked()"
+                  [ngModel]="formType()"
+                  (ngModelChange)="onTypeChange($event)"
+                >
+                  @for (type of fieldTypes; track type.value) {
+                    <option [value]="type.value">{{ type.name }}</option>
+                  }
+                </select>
+                @if (typeLocked()) {
+                  <!-- The server refuses this outright; say why instead of letting the save fail. -->
+                  <small class="field__hint field__hint--warn">
+                    This field already holds data on {{ editingField()?.valueCount }} record(s), so its type can't be
+                    changed — the stored answers would be stranded. Deactivate it and add a new field instead.
+                  </small>
+                } @else {
+                  <small class="field__hint">{{ selectedTypeHint() }}</small>
+                }
+              </label>
+            </div>
+
+            @if (formNeedsOptions()) {
+              <label class="field">
+                <span>Options</span>
+                <textarea
+                  rows="5"
+                  name="options"
+                  placeholder="One option per line&#10;e.g. Morning&#10;Afternoon&#10;Evening"
+                  [ngModel]="formOptions()"
+                  (ngModelChange)="formOptions.set($event)"
+                ></textarea>
+                <small class="field__hint">
+                  One option per line, in the order staff should see them. Blank lines and repeats are ignored. Removing
+                  an option doesn't change answers already saved against it.
+                </small>
+              </label>
+            }
+
+            <label class="field">
+              <span>Help text <span class="field__optional">optional</span></span>
+              <input
+                type="text"
+                name="helpText"
+                autocomplete="off"
+                maxlength="500"
+                placeholder="Shown under the field on the form"
+                [ngModel]="formHelpText()"
+                (ngModelChange)="formHelpText.set($event)"
+              />
+            </label>
+
+            <label class="switch">
+              <input
+                type="checkbox"
+                name="isRequired"
+                [checked]="formRequired()"
+                (change)="formRequired.set(!formRequired())"
+              />
+              <span>Required — the form can't be saved without an answer</span>
+            </label>
+
+            @if (formError()) {
+              <div class="banner banner--error">{{ formError() }}</div>
+            }
+
+            <div class="editor__actions">
+              <button type="button" class="btn btn--ghost btn--sm" [disabled]="saving()" (click)="closeEditor()">
+                Cancel
+              </button>
+              <button type="submit" class="btn btn--primary btn--sm" [disabled]="saving()">
+                @if (saving()) {
+                  Saving…
+                } @else if (isAdding()) {
+                  Add field
+                } @else {
+                  Save changes
+                }
+              </button>
+            </div>
+          </form>
+        }
+
+        @if (reorderError()) {
+          <div class="banner banner--error">
+            <span>{{ reorderError() }}</span>
+            <button type="button" class="btn btn--outline btn--sm" (click)="dismissReorderError()">Dismiss</button>
+          </div>
+        }
+
+        @if (visibleFields().length === 0) {
+          <div class="state-row">
+            @if (hiddenInactiveCount() > 0) {
+              No active fields on this form — {{ hiddenInactiveCount() }} inactive one(s) are hidden.
+            } @else {
+              No custom fields on this form yet. The form shows its standard fields only.
+            }
+          </div>
+        } @else {
+          <div class="table-scroll" [class.table-scroll--busy]="refreshing()">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th class="col-order"><span class="sr-only">Order</span></th>
+                  <th>Field</th>
+                  <th>Type</th>
+                  <th>Reference name</th>
+                  <th>Status</th>
+                  <th class="col-actions"><span class="sr-only">Actions</span></th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (field of visibleFields(); track field.id) {
+                  <tr
+                    [class.row--inactive]="!field.isActive"
+                    [class.row--busy]="busyId() === field.id"
+                    [class.row--editing]="editorId() === field.id"
+                  >
+                    <td class="col-order" data-label="Order">
+                      @if (canManage()) {
+                        <div class="order-buttons">
+                          <button
+                            type="button"
+                            class="icon-btn"
+                            aria-label="Move up"
+                            title="Move up"
+                            [disabled]="!canMoveUp(field) || !!busyId()"
+                            (click)="move(field, -1)"
+                          >
+                            <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">
+                              <path d="M2.5 7.5L6 4l3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                            </svg>
+                          </button>
+                          <button
+                            type="button"
+                            class="icon-btn"
+                            aria-label="Move down"
+                            title="Move down"
+                            [disabled]="!canMoveDown(field) || !!busyId()"
+                            (click)="move(field, 1)"
+                          >
+                            <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">
+                              <path d="M2.5 4.5L6 8l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                            </svg>
+                          </button>
+                        </div>
+                      } @else {
+                        <span class="order-number">{{ field.sortOrder }}</span>
+                      }
+                    </td>
+
+                    <td data-label="Field">
+                      <div class="field-cell">
+                        <div class="field-cell__line">
+                          <span class="field-label">{{ field.label }}</span>
+                          @if (field.isRequired) {
+                            <span class="pill pill--required">Required</span>
+                          }
+                        </div>
+                        @if (field.helpText) {
+                          <span class="field-cell__help">{{ field.helpText }}</span>
+                        }
+                        @if (field.options.length > 0) {
+                          <span class="field-cell__help">
+                            {{ field.options.length }} option(s): {{ field.options.join(', ') }}
+                          </span>
+                        }
+                        @if (field.valueCount > 0) {
+                          <span class="field-cell__usage">In use on {{ field.valueCount }} record(s)</span>
+                        }
+                      </div>
+                    </td>
+
+                    <td data-label="Type"><span class="pill pill--muted">{{ typeName(field.fieldType) }}</span></td>
+
+                    <td data-label="Reference name"><code class="mono">{{ field.key }}</code></td>
+
+                    <td data-label="Status">
+                      <span class="pill" [class.pill--success]="field.isActive" [class.pill--inactive]="!field.isActive">
+                        {{ field.isActive ? 'Active' : 'Inactive' }}
+                      </span>
+                    </td>
+
+                    <td class="col-actions" data-label="Actions">
+                      @if (canManage()) {
+                        <div class="row-actions">
+                          <button
+                            type="button"
+                            class="btn btn--outline btn--sm"
+                            [disabled]="!!busyId() || editorId() === field.id"
+                            (click)="startEdit(field)"
+                          >
+                            Edit
+                          </button>
+                          <button type="button" class="btn btn--outline btn--sm" [disabled]="!!busyId()" (click)="toggleActive(field)">
+                            {{ field.isActive ? 'Deactivate' : 'Activate' }}
+                          </button>
+                          <button type="button" class="btn btn--outline btn--sm btn--danger" [disabled]="!!busyId()" (click)="deleteField(field)">
+                            Delete
+                          </button>
+                        </div>
+                      }
+                    </td>
+                  </tr>
+
+                  @if (rowErrorFor(field.id)) {
+                    <tr class="row-error">
+                      <td colspan="6">{{ rowErrorFor(field.id) }}</td>
+                    </tr>
+                  }
+                }
+              </tbody>
+            </table>
+          </div>
+
+          @if (hiddenInactiveCount() > 0) {
+            <p class="fields__footnote">
+              {{ hiddenInactiveCount() }} inactive field(s) hidden. Turn on “Show inactive fields” to manage them —
+              inactive fields are off the form, but their stored answers are kept.
+            </p>
+          }
+        }
+
+        @if (refreshing()) {
+          <div class="state-row state-row--tight">Refreshing…</div>
+        }
+      </div>
+    </div>
+  }
+</section>

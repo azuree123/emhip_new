@@ -193,4 +193,19 @@
       </section>
     </div>
   </div>
+
+  <!-- Admin-defined extra fields for the guest record. The card (and its chrome) is only
+       rendered once the panel reports that fields are configured; otherwise the tab looks
+       exactly as it did before custom fields existed. -->
+  <section class="card" [class.card--suppressed]="!hasCustomFields()">
+    @if (hasCustomFields()) {
+      <h2 class="card__title">Additional information</h2>
+    }
+    <emhip-custom-fields
+      entityType="Guest"
+      [entityId]="guestId()"
+      [readonly]="!canEditGuest"
+      [heading]="null"
+    />
+  </section>
 </div>

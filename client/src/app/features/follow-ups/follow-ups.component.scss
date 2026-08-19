@@ -694,3 +694,9 @@
     width: 100%;
   }
 }
+
+// Admin-defined extra fields inside the modal. The panel renders nothing when none are configured,
+// so the wrapper is collapsed outright — otherwise it would still occupy a modal-body flex gap.
+.extra-fields--empty {
+  display: none;
+}

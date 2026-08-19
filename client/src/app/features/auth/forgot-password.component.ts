@@ -2,11 +2,12 @@ import { Component, inject, signal } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { AuthService } from '../../core/auth.service';
+import { EmhipLogoComponent } from '../../shared/emhip-logo.component';
 
 @Component({
   selector: 'app-forgot-password',
   standalone: true,
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [ReactiveFormsModule, RouterLink, EmhipLogoComponent],
   templateUrl: './forgot-password.component.html',
   styleUrl: './auth-page.scss',
 })

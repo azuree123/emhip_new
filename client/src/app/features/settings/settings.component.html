@@ -5,7 +5,8 @@
         <h1 class="header-card__title">Settings</h1>
         <p class="header-card__subtitle">
           Portal configuration — organisation details, document storage, upload limits, clinical thresholds, email
-          delivery and the wording of the messages the portal sends, plus the drop-down lists used across the app.
+          delivery and the wording of the messages the portal sends, plus the drop-down lists used across the app and
+          any extra fields you add to its forms.
         </p>
       </div>
 
@@ -73,6 +74,8 @@
           <emhip-lookups-manager />
         } @else if (activeTab() === emailTemplatesTab) {
           <emhip-email-templates />
+        } @else if (activeTab() === customFieldsTab) {
+          <emhip-custom-fields-manager />
         } @else if (activeSection(); as section) {
           <header class="panel__head">
             <h2 class="panel__title">{{ section.section }}</h2>

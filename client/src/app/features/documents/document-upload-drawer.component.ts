@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, input, output, signal, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
 import { LookupItemDto } from '../../core/api-models';
@@ -6,6 +6,7 @@ import { AuthService } from '../../core/auth.service';
 import { DocumentsApiService, documentErrorMessage } from '../../core/documents-api.service';
 import { Permissions } from '../../core/permissions';
 import { IconComponent } from '../../design-system/icon.component';
+import { CustomFieldsComponent } from '../../shared/custom-fields.component';
 import { GuestPickerComponent } from '../../shared/guest-picker.component';
 import { fileExtension, formatBytes } from './documents.util';
 
@@ -18,11 +19,15 @@ import { fileExtension, formatBytes } from './documents.util';
  * reportProgress and the drawer shows the live percentage from DocumentsApiService's
  * UploadProgress stream. Anything the server still rejects is surfaced verbatim through
  * documentErrorMessage().
+ *
+ * Any admin-defined extra fields for documents are rendered under the metadata. They can only be
+ * stored once the document has an id, so they are saved in a second step straight after the
+ * upload completes — see submit()/saveExtraFields().
  */
 @Component({
   selector: 'app-document-upload-drawer',
   standalone: true,
-  imports: [IconComponent, FormsModule, GuestPickerComponent],
+  imports: [IconComponent, FormsModule, GuestPickerComponent, CustomFieldsComponent],
   templateUrl: './document-upload-drawer.component.html',
   styleUrl: './document-upload-drawer.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -63,6 +68,19 @@ export class DocumentUploadDrawerComponent {
   protected readonly percent = signal(0);
   protected readonly error = signal<string | null>(null);
 
+  // ---- Admin-defined extra fields ----------------------------------------
+
+  private readonly customFields = viewChild(CustomFieldsComponent);
+  /** Mirrors the panel's own hasFields(), so the template can hide the block without querying it. */
+  protected readonly hasExtraFields = signal(false);
+  /** Set once the file is on the server — a retry then only re-sends the extra answers. */
+  protected readonly uploadedDocumentId = signal<string | null>(null);
+  protected readonly savingExtras = signal(false);
+
+  constructor() {
+    effect(() => this.hasExtraFields.set(this.customFields()?.hasFields() ?? false));
+  }
+
   // ---- Guest link picker --------------------------------------------------
 
   /** The picker is pointless (and would 403) without permission to read guests. */
@@ -81,8 +99,28 @@ export class DocumentUploadDrawerComponent {
   );
 
   protected readonly canSubmit = computed(
-    () => !this.busy() && !!this.file() && !!this.title().trim() && !!this.category() && !this.fileError(),
+    () =>
+      !this.busy() &&
+      !!this.file() &&
+      !!this.title().trim() &&
+      !!this.category() &&
+      !this.fileError() &&
+      // A required extra field is as blocking as a missing title.
+      (this.customFields()?.isValid() ?? true),
   );
+
+  /** Everything but the extras panel locks once the document exists, so edits can't go missing. */
+  protected readonly formLocked = computed(() => this.busy() || this.uploadedDocumentId() !== null);
+
+  protected readonly submitLabel = computed(() => {
+    if (this.savingExtras()) {
+      return 'Saving additional information…';
+    }
+    if (this.busy()) {
+      return 'Uploading…';
+    }
+    return this.uploadedDocumentId() ? 'Save additional information' : 'Upload document';
+  });
 
   // ---- File selection -----------------------------------------------------
 
@@ -116,7 +154,7 @@ export class DocumentUploadDrawerComponent {
 
   /** Runs the hub's own size/extension rules before the file is ever accepted into the form. */
   private acceptFile(candidate: File | null): void {
-    if (!candidate) {
+    if (!candidate || this.uploadedDocumentId()) {
       return;
     }
     const problem = this.validateFile(candidate);
@@ -206,8 +244,18 @@ export class DocumentUploadDrawerComponent {
 
   protected submit(): void {
     this.submitted.set(true);
+
+    // The file already went up and only the extras failed — never upload a second copy.
+    const alreadyUploaded = this.uploadedDocumentId();
+    if (alreadyUploaded) {
+      this.saveExtraFields(alreadyUploaded);
+      return;
+    }
+
     const file = this.file();
     if (!file || !this.canSubmit()) {
+      // Show the extras panel's own required markers next to the drawer's field errors.
+      this.customFields()?.showErrors.set(true);
       return;
     }
 
@@ -235,8 +283,15 @@ export class DocumentUploadDrawerComponent {
             return;
           }
           this.percent.set(100);
+          const id = event.id ?? null;
+          this.uploadedDocumentId.set(id);
+          if (id) {
+            this.saveExtraFields(id);
+            return;
+          }
+          // No id came back, so there is nothing to hang the extra answers off.
           this.busy.set(false);
-          this.uploaded.emit(event.id ?? null);
+          this.uploaded.emit(null);
         },
         error: (err: unknown) => {
           this.busy.set(false);
@@ -245,8 +300,48 @@ export class DocumentUploadDrawerComponent {
       });
   }
 
+  /**
+   * Second leg of the upload: the document already exists on the server here, so a failure is
+   * reported as "uploaded, extras not saved" — never as a failed upload — and the drawer stays
+   * open so Save can retry just the answers.
+   */
+  private saveExtraFields(documentId: string): void {
+    const panel = this.customFields();
+    if (!panel?.hasFields()) {
+      this.busy.set(false);
+      this.savingExtras.set(false);
+      this.uploaded.emit(documentId);
+      return;
+    }
+
+    this.busy.set(true);
+    this.savingExtras.set(true);
+    this.error.set(null);
+
+    panel.saveFor(documentId).subscribe({
+      next: () => {
+        this.busy.set(false);
+        this.savingExtras.set(false);
+        this.uploaded.emit(documentId);
+      },
+      error: () => {
+        this.busy.set(false);
+        this.savingExtras.set(false);
+        this.error.set(
+          'The document was uploaded, but its additional information could not be saved. Try again, or close and add it from the document.',
+        );
+      },
+    });
+  }
+
   protected close(): void {
     if (this.busy()) {
+      return;
+    }
+    const uploadedId = this.uploadedDocumentId();
+    if (uploadedId) {
+      // The document exists even if the extras didn't save — the register still has to refresh.
+      this.uploaded.emit(uploadedId);
       return;
     }
     this.closed.emit();

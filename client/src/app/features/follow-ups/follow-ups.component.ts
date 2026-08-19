@@ -1,5 +1,5 @@
 import { CommonModule, formatDate } from '@angular/common';
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, effect, inject, signal, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { AuthService } from '../../core/auth.service';
@@ -14,6 +14,7 @@ import {
 import { FollowUpsApiService } from '../../core/follow-ups-api.service';
 import { GuestsApiService } from '../../core/guests-api.service';
 import { IconComponent } from '../../design-system/icon.component';
+import { CustomFieldsComponent } from '../../shared/custom-fields.component';
 import { GuestPickerComponent } from '../../shared/guest-picker.component';
 import { StaffPickerComponent } from '../../shared/staff-picker.component';
 
@@ -42,7 +43,15 @@ type DateRangeFilter = '' | 'today' | 'week' | 'month';
 @Component({
   selector: 'app-follow-ups',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, IconComponent, StaffPickerComponent, GuestPickerComponent],
+  imports: [
+    CommonModule,
+    FormsModule,
+    RouterLink,
+    IconComponent,
+    StaffPickerComponent,
+    GuestPickerComponent,
+    CustomFieldsComponent,
+  ],
   templateUrl: './follow-ups.component.html',
   styleUrl: './follow-ups.component.scss',
 })
@@ -115,6 +124,24 @@ export class FollowUpsComponent implements OnInit {
 
   scheduleForm = { dueDate: '', assigneeStaffId: this.auth.current().staffId, notes: '' };
   contactForm = { type: 'PhoneCall' as ContactType, outcome: 'Successful' as ContactOutcome, occurredAt: this.nowLocal(), notes: '' };
+
+  // ---- Admin-defined extra fields (one panel per modal tab) ---------------
+
+  private readonly followUpFields = viewChild<CustomFieldsComponent>('followUpFields');
+  private readonly contactFields = viewChild<CustomFieldsComponent>('contactFields');
+  /** Mirror the panels' own hasFields(), so an unconfigured form looks exactly as it did before. */
+  readonly hasFollowUpFields = signal(false);
+  readonly hasContactFields = signal(false);
+  /**
+   * Set when the follow-up/contact was created but its extra answers were rejected — Save then
+   * retries only the answers, so a second press can never create a duplicate record.
+   */
+  private pendingExtras: (() => void) | null = null;
+
+  constructor() {
+    effect(() => this.hasFollowUpFields.set(this.followUpFields()?.hasFields() ?? false));
+    effect(() => this.hasContactFields.set(this.contactFields()?.hasFields() ?? false));
+  }
 
   ngOnInit(): void {
     this.loadFirstPage();
@@ -282,18 +309,40 @@ export class FollowUpsComponent implements OnInit {
   private resetModalForms(): void {
     this.modalMode.set('schedule');
     this.saveError.set(null);
+    this.pendingExtras = null;
     this.scheduleForm = { dueDate: '', assigneeStaffId: this.auth.current().staffId, notes: '' };
     this.contactForm = { type: 'PhoneCall', outcome: 'Successful', occurredAt: this.nowLocal(), notes: '' };
   }
 
   closeModal(): void {
+    // The record itself was created — only its extras failed — so the queue is stale on the way out.
+    const hadPendingExtras = this.pendingExtras !== null;
+    this.pendingExtras = null;
     this.modalOpen.set(false);
+    if (hadPendingExtras) {
+      this.loadFirstPage();
+    }
   }
 
   submitModal(): void {
+    // Retry path: the record exists, only the extra answers still have to land.
+    const retry = this.pendingExtras;
+    if (retry) {
+      this.saving.set(true);
+      this.saveError.set(null);
+      retry();
+      return;
+    }
+
     const guestId = this.modalGuestId().trim();
     if (!guestId) {
       this.saveError.set('Select a guest.');
+      return;
+    }
+    const panel = this.modalMode() === 'schedule' ? this.followUpFields() : this.contactFields();
+    if (panel?.hasFields() && !panel.isValid()) {
+      panel.showErrors.set(true);
+      this.saveError.set('Complete the required additional fields.');
       return;
     }
     this.saving.set(true);
@@ -319,7 +368,10 @@ export class FollowUpsComponent implements OnInit {
         assigneeStaffId: this.scheduleForm.assigneeStaffId,
         notes: this.scheduleForm.notes || null,
       };
-      this.guestsApi.scheduleFollowUp(guestId, req).subscribe({ next: done, error: () => fail('Could not schedule the follow-up.') });
+      this.guestsApi.scheduleFollowUp(guestId, req).subscribe({
+        next: ({ id }) => this.saveExtras(panel, id, 'The follow-up was scheduled', done),
+        error: () => fail('Could not schedule the follow-up.'),
+      });
     } else {
       if (!this.contactForm.occurredAt) {
         this.saving.set(false);
@@ -334,24 +386,48 @@ export class FollowUpsComponent implements OnInit {
       };
       const followUpId = this.modalFollowUpId();
       const guestName = this.modalGuestName();
+      const recorded = () => {
+        this.saving.set(false);
+        this.modalOpen.set(false);
+        if (followUpId) {
+          // Recorded state (Desktop65): annotate the row in place instead of reloading, so the
+          // loaded keyset pages (and the confirmation chip) survive.
+          this.recordedContact.update((m) => ({ ...m, [followUpId]: req.occurredAt }));
+          this.successMsg.set(
+            `Contact recorded for ${guestName ?? 'guest'} — ${formatDate(req.occurredAt, 'd MMM, h:mm a', 'en-US')}.`,
+          );
+        } else {
+          this.loadFirstPage();
+        }
+      };
       this.guestsApi.addContact(guestId, req).subscribe({
-        next: () => {
-          this.saving.set(false);
-          this.modalOpen.set(false);
-          if (followUpId) {
-            // Recorded state (Desktop65): annotate the row in place instead of reloading, so the
-            // loaded keyset pages (and the confirmation chip) survive.
-            this.recordedContact.update((m) => ({ ...m, [followUpId]: req.occurredAt }));
-            this.successMsg.set(
-              `Contact recorded for ${guestName ?? 'guest'} — ${formatDate(req.occurredAt, 'd MMM, h:mm a', 'en-US')}.`,
-            );
-          } else {
-            this.loadFirstPage();
-          }
-        },
+        next: ({ id }) => this.saveExtras(panel, id, 'The contact was recorded', recorded),
         error: () => fail('Could not log the contact.'),
       });
     }
+  }
+
+  /**
+   * Second leg of the save: the record already exists here, so a rejection is reported as
+   * "record saved, extra fields weren't" and the modal stays open to retry just the answers.
+   */
+  private saveExtras(panel: CustomFieldsComponent | undefined, entityId: string, created: string, done: () => void): void {
+    if (!panel?.hasFields()) {
+      this.pendingExtras = null;
+      done();
+      return;
+    }
+    panel.saveFor(entityId).subscribe({
+      next: () => {
+        this.pendingExtras = null;
+        done();
+      },
+      error: () => {
+        this.pendingExtras = () => this.saveExtras(panel, entityId, created, done);
+        this.saving.set(false);
+        this.saveError.set(`${created}, but its additional information could not be saved. Save again to retry.`);
+      },
+    });
   }
 
   exportCsv(): void {

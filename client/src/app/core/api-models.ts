@@ -780,3 +780,76 @@ export interface EmailTestResultDto {
   success: boolean;
   message: string;
 }
+
+// ---- Custom fields ----
+
+/** Forms that accept admin-defined extra fields (clinical instruments are deliberately excluded). */
+export type CustomFieldEntityType = 'Guest' | 'Document' | 'Contact' | 'FollowUp' | 'GuestAction';
+
+export type CustomFieldType = 'Text' | 'MultilineText' | 'Number' | 'Date' | 'Boolean' | 'Select' | 'MultiSelect';
+
+export interface CustomFieldDefinitionDto {
+  id: string;
+  entityType: CustomFieldEntityType;
+  /** Stable slug; assigned on creation and never edited. */
+  key: string;
+  label: string;
+  fieldType: CustomFieldType;
+  options: string[];
+  helpText: string | null;
+  isRequired: boolean;
+  sortOrder: number;
+  isActive: boolean;
+  /** Records already holding a value — a field with answers can only be deactivated, not deleted. */
+  valueCount: number;
+}
+
+/** A definition plus this record's answer, ready to render one control. */
+export interface CustomFieldValueDto {
+  definitionId: string;
+  key: string;
+  label: string;
+  fieldType: CustomFieldType;
+  options: string[];
+  helpText: string | null;
+  isRequired: boolean;
+  sortOrder: number;
+  text: string | null;
+  number: number | null;
+  date: string | null;
+  boolean: boolean | null;
+}
+
+/** MultiSelect selections travel newline-separated in `text`. */
+export interface CustomFieldEntry {
+  definitionId: string;
+  text?: string | null;
+  number?: number | null;
+  date?: string | null;
+  boolean?: boolean | null;
+}
+
+export interface CreateCustomFieldRequest {
+  entityType: CustomFieldEntityType;
+  label: string;
+  fieldType: CustomFieldType;
+  options?: string[] | null;
+  helpText?: string | null;
+  isRequired: boolean;
+}
+
+export interface UpdateCustomFieldRequest {
+  label: string;
+  fieldType: CustomFieldType;
+  options?: string[] | null;
+  helpText?: string | null;
+  isRequired: boolean;
+  sortOrder: number;
+  isActive: boolean;
+}
+
+export interface DeleteCustomFieldResult {
+  /** False when the field was deactivated instead because it already holds answers. */
+  deleted: boolean;
+  message: string;
+}

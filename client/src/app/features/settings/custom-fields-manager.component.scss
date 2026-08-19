@@ -1,0 +1,659 @@
+// Custom fields tab of the Settings screen. Sibling of lookups-manager.component.scss and
+// deliberately built from the same vocabulary (card / btn / pill / banner / data-table, the same
+// greys, r12 cards, r4 controls) so the two tabs read as one screen rather than two.
+// Self-contained so it can be dropped into any tab host.
+
+$ink: rgb(42, 42, 42);
+$ink-muted: rgb(100, 100, 100);
+$ink-faint: rgb(140, 140, 140);
+$line: rgb(238, 238, 238);
+$line-soft: rgb(229, 229, 229);
+$red: rgb(225, 38, 40);
+$coral: rgb(235, 60, 44);
+$danger: rgb(208, 37, 55);
+$green: rgb(21, 128, 61);
+$amber: rgb(146, 64, 14);
+
+:host {
+  display: block;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+.cfields {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+
+  &__intro {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  &__title {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: $ink;
+  }
+
+  &__subtitle {
+    margin: 6px 0 0;
+    max-width: 78ch;
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 20px;
+    color: $ink-muted;
+
+    strong {
+      font-weight: 600;
+      color: $ink;
+    }
+  }
+}
+
+// ---- Two-pane shell -------------------------------------------------------
+
+.panes {
+  display: grid;
+  grid-template-columns: minmax(220px, 300px) minmax(0, 1fr);
+  align-items: start;
+  gap: 16px;
+}
+
+.card {
+  background: rgb(255, 255, 255);
+  border-radius: 12px;
+  padding: 20px;
+}
+
+// ---- Scope list -----------------------------------------------------------
+
+.scope-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px;
+}
+
+.scope {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 12px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  color: $ink;
+  text-align: left;
+  cursor: pointer;
+
+  &:hover {
+    background: rgb(246, 246, 246);
+  }
+
+  &--active {
+    background: rgb(255, 240, 241);
+    color: $coral;
+    font-weight: 600;
+  }
+
+  &__name {
+    min-width: 0;
+  }
+
+  &__count {
+    flex: none;
+    min-width: 22px;
+    padding: 1px 7px;
+    border-radius: 200px;
+    background: rgb(240, 240, 240);
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 18px;
+    color: rgb(50, 50, 50);
+    text-align: center;
+  }
+
+  &--active &__count {
+    background: rgb(255, 255, 255);
+    color: $coral;
+  }
+}
+
+// ---- Fields pane ----------------------------------------------------------
+
+.fields {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+
+  &__head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  &__title {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: $ink;
+  }
+
+  &__hint {
+    margin: 4px 0 0;
+    font-size: 13px;
+    font-weight: 500;
+    color: $ink-muted;
+  }
+
+  &__footnote {
+    margin: 0;
+    font-size: 12px;
+    font-weight: 500;
+    color: $ink-faint;
+  }
+}
+
+// ---- Add / edit editor ----------------------------------------------------
+
+.editor {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 8px;
+  box-shadow: inset 0 0 0 1px $line;
+
+  &__title {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: $ink;
+  }
+
+  &__grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+    gap: 12px 16px;
+    align-items: start;
+  }
+
+  &__actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: $ink;
+
+  input,
+  select {
+    height: 36px;
+    border-radius: 4px;
+    border: 1px solid $line-soft;
+    padding: 0 12px;
+    background: rgb(255, 255, 255);
+    font-family: inherit;
+    font-size: 14px;
+    color: $ink;
+
+    &:focus-visible {
+      outline: 2px solid $coral;
+      outline-offset: -1px;
+    }
+
+    &:disabled {
+      background: rgb(246, 246, 246);
+      color: $ink-muted;
+      cursor: not-allowed;
+    }
+  }
+
+  textarea {
+    border-radius: 4px;
+    border: 1px solid $line-soft;
+    padding: 10px 12px;
+    resize: vertical;
+    font-family: inherit;
+    font-size: 14px;
+    line-height: 20px;
+    color: $ink;
+
+    &:focus-visible {
+      outline: 2px solid $coral;
+      outline-offset: -1px;
+    }
+  }
+
+  &__hint {
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 16px;
+    color: $ink-faint;
+
+    .mono {
+      font-size: 11px;
+    }
+
+    &--warn {
+      color: $amber;
+    }
+  }
+
+  &__optional {
+    font-weight: 500;
+    color: $ink-faint;
+  }
+}
+
+// ---- Table ----------------------------------------------------------------
+
+.table-scroll {
+  overflow-x: auto;
+
+  &--busy {
+    opacity: 0.6;
+  }
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+
+  th {
+    text-align: left;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: $ink-faint;
+    padding: 10px 12px;
+    border-bottom: 1px solid $line;
+    white-space: nowrap;
+  }
+
+  td {
+    padding: 10px 12px;
+    font-size: 14px;
+    font-weight: 500;
+    color: $ink;
+    border-bottom: 1px solid rgb(244, 244, 244);
+    vertical-align: top;
+  }
+
+  .col-order {
+    width: 1%;
+    white-space: nowrap;
+  }
+
+  .col-actions {
+    text-align: right;
+  }
+}
+
+.row--inactive td {
+  color: $ink-faint;
+
+  .field-label {
+    color: $ink-faint;
+  }
+
+  .mono {
+    opacity: 0.7;
+  }
+}
+
+.row--busy {
+  opacity: 0.6;
+}
+
+.row--editing {
+  background: rgb(255, 249, 249);
+}
+
+.row-error td {
+  padding: 0 12px 10px;
+  border-bottom: 1px solid rgb(244, 244, 244);
+  font-size: 13px;
+  font-weight: 500;
+  color: $danger;
+}
+
+.field-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+
+  &__line {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  &__help {
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 16px;
+    color: $ink-faint;
+  }
+
+  &__usage {
+    font-size: 11px;
+    font-weight: 600;
+    color: $ink-muted;
+  }
+}
+
+.field-label {
+  font-weight: 600;
+  color: $ink;
+}
+
+.mono {
+  font-family: 'SFMono-Regular', Consolas, monospace;
+  font-size: 12px;
+  color: $ink-muted;
+}
+
+.order-buttons {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.order-number {
+  font-size: 12px;
+  color: $ink-faint;
+}
+
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background: rgb(246, 246, 246);
+  color: $ink;
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    background: rgb(238, 238, 238);
+  }
+
+  &:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+}
+
+.row-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+// ---- Pills / buttons / banners (shared vocabulary) ------------------------
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 200px;
+  padding: 3px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 16px;
+  white-space: nowrap;
+  width: fit-content;
+  background: rgb(240, 240, 240);
+  color: rgb(50, 50, 50);
+
+  &--muted {
+    background: rgb(240, 240, 240);
+    color: rgb(50, 50, 50);
+  }
+
+  &--required {
+    background: rgb(255, 240, 241);
+    color: $coral;
+    font-weight: 600;
+  }
+
+  &--success {
+    background: rgb(240, 253, 244);
+    color: $green;
+  }
+
+  &--inactive {
+    background: rgb(246, 246, 246);
+    color: rgb(114, 114, 114);
+  }
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 16px;
+  border-radius: 4px;
+  border: none;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: -0.005em;
+  cursor: pointer;
+  white-space: nowrap;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  &--primary {
+    background: $coral;
+    color: rgb(255, 255, 255);
+  }
+
+  &--ghost {
+    background: rgb(246, 246, 246);
+    color: $ink;
+  }
+
+  &--outline {
+    background: rgb(255, 255, 255);
+    color: $ink;
+    box-shadow: inset 0 0 0 1px rgb(217, 217, 217);
+  }
+
+  &--danger {
+    color: $danger;
+    box-shadow: inset 0 0 0 1px rgb(248, 200, 200);
+  }
+
+  &--sm {
+    height: 32px;
+    padding: 0 12px;
+    font-size: 13px;
+  }
+}
+
+.banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-size: 14px;
+  font-weight: 500;
+
+  &--error {
+    background: rgb(254, 242, 242);
+    color: $danger;
+    border-left: 3px solid $red;
+  }
+
+  &--info {
+    background: rgb(246, 246, 246);
+    color: $ink-muted;
+    border-left: 3px solid rgb(217, 217, 217);
+  }
+
+  code {
+    font-family: 'SFMono-Regular', Consolas, monospace;
+    font-size: 12px;
+  }
+}
+
+.state-row {
+  padding: 32px;
+  text-align: center;
+  color: $ink-faint;
+  font-size: 14px;
+  font-weight: 500;
+
+  &--tight {
+    padding: 8px;
+  }
+}
+
+.switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: $ink;
+  cursor: pointer;
+
+  input {
+    flex: none;
+    width: 16px;
+    height: 16px;
+    accent-color: $coral;
+    cursor: pointer;
+  }
+}
+
+.cfields__intro .switch {
+  white-space: nowrap;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+// ---- Responsive -----------------------------------------------------------
+
+@media (max-width: 1024px) {
+  .panes {
+    grid-template-columns: 1fr;
+  }
+
+  .scope-list {
+    flex-direction: row;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    gap: 6px;
+  }
+
+  .scope {
+    width: auto;
+    flex: none;
+  }
+}
+
+@media (max-width: 767px) {
+  .editor__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .data-table {
+    thead {
+      display: none;
+    }
+
+    tr {
+      display: block;
+      padding: 10px 0;
+      border-bottom: 1px solid $line;
+    }
+
+    td {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 5px 0;
+      border-bottom: none;
+      text-align: right;
+
+      &::before {
+        content: attr(data-label);
+        flex: none;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        color: $ink-faint;
+        text-align: left;
+      }
+
+      &:empty::before {
+        content: none;
+      }
+    }
+
+    .col-order,
+    .col-actions {
+      width: auto;
+      text-align: left;
+    }
+  }
+
+  .field-cell {
+    align-items: flex-end;
+    text-align: right;
+  }
+
+  .row-error td {
+    justify-content: flex-start;
+    padding: 0 0 10px;
+  }
+
+  .row-actions {
+    justify-content: flex-end;
+  }
+}

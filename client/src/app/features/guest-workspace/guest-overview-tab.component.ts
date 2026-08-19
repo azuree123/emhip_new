@@ -1,8 +1,11 @@
-import { Component, EventEmitter, Output, computed, effect, inject, input, signal } from '@angular/core';
+import { Component, EventEmitter, Output, computed, effect, inject, input, signal, viewChild } from '@angular/core';
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { DialogAssessmentDto, GuestDemographicsDto, GuestOverviewDto } from '../../core/api-models';
+import { AuthService } from '../../core/auth.service';
 import { GuestsApiService } from '../../core/guests-api.service';
+import { Permissions } from '../../core/permissions';
+import { CustomFieldsComponent } from '../../shared/custom-fields.component';
 import {
   daysSince,
   formatDate,
@@ -29,15 +32,20 @@ import {
  *   (e.g. no permission) the fields render as "—".
  * - "Recent activity history" renders overview.recentContacts; the bundle's sample note
  *   bodies are not part of GuestContactSummaryDto and are not shown.
+ * - The closing "Additional information" card holds the admin-defined custom Guest fields; it
+ *   is the single place they are edited for a guest (the Demographics tab deliberately does
+ *   not repeat them). The card is suppressed entirely when none are configured.
  */
 @Component({
   selector: 'app-guest-overview-tab',
   standalone: true,
+  imports: [CustomFieldsComponent],
   templateUrl: './guest-overview-tab.component.html',
   styleUrl: './guest-overview-tab.component.scss',
 })
 export class GuestOverviewTabComponent {
   private readonly guestsApi = inject(GuestsApiService);
+  private readonly auth = inject(AuthService);
 
   readonly overview = input.required<GuestOverviewDto>();
   /** "View all →" footer on the Recent activity history card — the workspace responds by
@@ -48,6 +56,14 @@ export class GuestOverviewTabComponent {
   readonly demographics = signal<GuestDemographicsDto | null>(null);
   /** DIALOG baseline (version 1) for the third stat tile; null when never assessed / not viewable. */
   readonly dialogBaseline = signal<DialogAssessmentDto | null>(null);
+
+  readonly guestId = computed(() => this.overview().id);
+
+  /** Admin-defined extra Guest fields — read-only for anyone without guests.edit. */
+  readonly canEditGuest = this.auth.hasPermission(Permissions.Guests.Edit);
+  private readonly customFieldsPanel = viewChild(CustomFieldsComponent);
+  /** False until the panel reports configured fields — the card chrome is not rendered before then. */
+  readonly hasCustomFields = computed(() => this.customFieldsPanel()?.hasFields() ?? false);
 
   constructor() {
     effect((onCleanup) => {

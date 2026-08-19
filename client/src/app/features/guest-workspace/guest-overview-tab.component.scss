@@ -108,6 +108,13 @@
   padding: 24px;
 }
 
+// "Additional information" (admin-defined custom fields): same white r12 card as the rest of
+// the tab, but taken out of the layout completely while no fields are configured so the tab is
+// byte-for-byte what it was before — no empty card, no stray 23px gap.
+.card--suppressed {
+  display: none;
+}
+
 .card__title {
   margin: 0 0 33px;
   font-family: t.$font-primary;

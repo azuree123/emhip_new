@@ -256,6 +256,18 @@
           }
         </section>
 
+        <!--
+          Admin-defined extra fields for documents. The panel loads and saves its own answers
+          against the document id; the section collapses when nothing is configured.
+        -->
+        <section class="panel" [class.panel--collapsed]="!hasExtraFields()">
+          <div class="panel__head">
+            <h3 class="panel__title">Additional information</h3>
+          </div>
+          <!-- Read-only without documents.edit, and for anything sitting in the recycle bin. -->
+          <emhip-custom-fields entityType="Document" [entityId]="doc.id" [readonly]="!canEdit || doc.isDeleted" [heading]="null" />
+        </section>
+
         <!-- Version history. Every version stays downloadable with its SHA-256 for integrity checks. -->
         <section class="panel">
           <div class="panel__head">

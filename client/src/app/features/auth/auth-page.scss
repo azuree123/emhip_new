@@ -15,12 +15,9 @@
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
   padding: 40px 32px;
 
+  // The logo lockup brings its own typography; this only positions it in the card.
   &__logo {
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    font-weight: 700;
-    font-size: 20px;
-    letter-spacing: 0.5px;
-    color: #941c3c;
+    display: block;
     margin-bottom: 24px;
   }
 

@@ -31,6 +31,16 @@
               <emhip-staff-picker name="assignedToStaffId" [(ngModel)]="form.assignedToStaffId" placeholder="Unassigned" />
             </div>
           </div>
+          <!-- Admin-defined extra fields for this action. Saved by submit() — against the
+               action being edited, or against the new action's id once addAction() returns it.
+               Collapsed away entirely when nothing is configured. -->
+          <emhip-custom-fields
+            class="action-custom-fields"
+            [class.action-custom-fields--hidden]="!hasCustomFields()"
+            entityType="GuestAction"
+            [entityId]="editingId()"
+            [showSaveButton]="false"
+          />
           @if (submitError()) {
             <p class="form-error">{{ submitError() }}</p>
           }

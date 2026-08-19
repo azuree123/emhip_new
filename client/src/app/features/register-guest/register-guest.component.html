@@ -79,6 +79,18 @@
         }
       }
 
+      <!-- Admin-defined extra Guest fields — part of the Demographics step, but rendered here
+           (outside the @switch) so the answers survive stepping back and forth. The guest does
+           not exist yet, so the panel saves nothing itself: submit() calls saveFor() with the
+           new id right after register(). Hidden on the other steps, and never shown at all
+           when the admin has configured no extra fields. -->
+      <section class="custom-fields-card" [class.custom-fields-card--hidden]="step() !== 1 || !hasCustomFields()">
+        @if (hasCustomFields()) {
+          <h3 class="custom-fields-card__title">Additional information</h3>
+        }
+        <emhip-custom-fields entityType="Guest" [entityId]="null" [showSaveButton]="false" [heading]="null" />
+      </section>
+
       @if (errorMessage()) {
         <p class="submit-error">{{ errorMessage() }}</p>
       }

@@ -29,6 +29,12 @@
   margin-bottom: 20px;
 }
 
+// Admin-defined extra fields inside the add/edit form. Taken out of the form's flex flow
+// while none are configured, so the form keeps exactly its original spacing.
+.action-custom-fields--hidden {
+  display: none;
+}
+
 // Action / Due date / Assigned to / Actions table — header band rgb(241,241,241).
 $grid-columns: minmax(0, 1fr) 180px 160px 200px;
 

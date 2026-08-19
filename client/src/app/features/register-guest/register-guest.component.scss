@@ -220,6 +220,30 @@
   }
 }
 
+// "Additional information" card — the admin-defined extra Guest fields shown at the bottom of
+// the Demographics step. Same white r12 card as the step's own cards (_form-shared.scss),
+// repeated here because that stylesheet is scoped to the step components' views.
+.custom-fields-card {
+  box-sizing: border-box;
+  margin-top: 22px;
+  padding: 24px 20px;
+  border-radius: 12px;
+  background: #ffffff;
+
+  &--hidden {
+    display: none;
+  }
+}
+
+.custom-fields-card__title {
+  margin: 0 0 20px;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-weight: 600;
+  font-size: 20px;
+  line-height: 24px;
+  color: #2a2a2a;
+}
+
 .submit-error {
   margin: 16px 0 0;
   padding: 12px 16px;

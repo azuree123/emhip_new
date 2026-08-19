@@ -30,6 +30,8 @@ public class EmhipDbContext(DbContextOptions<EmhipDbContext> options)
     public DbSet<AppSetting> AppSettings => Set<AppSetting>();
     public DbSet<LookupItem> LookupItems => Set<LookupItem>();
     public DbSet<EmailTemplate> EmailTemplates => Set<EmailTemplate>();
+    public DbSet<CustomFieldDefinition> CustomFieldDefinitions => Set<CustomFieldDefinition>();
+    public DbSet<CustomFieldValue> CustomFieldValues => Set<CustomFieldValue>();
     public DbSet<AuditEvent> AuditEvents => Set<AuditEvent>();
     public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
 

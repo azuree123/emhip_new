@@ -22,6 +22,7 @@ public sealed class AuditSaveChangesInterceptor(ICurrentUser currentUser) : Save
         typeof(DialogAssessment), typeof(GuestAction), typeof(GuestClinicalProfile), typeof(UrgentEpisode),
         // Document control and configuration changes are auditable events in their own right.
         typeof(Document), typeof(DocumentVersion), typeof(AppSetting), typeof(LookupItem),
+        typeof(EmailTemplate), typeof(CustomFieldDefinition), typeof(CustomFieldValue),
     ];
 
     public override InterceptionResult<int> SavingChanges(DbContextEventData eventData, InterceptionResult<int> result)

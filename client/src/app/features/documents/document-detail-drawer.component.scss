@@ -233,3 +233,9 @@
     flex: 1 1 auto;
   }
 }
+
+// The custom-fields panel renders nothing when no extra document fields are configured — collapse
+// the whole section rather than leaving an empty "Additional information" heading behind.
+.panel--collapsed {
+  display: none;
+}

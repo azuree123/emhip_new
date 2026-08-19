@@ -265,6 +265,15 @@
             <span>Notes</span>
             <textarea rows="3" [(ngModel)]="scheduleForm.notes"></textarea>
           </label>
+          <!-- Admin-defined follow-up fields; saved once the follow-up has an id. -->
+          <div class="extra-fields" [class.extra-fields--empty]="!hasFollowUpFields()">
+            <emhip-custom-fields
+              #followUpFields
+              entityType="FollowUp"
+              [entityId]="null"
+              [showSaveButton]="false"
+              heading="Additional information" />
+          </div>
         } @else {
           <label class="field">
             <span>Contact type</span>
@@ -290,6 +299,15 @@
             <span>Notes</span>
             <textarea rows="3" [(ngModel)]="contactForm.notes"></textarea>
           </label>
+          <!-- Admin-defined contact fields; saved once the contact has an id. -->
+          <div class="extra-fields" [class.extra-fields--empty]="!hasContactFields()">
+            <emhip-custom-fields
+              #contactFields
+              entityType="Contact"
+              [entityId]="null"
+              [showSaveButton]="false"
+              heading="Additional information" />
+          </div>
         }
 
         @if (saveError()) {

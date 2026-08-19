@@ -1,8 +1,9 @@
-import { Component, EventEmitter, Output, computed, effect, inject, input, signal } from '@angular/core';
+import { Component, EventEmitter, Output, computed, effect, inject, input, signal, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Observable } from 'rxjs';
+import { Observable, map, of, switchMap } from 'rxjs';
 import { GuestActionDto, GuestActionRequest } from '../../core/api-models';
 import { GuestsApiService } from '../../core/guests-api.service';
+import { CustomFieldsComponent } from '../../shared/custom-fields.component';
 import { StaffPickerComponent } from '../../shared/staff-picker.component';
 import { formatDate } from './guest-workspace.util';
 
@@ -13,11 +14,17 @@ import { formatDate } from './guest-workspace.util';
  * green-tick checkboxes, red "13 May — overdue" and gold "15 May — due soon" due dates,
  * outline Edit/Delete buttons), plus a "Completed actions" card whose rows show the active
  * green checkbox with struck-through text and a Delete button only.
+ *
+ * The add/edit form also carries the admin-defined extra GuestAction fields. Editing an
+ * existing action loads its answers (entityId bound to editingId); adding one runs the
+ * deferred flow — the answers are typed before the action exists and are saved with
+ * saveFor(newId) as soon as addAction() returns the id. The panel renders nothing (and the
+ * form is untouched) when no extra fields are configured.
  */
 @Component({
   selector: 'emhip-guest-action-tab',
   standalone: true,
-  imports: [FormsModule, StaffPickerComponent],
+  imports: [FormsModule, StaffPickerComponent, CustomFieldsComponent],
   templateUrl: './guest-action-tab.component.html',
   styleUrl: './guest-action-tab.component.scss',
 })
@@ -41,6 +48,15 @@ export class GuestActionTabComponent {
   readonly submitError = signal<string | null>(null);
   /** Id of the action currently being toggled/deleted, to disable its row controls. */
   readonly busyId = signal<string | null>(null);
+
+  /** Admin-defined extra GuestAction fields, rendered inside the add/edit form. */
+  private readonly customFields = viewChild(CustomFieldsComponent);
+  readonly hasCustomFields = computed(() => this.customFields()?.hasFields() ?? false);
+  /**
+   * Id of an action that was just created but whose extra fields failed to save — a retry then
+   * updates that action instead of adding a second one.
+   */
+  private readonly createdActionId = signal<string | null>(null);
 
   readonly formatDate = formatDate;
 
@@ -109,6 +125,7 @@ export class GuestActionTabComponent {
     }
     this.form = this.emptyForm();
     this.editingId.set(null);
+    this.createdActionId.set(null);
     this.submitError.set(null);
     this.showForm.set(true);
   }
@@ -121,6 +138,7 @@ export class GuestActionTabComponent {
       isCompleted: action.isCompleted,
     };
     this.editingId.set(action.id);
+    this.createdActionId.set(null);
     this.submitError.set(null);
     this.showForm.set(true);
   }
@@ -128,6 +146,7 @@ export class GuestActionTabComponent {
   closeForm(): void {
     this.showForm.set(false);
     this.editingId.set(null);
+    this.createdActionId.set(null);
     this.submitError.set(null);
   }
 
@@ -136,24 +155,40 @@ export class GuestActionTabComponent {
       this.submitError.set('A description is required.');
       return;
     }
+    const panel = this.customFields();
+    if (panel?.hasFields() && !panel.isValid()) {
+      panel.showErrors.set(true);
+      this.submitError.set('Complete the required additional fields.');
+      return;
+    }
     this.submitting.set(true);
     this.submitError.set(null);
-    const editingId = this.editingId();
-    const request$: Observable<unknown> = editingId
-      ? this.guestsApi.updateAction(this.guestId(), editingId, this.form)
-      : this.guestsApi.addAction(this.guestId(), this.form);
-    request$.subscribe({
-      next: () => {
-        this.submitting.set(false);
-        this.closeForm();
-        this.load(this.guestId(), () => false);
-        this.refresh.emit();
-      },
-      error: () => {
-        this.submitting.set(false);
-        this.submitError.set('Could not save this action. Please try again.');
-      },
-    });
+    // An add whose extra fields failed to save left a real action behind — retry updates it.
+    const existingId = this.editingId() ?? this.createdActionId();
+    const saved$: Observable<string> = existingId
+      ? this.guestsApi.updateAction(this.guestId(), existingId, this.form).pipe(map(() => existingId))
+      : this.guestsApi.addAction(this.guestId(), this.form).pipe(map((res) => res.id));
+    saved$
+      .pipe(
+        // The answers are typed before a new action exists, so they are saved against its id
+        // the moment addAction() hands one back; an edit saves against the action being edited.
+        switchMap((id) => {
+          this.createdActionId.set(id);
+          return panel?.hasFields() ? panel.saveFor(id) : of(void 0);
+        }),
+      )
+      .subscribe({
+        next: () => {
+          this.submitting.set(false);
+          this.closeForm();
+          this.load(this.guestId(), () => false);
+          this.refresh.emit();
+        },
+        error: () => {
+          this.submitting.set(false);
+          this.submitError.set('Could not save this action. Please try again.');
+        },
+      });
   }
 
   toggleComplete(action: GuestActionDto): void {

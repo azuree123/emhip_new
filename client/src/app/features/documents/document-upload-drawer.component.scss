@@ -149,3 +149,9 @@
 }
 
 // The linked-guest field is the shared <emhip-guest-picker>, which carries its own styling.
+
+// Admin-defined extra fields. The panel renders nothing when none are configured, so the wrapper
+// is collapsed outright — otherwise it would still take a slot in the body's flex gap.
+.extra-fields--empty {
+  display: none;
+}

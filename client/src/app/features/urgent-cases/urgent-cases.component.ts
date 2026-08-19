@@ -1,5 +1,5 @@
 import { CommonModule, formatDate } from '@angular/common';
-import { Component, OnDestroy, OnInit, computed, effect, inject, signal } from '@angular/core';
+import { Component, OnDestroy, OnInit, computed, effect, inject, signal, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { AuthService } from '../../core/auth.service';
@@ -19,6 +19,7 @@ import {
 import { GuestsApiService } from '../../core/guests-api.service';
 import { UrgentCasesApiService } from '../../core/urgent-cases-api.service';
 import { UrgentCasesHubService } from '../../core/urgent-cases-hub.service';
+import { CustomFieldsComponent } from '../../shared/custom-fields.component';
 import { StaffPickerComponent } from '../../shared/staff-picker.component';
 
 const WINDOW_HOURS = 72;
@@ -60,7 +61,7 @@ const RISK_FLAGS: RiskFlagDef[] = [
 @Component({
   selector: 'app-urgent-cases',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, StaffPickerComponent],
+  imports: [CommonModule, FormsModule, RouterLink, StaffPickerComponent, CustomFieldsComponent],
   templateUrl: './urgent-cases.component.html',
   styleUrl: './urgent-cases.component.scss',
 })
@@ -187,9 +188,26 @@ export class UrgentCasesComponent implements OnInit, OnDestroy {
   readonly resolveError = signal<string | null>(null);
   resolveNote = '';
 
+  // ---- Admin-defined extra fields ----------------------------------------
+
+  private readonly followUpFields = viewChild<CustomFieldsComponent>('followUpFields');
+  private readonly contactFields = viewChild<CustomFieldsComponent>('contactFields');
+  /** Mirror the panels' own hasFields(), so an unconfigured modal looks exactly as it did before. */
+  readonly hasFollowUpFields = signal(false);
+  readonly hasContactFields = signal(false);
+  /**
+   * Set when the follow-up / contact was created but its extra answers were rejected — Save then
+   * retries only the answers, so a second press can never create a duplicate record.
+   */
+  private pendingFollowUpExtras: (() => void) | null = null;
+  private pendingContactExtras: (() => void) | null = null;
+
   private tickHandle?: ReturnType<typeof setInterval>;
 
   constructor() {
+    effect(() => this.hasFollowUpFields.set(this.followUpFields()?.hasFields() ?? false));
+    effect(() => this.hasContactFields.set(this.contactFields()?.hasFields() ?? false));
+
     // Live escalations pushed over SignalR: prepend new guests, update in place if we already
     // have a row for that guest (e.g. its risk flags changed).
     effect(() => {
@@ -330,16 +348,33 @@ export class UrgentCasesComponent implements OnInit, OnDestroy {
     this.modalGuestName.set(c.guestName);
     this.scheduleForm = { dueDate: '', assigneeStaffId: this.auth.current().staffId, notes: '' };
     this.saveError.set(null);
+    this.pendingFollowUpExtras = null;
     this.modalOpen.set(true);
   }
 
   closeModal(): void {
+    this.pendingFollowUpExtras = null;
     this.modalOpen.set(false);
   }
 
   submitModal(): void {
+    // Retry path: the follow-up exists, only its extra answers still have to land.
+    const retry = this.pendingFollowUpExtras;
+    if (retry) {
+      this.saving.set(true);
+      this.saveError.set(null);
+      retry();
+      return;
+    }
+
     if (!this.scheduleForm.dueDate || !this.scheduleForm.assigneeStaffId) {
       this.saveError.set('Due date and assignee are required.');
+      return;
+    }
+    const panel = this.followUpFields();
+    if (panel?.hasFields() && !panel.isValid()) {
+      panel.showErrors.set(true);
+      this.saveError.set('Complete the required additional fields.');
       return;
     }
     this.saving.set(true);
@@ -350,13 +385,35 @@ export class UrgentCasesComponent implements OnInit, OnDestroy {
       notes: this.scheduleForm.notes || null,
     };
     this.guestsApi.scheduleFollowUp(this.modalGuestId(), req).subscribe({
+      next: ({ id }) => this.saveFollowUpExtras(panel, id),
+      error: () => {
+        this.saving.set(false);
+        this.saveError.set('Could not schedule the follow-up.');
+      },
+    });
+  }
+
+  /**
+   * Second leg of "Log follow-up": the follow-up already exists, so a rejection here is reported
+   * as "scheduled, extras not saved" and the modal stays open to retry just the answers.
+   */
+  private saveFollowUpExtras(panel: CustomFieldsComponent | undefined, followUpId: string): void {
+    if (!panel?.hasFields()) {
+      this.pendingFollowUpExtras = null;
+      this.saving.set(false);
+      this.modalOpen.set(false);
+      return;
+    }
+    panel.saveFor(followUpId).subscribe({
       next: () => {
+        this.pendingFollowUpExtras = null;
         this.saving.set(false);
         this.modalOpen.set(false);
       },
       error: () => {
+        this.pendingFollowUpExtras = () => this.saveFollowUpExtras(panel, followUpId);
         this.saving.set(false);
-        this.saveError.set('Could not schedule the follow-up.');
+        this.saveError.set('The follow-up was scheduled, but its additional information could not be saved. Save again to retry.');
       },
     });
   }
@@ -474,18 +531,35 @@ export class UrgentCasesComponent implements OnInit, OnDestroy {
   openLogContact(): void {
     this.contactForm = { type: 'PhoneCall', outcome: 'Successful', occurredAt: this.nowLocal(), notes: '' };
     this.contactError.set(null);
+    this.pendingContactExtras = null;
     this.contactModalOpen.set(true);
   }
 
   closeContactModal(): void {
+    this.pendingContactExtras = null;
     this.contactModalOpen.set(false);
   }
 
   submitContact(): void {
+    // Retry path: the contact exists, only its extra answers still have to land.
+    const retry = this.pendingContactExtras;
+    if (retry) {
+      this.savingContact.set(true);
+      this.contactError.set(null);
+      retry();
+      return;
+    }
+
     const guestId = this.detailsGuestId();
     if (!guestId) return;
     if (!this.contactForm.occurredAt) {
       this.contactError.set('Date/time of contact is required.');
+      return;
+    }
+    const panel = this.contactFields();
+    if (panel?.hasFields() && !panel.isValid()) {
+      panel.showErrors.set(true);
+      this.contactError.set('Complete the required additional fields.');
       return;
     }
     this.savingContact.set(true);
@@ -497,14 +571,39 @@ export class UrgentCasesComponent implements OnInit, OnDestroy {
       notes: this.contactForm.notes || null,
     };
     this.guestsApi.addContact(guestId, req).subscribe({
+      next: ({ id }) => this.saveContactExtras(panel, id, guestId),
+      error: () => {
+        this.savingContact.set(false);
+        this.contactError.set('Could not log the follow-up note.');
+      },
+    });
+  }
+
+  /**
+   * Second leg of "Log urgent follow-up note": the contact is already on the guest's record, so a
+   * rejection here is reported as "recorded, extras not saved" — the drawer is refreshed either
+   * way and the modal stays open to retry just the answers.
+   */
+  private saveContactExtras(panel: CustomFieldsComponent | undefined, contactId: string, guestId: string): void {
+    if (!panel?.hasFields()) {
+      this.pendingContactExtras = null;
+      this.savingContact.set(false);
+      this.contactModalOpen.set(false);
+      this.fetchDetails(guestId);
+      return;
+    }
+    panel.saveFor(contactId).subscribe({
       next: () => {
+        this.pendingContactExtras = null;
         this.savingContact.set(false);
         this.contactModalOpen.set(false);
         this.fetchDetails(guestId);
       },
       error: () => {
+        this.pendingContactExtras = () => this.saveContactExtras(panel, contactId, guestId);
         this.savingContact.set(false);
-        this.contactError.set('Could not log the follow-up note.');
+        this.contactError.set('The contact was recorded, but its additional information could not be saved. Save again to retry.');
+        this.fetchDetails(guestId);
       },
     });
   }
