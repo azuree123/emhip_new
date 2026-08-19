@@ -1,0 +1,496 @@
+@use './guest-tab-shared';
+@use './guest-workspace.tokens' as t;
+
+// Casework note drawer — literal values from GuestOverviewTab2 (Components.bundle.js
+// 50271-54563): rgba(0,0,0,0.45) overlay; an 858px white panel with a 12px radius; an 89px
+// rgb(240,240,240) header band with 12px top corners; 20px "Add contact" over a 12px guest
+// name; 36px/6px-radius inputs on a 1px rgb(229,229,229) border; 140x36 category radio chips
+// (inset 1px rgb(232,232,232), rgb(255,206,211) when chosen, rgb(235,60,44) dot); 236x36 risk
+// chips; rgb(241,241,241) SBAR blocks and toggle rows with a 43x21 rgb(215,215,215) switch;
+// a 126x36 white "Save as draft" and a 195x36 rgb(235,60,44) "Submit casework note".
+
+.drawer-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 40px 16px;
+  overflow-y: auto;
+}
+
+.drawer {
+  background: #fff;
+  border-radius: t.$radius-card;
+  width: min(858px, 100%);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.drawer__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 22px 24px;
+  background: #f0f0f0;
+  border-radius: t.$radius-card t.$radius-card 0 0;
+}
+
+.drawer__heading {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.drawer__title {
+  margin: 0;
+  font-family: t.$font-primary;
+  font-weight: 600;
+  font-size: 20px;
+  line-height: 24px;
+  color: t.$color-text-primary;
+}
+
+.drawer__subtitle {
+  font-family: t.$font-primary;
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 24px;
+  color: t.$color-text-body;
+}
+
+.drawer__close {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: #212121;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+
+  &:hover {
+    background: #e4e4e4;
+  }
+}
+
+.drawer__form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 24px;
+}
+
+.drawer__grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px 20px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+
+  &--full {
+    grid-column: 1 / -1;
+  }
+
+  // Stand-alone date fields outside .drawer__grid would otherwise stretch the panel's width.
+  &--narrow {
+    max-width: 260px;
+  }
+
+  select,
+  input,
+  textarea {
+    font-family: t.$font-primary;
+    font-size: 13px;
+    font-weight: 400;
+    color: t.$color-text-body;
+    width: 100%;
+    height: 37px;
+    padding: 0 14px;
+    border-radius: 8px;
+    border: 1px solid t.$color-divider;
+    background: #fff;
+    box-sizing: border-box;
+
+    &:disabled {
+      background: #f4f4f4;
+      color: t.$color-text-meta;
+    }
+  }
+
+  textarea {
+    height: auto;
+    padding: 10px 14px;
+    line-height: 20px;
+    resize: vertical;
+  }
+
+  &__label {
+    font-family: t.$font-primary;
+    font-weight: 600;
+    font-size: 14px;
+    line-height: 22px;
+    color: t.$color-text-primary;
+  }
+
+  &__optional {
+    font-weight: 400;
+    color: t.$color-text-meta;
+  }
+
+  &__hint {
+    font-family: t.$font-primary;
+    font-weight: 400;
+    font-size: 11px;
+    line-height: 16px;
+    color: t.$color-text-meta;
+  }
+}
+
+// ---- Category / risk radio chips ----
+
+.choice-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+
+  &--risk {
+    gap: 12px;
+  }
+}
+
+.choice {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 140px;
+  height: 36px;
+  padding: 0 16px;
+  border: none;
+  border-radius: 6px;
+  background: #fff;
+  box-shadow: inset 0 0 0 1px t.$color-border;
+  cursor: pointer;
+
+  &--wide {
+    min-width: 236px;
+    justify-content: flex-start;
+  }
+
+  &__radio {
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    box-shadow: inset 0 0 0 1.5px #636366;
+    flex-shrink: 0;
+    position: relative;
+  }
+
+  &__label {
+    font-family: t.$font-primary;
+    font-weight: 500;
+    font-size: 12px;
+    line-height: 24px;
+    color: t.$color-text-body;
+    white-space: nowrap;
+  }
+
+  &--on {
+    box-shadow: inset 0 0 0 1px #ffced3;
+
+    .choice__radio {
+      box-shadow: inset 0 0 0 1.5px t.$color-brand-red-bright;
+
+      &::after {
+        content: '';
+        position: absolute;
+        inset: 3px;
+        border-radius: 50%;
+        background: t.$color-brand-red-bright;
+      }
+    }
+  }
+
+  // "YES, HIGH RISK" reads as an alert once chosen.
+  &--danger.choice--on {
+    background: t.$color-chip-red-bg;
+
+    .choice__label {
+      color: t.$color-brand-red;
+    }
+  }
+}
+
+// ---- SBAR blocks ----
+
+.sbar-intro {
+  margin: 0;
+  padding: 12px 16px;
+  border-radius: 8px;
+  background: #f1f1f1;
+  font-family: t.$font-primary;
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 20px;
+  color: t.$color-text-body;
+}
+
+.sbar {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 18px;
+  border-radius: 8px;
+  box-shadow: inset 0 0 0 1px t.$color-divider;
+}
+
+.sbar__head {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+
+  &--row {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+}
+
+.sbar__title {
+  margin: 0;
+  font-family: t.$font-primary;
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 24px;
+  color: t.$color-text-primary;
+}
+
+.sbar__hint {
+  font-family: t.$font-primary;
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 18px;
+  color: t.$color-text-meta;
+}
+
+// ---- Actions arising from this note ----
+
+.btn-add-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 14px;
+  border: none;
+  border-radius: 4px;
+  background: #fff;
+  box-shadow: inset 0 0 0 1px t.$color-border-strong;
+  font-family: t.$font-primary;
+  font-weight: 500;
+  font-size: 13px;
+  letter-spacing: -0.005em;
+  color: t.$color-text-primary;
+  cursor: pointer;
+}
+
+.action-rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+
+  &__row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 160px 180px auto;
+    gap: 12px;
+    align-items: end;
+  }
+
+  &__remove {
+    height: 37px;
+    padding: 0 14px;
+    border: none;
+    border-radius: 4px;
+    background: #fff;
+    box-shadow: inset 0 0 0 1px t.$color-border-strong;
+    font-family: t.$font-primary;
+    font-weight: 500;
+    font-size: 13px;
+    color: #be123c;
+    cursor: pointer;
+  }
+}
+
+// ---- MDT / CPN toggles ----
+
+.toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  height: 44px;
+  padding: 0 16px;
+  border-radius: 6px;
+  background: #f1f1f1;
+
+  &__label {
+    font-family: t.$font-primary;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 24px;
+    color: t.$color-text-primary;
+  }
+}
+
+.switch {
+  position: relative;
+  width: 43px;
+  height: 21px;
+  flex-shrink: 0;
+  padding: 0;
+  border: none;
+  border-radius: 15.5px;
+  background: #d7d7d7;
+  cursor: pointer;
+  transition: background 120ms ease;
+
+  &__knob {
+    position: absolute;
+    top: 1px;
+    left: 1px;
+    width: 19px;
+    height: 19px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    transition: transform 120ms ease;
+  }
+
+  &--on {
+    background: t.$color-brand-red-bright;
+
+    .switch__knob {
+      transform: translateX(22px);
+    }
+  }
+}
+
+// ---- Footer ----
+
+.submit-note {
+  margin: 0;
+  font-family: t.$font-primary;
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 18px;
+  color: t.$color-text-meta;
+}
+
+.drawer__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.drawer__draft-note {
+  margin-right: auto;
+  font-family: t.$font-primary;
+  font-weight: 500;
+  font-size: 12px;
+  color: t.$color-success-text;
+}
+
+.btn-draft {
+  height: 36px;
+  padding: 0 20px;
+  border: none;
+  border-radius: 4px;
+  background: #fff;
+  box-shadow: inset 0 0 0 1px t.$color-border-strong;
+  font-family: t.$font-primary;
+  font-weight: 500;
+  font-size: 14px;
+  letter-spacing: -0.005em;
+  color: t.$color-text-primary;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+}
+
+.btn-submit {
+  height: 36px;
+  padding: 0 24px;
+  border: none;
+  border-radius: 4px;
+  background: t.$color-brand-red-bright;
+  color: #fff;
+  font-family: t.$font-primary;
+  font-weight: 500;
+  font-size: 14px;
+  letter-spacing: -0.005em;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+}
+
+@media (max-width: 860px) {
+  .drawer__grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .action-rows__row {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .action-rows__remove {
+    justify-self: start;
+  }
+}
+
+@media (max-width: 640px) {
+  .drawer-overlay {
+    padding: 12px 8px;
+  }
+
+  .drawer__form,
+  .drawer__header {
+    padding: 18px 16px;
+  }
+
+  .drawer__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .choice,
+  .choice--wide {
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+}

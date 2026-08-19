@@ -32,6 +32,8 @@ public interface IAppDbContext
     DbSet<EmailTemplate> EmailTemplates { get; }
     DbSet<CustomFieldDefinition> CustomFieldDefinitions { get; }
     DbSet<CustomFieldValue> CustomFieldValues { get; }
+    DbSet<CaseworkNote> CaseworkNotes { get; }
+    DbSet<PathwayChange> PathwayChanges { get; }
     DbSet<AuditEvent> AuditEvents { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);

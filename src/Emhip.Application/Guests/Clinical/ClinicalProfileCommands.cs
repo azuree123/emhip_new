@@ -74,15 +74,28 @@ public sealed class UpdateClinicalProfileCommandHandler(IAppDbContext db) : IReq
 public sealed record AllocateGuestCommand(
     Guid GuestId, Domain.Enums.GuestPathway Pathway, bool AfaSupportNeeded, Guid? AssignedCmhwId) : IRequest;
 
-public sealed class AllocateGuestCommandHandler(IAppDbContext db) : IRequestHandler<AllocateGuestCommand>
+public sealed class AllocateGuestCommandHandler(IAppDbContext db, ICurrentUser currentUser) : IRequestHandler<AllocateGuestCommand>
 {
     public async Task Handle(AllocateGuestCommand request, CancellationToken cancellationToken)
     {
         var guest = await db.Guests.FirstOrDefaultAsync(g => g.Id == request.GuestId, cancellationToken)
             ?? throw new KeyNotFoundException($"Guest {request.GuestId} not found.");
 
+        var previous = guest.Pathway;
         guest.Allocate(request.Pathway, request.AfaSupportNeeded);
         if (request.AssignedCmhwId.HasValue) guest.Reassign(request.AssignedCmhwId);
+
+        // Record it in the pathway history too, so the tab shows the original allocation
+        // alongside later changes rather than starting blank.
+        if (previous != request.Pathway)
+        {
+            db.PathwayChanges.Add(new PathwayChange(
+                guest.Id, previous, request.Pathway,
+                previous is null ? "Initial allocation at registration." : "Pathway allocation updated.",
+                currentUser.StaffId, assignedByName: null,
+                DateOnly.FromDateTime(DateTime.UtcNow), currentUser.StaffId));
+        }
+
         await db.SaveChangesAsync(cancellationToken);
     }
 }

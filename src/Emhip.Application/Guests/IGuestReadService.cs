@@ -28,5 +28,8 @@ public interface IGuestReadService
     Task<GuestFollowUpsDto?> GetFollowUpsAsync(Guid guestId, CancellationToken cancellationToken = default);
     Task<GuestInitialConversationDto?> GetInitialConversationAsync(Guid guestId, CancellationToken cancellationToken = default);
     Task<Dialog.GuestDialogDto?> GetDialogAsync(Guid guestId, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<Casework.CaseworkNoteDto>> GetCaseworkNotesAsync(Guid guestId, CancellationToken cancellationToken = default);
+    /// <summary>All quick notes for the guest, pinned first — the Notes tab's list.</summary>
+    Task<IReadOnlyList<Dtos.GuestNoteDto>> GetNotesAsync(Guid guestId, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<Actions.GuestActionDto>> GetActionsAsync(Guid guestId, CancellationToken cancellationToken = default);
 }

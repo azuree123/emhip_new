@@ -1,14 +1,9 @@
 // Pathway tab — literal colors/spacing lifted from GuestPathwayTab in
 // project/screens/Components.bundle.js (lines 29090–31284), including the
-// Change Pathway dialog and its three pathway option cards.
+// Change Pathway dialog (header band, audit banner, pathway option cards,
+// date/assigned-by row and reason textarea) and the history entry tiles.
 @use './guest-tab-shared';
 @use './guest-workspace.tokens' as t;
-
-.header-actions {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-}
 
 // Red "Add New Pathway" header button — 36px, bg rgb(225,38,40), white 14/500.
 .add-btn {
@@ -30,6 +25,36 @@
 
 .referral-form {
   margin-bottom: 20px;
+}
+
+// Live allocation strip — current pathway + AFA flag, both from GuestPathwayDto.
+.pathway-summary {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+  font-family: t.$font-primary;
+
+  &__label {
+    font-weight: 500;
+    font-size: 12px;
+    line-height: 18px;
+    color: t.$color-text-meta;
+  }
+
+  &__value {
+    font-weight: 600;
+    font-size: 14px;
+    line-height: 24px;
+    letter-spacing: -0.005em;
+    color: t.$color-text-primary;
+  }
+}
+
+.chip--afa {
+  background: t.$color-gold-bg;
+  color: t.$color-gold-text;
 }
 
 .entries {
@@ -124,7 +149,7 @@
   white-space: nowrap;
 }
 
-// Change Pathway dialog — white 12px-radius panel over a dimmed backdrop.
+// Change Pathway dialog — 858px white panel, grey header band, over a dimmed backdrop.
 .dialog-backdrop {
   position: fixed;
   inset: 0;
@@ -143,9 +168,40 @@
   overflow-y: auto;
   background: #fff;
   border-radius: 12px;
-  padding: 32px 40px;
   display: flex;
   flex-direction: column;
+
+  // Grey band, bg rgb(240,240,240), radius 12px 12px 0 0.
+  &__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 20px 22px 22px;
+    border-radius: 12px 12px 0 0;
+    background: t.$color-tile-bg;
+  }
+
+  &__close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    width: 36px;
+    height: 36px;
+    border: none;
+    border-radius: 6px;
+    background: #fff;
+    color: #212121;
+    cursor: pointer;
+  }
+
+  &__body {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding: 24px 22px 28px;
+  }
 
   &__title {
     margin: 0;
@@ -157,7 +213,7 @@
   }
 
   &__subtitle {
-    margin: 4px 0 24px;
+    margin: 4px 0 0;
     font-family: t.$font-primary;
     font-weight: 500;
     font-size: 14px;
@@ -165,20 +221,99 @@
     color: t.$color-text-meta;
   }
 
+  // Audit banner — bg rgb(249,250,252) with a 3px rgb(52,91,177) left bar.
+  &__banner {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin: 0;
+    padding: 12px 16px;
+    background: #f9fafc;
+    border-left: 3px solid #345bb1;
+    font-family: t.$font-primary;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 24px;
+    color: t.$color-text-primary;
+
+    svg {
+      flex: none;
+      margin-top: 4px;
+      color: #345bb1;
+    }
+  }
+
+  &__row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 262px));
+    gap: 16px;
+  }
+
+  &__field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: none;
+
+    &--wide {
+      max-width: 537px;
+    }
+  }
+
   &__label {
+    display: block;
+    padding: 0;
     font-family: t.$font-primary;
     font-weight: 600;
     font-size: 14px;
     line-height: 24px;
     color: t.$color-text-primary;
-    margin-bottom: 12px;
+  }
+
+  // Text inputs — 38px, radius 8, inset 1px rgb(229,229,229), value 14 rgb(50,50,50).
+  &__input,
+  &__textarea {
+    width: 100%;
+    box-sizing: border-box;
+    border: 1px solid t.$color-divider;
+    border-radius: 8px;
+    background: #fff;
+    font-family: t.$font-primary;
+    font-weight: 500;
+    font-size: 14px;
+    color: #323232;
+
+    &::placeholder {
+      color: t.$color-text-meta;
+    }
+
+    &:focus {
+      outline: none;
+      border-color: t.$color-brand-red;
+      box-shadow: 0 0 0 3px rgba(225, 38, 40, 0.1);
+    }
+  }
+
+  &__input {
+    height: 38px;
+    padding: 0 14px;
+  }
+
+  &__textarea {
+    min-height: 101px;
+    padding: 12px 16px;
+    line-height: 22px;
+    resize: vertical;
   }
 
   &__note {
     display: flex;
     align-items: center;
     gap: 6px;
-    margin: 20px 0 0;
+    margin: 0;
     font-family: t.$font-primary;
     font-style: italic;
     font-weight: 400;
@@ -196,7 +331,7 @@
     display: flex;
     justify-content: flex-end;
     gap: 8px;
-    margin-top: 24px;
+    margin-top: 4px;
   }
 
   // "Change Pathway" submit — bg rgb(235,60,44), white 14/500.
@@ -243,6 +378,12 @@
 
   &--selected {
     box-shadow: inset 0 0 0 1px t.$color-brand-red-bright;
+  }
+
+  // The guest's live pathway can't be re-selected (the API rejects it).
+  &--current {
+    background: #fafafa;
+    cursor: not-allowed;
   }
 
   // Radio in the top-right: grey ring, or red ring + dot when selected.
@@ -299,6 +440,18 @@
     line-height: 14px;
     color: t.$color-text-primary;
   }
+
+  &__current {
+    margin-top: 8px;
+    border-radius: 200px;
+    padding: 2px 10px;
+    background: #eef1f7;
+    font-family: t.$font-primary;
+    font-weight: 500;
+    font-size: 10px;
+    line-height: 16px;
+    color: #384049;
+  }
 }
 
 @media (max-width: 960px) {
@@ -316,13 +469,15 @@
 }
 
 @media (max-width: 640px) {
-  .header-actions {
-    flex-wrap: wrap;
-    justify-content: flex-end;
-    gap: 10px;
+  .dialog__header {
+    padding: 18px 16px;
   }
 
-  .dialog {
-    padding: 24px 20px;
+  .dialog__body {
+    padding: 20px 16px 24px;
+  }
+
+  .dialog__row {
+    grid-template-columns: 1fr;
   }
 }

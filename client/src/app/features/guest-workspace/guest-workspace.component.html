@@ -48,16 +48,18 @@
           </div>
         </div>
         <div class="identity-card__actions">
-          <button type="button" class="btn btn--primary" (click)="openContactDrawer()">
-            <svg class="btn__icon" width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-              <path
-                transform="translate(5,5)"
-                d="M 0 4.25 C -0.414 4.25 -0.75 4.586 -0.75 5 C -0.75 5.414 -0.414 5.75 0 5.75 L 0 5 L 0 4.25 Z M 10 5.75 C 10.414 5.75 10.75 5.414 10.75 5 C 10.75 4.586 10.414 4.25 10 4.25 L 10 5 L 10 5.75 Z M 5.75 0 C 5.75 -0.414 5.414 -0.75 5 -0.75 C 4.586 -0.75 4.25 -0.414 4.25 0 L 5 0 L 5.75 0 Z M 4.25 10 C 4.25 10.414 4.586 10.75 5 10.75 C 5.414 10.75 5.75 10.414 5.75 10 L 5 10 L 4.25 10 Z M 0 5 L 0 5.75 L 5 5.75 L 5 5 L 5 4.25 L 0 4.25 L 0 5 Z M 10 5 L 10 4.25 L 5 4.25 L 5 5 L 5 5.75 L 10 5.75 L 10 5 Z M 5 5 L 5.75 5 L 5.75 0 L 5 0 L 4.25 0 L 4.25 5 L 5 5 Z M 5 5 L 4.25 5 L 4.25 10 L 5 10 L 5.75 10 L 5.75 5 L 5 5 Z"
-                fill="currentColor"
-              />
-            </svg>
-            Add Contact
-          </button>
+          @if (canAddNote) {
+            <button type="button" class="btn btn--primary" (click)="openNoteDrawer()">
+              <svg class="btn__icon" width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                <path
+                  transform="translate(5,5)"
+                  d="M 0 4.25 C -0.414 4.25 -0.75 4.586 -0.75 5 C -0.75 5.414 -0.414 5.75 0 5.75 L 0 5 L 0 4.25 Z M 10 5.75 C 10.414 5.75 10.75 5.414 10.75 5 C 10.75 4.586 10.414 4.25 10 4.25 L 10 5 L 10 5.75 Z M 5.75 0 C 5.75 -0.414 5.414 -0.75 5 -0.75 C 4.586 -0.75 4.25 -0.414 4.25 0 L 5 0 L 5.75 0 Z M 4.25 10 C 4.25 10.414 4.586 10.75 5 10.75 C 5.414 10.75 5.75 10.414 5.75 10 L 5 10 L 4.25 10 Z M 0 5 L 0 5.75 L 5 5.75 L 5 5 L 5 4.25 L 0 4.25 L 0 5 Z M 10 5 L 10 4.25 L 5 4.25 L 5 5 L 5 5.75 L 10 5.75 L 10 5 Z M 5 5 L 5.75 5 L 5.75 0 L 5 0 L 4.25 0 L 4.25 5 L 5 5 Z M 5 5 L 4.25 5 L 4.25 10 L 5 10 L 5.75 10 L 5.75 5 L 5 5 Z"
+                  fill="currentColor"
+                />
+              </svg>
+              Add Contact
+            </button>
+          }
           <button type="button" class="btn btn--outline" (click)="raiseUrgentFlag()">
             <svg class="btn__icon" width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
               <path
@@ -117,6 +119,7 @@
       </div>
     }
 
+    <!-- Tab body — each tab fetches its own slice; the header above stays mounted. -->
     <section class="tab-body">
       @switch (activeTab()) {
         @case ('overview') {
@@ -154,16 +157,22 @@
         @case ('action') {
           <emhip-guest-action-tab [guestId]="guestId()" (refresh)="reloadOverview()" />
         }
+        @case ('notes') {
+          <app-guest-notes-tab
+            [guestId]="guestId()"
+            [guestName]="fullName()"
+            (refresh)="reloadOverview()"
+          />
+        }
       }
     </section>
 
-    @if (contactDrawerOpen()) {
-      <app-guest-contact-log
+    @if (noteDrawerOpen()) {
+      <emhip-casework-note-drawer
         [guestId]="guestId()"
         [guestName]="fullName()"
-        [recentContacts]="guest.recentContacts"
-        (closed)="closeContactDrawer()"
-        (saved)="contactSaved()"
+        (closed)="closeNoteDrawer()"
+        (saved)="noteSaved($event)"
       />
     }
   }

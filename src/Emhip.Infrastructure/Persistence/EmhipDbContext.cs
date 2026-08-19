@@ -32,6 +32,8 @@ public class EmhipDbContext(DbContextOptions<EmhipDbContext> options)
     public DbSet<EmailTemplate> EmailTemplates => Set<EmailTemplate>();
     public DbSet<CustomFieldDefinition> CustomFieldDefinitions => Set<CustomFieldDefinition>();
     public DbSet<CustomFieldValue> CustomFieldValues => Set<CustomFieldValue>();
+    public DbSet<CaseworkNote> CaseworkNotes => Set<CaseworkNote>();
+    public DbSet<PathwayChange> PathwayChanges => Set<PathwayChange>();
     public DbSet<AuditEvent> AuditEvents => Set<AuditEvent>();
     public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
 

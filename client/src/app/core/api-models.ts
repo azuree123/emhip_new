@@ -140,8 +140,98 @@ export interface PathwayReferralDto {
   referredAt: string;
 }
 
+/** One entry in the append-only pathway history (what changed, why, who authorised it). */
+export interface PathwayChangeDto {
+  id: string;
+  fromPathway: GuestPathway | null;
+  toPathway: GuestPathway;
+  reason: string | null;
+  assignedByName: string | null;
+  /** The clinically meaningful date the change took effect (yyyy-MM-dd). */
+  changedOn: string;
+  recordedByName: string;
+  createdAt: string;
+}
+
+export interface ChangePathwayRequest {
+  pathway: GuestPathway;
+  reason?: string | null;
+  /** Staff member who authorised the change; falls back to assignedByName for non-portal clinicians. */
+  assignedByStaffId?: string | null;
+  assignedByName?: string | null;
+  changedOn: string;
+}
+
+// ---- Casework notes (the SBAR clinical note behind "Add contact") ----
+
+export type CaseworkNoteCategory = 'Casework' | 'Activity' | 'Hospitality' | 'Afa';
+export type CaseworkNoteStatus = 'Draft' | 'Submitted';
+export type CaseworkRiskLevel = 'NoRiskDetected' | 'Low' | 'Medium' | 'High';
+
+/** An action the worker adds while writing the note ("Actions arising from this note"). */
+export interface CaseworkActionInput {
+  description: string;
+  dueDate: string;
+  assignedToStaffId?: string | null;
+}
+
+export interface CaseworkNoteActionDto {
+  id: string;
+  description: string;
+  dueDate: string;
+  isCompleted: boolean;
+  assignedToName: string | null;
+}
+
+export interface CaseworkNoteInput {
+  category: CaseworkNoteCategory;
+  contactMethod: ContactType;
+  occurredAt: string;
+  situation?: string | null;
+  background?: string | null;
+  /** Required to submit; drafts may leave it empty. */
+  assessment?: string | null;
+  recommendation?: string | null;
+  riskLevel: CaseworkRiskLevel;
+  guestReportedChanges?: string | null;
+  serviceInvolvementChanges?: string | null;
+  additionalNotes?: string | null;
+  nextContactDate?: string | null;
+  mdtDiscussionRequested: boolean;
+  cpnReferralRequested: boolean;
+  actions: CaseworkActionInput[];
+}
+
+export interface CaseworkNoteDto {
+  id: string;
+  guestId: string;
+  category: CaseworkNoteCategory;
+  status: CaseworkNoteStatus;
+  contactMethod: ContactType;
+  occurredAt: string;
+  situation: string | null;
+  background: string | null;
+  assessment: string | null;
+  recommendation: string | null;
+  riskLevel: CaseworkRiskLevel;
+  guestReportedChanges: string | null;
+  serviceInvolvementChanges: string | null;
+  additionalNotes: string | null;
+  nextContactDate: string | null;
+  mdtDiscussionRequested: boolean;
+  cpnReferralRequested: boolean;
+  authorName: string;
+  createdAt: string;
+  submittedAt: string | null;
+  actions: CaseworkNoteActionDto[];
+}
+
 export interface GuestPathwayDto {
   guestId: string;
+  currentPathway: GuestPathway | null;
+  afaSupportNeeded: boolean;
+  /** Append-only history, newest first. */
+  changes: PathwayChangeDto[];
   referrals: PathwayReferralDto[];
 }
 

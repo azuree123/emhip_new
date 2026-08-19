@@ -4,6 +4,10 @@ import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 import {
   AddContactRequest,
+  GuestNoteDto,
+  ChangePathwayRequest,
+  CaseworkNoteInput,
+  CaseworkNoteDto,
   AddNoteRequest,
   AllocateGuestRequest,
   ClinicalProfileDto,
@@ -127,8 +131,47 @@ export class GuestsApiService {
     return this.http.post<{ id: string }>(`${this.base}/${guestId}/contacts`, request);
   }
 
+  /** All quick notes for the guest, pinned first. */
+  getNotes(guestId: string): Observable<GuestNoteDto[]> {
+    return this.http.get<GuestNoteDto[]>(`${this.base}/${guestId}/notes`);
+  }
+
   addNote(guestId: string, request: AddNoteRequest): Observable<{ id: string }> {
     return this.http.post<{ id: string }>(`${this.base}/${guestId}/notes`, request);
+  }
+
+  /** Pinned notes surface on the guest overview. */
+  setNotePinned(guestId: string, noteId: string, isPinned: boolean): Observable<void> {
+    return this.http.put<void>(`${this.base}/${guestId}/notes/${noteId}/pin`, { isPinned });
+  }
+
+  /** Casework notes (SBAR clinical records), newest first. */
+  getCaseworkNotes(guestId: string): Observable<CaseworkNoteDto[]> {
+    return this.http.get<CaseworkNoteDto[]>(`${this.base}/${guestId}/casework-notes`);
+  }
+
+  /**
+   * Saves a casework note. `submit: false` keeps it as a draft; submitting writes the linked
+   * contact, the actions arising, and the next-contact follow-up.
+   */
+  saveCaseworkNote(guestId: string, input: CaseworkNoteInput, submit: boolean): Observable<{ id: string }> {
+    const params = new HttpParams().set('submit', submit);
+    return this.http.post<{ id: string }>(`${this.base}/${guestId}/casework-notes`, input, { params });
+  }
+
+  updateCaseworkNote(guestId: string, noteId: string, input: CaseworkNoteInput, submit: boolean): Observable<void> {
+    const params = new HttpParams().set('submit', submit);
+    return this.http.put<void>(`${this.base}/${guestId}/casework-notes/${noteId}`, input, { params });
+  }
+
+  /** Discards a draft; submitted notes are part of the clinical record and cannot be deleted. */
+  deleteCaseworkNote(guestId: string, noteId: string): Observable<void> {
+    return this.http.delete<void>(`${this.base}/${guestId}/casework-notes/${noteId}`);
+  }
+
+  /** "Change Pathway" — moves the guest and appends the pathway-history entry. */
+  changePathway(guestId: string, request: ChangePathwayRequest): Observable<{ id: string }> {
+    return this.http.post<{ id: string }>(`${this.base}/${guestId}/pathway-changes`, request);
   }
 
   /** DIALOG tab — baseline (version 1), latest and full history. */

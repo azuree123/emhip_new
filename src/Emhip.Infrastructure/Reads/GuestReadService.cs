@@ -2,8 +2,10 @@ using Dapper;
 using Emhip.Application.Common;
 using Emhip.Application.Guests;
 using Emhip.Application.Guests.Actions;
+using Emhip.Application.Guests.Casework;
 using Emhip.Application.Guests.Dialog;
 using Emhip.Application.Guests.Dtos;
+using Emhip.Application.Guests.Pathways;
 using Emhip.Domain.Enums;
 using Emhip.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -240,8 +242,23 @@ public sealed class GuestReadService(ISqlConnectionFactory connectionFactory, Em
 
     public async Task<GuestPathwayDto?> GetPathwayAsync(Guid guestId, CancellationToken cancellationToken = default)
     {
-        var exists = await db.Guests.AsNoTracking().AnyAsync(g => g.Id == guestId, cancellationToken);
-        if (!exists) return null;
+        var guest = await db.Guests.AsNoTracking()
+            .Where(g => g.Id == guestId)
+            .Select(g => new { g.Pathway, g.AfaSupportNeeded })
+            .FirstOrDefaultAsync(cancellationToken);
+        if (guest is null) return null;
+
+        var changes = await db.PathwayChanges.AsNoTracking()
+            .Where(c => c.GuestId == guestId)
+            .OrderByDescending(c => c.ChangedOn).ThenByDescending(c => c.CreatedAt)
+            .Select(c => new PathwayChangeDto(
+                c.Id, c.FromPathway, c.ToPathway, c.Reason,
+                // An explicit "assigned by" name wins; otherwise resolve the staff member.
+                c.AssignedByName ?? db.Users.Where(u => u.Id == c.AssignedByStaffId).Select(u => u.DisplayName).FirstOrDefault(),
+                c.ChangedOn,
+                db.Users.Where(u => u.Id == c.RecordedByStaffId).Select(u => u.DisplayName).FirstOrDefault() ?? "System",
+                c.CreatedAt))
+            .ToListAsync(cancellationToken);
 
         var referrals = await db.PathwayReferrals.AsNoTracking()
             .Where(p => p.GuestId == guestId)
@@ -251,8 +268,63 @@ public sealed class GuestReadService(ISqlConnectionFactory connectionFactory, Em
                 db.Users.Where(s => s.Id == p.ReferredByStaffId).Select(s => s.DisplayName).FirstOrDefault() ?? "Unknown", p.ReferredAt))
             .ToListAsync(cancellationToken);
 
-        return new GuestPathwayDto(guestId, referrals);
+        return new GuestPathwayDto(guestId, guest.Pathway, guest.AfaSupportNeeded, changes, referrals);
     }
+
+    public async Task<IReadOnlyList<CaseworkNoteDto>> GetCaseworkNotesAsync(Guid guestId, CancellationToken cancellationToken = default)
+    {
+        var notes = await db.CaseworkNotes.AsNoTracking()
+            .Where(n => n.GuestId == guestId)
+            .OrderByDescending(n => n.OccurredAt).ThenByDescending(n => n.CreatedAt)
+            .Select(n => new
+            {
+                n.Id, n.GuestId, n.Category, n.Status, n.ContactMethod, n.OccurredAt,
+                n.Situation, n.Background, n.Assessment, n.Recommendation, n.RiskLevel,
+                n.GuestReportedChanges, n.ServiceInvolvementChanges, n.AdditionalNotes,
+                n.NextContactDate, n.MdtDiscussionRequested, n.CpnReferralRequested,
+                AuthorName = db.Users.Where(u => u.Id == n.AuthorStaffId).Select(u => u.DisplayName).FirstOrDefault() ?? "Unknown",
+                n.CreatedAt, n.SubmittedAt,
+            })
+            .ToListAsync(cancellationToken);
+
+        if (notes.Count == 0) return [];
+
+        // Actions created from a note share the guest and were raised in the same moment; match
+        // them by the day the note was submitted so the note shows what it produced.
+        var actions = await db.GuestActions.AsNoTracking()
+            .Where(a => a.GuestId == guestId)
+            .Select(a => new
+            {
+                a.Id, a.Description, a.DueDate, a.IsCompleted, a.CreatedAt,
+                AssignedToName = db.Users.Where(u => u.Id == a.AssignedToStaffId).Select(u => u.DisplayName).FirstOrDefault(),
+            })
+            .ToListAsync(cancellationToken);
+
+        return notes
+            .Select(n => new CaseworkNoteDto(
+                n.Id, n.GuestId, n.Category, n.Status, n.ContactMethod, n.OccurredAt,
+                n.Situation, n.Background, n.Assessment, n.Recommendation, n.RiskLevel,
+                n.GuestReportedChanges, n.ServiceInvolvementChanges, n.AdditionalNotes,
+                n.NextContactDate, n.MdtDiscussionRequested, n.CpnReferralRequested,
+                n.AuthorName, n.CreatedAt, n.SubmittedAt,
+                n.SubmittedAt is null
+                    ? []
+                    : actions
+                        .Where(a => Math.Abs((a.CreatedAt - n.SubmittedAt.Value).TotalMinutes) < 5)
+                        .Select(a => new CaseworkNoteActionDto(a.Id, a.Description, a.DueDate, a.IsCompleted, a.AssignedToName))
+                        .ToList()))
+            .ToList();
+    }
+
+    public async Task<IReadOnlyList<GuestNoteDto>> GetNotesAsync(Guid guestId, CancellationToken cancellationToken = default) =>
+        await db.Notes.AsNoTracking()
+            .Where(n => n.GuestId == guestId)
+            .OrderByDescending(n => n.IsPinned).ThenByDescending(n => n.CreatedAt)
+            .Select(n => new GuestNoteDto(
+                n.Id, n.Body, n.Color.ToString(), n.IsPinned,
+                db.Users.Where(u => u.Id == n.AuthorStaffId).Select(u => u.DisplayName).FirstOrDefault() ?? "Unknown",
+                n.CreatedAt))
+            .ToListAsync(cancellationToken);
 
     public async Task<GuestFollowUpsDto?> GetFollowUpsAsync(Guid guestId, CancellationToken cancellationToken = default)
     {

@@ -1,0 +1,317 @@
+<div class="drawer-overlay" (click)="close()">
+  <div
+    class="drawer"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="casework-note-title"
+    (click)="$event.stopPropagation()"
+  >
+    <!-- Header band — rgb(240,240,240) with 12px top corners; title over the guest's name. -->
+    <div class="drawer__header">
+      <div class="drawer__heading">
+        <h2 class="drawer__title" id="casework-note-title">{{ title() }}</h2>
+        <span class="drawer__subtitle">{{ guestName() }}</span>
+      </div>
+      <button type="button" class="drawer__close" aria-label="Close" (click)="close()">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path
+            transform="translate(4.25,4.25)"
+            d="M 0.147 0.304 L 0.22 0.22 C 0.486 -0.047 0.903 -0.071 1.196 0.147 L 1.28 0.22 L 7.75 6.689 L 14.22 0.22 C 14.513 -0.073 14.987 -0.073 15.28 0.22 C 15.573 0.513 15.573 0.987 15.28 1.28 L 8.811 7.75 L 15.28 14.22 C 15.547 14.486 15.571 14.903 15.353 15.196 L 15.28 15.28 C 15.014 15.547 14.597 15.571 14.304 15.353 L 14.22 15.28 L 7.75 8.811 L 1.28 15.28 C 0.987 15.573 0.513 15.573 0.22 15.28 C -0.073 14.987 -0.073 14.513 0.22 14.22 L 6.689 7.75 L 0.22 1.28 C -0.047 1.014 -0.071 0.597 0.147 0.304 Z"
+            fill="currentColor"
+          />
+        </svg>
+      </button>
+    </div>
+
+    <form class="drawer__form" (ngSubmit)="submitNote()">
+      <!-- "Mark as:" — CASEWORK / ACTIVITY / HOSPITALITY / AFA radio chips. -->
+      <div class="field field--full">
+        <span class="field__label">Mark as:</span>
+        <div class="choice-row">
+          @for (option of categories; track option.value) {
+            <button
+              type="button"
+              class="choice"
+              [class.choice--on]="form.category === option.value"
+              [attr.aria-pressed]="form.category === option.value"
+              (click)="setCategory(option.value)"
+            >
+              <span class="choice__radio" aria-hidden="true"></span>
+              <span class="choice__label">{{ option.label }}</span>
+            </button>
+          }
+        </div>
+      </div>
+
+      <div class="drawer__grid">
+        <label class="field">
+          <span class="field__label">Contact method&nbsp;*</span>
+          <select name="contactMethod" [(ngModel)]="form.contactMethod" required>
+            <option value="" disabled>Select....</option>
+            @for (type of contactTypes; track type) {
+              <option [value]="type">{{ humanize(type) }}</option>
+            }
+          </select>
+        </label>
+
+        <label class="field">
+          <span class="field__label">Date&nbsp;*</span>
+          <input type="date" name="occurredOn" [(ngModel)]="form.occurredOn" required />
+        </label>
+
+        <label class="field">
+          <span class="field__label">Logged by</span>
+          <input type="text" name="loggedBy" [value]="loggedBy" disabled />
+          <span class="field__hint">Pre-filled from login</span>
+        </label>
+      </div>
+
+      <p class="sbar-intro">
+        Use the SBAR framework below — each section guides your clinical note. Situation and
+        Assessment are mandatory. Background sub-fields are optional but encouraged.
+      </p>
+
+      <!-- Situation -->
+      <section class="sbar">
+        <div class="sbar__head">
+          <h3 class="sbar__title">Situation&nbsp;*</h3>
+          <span class="sbar__hint">What is happening right now</span>
+        </div>
+        <label class="field field--full">
+          <span class="field__label">Current presenting concerns&nbsp;*</span>
+          <textarea
+            name="situation"
+            rows="3"
+            [(ngModel)]="form.situation"
+            placeholder="How is the guest presenting today? What are they describing as the main issue right now? Use their own words where possible..."
+          ></textarea>
+        </label>
+      </section>
+
+      <!-- Background -->
+      <section class="sbar">
+        <div class="sbar__head">
+          <h3 class="sbar__title">Background</h3>
+          <span class="sbar__hint">Context to understand the situation</span>
+        </div>
+        <label class="field field--full">
+          <span class="field__label">Relevant history from previous contacts</span>
+          <textarea
+            name="background"
+            rows="3"
+            [(ngModel)]="form.background"
+            placeholder="What came up in the last session that is relevant to today?"
+          ></textarea>
+        </label>
+        <label class="field field--full">
+          <span class="field__label">
+            Changes in medication, physical health, or social circumstances since last contact
+          </span>
+          <textarea
+            name="guestReportedChanges"
+            rows="2"
+            [(ngModel)]="form.guestReportedChanges"
+            placeholder="Any changes the guest mentioned since you last spoke?"
+          ></textarea>
+        </label>
+        <label class="field field--full">
+          <span class="field__label">Other services involvement — any changes?</span>
+          <textarea
+            name="serviceInvolvementChanges"
+            rows="2"
+            [(ngModel)]="form.serviceInvolvementChanges"
+            placeholder="Has anything changed with GP, CMHT, social services, or other support?"
+          ></textarea>
+        </label>
+      </section>
+
+      <!-- Assessment -->
+      <section class="sbar">
+        <div class="sbar__head">
+          <h3 class="sbar__title">Assessment&nbsp;*</h3>
+          <span class="sbar__hint">Your clinical judgement</span>
+        </div>
+
+        <div class="field field--full">
+          <span class="field__label">Risk check&nbsp;*</span>
+          <div class="choice-row choice-row--risk">
+            @for (option of riskChoices; track option.value) {
+              <button
+                type="button"
+                class="choice choice--wide"
+                [class.choice--on]="form.riskLevel === option.value"
+                [class.choice--danger]="option.value === 'High'"
+                [attr.aria-pressed]="form.riskLevel === option.value"
+                (click)="setRisk(option.value)"
+              >
+                <span class="choice__radio" aria-hidden="true"></span>
+                <span class="choice__label">{{ option.label }}</span>
+              </button>
+            }
+          </div>
+          @if (riskOutsideChoices) {
+            <span class="field__hint">
+              This note already records a {{ form.riskLevel === 'Low' ? 'low' : 'medium' }} risk
+              level. Choosing above will replace it.
+            </span>
+          }
+        </div>
+
+        <label class="field field--full">
+          <span class="field__label">Your assessment of what is going on&nbsp;*</span>
+          <textarea
+            name="assessment"
+            rows="4"
+            [(ngModel)]="form.assessment"
+            placeholder="In your clinical judgement — what do you think is driving the guest's current difficulties? How are they coping? Any concerns?"
+          ></textarea>
+        </label>
+      </section>
+
+      <!-- Recommendation -->
+      <section class="sbar">
+        <div class="sbar__head">
+          <h3 class="sbar__title">Recommendation</h3>
+          <span class="sbar__hint">What was agreed and next steps</span>
+        </div>
+        <label class="field field--full">
+          <span class="field__label">Interventions discussed and what was agreed</span>
+          <textarea
+            name="recommendation"
+            rows="3"
+            [(ngModel)]="form.recommendation"
+            placeholder="What techniques, resources, or approaches were discussed? What did the guest agree to try before next contact?"
+          ></textarea>
+        </label>
+      </section>
+
+      <!-- Actions arising from this note -->
+      <section class="sbar">
+        <div class="sbar__head sbar__head--row">
+          <h3 class="sbar__title">Actions arising from this note</h3>
+          <button type="button" class="btn-add-action" (click)="addActionRow()">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <path
+                d="M 8 3 L 8 13 M 3 8 L 13 8"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+              />
+            </svg>
+            Add new action from this session
+          </button>
+        </div>
+
+        @if (actions.length) {
+          <ul class="action-rows">
+            @for (row of actions; track row.key) {
+              <li class="action-rows__row">
+                <label class="field">
+                  <span class="field__label">Description</span>
+                  <input
+                    type="text"
+                    name="action-description-{{ row.key }}"
+                    [(ngModel)]="row.description"
+                    placeholder="e.g. GP referral for sleep difficulties"
+                  />
+                </label>
+                <label class="field">
+                  <span class="field__label">Due date</span>
+                  <input type="date" name="action-due-{{ row.key }}" [(ngModel)]="row.dueDate" />
+                </label>
+                <div class="field">
+                  <span class="field__label">Assigned to</span>
+                  <emhip-staff-picker
+                    name="action-assignee-{{ row.key }}"
+                    [(ngModel)]="row.assignedToStaffId"
+                    placeholder="Unassigned"
+                  />
+                </div>
+                <button
+                  type="button"
+                  class="action-rows__remove"
+                  aria-label="Remove this action"
+                  (click)="removeActionRow(row.key)"
+                >
+                  Remove
+                </button>
+              </li>
+            }
+          </ul>
+        } @else {
+          <p class="empty-state">
+            No actions yet. Anything agreed in this session can be added here — each one becomes a
+            guest action when the note is submitted.
+          </p>
+        }
+      </section>
+
+      <label class="field field--full">
+        <span class="field__label">Additional notes <span class="field__optional">(optional)</span></span>
+        <textarea
+          name="additionalNotes"
+          rows="3"
+          [(ngModel)]="form.additionalNotes"
+          placeholder="Please specify the details of the other practical advice given..."
+        ></textarea>
+      </label>
+
+      <label class="field field--narrow">
+        <span class="field__label">Next contact date</span>
+        <input type="date" name="nextContactDate" [(ngModel)]="form.nextContactDate" />
+        <span class="field__hint">Scheduled as a follow-up when the note is submitted.</span>
+      </label>
+
+      <!-- MDT / CPN toggles — 612px rgb(241,241,241) rows with a pill switch on the right. -->
+      <div class="toggle-row">
+        <span class="toggle-row__label">Add this guest for MDT discussion</span>
+        <button
+          type="button"
+          class="switch"
+          role="switch"
+          [class.switch--on]="form.mdtDiscussionRequested"
+          [attr.aria-checked]="form.mdtDiscussionRequested"
+          (click)="toggleMdt()"
+        >
+          <span class="switch__knob"></span>
+        </button>
+      </div>
+      <div class="toggle-row">
+        <span class="toggle-row__label">Refer this guest to the CPN</span>
+        <button
+          type="button"
+          class="switch"
+          role="switch"
+          [class.switch--on]="form.cpnReferralRequested"
+          [attr.aria-checked]="form.cpnReferralRequested"
+          (click)="toggleCpn()"
+        >
+          <span class="switch__knob"></span>
+        </button>
+      </div>
+
+      <!-- Submitting is not just a save: spell out the records it creates. -->
+      <p class="submit-note">
+        Submitting files this note on the clinical record and logs the matching contact. Any actions
+        listed above become guest actions, and a next contact date is scheduled as a follow-up.
+        Drafts can be reopened and re-saved from the Notes tab until they are submitted.
+      </p>
+
+      @if (saveError()) {
+        <p class="form-error">{{ saveError() }}</p>
+      }
+
+      <div class="drawer__actions">
+        @if (draftSavedAt(); as at) {
+          <span class="drawer__draft-note">Draft saved at {{ at }}</span>
+        }
+        <button type="button" class="btn-draft" [disabled]="saving() !== null" (click)="saveDraft()">
+          {{ saving() === 'draft' ? 'Saving…' : 'Save as draft' }}
+        </button>
+        <button type="submit" class="btn-submit" [disabled]="saving() !== null">
+          {{ saving() === 'submit' ? 'Submitting…' : 'Submit casework note' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

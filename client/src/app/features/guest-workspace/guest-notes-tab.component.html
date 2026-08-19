@@ -1,50 +1,284 @@
-<div class="tab-panel">
-  <section class="card">
-    <h2 class="card__title">Add a note</h2>
-    <form class="edit-form note-form" (ngSubmit)="submit()">
-      <label class="edit-form__field edit-form__field--full">
-        <span>Note</span>
-        <textarea name="body" rows="3" [(ngModel)]="form.body" placeholder="Write a note about this guest…"></textarea>
-      </label>
-      <div class="edit-form__grid">
-        <label class="edit-form__field">
-          <span>Color</span>
-          <select name="color" [(ngModel)]="form.color">
-            @for (c of colors; track c) {
-              <option [value]="c">{{ c }}</option>
-            }
-          </select>
-        </label>
-        <label class="edit-form__field edit-form__field--checkbox">
-          <input type="checkbox" name="isPinned" [(ngModel)]="form.isPinned" />
-          <span>Pin to Overview</span>
-        </label>
-      </div>
-      @if (submitError()) {
-        <p class="form-error">{{ submitError() }}</p>
-      }
-      <div class="edit-form__actions">
-        <button type="submit" class="btn-primary" [disabled]="submitting()">{{ submitting() ? 'Saving…' : 'Add note' }}</button>
-      </div>
-    </form>
-  </section>
-
-  <section class="card">
-    <h2 class="card__title">Pinned notes</h2>
-    @if (overview().pinnedNotes.length) {
-      <ul class="notes-list">
-        @for (note of overview().pinnedNotes; track note.id) {
-          <li class="note-item">
-            <span class="note-item__dot" [style.background]="noteColorDot(note.color)"></span>
-            <div class="note-item__body">
-              <p class="note-item__text">{{ note.body }}</p>
-              <span class="note-item__meta">{{ note.authorName }} · {{ formatDate(note.createdAt) }}</span>
-            </div>
-          </li>
+@if (!canView) {
+  <div class="tab-panel">
+    <div class="state-card">You do not have permission to view notes for this guest.</div>
+  </div>
+} @else {
+  <div class="tab-panel">
+    <!-- Casework notes — the SBAR clinical record written by the "Add contact" drawer. -->
+    <section class="card">
+      <div class="card__header-row">
+        <h2 class="card__title">Casework notes</h2>
+        @if (canAdd) {
+          <button type="button" class="add-btn" (click)="openDrawer()">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <path d="M 8 3 L 8 13 M 3 8 L 13 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+            </svg>
+            Add casework note
+          </button>
         }
-      </ul>
-    } @else {
-      <p class="empty-state">No pinned notes yet.</p>
-    }
-  </section>
-</div>
+      </div>
+
+      @if (caseworkLoading() && !caseworkNotes()) {
+        <p class="empty-state">Loading casework notes…</p>
+      } @else {
+        @if (caseworkError()) {
+          <p class="form-error note-error">{{ caseworkError() }}</p>
+        }
+
+        @if (drafts().length) {
+          <p class="draft-hint">
+            {{ drafts().length }} unsubmitted
+            {{ drafts().length === 1 ? 'draft is' : 'drafts are' }} waiting — resume to finish and
+            submit.
+          </p>
+        }
+
+        @if (caseworkNotes(); as notes) {
+          @if (notes.length) {
+            <ul class="note-list">
+              @for (note of notes; track note.id) {
+                <li class="note" [class.note--draft]="note.status === 'Draft'">
+                  <button
+                    type="button"
+                    class="note__head"
+                    [attr.aria-expanded]="expandedId() === note.id"
+                    (click)="toggleExpanded(note.id)"
+                  >
+                    <span class="note__date">{{ formatDate(note.occurredAt) }}</span>
+                    <span
+                      class="chip"
+                      [style.background]="categoryChip(note.category).bg"
+                      [style.color]="categoryChip(note.category).fg"
+                    >
+                      {{ categoryChip(note.category).label }}
+                    </span>
+                    <span
+                      class="chip"
+                      [style.background]="riskChip(note.riskLevel).bg"
+                      [style.color]="riskChip(note.riskLevel).fg"
+                    >
+                      {{ riskChip(note.riskLevel).label }}
+                    </span>
+                    @if (note.status === 'Draft') {
+                      <span class="badge-draft">Draft</span>
+                    }
+                    <span class="note__author">{{ note.authorName }}</span>
+                    <span class="note__method">{{ humanize(note.contactMethod) }}</span>
+                    <svg
+                      class="note__chevron"
+                      [class.note__chevron--open]="expandedId() === note.id"
+                      width="12"
+                      height="8"
+                      viewBox="0 0 12 8"
+                      fill="none"
+                      aria-hidden="true"
+                    >
+                      <path d="M 1 1.5 L 6 6.5 L 11 1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                    </svg>
+                  </button>
+
+                  @if (expandedId() === note.id) {
+                    <div class="note__detail">
+                      <div class="sbar-block">
+                        <span class="sbar-block__label">Situation</span>
+                        <p class="sbar-block__body">{{ note.situation || 'Not recorded.' }}</p>
+                      </div>
+                      <div class="sbar-block">
+                        <span class="sbar-block__label">Background</span>
+                        <p class="sbar-block__body">{{ note.background || 'Not recorded.' }}</p>
+                        @if (note.guestReportedChanges) {
+                          <p class="sbar-block__sub">
+                            <span class="sbar-block__sub-label">Changes since last contact:</span>
+                            {{ note.guestReportedChanges }}
+                          </p>
+                        }
+                        @if (note.serviceInvolvementChanges) {
+                          <p class="sbar-block__sub">
+                            <span class="sbar-block__sub-label">Other services:</span>
+                            {{ note.serviceInvolvementChanges }}
+                          </p>
+                        }
+                      </div>
+                      <div class="sbar-block">
+                        <span class="sbar-block__label">Assessment</span>
+                        <p class="sbar-block__body">{{ note.assessment || 'Not recorded.' }}</p>
+                      </div>
+                      <div class="sbar-block">
+                        <span class="sbar-block__label">Recommendation</span>
+                        <p class="sbar-block__body">{{ note.recommendation || 'Not recorded.' }}</p>
+                      </div>
+                      @if (note.additionalNotes) {
+                        <div class="sbar-block">
+                          <span class="sbar-block__label">Additional notes</span>
+                          <p class="sbar-block__body">{{ note.additionalNotes }}</p>
+                        </div>
+                      }
+
+                      @if (note.actions.length) {
+                        <div class="sbar-block">
+                          <span class="sbar-block__label">Actions arising from this note</span>
+                          <ul class="note-actions">
+                            @for (action of note.actions; track action.id) {
+                              <li class="note-actions__item" [class.note-actions__item--done]="action.isCompleted">
+                                <span class="note-actions__desc">{{ action.description }}</span>
+                                <span class="note-actions__meta">
+                                  Due {{ formatDate(action.dueDate) }}
+                                  @if (action.assignedToName) {
+                                    · {{ action.assignedToName }}
+                                  }
+                                  @if (action.isCompleted) {
+                                    · Completed
+                                  }
+                                </span>
+                              </li>
+                            }
+                          </ul>
+                        </div>
+                      }
+
+                      <div class="note__footer">
+                        <div class="note__flags">
+                          @if (note.nextContactDate) {
+                            <span class="note__flag">Next contact {{ formatDate(note.nextContactDate) }}</span>
+                          }
+                          @if (note.mdtDiscussionRequested) {
+                            <span class="note__flag">Flagged for MDT discussion</span>
+                          }
+                          @if (note.cpnReferralRequested) {
+                            <span class="note__flag">Referred to the CPN</span>
+                          }
+                          <span class="note__flag note__flag--meta">
+                            {{
+                              note.submittedAt
+                                ? 'Submitted ' + formatDateTime(note.submittedAt)
+                                : 'Started ' + formatDateTime(note.createdAt)
+                            }}
+                          </span>
+                        </div>
+
+                        @if (note.status === 'Draft' && canAdd) {
+                          <div class="note__controls">
+                            <button
+                              type="button"
+                              class="row-btn"
+                              [disabled]="discardingId() === note.id"
+                              (click)="resumeDraft(note)"
+                            >
+                              Resume
+                            </button>
+                            <button
+                              type="button"
+                              class="row-btn row-btn--danger"
+                              [disabled]="discardingId() === note.id"
+                              (click)="discardDraft(note)"
+                            >
+                              {{ discardingId() === note.id ? 'Discarding…' : 'Discard' }}
+                            </button>
+                          </div>
+                        }
+                      </div>
+                    </div>
+                  }
+                </li>
+              }
+            </ul>
+          } @else {
+            <p class="empty-state">
+              No casework notes yet.
+              @if (canAdd) {
+                Use “Add casework note” to record the first SBAR note for this guest.
+              }
+            </p>
+          }
+        }
+      }
+    </section>
+
+    <!-- Quick notes — the sticky-note store; pinned ones surface on the Overview tab. -->
+    <section class="card">
+      <h2 class="card__title card__title--spaced">Quick notes</h2>
+
+      @if (canAdd) {
+        <form class="edit-form note-form" (ngSubmit)="submitQuickNote()">
+          <label class="edit-form__field edit-form__field--full">
+            <span>Note</span>
+            <textarea
+              name="body"
+              rows="3"
+              [(ngModel)]="quickForm.body"
+              placeholder="Write a short note about this guest…"
+            ></textarea>
+          </label>
+          <div class="edit-form__grid">
+            <label class="edit-form__field">
+              <span>Colour</span>
+              <select name="color" [(ngModel)]="quickForm.color">
+                @for (c of colors; track c) {
+                  <option [value]="c">{{ c }}</option>
+                }
+              </select>
+            </label>
+            <label class="edit-form__field edit-form__field--checkbox">
+              <input type="checkbox" name="isPinned" [(ngModel)]="quickForm.isPinned" />
+              <span>Pin to Overview</span>
+            </label>
+          </div>
+          @if (quickSubmitError()) {
+            <p class="form-error">{{ quickSubmitError() }}</p>
+          }
+          <div class="edit-form__actions">
+            <button type="submit" class="btn-primary" [disabled]="quickSubmitting()">
+              {{ quickSubmitting() ? 'Saving…' : 'Add note' }}
+            </button>
+          </div>
+        </form>
+      }
+
+      @if (quickLoading() && !quickNotes()) {
+        <p class="empty-state">Loading notes…</p>
+      } @else {
+        @if (quickError()) {
+          <p class="form-error note-error">{{ quickError() }}</p>
+        }
+        @if (quickNotes(); as notes) {
+          @if (notes.length) {
+            <ul class="notes-list">
+              @for (note of notes; track note.id) {
+                <li class="note-item">
+                  <span class="note-item__dot" [style.background]="noteColorDot(note.color)"></span>
+                  <div class="note-item__body">
+                    <p class="note-item__text">{{ note.body }}</p>
+                    <span class="note-item__meta">{{ note.authorName }} · {{ formatDate(note.createdAt) }}</span>
+                  </div>
+                  @if (canAdd) {
+                    <button
+                      type="button"
+                      class="pin-btn"
+                      [class.pin-btn--on]="note.isPinned"
+                      [disabled]="pinningId() === note.id"
+                      (click)="togglePinned(note)"
+                    >
+                      {{ note.isPinned ? 'Unpin' : 'Pin' }}
+                    </button>
+                  }
+                </li>
+              }
+            </ul>
+          } @else {
+            <p class="empty-state">No notes yet for this guest.</p>
+          }
+        }
+      }
+    </section>
+  </div>
+
+  @if (drawerOpen()) {
+    <emhip-casework-note-drawer
+      [guestId]="guestId()"
+      [guestName]="guestName()"
+      [note]="drawerNote()"
+      (saved)="onDrawerSaved($event)"
+      (closed)="closeDrawer()"
+    />
+  }
+}

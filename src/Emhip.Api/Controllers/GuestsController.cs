@@ -1,9 +1,11 @@
 using Emhip.Application.Abstractions;
 using Emhip.Application.Contacts;
 using Emhip.Application.Guests.Actions;
+using Emhip.Application.Guests.Casework;
 using Emhip.Application.Guests.Clinical;
 using Emhip.Application.Guests.Commands;
 using Emhip.Application.Guests.Dialog;
+using Emhip.Application.Guests.Pathways;
 using Emhip.Application.Guests.Dtos;
 using Emhip.Application.Guests.Queries;
 using Emhip.Application.Notes;
@@ -239,13 +241,76 @@ public sealed class GuestsController(IMediator mediator, ICurrentUser currentUse
         return NoContent();
     }
 
+    /// <summary>All quick notes for the guest, pinned first — the workspace Notes tab.</summary>
+    [HttpGet("{guestId:guid}/notes")]
+    [Authorize(Policy = Permissions.Guests.NotesView)]
+    public async Task<IActionResult> GetNotes(Guid guestId, CancellationToken cancellationToken) =>
+        Ok(await mediator.Send(new GetGuestNotesQuery(guestId), cancellationToken));
+
     [HttpPost("{guestId:guid}/notes")]
     [Authorize(Policy = Permissions.Guests.NotesAdd)]
     public async Task<IActionResult> AddNote(Guid guestId, [FromBody] AddNoteRequest request, CancellationToken cancellationToken)
     {
         var command = new AddNoteCommand(guestId, request.Body, request.Color, request.IsPinned);
         var id = await mediator.Send(command, cancellationToken);
-        return CreatedAtAction(nameof(GetOverview), new { guestId }, new { id });
+        return CreatedAtAction(nameof(GetNotes), new { guestId }, new { id });
+    }
+
+    /// <summary>Pins or unpins a note — pinned notes surface on the guest overview.</summary>
+    [HttpPut("{guestId:guid}/notes/{noteId:guid}/pin")]
+    [Authorize(Policy = Permissions.Guests.NotesAdd)]
+    public async Task<IActionResult> SetNotePinned(Guid guestId, Guid noteId, [FromBody] SetNotePinnedRequest request, CancellationToken cancellationToken)
+    {
+        await mediator.Send(new SetNotePinnedCommand(guestId, noteId, request.IsPinned), cancellationToken);
+        return NoContent();
+    }
+
+    /// <summary>Casework notes (SBAR clinical records) for the guest, newest first.</summary>
+    [HttpGet("{guestId:guid}/casework-notes")]
+    [Authorize(Policy = Permissions.Guests.NotesView)]
+    public async Task<IActionResult> GetCaseworkNotes(Guid guestId, CancellationToken cancellationToken) =>
+        Ok(await mediator.Send(new GetCaseworkNotesQuery(guestId), cancellationToken));
+
+    /// <summary>
+    /// Saves a casework note. `submit=false` keeps it as a draft; submitting writes the linked
+    /// contact, any actions arising, and the next-contact follow-up.
+    /// </summary>
+    [HttpPost("{guestId:guid}/casework-notes")]
+    [Authorize(Policy = Permissions.Guests.NotesAdd)]
+    public async Task<IActionResult> SaveCaseworkNote(
+        Guid guestId, [FromBody] CaseworkNoteInput input, [FromQuery] bool submit = false, CancellationToken cancellationToken = default)
+    {
+        var id = await mediator.Send(new SaveCaseworkNoteCommand(guestId, null, input, submit), cancellationToken);
+        return CreatedAtAction(nameof(GetCaseworkNotes), new { guestId }, new { id });
+    }
+
+    [HttpPut("{guestId:guid}/casework-notes/{noteId:guid}")]
+    [Authorize(Policy = Permissions.Guests.NotesAdd)]
+    public async Task<IActionResult> UpdateCaseworkNote(
+        Guid guestId, Guid noteId, [FromBody] CaseworkNoteInput input, [FromQuery] bool submit = false, CancellationToken cancellationToken = default)
+    {
+        await mediator.Send(new SaveCaseworkNoteCommand(guestId, noteId, input, submit), cancellationToken);
+        return NoContent();
+    }
+
+    /// <summary>Discards a draft. Submitted notes are part of the clinical record and cannot be deleted.</summary>
+    [HttpDelete("{guestId:guid}/casework-notes/{noteId:guid}")]
+    [Authorize(Policy = Permissions.Guests.NotesAdd)]
+    public async Task<IActionResult> DeleteCaseworkNote(Guid guestId, Guid noteId, CancellationToken cancellationToken)
+    {
+        await mediator.Send(new DeleteCaseworkNoteCommand(guestId, noteId), cancellationToken);
+        return NoContent();
+    }
+
+    /// <summary>"Change Pathway" — moves the guest and appends the pathway-history entry.</summary>
+    [HttpPost("{guestId:guid}/pathway-changes")]
+    [Authorize(Policy = Permissions.Guests.PathwayEdit)]
+    public async Task<IActionResult> ChangePathway(Guid guestId, [FromBody] ChangePathwayRequest request, CancellationToken cancellationToken)
+    {
+        var id = await mediator.Send(
+            new ChangeGuestPathwayCommand(guestId, request.Pathway, request.Reason, request.AssignedByStaffId, request.AssignedByName, request.ChangedOn),
+            cancellationToken);
+        return CreatedAtAction(nameof(GetPathway), new { guestId }, new { id });
     }
 
     public sealed record UpdateDemographicsRequest(
@@ -304,4 +369,9 @@ public sealed class GuestsController(IMediator mediator, ICurrentUser currentUse
     }
 
     public sealed record AllocateGuestRequest(GuestPathway Pathway, bool AfaSupportNeeded, Guid? AssignedCmhwId);
+
+    public sealed record SetNotePinnedRequest(bool IsPinned);
+
+    public sealed record ChangePathwayRequest(
+        GuestPathway Pathway, string? Reason, Guid? AssignedByStaffId, string? AssignedByName, DateOnly ChangedOn);
 }

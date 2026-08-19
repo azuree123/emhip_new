@@ -7,17 +7,76 @@
     <section class="card">
       <div class="card__header-row">
         <h2 class="card__title">Pathway History</h2>
-        <div class="header-actions">
-          <button type="button" class="btn-link" (click)="toggleReferralForm()">
-            {{ showReferralForm() ? 'Cancel' : '+ New referral' }}
-          </button>
+        @if (canEdit) {
           <button type="button" class="add-btn" (click)="openChangeDialog()">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
               <path d="M 10 4.25 L 10 15.75 M 4.25 10 L 15.75 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
             </svg>
             Add New Pathway
           </button>
-        </div>
+        }
+      </div>
+
+      <!-- Live allocation + AFA flag, both straight from GuestPathwayDto. -->
+      <div class="pathway-summary">
+        <span class="pathway-summary__label">Current pathway</span>
+        <span class="pathway-summary__value">{{ currentPathwayLabel() ?? 'Not allocated' }}</span>
+        @if (afaSupportNeeded()) {
+          <span class="chip chip--afa">AFA support needed</span>
+        }
+      </div>
+
+      <div class="entries">
+        @for (change of p.changes; track change.id; let i = $index) {
+          <article class="pathway-entry">
+            <div class="pathway-entry__top">
+              <div class="pathway-entry__heading">
+                <span class="pathway-entry__date">{{ formatDate(change.changedOn) }}</span>
+                <span class="pathway-entry__title">{{ guestPathwayLabel(change.toPathway) }}</span>
+              </div>
+              @if (isCurrentEntry(i, change.toPathway)) {
+                <span class="current-pill">Current Pathway</span>
+              }
+            </div>
+            <div class="pathway-entry__cols">
+              <div class="pathway-entry__col">
+                <span class="pathway-entry__label">Reason for Change:</span>
+                <span class="pathway-entry__value">{{ change.reason || '—' }}</span>
+              </div>
+              <div class="pathway-entry__col">
+                <span class="pathway-entry__label">Assigned By</span>
+                <span class="pathway-entry__value">{{ change.assignedByName || change.recordedByName }}</span>
+              </div>
+            </div>
+          </article>
+        } @empty {
+          @if (currentPathwayLabel(); as currentLabel) {
+            <!-- Allocated at registration, before the history table existed. -->
+            <article class="pathway-entry">
+              <div class="pathway-entry__top">
+                <div class="pathway-entry__heading">
+                  <span class="pathway-entry__title">{{ currentLabel }}</span>
+                </div>
+                <span class="current-pill">Current Pathway</span>
+              </div>
+              <p class="empty-state">No pathway changes have been recorded for this guest yet.</p>
+            </article>
+          } @else {
+            <p class="empty-state">No pathway allocated for this guest yet.</p>
+          }
+        }
+      </div>
+    </section>
+
+    <!-- Practical-support referrals — separate data from the pathway history above. -->
+    <section class="card">
+      <div class="card__header-row">
+        <h2 class="card__title">Support Referrals</h2>
+        @if (canEdit) {
+          <button type="button" class="btn-link" (click)="toggleReferralForm()">
+            {{ showReferralForm() ? 'Cancel' : '+ New referral' }}
+          </button>
+        }
       </div>
 
       @if (showReferralForm()) {
@@ -48,15 +107,6 @@
       }
 
       <div class="entries">
-        @if (currentPathwayLabel(); as currentLabel) {
-          <article class="pathway-entry">
-            <div class="pathway-entry__top">
-              <span class="pathway-entry__title">{{ currentLabel }}</span>
-              <span class="current-pill">Current Pathway</span>
-            </div>
-          </article>
-        }
-
         @for (r of p.referrals; track r.id) {
           <article class="pathway-entry">
             <div class="pathway-entry__top">
@@ -79,10 +129,8 @@
               </div>
             </div>
           </article>
-        }
-
-        @if (!currentPathwayLabel() && !p.referrals.length) {
-          <p class="empty-state">No pathway allocated and no referrals recorded yet.</p>
+        } @empty {
+          <p class="empty-state">No support referrals recorded yet.</p>
         }
       </div>
     </section>
@@ -90,48 +138,133 @@
 
   @if (showChangeDialog()) {
     <div class="dialog-backdrop" (click)="closeChangeDialog()">
-      <div class="dialog" role="dialog" aria-modal="true" aria-label="Change Pathway" (click)="$event.stopPropagation()">
-        <h2 class="dialog__title">Change Pathway</h2>
-        <p class="dialog__subtitle">Select new pathway for this guest</p>
-
-        <span class="dialog__label">Select new pathway&nbsp;*</span>
-        <div class="option-grid">
-          @for (option of pathwayOptions; track option.value) {
-            <button
-              type="button"
-              class="option-card"
-              [class.option-card--selected]="selectedPathway() === option.value"
-              (click)="selectPathway(option.value)"
-            >
-              <span class="option-card__radio" [class.option-card__radio--selected]="selectedPathway() === option.value"></span>
-              <span class="option-card__tile" [class.option-card__tile--selected]="selectedPathway() === option.value"></span>
-              <span class="option-card__name">{{ option.label }}</span>
-              <span class="option-card__desc">{{ option.description }}</span>
-            </button>
-          }
-        </div>
-
-        <p class="dialog__note">
-          <svg width="11" height="11" viewBox="0 0 9.625 9.625" fill="none" aria-hidden="true">
-            <path
-              d="M 5.156 4.469 C 5.156 4.378 5.119 4.29 5.055 4.226 C 4.99 4.161 4.903 4.125 4.812 4.125 C 4.721 4.125 4.633 4.161 4.569 4.226 C 4.504 4.29 4.468 4.378 4.468 4.469 L 4.468 6.531 C 4.468 6.622 4.504 6.71 4.569 6.774 C 4.633 6.839 4.721 6.875 4.812 6.875 C 4.903 6.875 4.99 6.839 5.055 6.774 C 5.119 6.71 5.156 6.622 5.156 6.531 L 5.156 4.469 Z M 5.327 3.094 C 5.327 3.23 5.273 3.361 5.177 3.458 C 5.08 3.555 4.949 3.609 4.812 3.609 C 4.675 3.609 4.544 3.555 4.448 3.458 C 4.351 3.361 4.297 3.23 4.297 3.094 C 4.297 2.957 4.351 2.826 4.448 2.73 C 4.544 2.633 4.675 2.579 4.812 2.579 C 4.948 2.579 5.079 2.633 5.176 2.73 C 5.272 2.826 5.327 2.957 5.327 3.094 Z M 4.813 0 C 3.536 0 2.312 0.507 1.41 1.41 C 0.507 2.312 0 3.536 0 4.813 C 0 6.089 0.507 7.313 1.41 8.215 C 2.312 9.118 3.536 9.625 4.813 9.625 C 6.089 9.625 7.313 9.118 8.215 8.215 C 9.118 7.313 9.625 6.089 9.625 4.813 C 9.625 3.536 9.118 2.312 8.215 1.41 C 7.313 0.507 6.089 0 4.813 0 Z M 0.688 4.813 C 0.688 4.271 0.794 3.734 1.001 3.234 C 1.209 2.733 1.513 2.279 1.896 1.896 C 2.279 1.513 2.733 1.209 3.234 1.001 C 3.734 0.794 4.271 0.687 4.813 0.687 C 5.354 0.687 5.891 0.794 6.391 1.001 C 6.892 1.209 7.346 1.513 7.729 1.896 C 8.112 2.279 8.416 2.733 8.624 3.234 C 8.831 3.734 8.938 4.271 8.938 4.813 C 8.938 5.907 8.503 6.956 7.729 7.729 C 6.956 8.503 5.907 8.938 4.813 8.938 C 3.718 8.938 2.669 8.503 1.896 7.729 C 1.122 6.956 0.688 5.907 0.688 4.813 Z"
-              fill="currentColor"
-            />
-          </svg>
-          This is permanently recorded on the guest record and visible in reports.
-        </p>
-
-        @if (changeError()) {
-          <p class="form-error">{{ changeError() }}</p>
-        }
-
-        <div class="dialog__actions">
-          <button type="button" class="btn-ghost" (click)="closeChangeDialog()">Cancel</button>
-          <button type="button" class="dialog__submit" [disabled]="changingPathway()" (click)="changePathway()">
-            {{ changingPathway() ? 'Saving…' : 'Change Pathway' }}
+      <form
+        class="dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Change Pathway"
+        novalidate
+        (click)="$event.stopPropagation()"
+        (ngSubmit)="changePathway()"
+      >
+        <header class="dialog__header">
+          <div>
+            <h2 class="dialog__title">Change Pathway</h2>
+            <p class="dialog__subtitle">Select new pathway for this guest</p>
+          </div>
+          <button type="button" class="dialog__close" aria-label="Close" (click)="closeChangeDialog()">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <path d="M 3 3 L 13 13 M 13 3 L 3 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+            </svg>
           </button>
+        </header>
+
+        <div class="dialog__body">
+          <p class="dialog__banner">
+            <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <circle cx="8" cy="8" r="7.25" stroke="currentColor" stroke-width="1.5" />
+              <path d="M 8 7 L 8 11.5 M 8 4.5 L 8 5.2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+            </svg>
+            Changing the pathway will close the current one and create a new record. The previous pathway remains in
+            history for audit purposes.
+          </p>
+
+          <fieldset class="dialog__field">
+            <legend class="dialog__label">Select new pathway&nbsp;*</legend>
+            <div class="option-grid">
+              @for (option of pathwayOptions; track option.value) {
+                <button
+                  type="button"
+                  class="option-card"
+                  [class.option-card--selected]="selectedPathway() === option.value"
+                  [class.option-card--current]="isCurrentPathway(option.value)"
+                  [disabled]="isCurrentPathway(option.value)"
+                  [attr.aria-pressed]="selectedPathway() === option.value"
+                  (click)="selectPathway(option.value)"
+                >
+                  <span class="option-card__radio" [class.option-card__radio--selected]="selectedPathway() === option.value"></span>
+                  <span class="option-card__tile" [class.option-card__tile--selected]="selectedPathway() === option.value"></span>
+                  <span class="option-card__name">{{ option.label }}</span>
+                  <span class="option-card__desc">{{ option.description }}</span>
+                  @if (isCurrentPathway(option.value)) {
+                    <span class="option-card__current">Current pathway</span>
+                  }
+                </button>
+              }
+            </div>
+            @if (submitted() && pathwayFieldError()) {
+              <p class="form-error">{{ pathwayFieldError() }}</p>
+            }
+          </fieldset>
+
+          <div class="dialog__row">
+            <div class="dialog__field">
+              <label class="dialog__label" for="pathway-changed-on">Date of change&nbsp;*</label>
+              <input
+                id="pathway-changed-on"
+                type="date"
+                class="dialog__input"
+                name="changedOn"
+                required
+                [max]="today"
+                [ngModel]="changedOn()"
+                (ngModelChange)="changedOn.set($event)"
+              />
+              @if (submitted() && changedOnFieldError()) {
+                <p class="form-error">{{ changedOnFieldError() }}</p>
+              }
+            </div>
+
+            <div class="dialog__field">
+              <span class="dialog__label">Assigned by&nbsp;*</span>
+              <emhip-staff-picker
+                name="assignedByStaffId"
+                placeholder="Select who authorised this change"
+                [allowClear]="false"
+                [initialLabel]="signedInName()"
+                [ngModel]="assignedByStaffId()"
+                (ngModelChange)="assignedByStaffId.set($event)"
+              />
+              @if (submitted() && assignedByFieldError()) {
+                <p class="form-error">{{ assignedByFieldError() }}</p>
+              }
+            </div>
+          </div>
+
+          <label class="dialog__field dialog__field--wide">
+            <span class="dialog__label">Reason for change</span>
+            <textarea
+              class="dialog__textarea"
+              name="reason"
+              rows="4"
+              placeholder="Briefly describe why the pathway is being changed..."
+              [ngModel]="reason()"
+              (ngModelChange)="reason.set($event)"
+            ></textarea>
+          </label>
+
+          <p class="dialog__note">
+            <svg width="11" height="11" viewBox="0 0 9.625 9.625" fill="none" aria-hidden="true">
+              <path
+                d="M 5.156 4.469 C 5.156 4.378 5.119 4.29 5.055 4.226 C 4.99 4.161 4.903 4.125 4.812 4.125 C 4.721 4.125 4.633 4.161 4.569 4.226 C 4.504 4.29 4.468 4.378 4.468 4.469 L 4.468 6.531 C 4.468 6.622 4.504 6.71 4.569 6.774 C 4.633 6.839 4.721 6.875 4.812 6.875 C 4.903 6.875 4.99 6.839 5.055 6.774 C 5.119 6.71 5.156 6.622 5.156 6.531 L 5.156 4.469 Z M 5.327 3.094 C 5.327 3.23 5.273 3.361 5.177 3.458 C 5.08 3.555 4.949 3.609 4.812 3.609 C 4.675 3.609 4.544 3.555 4.448 3.458 C 4.351 3.361 4.297 3.23 4.297 3.094 C 4.297 2.957 4.351 2.826 4.448 2.73 C 4.544 2.633 4.675 2.579 4.812 2.579 C 4.948 2.579 5.079 2.633 5.176 2.73 C 5.272 2.826 5.327 2.957 5.327 3.094 Z M 4.813 0 C 3.536 0 2.312 0.507 1.41 1.41 C 0.507 2.312 0 3.536 0 4.813 C 0 6.089 0.507 7.313 1.41 8.215 C 2.312 9.118 3.536 9.625 4.813 9.625 C 6.089 9.625 7.313 9.118 8.215 8.215 C 9.118 7.313 9.625 6.089 9.625 4.813 C 9.625 3.536 9.118 2.312 8.215 1.41 C 7.313 0.507 6.089 0 4.813 0 Z M 0.688 4.813 C 0.688 4.271 0.794 3.734 1.001 3.234 C 1.209 2.733 1.513 2.279 1.896 1.896 C 2.279 1.513 2.733 1.209 3.234 1.001 C 3.734 0.794 4.271 0.687 4.813 0.687 C 5.354 0.687 5.891 0.794 6.391 1.001 C 6.892 1.209 7.346 1.513 7.729 1.896 C 8.112 2.279 8.416 2.733 8.624 3.234 C 8.831 3.734 8.938 4.271 8.938 4.813 C 8.938 5.907 8.503 6.956 7.729 7.729 C 6.956 8.503 5.907 8.938 4.813 8.938 C 3.718 8.938 2.669 8.503 1.896 7.729 C 1.122 6.956 0.688 5.907 0.688 4.813 Z"
+                fill="currentColor"
+              />
+            </svg>
+            This is permanently recorded on the guest record and visible in reports.
+          </p>
+
+          @if (changeError()) {
+            <p class="form-error">{{ changeError() }}</p>
+          }
+
+          <div class="dialog__actions">
+            <button type="button" class="btn-ghost" (click)="closeChangeDialog()" [disabled]="changingPathway()">Cancel</button>
+            <button type="submit" class="dialog__submit" [disabled]="changingPathway()">
+              {{ changingPathway() ? 'Saving…' : 'Change Pathway' }}
+            </button>
+          </div>
         </div>
-      </div>
+      </form>
     </div>
   }
 </div>

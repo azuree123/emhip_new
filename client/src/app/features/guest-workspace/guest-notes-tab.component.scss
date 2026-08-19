@@ -1,6 +1,287 @@
 @use './guest-tab-shared';
 @use './guest-workspace.tokens' as t;
 
+// Notes tab — casework (SBAR) notes above, quick sticky notes below. Chrome follows the same
+// card/type tokens as the rest of the workspace; the red "Add casework note" button matches
+// the "Add Actions" button on the Actions & Reminders tab (rgb(225,38,40), 36px, 4px radius).
+
+.card__title--spaced {
+  margin-bottom: 16px;
+}
+
+.add-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 16px;
+  border: none;
+  border-radius: 4px;
+  background: t.$color-brand-red;
+  color: #fff;
+  font-family: t.$font-primary;
+  font-weight: 500;
+  font-size: 14px;
+  letter-spacing: -0.005em;
+  cursor: pointer;
+}
+
+.note-error {
+  margin-bottom: 12px;
+}
+
+.draft-hint {
+  margin: 0 0 12px;
+  padding: 10px 14px;
+  border-radius: 6px;
+  background: t.$color-amber-banner-bg;
+  border-left: 3px solid t.$color-amber-banner-bar;
+  font-family: t.$font-primary;
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 18px;
+  color: t.$color-gold-text;
+}
+
+// ---- Casework note rows ----
+
+.note-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.note {
+  border-radius: 8px;
+  box-shadow: inset 0 0 0 1px t.$color-divider;
+  overflow: hidden;
+
+  &--draft {
+    box-shadow: inset 0 0 0 1px #f0dcae;
+    background: #fffdf6;
+  }
+
+  &__head {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    padding: 14px 16px;
+    border: none;
+    background: transparent;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  &__date {
+    font-family: t.$font-primary;
+    font-weight: 600;
+    font-size: 14px;
+    line-height: 24px;
+    color: t.$color-text-primary;
+    white-space: nowrap;
+  }
+
+  &__author,
+  &__method {
+    font-family: t.$font-primary;
+    font-weight: 500;
+    font-size: 12px;
+    line-height: 18px;
+    color: t.$color-text-meta;
+  }
+
+  &__author {
+    margin-left: auto;
+  }
+
+  &__chevron {
+    color: t.$color-text-meta;
+    flex-shrink: 0;
+    transition: transform 120ms ease;
+
+    &--open {
+      transform: rotate(180deg);
+    }
+  }
+
+  &__detail {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 4px 16px 16px;
+    border-top: 1px solid t.$color-divider;
+  }
+
+  &__footer {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    padding-top: 12px;
+    border-top: 1px solid t.$color-divider;
+  }
+
+  &__flags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  &__flag {
+    border-radius: t.$radius-pill;
+    padding: 4px 10px;
+    background: t.$color-segment-bg;
+    font-family: t.$font-primary;
+    font-weight: 500;
+    font-size: 12px;
+    line-height: 16px;
+    color: t.$color-text-body;
+
+    &--meta {
+      background: transparent;
+      padding-left: 0;
+      color: t.$color-text-meta;
+    }
+  }
+
+  &__controls {
+    display: flex;
+    gap: 8px;
+  }
+}
+
+.badge-draft {
+  border-radius: t.$radius-pill;
+  padding: 4px 10px;
+  background: t.$color-gold-bg;
+  font-family: t.$font-primary;
+  font-weight: 600;
+  font-size: 11px;
+  line-height: 16px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: t.$color-gold-text;
+  white-space: nowrap;
+}
+
+.sbar-block {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  &__label {
+    font-family: t.$font-primary;
+    font-weight: 600;
+    font-size: 12px;
+    line-height: 18px;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: t.$color-text-eyebrow;
+  }
+
+  &__body {
+    margin: 0;
+    font-family: t.$font-primary;
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 22px;
+    color: t.$color-text-body;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+
+  &__sub {
+    margin: 4px 0 0;
+    font-family: t.$font-primary;
+    font-weight: 400;
+    font-size: 13px;
+    line-height: 20px;
+    color: t.$color-text-body;
+    overflow-wrap: anywhere;
+  }
+
+  &__sub-label {
+    font-weight: 600;
+    color: t.$color-text-primary;
+  }
+}
+
+.note-actions {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  &__item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    background: t.$color-segment-bg;
+
+    &--done .note-actions__desc {
+      text-decoration: line-through;
+      color: t.$color-text-meta;
+    }
+  }
+
+  &__desc {
+    font-family: t.$font-primary;
+    font-weight: 500;
+    font-size: 13px;
+    line-height: 20px;
+    color: t.$color-text-primary;
+    overflow-wrap: anywhere;
+  }
+
+  &__meta {
+    font-family: t.$font-primary;
+    font-weight: 500;
+    font-size: 12px;
+    line-height: 18px;
+    color: t.$color-text-meta;
+  }
+}
+
+.row-btn {
+  height: 32px;
+  padding: 0 14px;
+  border: none;
+  border-radius: 4px;
+  background: #fff;
+  box-shadow: inset 0 0 0 1px t.$color-border-strong;
+  font-family: t.$font-primary;
+  font-weight: 500;
+  font-size: 13px;
+  letter-spacing: -0.005em;
+  color: t.$color-text-primary;
+  cursor: pointer;
+
+  &--danger {
+    color: #be123c;
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+}
+
+// ---- Quick notes ----
+
+.note-form {
+  margin-bottom: 20px;
+}
+
 .notes-list {
   list-style: none;
   margin: 0;
@@ -12,6 +293,7 @@
 
 .note-item {
   display: flex;
+  align-items: flex-start;
   gap: 10px;
 
   &__dot {
@@ -27,6 +309,7 @@
     flex-direction: column;
     gap: 4px;
     min-width: 0;
+    flex: 1;
   }
 
   &__text {
@@ -36,6 +319,8 @@
     font-size: 14px;
     line-height: 24px;
     color: t.$color-text-primary;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
   }
 
   &__meta {
@@ -43,5 +328,37 @@
     font-weight: 500;
     font-size: 12px;
     color: t.$color-text-meta;
+  }
+}
+
+.pin-btn {
+  height: 28px;
+  padding: 0 12px;
+  border: none;
+  border-radius: t.$radius-pill;
+  background: #fff;
+  box-shadow: inset 0 0 0 1px t.$color-border-strong;
+  font-family: t.$font-primary;
+  font-weight: 500;
+  font-size: 12px;
+  color: t.$color-text-body;
+  cursor: pointer;
+  flex-shrink: 0;
+
+  &--on {
+    background: t.$color-chip-red-bg;
+    box-shadow: inset 0 0 0 1px #ffced3;
+    color: t.$color-brand-red;
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+}
+
+@media (max-width: 640px) {
+  .note__author {
+    margin-left: 0;
   }
 }
