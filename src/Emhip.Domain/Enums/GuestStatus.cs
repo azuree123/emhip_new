@@ -1,10 +1,18 @@
 namespace Emhip.Domain.Enums;
 
-/// <summary>Drives the KPI cards on the Dashboard screen (total active, pending conversation, inactive, urgent).</summary>
+/// <summary>
+/// Engagement status, per the functional spec §4.7. Deliberately only three values: urgency is
+/// a separate flag on the guest (<see cref="Entities.Guest.IsUrgent"/>), not a status, because a
+/// safety escalation must not erase whether the guest is New, Active or On Hold.
+/// </summary>
 public enum GuestStatus
 {
-    Active = 0,
-    PendingConversation = 1,
-    Inactive = 2,
-    Urgent = 3,
+    /// <summary>Registered, but the initial conversation has not been completed yet.</summary>
+    New = 0,
+
+    /// <summary>Activity recorded within the configured window (default 3 months).</summary>
+    Active = 1,
+
+    /// <summary>No activity within the window — set automatically by the engagement-status sweep.</summary>
+    OnHold = 2,
 }

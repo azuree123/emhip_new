@@ -11,6 +11,7 @@ import { AuthService } from '../../core/auth.service';
 import { Permissions } from '../../core/permissions';
 import { SettingsApiService } from '../../core/settings-api.service';
 import { CustomFieldsManagerComponent } from './custom-fields-manager.component';
+import { DataMigrationComponent } from './data-migration.component';
 import { EmailTemplatesComponent } from './email-templates.component';
 import { LookupsManagerComponent } from './lookups-manager.component';
 
@@ -18,6 +19,7 @@ import { LookupsManagerComponent } from './lookups-manager.component';
 const LOOKUPS_TAB = 'Lookups';
 const EMAIL_TEMPLATES_TAB = 'Email templates';
 const CUSTOM_FIELDS_TAB = 'Custom fields';
+const DATA_MIGRATION_TAB = 'Data migration';
 
 /**
  * Tab order the design calls for. Sections the server adds later still appear — they just fall in
@@ -50,7 +52,7 @@ const EMAIL_PROVIDER_KEY = 'email.provider';
 @Component({
   selector: 'app-settings',
   standalone: true,
-  imports: [CustomFieldsManagerComponent, EmailTemplatesComponent, LookupsManagerComponent],
+  imports: [CustomFieldsManagerComponent, DataMigrationComponent, EmailTemplatesComponent, LookupsManagerComponent],
   templateUrl: './settings.component.html',
   styleUrl: './settings.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -62,6 +64,7 @@ export class SettingsComponent implements OnInit {
   readonly lookupsTab = LOOKUPS_TAB;
   readonly emailTemplatesTab = EMAIL_TEMPLATES_TAB;
   readonly customFieldsTab = CUSTOM_FIELDS_TAB;
+  readonly dataMigrationTab = DATA_MIGRATION_TAB;
 
   /** The Email templates editor, when that tab is open — consulted by the tab-switch guard. */
   private readonly emailTemplates = viewChild(EmailTemplatesComponent);
@@ -100,7 +103,7 @@ export class SettingsComponent implements OnInit {
       ...SECTION_ORDER.filter((s) => fromApi.includes(s)),
       ...fromApi.filter((s) => !SECTION_ORDER.includes(s)),
     ];
-    return [...ordered, EMAIL_TEMPLATES_TAB, LOOKUPS_TAB, CUSTOM_FIELDS_TAB];
+    return [...ordered, EMAIL_TEMPLATES_TAB, LOOKUPS_TAB, CUSTOM_FIELDS_TAB, DATA_MIGRATION_TAB];
   });
 
   readonly allFields = computed<SettingFieldDto[]>(() => this.sections().flatMap((s) => s.fields));
@@ -121,9 +124,11 @@ export class SettingsComponent implements OnInit {
   readonly isTemplatesTab = computed(() => this.activeTab() === EMAIL_TEMPLATES_TAB);
   readonly isLookupsTab = computed(() => this.activeTab() === LOOKUPS_TAB);
   readonly isCustomFieldsTab = computed(() => this.activeTab() === CUSTOM_FIELDS_TAB);
+  readonly isDataMigrationTab = computed(() => this.activeTab() === DATA_MIGRATION_TAB);
   /** True on the catalog-driven tabs — the ones the header's Save/Discard actually apply to. */
   readonly isSectionTab = computed(
-    () => !this.isTemplatesTab() && !this.isLookupsTab() && !this.isCustomFieldsTab(),
+    () =>
+      !this.isTemplatesTab() && !this.isLookupsTab() && !this.isCustomFieldsTab() && !this.isDataMigrationTab(),
   );
 
   /** Only keys the user actually touched — secrets count as changed the moment anything is typed. */

@@ -292,7 +292,7 @@ export class AppShellComponent implements OnInit {
 
   /** Same humanization the guest data sheet's status pills use. */
   statusLabel(status: GuestStatus): string {
-    return status === 'PendingConversation' ? 'Pending Conversation' : status;
+    return status === 'OnHold' ? 'On hold' : status;
   }
 
   submitSearch(): void {

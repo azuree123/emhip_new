@@ -7,7 +7,8 @@ namespace Emhip.Application.Guests.Queries;
 
 public sealed record GetGuestListQuery(
     Guid HubId, string? SearchText, GuestStatus? Status, string? Cursor, int PageSize,
-    PathwayCategory? Pathway = null, bool? HasRiskFlags = null, Guid? AssignedCmhwId = null, int? LastActivityWithinDays = null)
+    PathwayCategory? Pathway = null, bool? HasRiskFlags = null, Guid? AssignedCmhwId = null, int? LastActivityWithinDays = null,
+    bool? UrgentOnly = null)
     : IRequest<KeysetPage<GuestListItemDto>>;
 
 public sealed class GetGuestListQueryHandler(IGuestReadService reads) : IRequestHandler<GetGuestListQuery, KeysetPage<GuestListItemDto>>
@@ -15,7 +16,7 @@ public sealed class GetGuestListQueryHandler(IGuestReadService reads) : IRequest
     public Task<KeysetPage<GuestListItemDto>> Handle(GetGuestListQuery request, CancellationToken cancellationToken) =>
         reads.GetGuestListAsync(
             request.HubId, request.SearchText, request.Status, request.Cursor, request.PageSize,
-            request.Pathway, request.HasRiskFlags, request.AssignedCmhwId, request.LastActivityWithinDays, cancellationToken);
+            request.Pathway, request.HasRiskFlags, request.AssignedCmhwId, request.LastActivityWithinDays, request.UrgentOnly, cancellationToken);
 }
 
 public sealed record GetHubCmhwsQuery(Guid HubId) : IRequest<IReadOnlyList<CmhwOptionDto>>;

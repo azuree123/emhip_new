@@ -171,6 +171,11 @@
   display: flex;
   flex-direction: column;
 
+  // The Reassign CMHW dialog carries two fields, not a row of option cards.
+  &--narrow {
+    width: 560px;
+  }
+
   // Grey band, bg rgb(240,240,240), radius 12px 12px 0 0.
   &__header {
     display: flex;

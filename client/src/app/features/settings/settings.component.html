@@ -76,6 +76,8 @@
           <emhip-email-templates />
         } @else if (activeTab() === customFieldsTab) {
           <emhip-custom-fields-manager />
+        } @else if (activeTab() === dataMigrationTab) {
+          <emhip-data-migration />
         } @else if (activeSection(); as section) {
           <header class="panel__head">
             <h2 class="panel__title">{{ section.section }}</h2>

@@ -22,12 +22,24 @@ interface SeriesCol {
 
 const MINI_H = 40;
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** yyyy-MM-dd for a Date in local time — the format the range endpoint expects. */
+function isoDay(date: Date): string {
+  const m = `${date.getMonth() + 1}`.padStart(2, '0');
+  const d = `${date.getDate()}`.padStart(2, '0');
+  return `${date.getFullYear()}-${m}-${d}`;
+}
+
 /**
  * "Guest Seen" card — GuestDataSheet / GuestDataSheet2 (Components.bundle.js). The
- * Today / Week / Month segmented control re-queries GET /dashboards/guests-seen and the
- * chevron expands a per-day breakdown (distinct guests seen, total contacts, series chart)
- * in the same visual language as the KPI drill-down panels. `mine=true` (CMHW dashboard)
+ * Today / Week / Month / Custom range segmented control re-queries GET /dashboards/guests-seen
+ * and the chevron expands a per-day breakdown (distinct guests seen, total contacts, series
+ * chart) in the same visual language as the KPI drill-down panels. `mine=true` (CMHW dashboard)
  * scopes the numbers to the signed-in worker's own contacts.
+ *
+ * Custom range (spec §5.1) reveals two date inputs and sends from/to; the card is labelled
+ * from the window the API reports back (`from`/`to` on the DTO), not from what was requested.
  */
 @Component({
   selector: 'app-guest-seen-card',
@@ -47,19 +59,58 @@ export class GuestSeenCardComponent {
   protected readonly state = signal<'loading' | 'ready' | 'error'>('loading');
   protected readonly open = signal(false);
 
-  protected readonly periods: GuestsSeenPeriod[] = ['Today', 'Week', 'Month'];
+  /** Custom-range bounds (yyyy-MM-dd) — default to the trailing week. */
+  protected readonly from = signal(isoDay(new Date(Date.now() - 6 * DAY_MS)));
+  protected readonly to = signal(isoDay(new Date()));
+
+  protected readonly periods: GuestsSeenPeriod[] = ['Today', 'Week', 'Month', 'Custom'];
 
   private fetchToken = 0;
 
-  protected readonly subLabel = computed(() => {
+  protected readonly rangeValid = computed(() => {
+    const from = this.from();
+    const to = this.to();
+    return from !== '' && to !== '' && from <= to;
+  });
+
+  /** Word for the selected preset — the range itself comes from the DTO. */
+  protected readonly periodLabel = computed(() => {
     switch (this.period()) {
       case 'Today':
         return 'Today';
       case 'Week':
         return 'This week';
+      case 'Custom':
+        return 'Custom range';
       default:
         return 'This month';
     }
+  });
+
+  /** "01 Aug – 19 Aug 2026" for the window on the DTO; empty until the first response. */
+  protected readonly rangeLabel = computed(() => {
+    const dto = this.data();
+    if (!dto) return '';
+    const fmt = (v: string, withYear: boolean) => {
+      const date = new Date(v);
+      return Number.isNaN(date.getTime())
+        ? v
+        : date.toLocaleDateString('en-GB', {
+            day: '2-digit',
+            month: 'short',
+            ...(withYear ? { year: 'numeric' } : {}),
+          });
+    };
+    if (dto.from === dto.to) return fmt(dto.from, true);
+    const sameYear = dto.from.slice(0, 4) === dto.to.slice(0, 4);
+    return `${fmt(dto.from, !sameYear)} – ${fmt(dto.to, true)}`;
+  });
+
+  /** Row subtitle — the window the API actually used, per spec §5.1. */
+  protected readonly subLabel = computed(() => {
+    const range = this.rangeLabel();
+    if (!range) return this.periodLabel();
+    return this.period() === 'Custom' ? range : `${this.periodLabel()} · ${range}`;
   });
 
   /** Mini bar strip beside the number — pure SVG, decorative. */
@@ -94,7 +145,7 @@ export class GuestSeenCardComponent {
       if (valid) {
         if (dto.period === 'Week') {
           label = date.toLocaleDateString('en-GB', { weekday: 'short' });
-        } else if (dto.period === 'Today') {
+        } else if (dto.period === 'Today' || (dto.period === 'Custom' && dto.series.length <= 8)) {
           label = date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
         } else if (i % 5 === 0 || i === dto.series.length - 1) {
           label = `${date.getDate()}`;
@@ -110,26 +161,20 @@ export class GuestSeenCardComponent {
     });
   });
 
-  protected readonly rangeLabel = computed(() => {
-    const dto = this.data();
-    if (!dto) return '';
-    const fmt = (v: string) => {
-      const date = new Date(v);
-      return Number.isNaN(date.getTime())
-        ? v
-        : date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
-    };
-    return dto.from === dto.to ? fmt(dto.from) : `${fmt(dto.from)} – ${fmt(dto.to)}`;
-  });
-
   constructor() {
     effect(() => {
       const period = this.period();
       const mine = this.mine();
+      // Read the bounds unconditionally so edits to either date re-run this effect.
+      const range = { from: this.from(), to: this.to() };
+      const custom = period === 'Custom';
+      // An incomplete/backwards custom range keeps the last result on screen instead of
+      // firing a request the API would reject.
+      if (custom && !this.rangeValid()) return;
       const token = ++this.fetchToken;
       this.state.set('loading');
       this.dashboardsApi
-        .getGuestsSeen(period, mine)
+        .getGuestsSeen(period, mine, custom ? range : undefined)
         .pipe(catchError(() => of(null)))
         .subscribe((result) => {
           if (token !== this.fetchToken) return;
@@ -146,6 +191,19 @@ export class GuestSeenCardComponent {
 
   protected setPeriod(period: GuestsSeenPeriod): void {
     this.period.set(period);
+  }
+
+  /** Segmented-control caption — 'Custom' reads as "Custom range". */
+  protected periodButtonLabel(period: GuestsSeenPeriod): string {
+    return period === 'Custom' ? 'Custom range' : period;
+  }
+
+  protected setFrom(value: string): void {
+    this.from.set(value);
+  }
+
+  protected setTo(value: string): void {
+    this.to.set(value);
   }
 
   protected toggleOpen(): void {

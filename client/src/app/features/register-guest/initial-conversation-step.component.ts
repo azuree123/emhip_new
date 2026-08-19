@@ -1,5 +1,6 @@
-import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
-import { FormGroup, ReactiveFormsModule } from '@angular/forms';
+import { ChangeDetectionStrategy, Component, Input, output } from '@angular/core';
+import { FormArray, FormGroup, ReactiveFormsModule } from '@angular/forms';
+import { StaffPickerComponent } from '../../shared/staff-picker.component';
 
 /**
  * The seven "Flag anything that came up in the conversation" checkboxes (Desktop79, risk
@@ -23,20 +24,25 @@ export const MDT_FLAGS = [
  * "Mental health & psychiatric history" (ending with the MDT Summary), "Physical health" and
  * "Risk screening" cards.
  *
- * Honest-data notes: the backing endpoint (RecordInitialConversationRequest) only stores
- * presentingIssues / notes / consentConfirmed. Prompt 1 maps to presentingIssues; every other
- * answer here is concatenated into `notes` as labelled sections by the wizard shell, and the
- * risk-screening answers additionally feed the existing risk-assessment endpoint when
- * anything is flagged (see RegisterGuestComponent). "Hub worker" / "Job title" render
- * read-only from the login session exactly as the mock's "pre filled from your login". The
- * consent checkbox is not drawn in the mock but consentConfirmed is required by the API.
- * "Diagnosis group(s) — select all that apply" is rendered as a single-choice dropdown;
- * multiple groups can be spelled out in the guest's-own-words box.
+ * Per spec §4.1-4.2 this form is the gate to Active: RecordInitialConversationRequest carries
+ * the mandatory "Immediate risk?" answer (captured in the risk-screening card below — Yes
+ * raises the urgent flag server-side) and the actions tracker (the "Actions arising" card),
+ * alongside the pathway / CMHW / AFA / next-contact-date chosen on step 4.
+ *
+ * Honest-data notes: the endpoint stores presentingIssues / notes / consentConfirmed plus
+ * those structured fields. Prompt 1 maps to presentingIssues; every free-text answer here is
+ * concatenated into `notes` as labelled sections by the wizard shell, and the risk-screening
+ * answers additionally feed the existing risk-assessment endpoint when anything is flagged
+ * (see RegisterGuestComponent). "Hub worker" / "Job title" render read-only from the login
+ * session exactly as the mock's "pre filled from your login". The consent checkbox is not
+ * drawn in the mock but consentConfirmed is required by the API. "Diagnosis group(s) — select
+ * all that apply" is rendered as a single-choice dropdown; multiple groups can be spelled out
+ * in the guest's-own-words box.
  */
 @Component({
   selector: 'app-initial-conversation-step',
   standalone: true,
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, StaffPickerComponent],
   templateUrl: './initial-conversation-step.component.html',
   styleUrls: ['./initial-conversation-step.component.scss', './_form-shared.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -47,6 +53,10 @@ export class InitialConversationStepComponent {
   @Input({ required: true }) hubWorkerName = '';
   /** "Job title" — pre filled from your login. */
   @Input() jobTitle = '';
+
+  /** The wizard shell owns the form, so row add/remove is delegated back to it. */
+  readonly addAction = output<void>();
+  readonly removeAction = output<number>();
 
   protected readonly mdtFlags = MDT_FLAGS;
 
@@ -65,6 +75,8 @@ export class InitialConversationStepComponent {
   protected readonly inpatientOptions = ['No', 'Yes - NHS', 'Yes - Private', 'Unsure'];
   protected readonly specifyOptions = ['No', 'Yes - Specify', 'Unknown'];
   protected readonly riskAnswerOptions = ['No', 'Yes', 'Unsure'];
+  /** Mandatory Yes/No — maps to RecordInitialConversationRequest.immediateRisk. */
+  protected readonly immediateRiskOptions = ['No', 'Yes'];
   protected readonly escalationOptions = ['No', 'Yes - Awaiting response', 'Yes - Escalated & responded'];
 
   /** The guided conversation's four prompts, verbatim from Desktop79. */
@@ -112,5 +124,25 @@ export class InitialConversationStepComponent {
   /** True when "Immediate escalation required?" has a Yes answer — crisis notes become mandatory. */
   protected get escalationNoted(): boolean {
     return String(this.form.get('risk.escalationRequired')?.value ?? '').startsWith('Yes');
+  }
+
+  /** True once the mandatory "Immediate risk?" answer is Yes — the urgent flag is then raised. */
+  protected get immediateRisk(): boolean {
+    return this.form.get('risk.immediateRisk')?.value === 'Yes';
+  }
+
+  /** The spec §4.2 actions tracker rows, owned by the wizard shell's conversationForm. */
+  protected get actions(): FormArray<FormGroup> {
+    return this.form.get('actions') as FormArray<FormGroup>;
+  }
+
+  protected invalid(path: string): boolean {
+    const control = this.form.get(path);
+    return !!control && control.invalid && control.touched;
+  }
+
+  protected actionInvalid(index: number, name: string): boolean {
+    const control = this.actions.at(index).get(name);
+    return !!control && control.invalid && control.touched;
   }
 }

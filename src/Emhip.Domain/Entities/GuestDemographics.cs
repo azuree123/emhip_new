@@ -15,6 +15,10 @@ public class GuestDemographics : Entity
     public bool InterpreterNeeded { get; private set; }
     public string? HousingStatus { get; private set; }
     public string? EmploymentStatus { get; private set; }
+
+    /// <summary>Spec §6.1 — dropdown-driven demographic fields.</summary>
+    public string? MaritalStatus { get; private set; }
+    public string? LivingGroup { get; private set; }
     public string? EmergencyContactName { get; private set; }
     public string? EmergencyContactPhone { get; private set; }
     public string? EmergencyContactRelationship { get; private set; }
@@ -33,7 +37,7 @@ public class GuestDemographics : Entity
 
     public void Update(
         string? ethnicity, string? nationality, string? preferredLanguage, bool interpreterNeeded,
-        string? housingStatus, string? employmentStatus,
+        string? housingStatus, string? employmentStatus, string? maritalStatus, string? livingGroup,
         string? emergencyContactName, string? emergencyContactPhone, string? emergencyContactRelationship,
         string? gpName, string? gpPractice, string? nhsNumber)
     {
@@ -43,6 +47,8 @@ public class GuestDemographics : Entity
         InterpreterNeeded = interpreterNeeded;
         HousingStatus = housingStatus;
         EmploymentStatus = employmentStatus;
+        MaritalStatus = maritalStatus;
+        LivingGroup = livingGroup;
         EmergencyContactName = emergencyContactName;
         EmergencyContactPhone = emergencyContactPhone;
         EmergencyContactRelationship = emergencyContactRelationship;

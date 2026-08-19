@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { BreakdownSliceDto, DialogOutcomesReportDto, PathwayReportDto } from '../../core/api-models';
 import { ReportsApiService } from '../../core/reports-api.service';
-import { toIsoDate } from './report-meta';
+import { WORKBOOK_SHEETS, downloadBlob, toIsoDate } from './report-meta';
 import { ReportsCaseloadComponent } from './reports-caseload.component';
 import { ReportsCpnActivityComponent } from './reports-cpn-activity.component';
 import { ReportsDataQualityComponent } from './reports-data-quality.component';
@@ -107,6 +107,12 @@ export class ReportsComponent implements OnInit {
 
   readonly exportOpen = signal(false);
 
+  /** Header "Export Excel" — the multi-sheet workbook for the applied date range. */
+  readonly workbookSheets = WORKBOOK_SHEETS;
+  readonly workbookSheetList = WORKBOOK_SHEETS.join(', ');
+  readonly excelBusy = signal(false);
+  readonly excelError = signal<string | null>(null);
+
   ngOnInit(): void {
     this.loadReport();
     this.loadOutcomes();
@@ -139,6 +145,28 @@ export class ReportsComponent implements OnInit {
     this.from.set(this.draftFrom());
     this.to.set(this.draftTo());
     this.loadReport();
+  }
+
+  /**
+   * Downloads the multi-sheet Excel workbook (summary, pathways, caseload, DIALOG
+   * outcomes, data quality — spec §5.4) for the currently applied date range.
+   */
+  exportExcel(): void {
+    if (this.excelBusy()) return;
+    const from = this.from();
+    const to = this.to();
+    this.excelBusy.set(true);
+    this.excelError.set(null);
+    this.reportsApi.exportWorkbook(from, to).subscribe({
+      next: (blob) => {
+        downloadBlob(blob, `emhip-report-${from}-to-${to}.xlsx`);
+        this.excelBusy.set(false);
+      },
+      error: () => {
+        this.excelBusy.set(false);
+        this.excelError.set('Could not build the Excel workbook. Please try again.');
+      },
+    });
   }
 
   loadReport(): void {

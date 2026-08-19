@@ -24,6 +24,9 @@ public static class LookupSeeder
         public const string EscalationUrgency = "EscalationUrgency";
         public const string FollowUpCadence = "FollowUpCadence";
         public const string ContactRelationship = "ContactRelationship";
+        public const string MaritalStatus = "MaritalStatus";
+        public const string LivingGroup = "LivingGroup";
+        public const string SecondaryReferralSubcategory = "SecondaryReferralSubcategory";
     }
 
     private static readonly (string Category, string[] Labels)[] Seed =
@@ -68,6 +71,19 @@ public static class LookupSeeder
         (Categories.FollowUpCadence, ["Weekly", "Fortnightly", "Monthly"]),
         (Categories.ContactRelationship, [
             "Parent", "Partner", "Sibling", "Child", "Friend", "Carer", "Support worker", "Other",
+        ]),
+        (Categories.MaritalStatus, [
+            "Single", "Married", "Civil partnership", "Cohabiting", "Separated", "Divorced", "Widowed",
+            "Prefer not to say",
+        ]),
+        (Categories.LivingGroup, [
+            "Lives alone", "Lives with partner", "Lives with family", "Lives with friends",
+            "Shared accommodation", "Supported living", "No fixed abode", "Other",
+        ]),
+        (Categories.SecondaryReferralSubcategory, [
+            "Community mental health team", "Crisis team", "Inpatient discharge", "Talking therapies",
+            "Substance misuse service", "Social services", "Housing service", "Voluntary sector partner",
+            "Police / criminal justice", "Other statutory service",
         ]),
     ];
 

@@ -121,7 +121,7 @@
 .drill-table {
   --drill-columns: 289fr 250fr 230fr 194fr 172fr;
 
-  &--pending {
+  &--new {
     --drill-columns: 289fr 250fr 230fr 366fr;
   }
 
@@ -172,7 +172,7 @@
   padding-right: 12px;
 }
 
-.drill-table--pending .drill-cell {
+.drill-table--new .drill-cell {
   font-size: 12px;
 }
 

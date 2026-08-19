@@ -81,10 +81,12 @@ export class GuestOverviewTabComponent {
     });
   }
 
-  readonly lastContactDaysAgo = computed(() => {
-    const contacts = this.overview().recentContacts;
-    if (!contacts.length) return null;
-    return daysSince(contacts[0].occurredAt);
+  /** The server derives last activity across the whole record (contacts, notes, assessments) and
+   *  sends it as lastActivityAt — it also decides when the guest drops to "On hold". */
+  readonly lastContactDaysAgo = computed(() => daysSince(this.overview().lastActivityAt));
+  readonly lastActivityLabel = computed(() => {
+    const last = this.overview().lastActivityAt;
+    return last ? formatDate(last) : 'No activity yet';
   });
 
   readonly pathwayLabel = computed(() => guestPathwayLabel(this.overview().pathway));

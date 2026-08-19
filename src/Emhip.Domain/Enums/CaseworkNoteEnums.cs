@@ -1,6 +1,10 @@
 namespace Emhip.Domain.Enums;
 
-/// <summary>"Mark as" on the casework note form — what kind of engagement this was.</summary>
+/// <summary>
+/// "Mark as" on the casework note form — mandatory note classification per spec §4.6
+/// (Casework, Activity, Meeting, Daily Log), plus the Hospitality and Advice First Aid
+/// categories the design adds for the Community &amp; Recovery pathway and cross-cutting AFA.
+/// </summary>
 public enum CaseworkNoteCategory
 {
     Casework = 0,
@@ -8,6 +12,8 @@ public enum CaseworkNoteCategory
     Hospitality = 2,
     /// <summary>Advice First Aid.</summary>
     Afa = 3,
+    Meeting = 4,
+    DailyLog = 5,
 }
 
 public enum CaseworkNoteStatus

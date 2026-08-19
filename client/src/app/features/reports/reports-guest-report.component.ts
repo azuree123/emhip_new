@@ -33,11 +33,11 @@ export class ReportsGuestReportComponent implements OnInit, OnDestroy {
   /** Preselected CMHW filter — set by the Caseload tab's "View" drill-down. */
   readonly initialCmhw = input('');
 
+  /** Engagement statuses only (spec §4.7) — urgency is a separate flag, not a status. */
   readonly statusOptions: { value: GuestStatus; label: string }[] = [
+    { value: 'New', label: 'New' },
     { value: 'Active', label: 'Active' },
-    { value: 'PendingConversation', label: 'Pending conversation' },
-    { value: 'Inactive', label: 'Inactive' },
-    { value: 'Urgent', label: 'Urgent' },
+    { value: 'OnHold', label: 'On hold' },
   ];
 
   readonly pathwayOptions: { value: PathwayCategory; label: string }[] = (
@@ -130,7 +130,7 @@ export class ReportsGuestReportComponent implements OnInit, OnDestroy {
   }
 
   statusClass(status: GuestStatus): string {
-    return STATUS_META[status]?.pillClass ?? 'status-pill--inactive';
+    return STATUS_META[status]?.pillClass ?? 'status-pill--onhold';
   }
 
   pathwayLabel(category: string | null): string {

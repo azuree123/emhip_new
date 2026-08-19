@@ -41,6 +41,25 @@ public class Guest : AggregateRoot
     /// <summary>Where the guest was referred from (GP referral, CMHT, Community organisation, Self-referral, …).</summary>
     public string? ReferralSource { get; private set; }
 
+    /// <summary>Primary or Secondary referral (spec §6.2).</summary>
+    public ReferralType? ReferralType { get; private set; }
+
+    /// <summary>Structured subcategory, required by the spec for Secondary referrals.</summary>
+    public string? ReferralSubcategory { get; private set; }
+
+    /// <summary>
+    /// Urgent Support (spec §3.3) — a temporary escalation state that sits alongside pathway and
+    /// engagement status rather than replacing either.
+    /// </summary>
+    public bool IsUrgent { get; private set; }
+    public DateTimeOffset? UrgentSince { get; private set; }
+
+    /// <summary>
+    /// Denormalised last activity timestamp driving the automatic On Hold sweep (§4.7). Kept on
+    /// the guest so the sweep is an indexed scan rather than a per-guest max over Contacts.
+    /// </summary>
+    public DateTimeOffset? LastActivityAt { get; private set; }
+
     private Guest() { }
 
     public Guest(
@@ -71,7 +90,7 @@ public class Guest : AggregateRoot
         PostCode = postCode;
         ConsentGiven = consentGiven;
         ConsentGivenAt = consentGiven ? DateTimeOffset.UtcNow : null;
-        Status = GuestStatus.PendingConversation;
+        Status = GuestStatus.New;
         AssignedCmhwId = assignedCmhwId;
         ReferralSource = referralSource;
         RegisteredByStaffId = registeredByStaffId;
@@ -82,7 +101,57 @@ public class Guest : AggregateRoot
 
     public void UpdateStatus(GuestStatus status) => Status = status;
 
-    public void Escalate() => Status = GuestStatus.Urgent;
+    /// <summary>
+    /// New → Active. The spec (§4.1) allows this only once the initial conversation is done, so
+    /// the command that records it is the only caller.
+    /// </summary>
+    public void ActivateAfterInitialConversation(DateTimeOffset completedAt)
+    {
+        Status = GuestStatus.Active;
+        RecordActivity(completedAt);
+    }
+
+    /// <summary>Raises the urgent flag without touching engagement status (§3.3).</summary>
+    public void Escalate()
+    {
+        if (IsUrgent) return;
+        IsUrgent = true;
+        UrgentSince = DateTimeOffset.UtcNow;
+    }
+
+    /// <summary>
+    /// Stamps the last activity date (§4.6) and brings an On Hold guest back to Active — contact
+    /// is exactly what "on hold" was waiting for.
+    /// </summary>
+    public void RecordActivity(DateTimeOffset occurredAt)
+    {
+        if (LastActivityAt is null || occurredAt > LastActivityAt) LastActivityAt = occurredAt;
+        if (Status == GuestStatus.OnHold) Status = GuestStatus.Active;
+    }
+
+    /// <summary>Automatic transition run by the engagement-status sweep (§4.7).</summary>
+    public void PlaceOnHold()
+    {
+        if (Status == GuestStatus.Active) Status = GuestStatus.OnHold;
+    }
+
+    public void SetReferral(ReferralType? referralType, string? subcategory, string? source)
+    {
+        ReferralType = referralType;
+        ReferralSubcategory = subcategory;
+        ReferralSource = source;
+    }
+
+    /// <summary>Reference from the system this guest was migrated out of, so a re-run updates rather than duplicates (§7).</summary>
+    public string? LegacyReference { get; private set; }
+
+    public void SetLegacyReference(string? legacyReference)
+    {
+        if (!string.IsNullOrWhiteSpace(legacyReference)) LegacyReference = legacyReference;
+    }
+
+    /// <summary>Migration only — preserves the original registration timestamp (§7.2).</summary>
+    public void OverwriteRegisteredAt(DateTimeOffset registeredAt) => RegisteredAt = registeredAt;
 
     public void SoftDelete() => IsDeleted = true;
 
@@ -103,10 +172,14 @@ public class Guest : AggregateRoot
         AfaSupportNeeded = afaSupportNeeded;
     }
 
-    /// <summary>Closes the urgent state: guest returns to Active and the read model is deactivated via the raised event.</summary>
+    /// <summary>
+    /// Clears the urgent flag. Engagement status is deliberately untouched — a guest who was New
+    /// or On Hold before the escalation returns to exactly that state.
+    /// </summary>
     public void ResolveUrgent()
     {
-        Status = GuestStatus.Active;
+        IsUrgent = false;
+        UrgentSince = null;
         Raise(new UrgentCaseResolvedEvent(Id, DateTimeOffset.UtcNow));
     }
 }

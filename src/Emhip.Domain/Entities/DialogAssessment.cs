@@ -58,4 +58,7 @@ public class DialogAssessment : Entity
         Medication = Clamp(medication);
         MeetingsWithMhStaff = Clamp(meetingsWithMhStaff);
     }
+
+    /// <summary>Migration only — preserves the date the historic assessment was actually taken (§7.2).</summary>
+    public void OverwriteAssessedAt(DateTimeOffset assessedAt) => AssessedAt = assessedAt;
 }

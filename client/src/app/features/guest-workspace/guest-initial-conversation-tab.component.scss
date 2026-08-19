@@ -184,6 +184,198 @@
   margin-top: 8px;
 }
 
+// ---- Record form (spec §4.2): risk / pathway / allocation / actions blocks ----
+
+.ic-fieldset {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 16px;
+  border: 1px solid t.$color-divider;
+  border-radius: 8px;
+
+  &__legend {
+    padding: 0 6px;
+    font-family: t.$font-primary;
+    font-weight: 600;
+    font-size: 14px;
+    line-height: 24px;
+    color: t.$color-text-primary;
+  }
+
+  &__hint {
+    margin: 0;
+    font-family: t.$font-primary;
+    font-weight: 400;
+    font-size: 12px;
+    line-height: 20px;
+    color: t.$color-text-body;
+
+    strong {
+      font-weight: 600;
+    }
+  }
+}
+
+.ic-hint {
+  margin: 0;
+  font-family: t.$font-primary;
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 20px;
+  color: t.$color-text-meta;
+}
+
+// Yes/No risk chips — same radio-chip pattern as the casework note drawer.
+.ic-choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ic-choice {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 180px;
+  height: 36px;
+  padding: 0 16px;
+  border: none;
+  border-radius: 6px;
+  background: #fff;
+  box-shadow: inset 0 0 0 1px t.$color-border;
+  cursor: pointer;
+
+  &__radio {
+    position: relative;
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    box-shadow: inset 0 0 0 1.5px #636366;
+    flex-shrink: 0;
+  }
+
+  &__label {
+    font-family: t.$font-primary;
+    font-weight: 500;
+    font-size: 12px;
+    line-height: 16px;
+    color: t.$color-text-primary;
+  }
+
+  &--on {
+    box-shadow: inset 0 0 0 1px t.$color-brand-red-bright;
+
+    .ic-choice__radio {
+      box-shadow: inset 0 0 0 1.5px t.$color-brand-red-bright;
+
+      &::after {
+        content: '';
+        position: absolute;
+        inset: 3px;
+        border-radius: 50%;
+        background: t.$color-brand-red-bright;
+      }
+    }
+  }
+
+  // "Yes — immediate risk" reads as an alert once chosen; it raises the urgent flag.
+  &--danger.ic-choice--on {
+    background: t.$color-chip-red-bg;
+
+    .ic-choice__label {
+      color: t.$color-brand-red;
+    }
+  }
+}
+
+.ic-pathway-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.ic-pathway-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 14px 40px 14px 16px;
+  border: none;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: inset 0 0 0 1px t.$color-divider;
+  text-align: left;
+  cursor: pointer;
+
+  &--selected {
+    box-shadow: inset 0 0 0 1px t.$color-brand-red-bright;
+  }
+
+  &__radio {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    box-shadow: inset 0 0 0 1.5px #636366;
+
+    &--selected {
+      box-shadow: inset 0 0 0 1.5px t.$color-brand-red-bright;
+
+      &::after {
+        content: '';
+        position: absolute;
+        inset: 3px;
+        border-radius: 50%;
+        background: t.$color-brand-red-bright;
+      }
+    }
+  }
+
+  &__name {
+    font-family: t.$font-primary;
+    font-weight: 600;
+    font-size: 14px;
+    line-height: 24px;
+    color: t.$color-text-primary;
+  }
+
+  &__desc {
+    font-family: t.$font-primary;
+    font-weight: 500;
+    font-size: 10px;
+    line-height: 14px;
+    color: t.$color-text-primary;
+  }
+}
+
+.ic-afa {
+  margin-top: 4px;
+}
+
+.ic-allocation {
+  grid-template-columns: repeat(2, minmax(0, 262px));
+}
+
+.ic-action-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 170px auto;
+  align-items: end;
+  gap: 12px;
+
+  &__remove {
+    padding-bottom: 8px;
+  }
+}
+
+.ic-add-action {
+  align-self: flex-start;
+}
+
 @media (max-width: 960px) {
   .ic-columns {
     grid-template-columns: 1fr;
@@ -200,5 +392,25 @@
 
   .field-grid--two {
     grid-template-columns: 1fr;
+  }
+
+  .ic-pathway-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ic-allocation {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .ic-action-row {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+
+    &__remove {
+      justify-self: flex-start;
+      padding-bottom: 0;
+    }
   }
 }

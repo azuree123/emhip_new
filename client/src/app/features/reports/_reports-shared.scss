@@ -210,20 +210,29 @@ $green: rgb(20, 113, 41);
     color: $green;
   }
 
-  &--pending {
+  &--new {
     background: rgb(255, 252, 240);
     color: rgb(157, 133, 45);
   }
 
-  &--inactive {
+  &--onhold {
     background: rgb(246, 246, 246);
     color: $ink-muted;
   }
 
+  // Urgency is a separate flag, so this pill sits *beside* a status pill, never instead of it.
   &--urgent {
     background: rgb(255, 240, 241);
     color: $coral;
   }
+}
+
+// Status cell = engagement-status pill + (optionally) the independent urgency badge.
+.status-cell {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
 }
 
 // ---- Tables (header strip rgb(241,241,241) h41, 12/600 heads, 1px dividers)

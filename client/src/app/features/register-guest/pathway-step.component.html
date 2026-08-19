@@ -69,18 +69,36 @@
       </span>
     </label>
 
+    @if (oneToOnePathway) {
+      <p class="allocation-note">
+        {{ pathwayLabel() }} is a one-to-one pathway — an assigned CMHW and a next contact date are required before this
+        registration can be submitted.
+      </p>
+    }
+
     <div class="field-row allocation-row">
       <label class="field">
-        <span class="field__label">Follow-up contact date*</span>
-        <select class="field__select" formControlName="followUpCadence">
-          @for (option of cadenceOptions; track option) {
-            <option [value]="option">{{ option }}</option>
-          }
-        </select>
+        <span class="field__label">Follow-up contact date{{ oneToOnePathway ? ' *' : '' }}</span>
+        <input class="field__input" type="date" formControlName="nextContactDate" />
+        <span class="field__hint">
+          <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+            <path
+              d="M 5.5 0.688 C 8.158 0.688 10.313 2.842 10.313 5.5 C 10.313 8.158 8.158 10.313 5.5 10.313 C 2.842 10.313 0.688 8.158 0.688 5.5 C 0.688 2.842 2.842 0.688 5.5 0.688 Z M 5.501 6.94 C 5.204 6.94 4.964 7.181 4.964 7.478 C 4.964 7.774 5.204 8.015 5.501 8.015 C 5.798 8.015 6.038 7.774 6.038 7.478 C 6.038 7.181 5.798 6.94 5.501 6.94 Z M 5.5 2.75 C 5.224 2.75 4.996 2.958 4.966 3.226 L 4.963 3.288 L 4.963 5.978 L 4.967 6.041 C 4.998 6.308 5.226 6.516 5.501 6.516 C 5.777 6.516 6.005 6.308 6.036 6.041 L 6.039 5.978 L 6.038 3.288 L 6.035 3.225 C 6.003 2.957 5.776 2.75 5.5 2.75 Z"
+              fill="currentColor"
+            />
+          </svg>
+          The follow-up is scheduled automatically when the initial conversation is submitted
+        </span>
+        @if (invalid('nextContactDate')) {
+          <span class="field__error">A next contact date is required for this pathway.</span>
+        }
       </label>
       <div class="field">
-        <span class="field__label">Assigned CMHW</span>
+        <span class="field__label">Assigned CMHW{{ oneToOnePathway ? ' *' : '' }}</span>
         <emhip-staff-picker formControlName="assignedCmhwId" placeholder="Select a CMHW" />
+        @if (invalid('assignedCmhwId')) {
+          <span class="field__error">An assigned CMHW is required for this pathway.</span>
+        }
       </div>
     </div>
   </section>

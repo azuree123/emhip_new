@@ -173,6 +173,28 @@
     <!-- Guest Seen (design y=1031) — the signed-in worker's own contacts (mine=true). -->
     <app-guest-seen-card [mine]="true" />
 
+    <!-- Clinical complexity indicators (spec §5.1) — labels come straight from the API
+         (SMI, On medication, Trust involvement, CPN involvement today), never hardcoded. -->
+    <div class="panel-card">
+      <div class="panel-card__head">
+        <div>
+          <div class="panel-card__title">Clinical complexity indicators</div>
+          <div class="panel-card__subtitle">Guests with each indicator recorded</div>
+        </div>
+      </div>
+
+      <div class="indicator-grid">
+        @for (indicator of d.clinicalComplexity; track indicator.label) {
+          <div class="indicator-tile">
+            <div class="indicator-tile__label">{{ indicator.label }}</div>
+            <div class="indicator-tile__number">{{ indicator.count }}</div>
+          </div>
+        } @empty {
+          <div class="empty">No clinical complexity data recorded yet.</div>
+        }
+      </div>
+    </div>
+
     <!-- Actions pending today (design y=1251) — the open follow-up queue. -->
     <div class="panel-card actions-card">
       <div class="panel-card__title">Actions pending today</div>

@@ -13,7 +13,8 @@ namespace Emhip.Api.Controllers;
 [ApiController]
 [Route("reports")]
 [Authorize]
-public sealed class ReportsController(IMediator mediator, IReportReadService reportReads, ICurrentUser currentUser) : ControllerBase
+public sealed class ReportsController(
+    IMediator mediator, IReportReadService reportReads, ICurrentUser currentUser, IExcelWorkbookBuilder workbookBuilder) : ControllerBase
 {
     [HttpGet("pathways")]
     [Authorize(Policy = Permissions.Reports.View)]
@@ -73,6 +74,21 @@ public sealed class ReportsController(IMediator mediator, IReportReadService rep
     [Authorize(Policy = Permissions.Reports.View)]
     public async Task<IActionResult> GetExportHistory(CancellationToken cancellationToken) =>
         Ok(await mediator.Send(new GetExportHistoryQuery(currentUser.HubId), cancellationToken));
+
+    /// <summary>Multi-sheet Excel workbook: summary, pathways, caseload, DIALOG outcomes and data quality (spec §5.4).</summary>
+    [HttpGet("export.xlsx")]
+    [Authorize(Policy = Permissions.Reports.Export)]
+    public async Task<IActionResult> ExportWorkbook([FromQuery] DateOnly from, [FromQuery] DateOnly to, CancellationToken cancellationToken)
+    {
+        var report = await mediator.Send(new GetServiceReportExportQuery(currentUser.HubId, from, to), cancellationToken);
+        var bytes = workbookBuilder.BuildServiceReport(report);
+
+        await mediator.Send(new RecordExportCommand("ServiceWorkbookXlsx", from, to), cancellationToken);
+
+        return File(bytes,
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            $"emhip-service-report-{from:yyyy-MM-dd}-{to:yyyy-MM-dd}.xlsx");
+    }
 
     /// <summary>
     /// Streams CSV rows as they're read from the database — never buffers the full export in

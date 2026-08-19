@@ -14,20 +14,31 @@ namespace Emhip.Infrastructure.Reads;
 /// </summary>
 public sealed class DashboardReadService(EmhipDbContext db, IUrgentCaseReadService urgentCases) : IDashboardReadService
 {
-    public async Task<GuestsSeenDto> GetGuestsSeenAsync(Guid hubId, GuestsSeenPeriod period, Guid? cmhwStaffId = null, CancellationToken cancellationToken = default)
+    public async Task<GuestsSeenDto> GetGuestsSeenAsync(
+        Guid hubId, GuestsSeenPeriod period, Guid? cmhwStaffId = null,
+        DateOnly? customFrom = null, DateOnly? customTo = null, CancellationToken cancellationToken = default)
     {
-        // Live, but narrow: an OccurredAt-indexed range scan over at most a month of contacts.
+        // Live, but narrow: an OccurredAt-indexed range scan. A supplied custom range wins over
+        // the preset period (spec §5.1).
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
-        var from = period switch
-        {
-            GuestsSeenPeriod.Today => today,
-            GuestsSeenPeriod.Week => today.AddDays(-6),
-            _ => today.AddDays(-29),
-        };
+        var usingCustomRange = customFrom is not null || customTo is not null;
+        var from = usingCustomRange
+            ? customFrom ?? today.AddDays(-29)
+            : period switch
+            {
+                GuestsSeenPeriod.Today => today,
+                GuestsSeenPeriod.Week => today.AddDays(-6),
+                _ => today.AddDays(-29),
+            };
+        var to = usingCustomRange ? customTo ?? today : today;
+        if (to < from) (from, to) = (to, from);
+        if (usingCustomRange) period = GuestsSeenPeriod.Custom;
+
         var fromTs = new DateTimeOffset(from.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
+        var toTs = new DateTimeOffset(to.ToDateTime(TimeOnly.MaxValue), TimeSpan.Zero);
 
         var contacts = db.Contacts.AsNoTracking()
-            .Where(c => c.OccurredAt >= fromTs
+            .Where(c => c.OccurredAt >= fromTs && c.OccurredAt <= toTs
                 && db.Guests.Any(g => g.Id == c.GuestId && g.HubId == hubId));
         if (cmhwStaffId is not null)
         {
@@ -42,13 +53,13 @@ public sealed class DashboardReadService(EmhipDbContext db, IUrgentCaseReadServi
             .GroupBy(r => DateOnly.FromDateTime(r.OccurredAt.UtcDateTime))
             .ToDictionary(g => g.Key, g => g.Select(r => r.GuestId).Distinct().Count());
 
-        var series = Enumerable.Range(0, today.DayNumber - from.DayNumber + 1)
+        var series = Enumerable.Range(0, to.DayNumber - from.DayNumber + 1)
             .Select(offset => from.AddDays(offset))
             .Select(date => new GuestsSeenPointDto(date, perDay.GetValueOrDefault(date)))
             .ToList();
 
         return new GuestsSeenDto(
-            period, from, today,
+            period, from, to,
             rows.Select(r => r.GuestId).Distinct().Count(),
             rows.Count,
             series);
@@ -60,7 +71,7 @@ public sealed class DashboardReadService(EmhipDbContext db, IUrgentCaseReadServi
             .FirstOrDefaultAsync(s => s.HubId == hubId, cancellationToken);
 
         var activeGuests = await db.Guests.AsNoTracking()
-            .Where(g => g.HubId == hubId && g.AssignedCmhwId == staffId && g.Status != GuestStatus.Inactive)
+            .Where(g => g.HubId == hubId && g.AssignedCmhwId == staffId && g.Status != GuestStatus.OnHold)
             .OrderByDescending(g => g.RegisteredAt)
             .Take(25)
             .Select(g => new ActiveGuestRowDto(

@@ -12,8 +12,10 @@ import {
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import {
   AbstractControl,
+  FormArray,
   FormBuilder,
   FormControl,
+  FormGroup,
   ReactiveFormsModule,
   ValidationErrors,
   ValidatorFn,
@@ -22,14 +24,14 @@ import {
 import { Router } from '@angular/router';
 import { catchError, concatMap, defer, from, last, map, Observable, of, switchMap, tap, throwError } from 'rxjs';
 import {
-  AllocateGuestRequest,
   CmhwOptionDto,
   DialogScores,
   GuestPathway,
+  InitialConversationActionInput,
   RecordInitialConversationRequest,
   RecordRiskAssessmentRequest,
+  ReferralType,
   RegisterGuestRequest,
-  ScheduleFollowUpRequest,
   UpdateDemographicsRequest,
 } from '../../core/api-models';
 import { AuthService } from '../../core/auth.service';
@@ -38,8 +40,15 @@ import { CustomFieldsComponent } from '../../shared/custom-fields.component';
 import { DemographicsStepComponent } from './demographics-step.component';
 import { DIALOG_DOMAINS, DialogStepComponent } from './dialog-step.component';
 import { InitialConversationStepComponent, MDT_FLAGS } from './initial-conversation-step.component';
-import { PathwayStepComponent } from './pathway-step.component';
+import { ONE_TO_ONE_PATHWAYS, PathwayStepComponent } from './pathway-step.component';
 import { ReviewStepComponent, SubmissionCall } from './review-step.component';
+
+/** One row of the spec §4.2 actions tracker on the Initial conversation step. */
+type ActionRowGroup = FormGroup<{
+  description: FormControl<string>;
+  dueDate: FormControl<string>;
+  assignedToStaffId: FormControl<string>;
+}>;
 
 /** FluentValidation-equivalent rule: date of birth must be in the past. */
 function pastDateValidator(): ValidatorFn {
@@ -69,14 +78,20 @@ function pastDateValidator(): ValidatorFn {
  *                                              until the guest exists)
  *   POST /guests/{id}/initial-conversation  -> recordInitialConversation()
  *   POST /guests/{id}/dialog-assessments    -> recordDialogAssessment()
- *   POST /guests/{id}/allocation            -> allocate()
- *   POST /guests/{id}/followups             -> scheduleFollowUp()      (only when a cadence AND
- *                                              a CMHW were chosen; due date = today + cadence)
  *   PUT  /guests/{id}/demographics          -> updateDemographics()
  * plus, only when the risk screening flagged anything,
  *   POST /guests/{id}/risk-assessments      -> recordRiskAssessment()  (Urgent Cases escalation)
- * The step-1 "Referral type" select is submitted as RegisterGuestRequest.referralSource, and
- * after completion getOverview() supplies the "G-{guestNumber}" reference for the overlay.
+ *
+ * The initial-conversation call is the gate to Active (spec §4.1-4.2): it carries the pathway,
+ * the assigned CMHW, the AFA flag, the mandatory immediate-risk answer, the next contact date
+ * and the actions tracker, so the server performs the allocation, raises the urgent flag,
+ * schedules the follow-up and creates the actions in that one request. The separate
+ * allocate() and scheduleFollowUp() calls the wizard used to make afterwards are therefore
+ * gone — repeating them would only duplicate what the server has already done.
+ *
+ * Step 1's referral card maps straight onto RegisterGuestRequest — referralSource plus the
+ * spec §6.2 referralType and (for Secondary referrals) referralSubcategory. After completion
+ * getOverview() supplies the "G-{guestNumber}" reference for the overlay.
  * Each call is tracked individually: on failure the wizard reports which call failed and
  * "Retry" resumes from that call without repeating the ones that already succeeded.
  *
@@ -143,8 +158,6 @@ export class RegisterGuestComponent {
     customFields: 'pending',
     conversation: 'pending',
     dialog: 'pending',
-    allocation: 'pending',
-    followUp: 'pending',
     demographics: 'pending',
     risk: 'pending',
   });
@@ -152,19 +165,11 @@ export class RegisterGuestComponent {
   private static readonly CALL_LABELS: Record<SubmissionCall['key'], string> = {
     register: 'Register guest',
     customFields: 'Additional information',
-    conversation: 'Initial conversation',
+    // One call, four effects: allocation, urgent flag, next-contact follow-up and actions.
+    conversation: 'Initial conversation (allocation, follow-up & actions)',
     dialog: 'DIALOG assessment',
-    allocation: 'Pathway & allocation',
-    followUp: 'Schedule initial follow-up',
     demographics: 'Demographics',
     risk: 'Risk assessment (Urgent Cases escalation)',
-  };
-
-  /** Days added to today per follow-up cadence option (Pathway & allocation step). */
-  private static readonly CADENCE_DAYS: Record<string, number> = {
-    'Weekly - 7 days': 7,
-    'Fortnightly - 14 days': 14,
-    'Monthly - 28 days': 28,
   };
 
   /** CMHW names for the Review step's "Assigned CMHW" summary line. */
@@ -213,6 +218,9 @@ export class RegisterGuestComponent {
       phoneNumber: ['', Validators.required],
       ethnicity: ['', Validators.required],
       gender: [''],
+      // Spec §6.1 — real UpdateDemographicsRequest fields, filled from the MaritalStatus /
+      // LivingGroup lookups by the step component.
+      maritalStatus: [''],
     }),
     contact: this.fb.nonNullable.group({
       address: [''],
@@ -220,6 +228,7 @@ export class RegisterGuestComponent {
       contactEmail: ['', Validators.email],
       housingStatus: [''],
       nationality: [''],
+      livingGroup: [''],
       employmentStatus: [''],
     }),
     additional: this.fb.nonNullable.group({
@@ -233,7 +242,15 @@ export class RegisterGuestComponent {
       nhsNumber: [''],
     }),
     referral: this.fb.nonNullable.group({
-      referralType: ['Self-referral'],
+      /** RegisterGuestRequest.referralSource. */
+      referralSource: ['Self-referral'],
+      /** Spec §6.2 classification — RegisterGuestRequest.referralType. */
+      referralType: this.fb.nonNullable.control<ReferralType>('Primary', Validators.required),
+      /**
+       * RegisterGuestRequest.referralSubcategory. The server rejects a Secondary referral
+       * without one, so the constructor mirrors that rule as a client-side validator.
+       */
+      referralSubcategory: [''],
     }),
     consent: this.fb.nonNullable.group({
       consentGiven: [false, Validators.requiredTrue],
@@ -276,6 +293,8 @@ export class RegisterGuestComponent {
       safeguardingHistory: ['', Validators.required],
       safeguardingComment: [''],
       escalationRequired: ['', Validators.required],
+      /** Spec §4.2 mandatory Yes/No — 'Yes' raises the urgent flag server-side. */
+      immediateRisk: ['', Validators.required],
       crisisNotes: [''],
       flags: this.fb.nonNullable.group({
         selfHarm: [false],
@@ -288,8 +307,31 @@ export class RegisterGuestComponent {
       }),
       riskNotes: [''],
     }),
+    /** Spec §4.2 actions tracker — submitted as RecordInitialConversationRequest.actions[]. */
+    actions: this.fb.array<ActionRowGroup>([]),
     consentConfirmed: this.fb.nonNullable.control(false, Validators.requiredTrue),
   });
+
+  /** Typed view of the actions tracker for the template/add/remove handlers. */
+  protected get actionRows(): FormArray<ActionRowGroup> {
+    return this.conversationForm.controls.actions;
+  }
+
+  private newActionRow(): ActionRowGroup {
+    return this.fb.nonNullable.group({
+      description: ['', Validators.required],
+      dueDate: ['', Validators.required],
+      assignedToStaffId: [''],
+    });
+  }
+
+  protected addActionRow(): void {
+    this.actionRows.push(this.newActionRow());
+  }
+
+  protected removeActionRow(index: number): void {
+    this.actionRows.removeAt(index);
+  }
 
   // ---- Step 3 · DIALOG (Desktop80) ----
   protected readonly dialogForm = this.fb.group({
@@ -310,10 +352,12 @@ export class RegisterGuestComponent {
   });
 
   // ---- Step 4 · Pathway & allocation (Desktop81) ----
+  // pathway is always required; assignedCmhwId and nextContactDate become required for the two
+  // one-to-one pathways (the server rejects those without them) — see the constructor.
   protected readonly pathwayForm = this.fb.group({
     pathway: this.fb.control<GuestPathway | null>(null, Validators.required),
     afaSupportNeeded: this.fb.nonNullable.control(false),
-    followUpCadence: this.fb.nonNullable.control('Weekly - 7 days'),
+    nextContactDate: this.fb.nonNullable.control(''),
     assignedCmhwId: this.fb.nonNullable.control(''),
   });
 
@@ -337,6 +381,35 @@ export class RegisterGuestComponent {
         crisisNotes.removeValidators(Validators.required);
       }
       crisisNotes.updateValueAndValidity({ emitEvent: false });
+    });
+
+    // Spec §6.2: a Secondary referral must carry a subcategory.
+    const referral = this.demographicsForm.controls.referral;
+    referral.controls.referralType.valueChanges.pipe(takeUntilDestroyed()).subscribe((value) => {
+      const subcategory = referral.controls.referralSubcategory;
+      if (value === 'Secondary') {
+        subcategory.addValidators(Validators.required);
+      } else {
+        subcategory.removeValidators(Validators.required);
+        subcategory.setValue('', { emitEvent: false });
+      }
+      subcategory.updateValueAndValidity({ emitEvent: false });
+    });
+
+    // Spec §4.2: Mental Wellbeing and Clinical Support are one-to-one pathways — the
+    // initial-conversation endpoint rejects them without an assigned CMHW and a next contact
+    // date, so both controls become required as soon as such a pathway is picked.
+    const pathway = this.pathwayForm.controls;
+    pathway.pathway.valueChanges.pipe(takeUntilDestroyed()).subscribe((value) => {
+      const required = !!value && ONE_TO_ONE_PATHWAYS.includes(value);
+      for (const control of [pathway.assignedCmhwId, pathway.nextContactDate]) {
+        if (required) {
+          control.addValidators(Validators.required);
+        } else {
+          control.removeValidators(Validators.required);
+        }
+        control.updateValueAndValidity({ emitEvent: false });
+      }
     });
   }
 
@@ -430,9 +503,7 @@ export class RegisterGuestComponent {
     const keys: SubmissionCall['key'][] = ['register'];
     // Straight after the guest exists, before anything else is written against it.
     if (this.hasCustomFields()) keys.push('customFields');
-    keys.push('conversation', 'dialog', 'allocation');
-    if (this.followUpNeeded()) keys.push('followUp');
-    keys.push('demographics');
+    keys.push('conversation', 'dialog', 'demographics');
     if (this.riskAssessmentNeeded()) keys.push('risk');
     return keys.map((key) => ({ key, label: RegisterGuestComponent.CALL_LABELS[key], status: states[key] }));
   });
@@ -560,17 +631,15 @@ export class RegisterGuestComponent {
         call: defer(() => this.customFields()?.saveFor(id) ?? of(void 0)),
       });
     }
+    // The initial conversation is the gate to Active: this single call also allocates the
+    // pathway/CMHW, raises the urgent flag when immediate risk was recorded, schedules the
+    // next-contact follow-up and creates the actions — hence no separate allocate() or
+    // scheduleFollowUp() step.
     plan.push(
       { key: 'conversation', call: defer(() => this.guestsApi.recordInitialConversation(id, this.buildConversationRequest())) },
       { key: 'dialog', call: defer(() => this.guestsApi.recordDialogAssessment(id, this.buildDialogScores())) },
-      { key: 'allocation', call: defer(() => this.guestsApi.allocate(id, this.buildAllocationRequest())) },
+      { key: 'demographics', call: defer(() => this.guestsApi.updateDemographics(id, this.buildDemographicsRequest())) },
     );
-    // Runs directly after (and only after) a successful allocate(): the follow-up is assigned
-    // to the CMHW chosen on the Pathway & allocation step.
-    if (this.followUpNeeded()) {
-      plan.push({ key: 'followUp', call: defer(() => this.guestsApi.scheduleFollowUp(id, this.buildFollowUpRequest())) });
-    }
-    plan.push({ key: 'demographics', call: defer(() => this.guestsApi.updateDemographics(id, this.buildDemographicsRequest())) });
     if (this.riskAssessmentNeeded()) {
       plan.push({ key: 'risk', call: defer(() => this.guestsApi.recordRiskAssessment(id, this.buildRiskRequest())) });
     }
@@ -580,7 +649,7 @@ export class RegisterGuestComponent {
   // ---- Request builders (see the honest-data notes in each step component) ----
 
   private buildRegisterRequest(): RegisterGuestRequest {
-    const { personal, contact, consent } = this.demographicsForm.getRawValue();
+    const { personal, contact, consent, referral } = this.demographicsForm.getRawValue();
     const assignedCmhwId = this.pathwayForm.getRawValue().assignedCmhwId;
     return {
       firstName: personal.firstName,
@@ -593,7 +662,10 @@ export class RegisterGuestComponent {
       addressLine1: contact.address || null,
       postCode: contact.postCode || null,
       assignedCmhwId: assignedCmhwId || null,
-      referralSource: this.demographicsForm.getRawValue().referral.referralType || null,
+      referralSource: referral.referralSource || null,
+      // Spec §6.2 — the subcategory only applies to Secondary referrals.
+      referralType: referral.referralType,
+      referralSubcategory: referral.referralType === 'Secondary' ? referral.referralSubcategory || null : null,
     };
   }
 
@@ -606,6 +678,8 @@ export class RegisterGuestComponent {
       interpreterNeeded: additional.interpreterNeeded,
       housingStatus: contact.housingStatus || null,
       employmentStatus: contact.employmentStatus || null,
+      maritalStatus: personal.maritalStatus || null,
+      livingGroup: contact.livingGroup || null,
       emergencyContactName: additional.emergencyContactName || null,
       emergencyContactPhone: additional.emergencyContactPhone || null,
       emergencyContactRelationship: additional.emergencyContactRelationship || null,
@@ -616,23 +690,28 @@ export class RegisterGuestComponent {
   }
 
   /**
-   * The initial-conversation API only stores { presentingIssues, notes, consentConfirmed }, so
-   * (per the honest-data policy) the richer designed fields are concatenated into `notes` as
-   * labelled sections rather than invented as new API fields. presentingIssues carries the
-   * guided conversation's "Main concern and reason for coming".
+   * The gate to Active (spec §4.1-4.2). Alongside presentingIssues / notes / consentConfirmed
+   * the request carries the structured fields the server acts on: immediateRisk (Yes raises
+   * the urgent flag), pathway + assignedCmhwId + afaSupportNeeded (the allocation),
+   * nextContactDate (the follow-up) and actions[] (the actions tracker).
+   *
+   * presentingIssues carries the guided conversation's "Main concern and reason for coming";
+   * every designed field with no request field of its own (session details, history, physical
+   * health, risk screening, DIALOG remarks) is concatenated into `notes` as labelled sections
+   * rather than invented as new API fields.
    */
   private buildConversationRequest(): RecordInitialConversationRequest {
     const value = this.conversationForm.getRawValue();
     const dialog = this.dialogForm.getRawValue();
-    const referralType = this.demographicsForm.getRawValue().referral.referralType;
-    const followUpCadence = this.pathwayForm.getRawValue().followUpCadence;
+    const referral = this.demographicsForm.getRawValue().referral;
+    const pathway = this.pathwayForm.getRawValue();
 
     const flaggedLabels = MDT_FLAGS.filter((f) => value.risk.flags[f.key]).map((f) => f.label);
     const needHelpLabels = DIALOG_DOMAINS.filter((d) => dialog.needHelp[d.key] === true).map((d) => d.area);
 
     const lines: (string | false)[] = [
       `Session date: ${value.session.sessionDate} · Type of contact: ${value.session.contactType}`,
-      `Referral type: ${referralType}`,
+      `Referral source: ${referral.referralSource}`,
       '',
       !!value.prompts.durationImpact && `Duration, daily impact, recent triggers: ${value.prompts.durationImpact}`,
       !!value.prompts.background && `Background (family, upbringing, early adversity): ${value.prompts.background}`,
@@ -663,13 +742,13 @@ export class RegisterGuestComponent {
       `- History of safeguarding concerns: ${value.risk.safeguardingHistory}` +
         (value.risk.safeguardingComment ? ` (${value.risk.safeguardingComment})` : ''),
       `- Immediate escalation required: ${value.risk.escalationRequired}`,
+      `- Immediate risk: ${value.risk.immediateRisk}`,
       !!value.risk.crisisNotes && `- Crisis notes: ${value.risk.crisisNotes}`,
       flaggedLabels.length > 0 && `- Flags for MDT: ${flaggedLabels.join('; ')}`,
       !!value.risk.riskNotes && `- Risk / safeguarding notes: ${value.risk.riskNotes}`,
       '',
       needHelpLabels.length > 0 && `DIALOG — areas flagged as needing help: ${needHelpLabels.join(', ')}`,
       !!dialog.additionalNotes && `DIALOG additional notes: ${dialog.additionalNotes}`,
-      `Requested follow-up cadence: ${followUpCadence}`,
     ];
 
     const notes = lines
@@ -678,10 +757,22 @@ export class RegisterGuestComponent {
       .replace(/\n{3,}/g, '\n\n')
       .trim();
 
+    const actions: InitialConversationActionInput[] = value.actions.map((action) => ({
+      description: action.description,
+      dueDate: action.dueDate,
+      assignedToStaffId: action.assignedToStaffId || null,
+    }));
+
     return {
       presentingIssues: value.prompts.mainConcern,
       notes,
       consentConfirmed: value.consentConfirmed,
+      immediateRisk: value.risk.immediateRisk === 'Yes',
+      pathway: pathway.pathway!,
+      afaSupportNeeded: pathway.afaSupportNeeded,
+      assignedCmhwId: pathway.assignedCmhwId || null,
+      nextContactDate: pathway.nextContactDate || null,
+      actions,
     };
   }
 
@@ -694,37 +785,6 @@ export class RegisterGuestComponent {
     return result as unknown as DialogScores;
   }
 
-  private buildAllocationRequest(): AllocateGuestRequest {
-    const value = this.pathwayForm.getRawValue();
-    return {
-      pathway: value.pathway!,
-      afaSupportNeeded: value.afaSupportNeeded,
-      assignedCmhwId: value.assignedCmhwId || null,
-    };
-  }
-
-  /**
-   * A real follow-up is scheduled only when a cadence was chosen AND a CMHW was selected on
-   * the Pathway & allocation step — scheduleFollowUp() requires an assignee staff GUID, which
-   * is exactly the selected CMHW's id (see getCmhwOptions()).
-   */
-  protected followUpNeeded(): boolean {
-    const value = this.pathwayForm.getRawValue();
-    return !!value.assignedCmhwId && value.followUpCadence in RegisterGuestComponent.CADENCE_DAYS;
-  }
-
-  private buildFollowUpRequest(): ScheduleFollowUpRequest {
-    const value = this.pathwayForm.getRawValue();
-    const days = RegisterGuestComponent.CADENCE_DAYS[value.followUpCadence] ?? 7;
-    const due = new Date();
-    due.setDate(due.getDate() + days);
-    return {
-      dueDate: due.toISOString().slice(0, 10),
-      assigneeStaffId: value.assignedCmhwId,
-      notes: `Initial follow-up per ${value.followUpCadence} cadence`,
-    };
-  }
-
   /**
    * The risk-screening answers map onto the existing risk-assessment endpoint (which is what
    * escalates a guest onto the Urgent Cases queue) — only called when something was flagged.
@@ -733,6 +793,7 @@ export class RegisterGuestComponent {
     const risk = this.conversationForm.getRawValue().risk;
     const flags = risk.flags;
     return (
+      risk.immediateRisk === 'Yes' ||
       risk.selfHarmHistory.startsWith('Yes') ||
       risk.riskToOthersHistory.startsWith('Yes') ||
       risk.safeguardingHistory.startsWith('Yes') ||
@@ -760,7 +821,7 @@ export class RegisterGuestComponent {
       suicidalIdeation: flags.selfHarm,
       selfHarm: risk.selfHarmHistory.startsWith('Yes'),
       riskToOthers: risk.riskToOthersHistory.startsWith('Yes'),
-      severeDeterioration: risk.escalationRequired.startsWith('Yes') || flags.psychosis,
+      severeDeterioration: risk.escalationRequired.startsWith('Yes') || risk.immediateRisk === 'Yes' || flags.psychosis,
       safeguardingConcern:
         risk.safeguardingHistory.startsWith('Yes') || flags.childSafeguarding || flags.domesticAbuse,
       notes,

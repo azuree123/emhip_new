@@ -98,6 +98,39 @@ namespace Emhip.Infrastructure.Persistence.Migrations
                     b.ToTable("AuditEvents", (string)null);
                 });
 
+            modelBuilder.Entity("Emhip.Domain.Entities.CaseloadAssignment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("FromStaffId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("GuestId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Reason")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTimeOffset>("RecordedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<Guid>("RecordedByStaffId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("ToStaffId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GuestId", "RecordedAt")
+                        .HasDatabaseName("IX_CaseloadAssignments_Guest_Recorded");
+
+                    b.ToTable("CaseloadAssignments", (string)null);
+                });
+
             modelBuilder.Entity("Emhip.Domain.Entities.CaseworkNote", b =>
                 {
                     b.Property<Guid>("Id")
@@ -769,8 +802,18 @@ namespace Emhip.Infrastructure.Persistence.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
 
+                    b.Property<bool>("IsUrgent")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTimeOffset?>("LastActivityAt")
+                        .HasColumnType("datetimeoffset");
+
                     b.Property<string>("LastName")
                         .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("LegacyReference")
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
@@ -785,6 +828,14 @@ namespace Emhip.Infrastructure.Persistence.Migrations
                     b.Property<string>("ReferralSource")
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("ReferralSubcategory")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("ReferralType")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
 
                     b.Property<DateTimeOffset>("RegisteredAt")
                         .HasColumnType("datetimeoffset");
@@ -803,6 +854,9 @@ namespace Emhip.Infrastructure.Persistence.Migrations
                         .HasMaxLength(30)
                         .HasColumnType("nvarchar(30)");
 
+                    b.Property<DateTimeOffset?>("UrgentSince")
+                        .HasColumnType("datetimeoffset");
+
                     b.HasKey("Id");
 
                     b.HasIndex("AssignedCmhwId")
@@ -812,8 +866,17 @@ namespace Emhip.Infrastructure.Persistence.Migrations
                         .IsUnique()
                         .HasDatabaseName("IX_Guests_GuestNumber");
 
+                    b.HasIndex("HubId", "IsUrgent")
+                        .HasDatabaseName("IX_Guests_Hub_IsUrgent");
+
+                    b.HasIndex("HubId", "LegacyReference")
+                        .HasDatabaseName("IX_Guests_Hub_LegacyReference");
+
                     b.HasIndex("HubId", "Status")
                         .HasDatabaseName("IX_Guests_HubId_Status");
+
+                    b.HasIndex("HubId", "Status", "LastActivityAt")
+                        .HasDatabaseName("IX_Guests_Hub_Status_LastActivity");
 
                     b.HasIndex("HubId", "LastName", "FirstName", "Id")
                         .HasDatabaseName("IX_Guests_Keyset");
@@ -969,6 +1032,14 @@ namespace Emhip.Infrastructure.Persistence.Migrations
                     b.Property<bool>("InterpreterNeeded")
                         .HasColumnType("bit");
 
+                    b.Property<string>("LivingGroup")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("MaritalStatus")
+                        .HasMaxLength(60)
+                        .HasColumnType("nvarchar(60)");
+
                     b.Property<string>("Nationality")
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
@@ -1033,6 +1104,12 @@ namespace Emhip.Infrastructure.Persistence.Migrations
 
                     b.Property<Guid>("GuestId")
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("ImmediateRisk")
+                        .HasColumnType("bit");
+
+                    b.Property<DateOnly?>("NextContactDate")
+                        .HasColumnType("date");
 
                     b.Property<string>("Notes")
                         .HasMaxLength(4000)

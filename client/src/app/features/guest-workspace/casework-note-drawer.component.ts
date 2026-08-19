@@ -64,7 +64,7 @@ function today(): string {
  *
  * Layout follows the source top-to-bottom: an "Add contact" title over the guest's name, the
  * read-only "Logged by" field pre-filled from the login session, the "Mark as:" category radios
- * (CASEWORK / ACTIVITY / HOSPITALITY / AFA), contact method + date, then the four SBAR blocks
+ * (all six spec §4.6 categories), contact method + date, then the four SBAR blocks
  * (Situation · Background · Assessment · Recommendation), the actions arising from the session,
  * additional notes, the next contact date, the MDT/CPN toggles, and the "Save as draft" /
  * "Submit casework note" footer.
@@ -114,9 +114,12 @@ export class CaseworkNoteDrawerComponent {
   readonly loggedBy = this.auth.current().displayName || '—';
   readonly humanize = humanize;
 
+  /** The full spec §4.6 category set; the chip row wraps to a second line for the last two. */
   readonly categories: { value: CaseworkNoteCategory; label: string }[] = [
     { value: 'Casework', label: 'CASEWORK' },
     { value: 'Activity', label: 'ACTIVITY' },
+    { value: 'Meeting', label: 'MEETING' },
+    { value: 'DailyLog', label: 'DAILY LOG' },
     { value: 'Hospitality', label: 'HOSPITALITY' },
     { value: 'Afa', label: 'AFA' },
   ];

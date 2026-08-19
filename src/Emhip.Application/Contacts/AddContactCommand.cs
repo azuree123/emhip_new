@@ -29,6 +29,13 @@ public sealed class AddContactCommandHandler(IAppDbContext db, ICurrentUser curr
     {
         var contact = new Contact(request.GuestId, request.Type, request.Outcome, request.OccurredAt, currentUser.StaffId, request.Notes);
         db.Contacts.Add(contact);
+
+        // Contact is activity: it stamps the last activity date and brings an On Hold guest back
+        // to Active (spec §4.6 / §4.7).
+        var guest = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions
+            .FirstOrDefaultAsync(db.Guests, g => g.Id == request.GuestId, cancellationToken);
+        guest?.RecordActivity(request.OccurredAt);
+
         await db.SaveChangesAsync(cancellationToken);
         return contact.Id;
     }

@@ -34,6 +34,7 @@ public interface IAppDbContext
     DbSet<CustomFieldValue> CustomFieldValues { get; }
     DbSet<CaseworkNote> CaseworkNotes { get; }
     DbSet<PathwayChange> PathwayChanges { get; }
+    DbSet<CaseloadAssignment> CaseloadAssignments { get; }
     DbSet<AuditEvent> AuditEvents { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);

@@ -92,7 +92,13 @@
               <td>{{ pathwayLabel(guest.pathwayCategory) }}</td>
               <td>{{ lastActivity(guest) }}</td>
               <td>
-                <span [class]="'status-pill ' + statusClass(guest.status)">{{ statusLabel(guest.status) }}</span>
+                <!-- Urgency is a flag, not a status: the badge sits beside the status pill. -->
+                <span class="status-cell">
+                  <span [class]="'status-pill ' + statusClass(guest.status)">{{ statusLabel(guest.status) }}</span>
+                  @if (guest.isUrgent) {
+                    <span class="status-pill status-pill--urgent" title="Flagged urgent">Urgent</span>
+                  }
+                </span>
               </td>
               <td>
                 <a class="btn btn--secondary guest-table__open" [routerLink]="['/guests', guest.id]">Open</a>

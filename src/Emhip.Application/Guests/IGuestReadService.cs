@@ -14,7 +14,7 @@ public interface IGuestReadService
     Task<KeysetPage<GuestListItemDto>> GetGuestListAsync(
         Guid hubId, string? searchText, GuestStatus? status, string? cursor, int pageSize,
         PathwayCategory? pathway = null, bool? hasRiskFlags = null, Guid? assignedCmhwId = null,
-        int? lastActivityWithinDays = null, CancellationToken cancellationToken = default);
+        int? lastActivityWithinDays = null, bool? urgentOnly = null, CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<CmhwOptionDto>> GetHubCmhwsAsync(Guid hubId, CancellationToken cancellationToken = default);
 
@@ -29,6 +29,8 @@ public interface IGuestReadService
     Task<GuestInitialConversationDto?> GetInitialConversationAsync(Guid guestId, CancellationToken cancellationToken = default);
     Task<Dialog.GuestDialogDto?> GetDialogAsync(Guid guestId, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<Casework.CaseworkNoteDto>> GetCaseworkNotesAsync(Guid guestId, CancellationToken cancellationToken = default);
+    /// <summary>Append-only CMHW allocation history (spec §4.4).</summary>
+    Task<IReadOnlyList<Caseload.CaseloadAssignmentDto>> GetCaseloadHistoryAsync(Guid guestId, CancellationToken cancellationToken = default);
     /// <summary>All quick notes for the guest, pinned first — the Notes tab's list.</summary>
     Task<IReadOnlyList<Dtos.GuestNoteDto>> GetNotesAsync(Guid guestId, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<Actions.GuestActionDto>> GetActionsAsync(Guid guestId, CancellationToken cancellationToken = default);

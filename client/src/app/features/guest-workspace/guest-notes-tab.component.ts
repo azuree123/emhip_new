@@ -15,9 +15,12 @@ import { Permissions } from '../../core/permissions';
 import { CaseworkNoteDrawerComponent } from './casework-note-drawer.component';
 import { StatusChip, formatDate, formatDateTime, humanize, noteColorDot } from './guest-workspace.util';
 
+/** All six casework note categories (spec §4.6) — Meeting and Daily Log joined the original four. */
 const CATEGORY_CHIPS: Record<CaseworkNoteCategory, StatusChip> = {
   Casework: { label: 'CASEWORK', bg: '#ffeaec', fg: '#e12628' },
   Activity: { label: 'ACTIVITY', bg: '#eafdee', fg: '#147129' },
+  Meeting: { label: 'MEETING', bg: '#eef1f7', fg: '#384049' },
+  DailyLog: { label: 'DAILY LOG', bg: '#f4efff', fg: '#5b3fa8' },
   Hospitality: { label: 'HOSPITALITY', bg: '#fff9e4', fg: '#9d852d' },
   Afa: { label: 'AFA', bg: '#f0f0f0', fg: '#646464' },
 };

@@ -260,6 +260,55 @@ $pager-font-stack: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
   }
 }
 
+// "Urgent only" — a toggle chip rather than a select, because urgency is a boolean flag that
+// combines with the status filter. Off: the same chrome as the select chips; on: the red
+// urgency tint used by the urgent badge in the table.
+.filter-chip {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 36px;
+  padding: 0 15px;
+  border: none;
+  border-radius: 4px;
+  box-shadow: inset 0 0 0 1px rgb(229, 229, 229);
+  background: rgb(255, 255, 255);
+  font-family: $font-stack;
+  font-weight: 500;
+  font-size: 14px;
+  letter-spacing: -0.005em;
+  color: rgb(42, 42, 42);
+  white-space: nowrap;
+  cursor: pointer;
+
+  &__dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: rgb(208, 37, 55);
+    opacity: 0.35;
+  }
+
+  &:hover {
+    background: rgb(250, 250, 250);
+  }
+
+  &--on {
+    background: rgb(255, 240, 241);
+    box-shadow: inset 0 0 0 1px rgb(240, 178, 184);
+    color: rgb(178, 30, 46);
+
+    .filter-chip__dot {
+      opacity: 1;
+    }
+
+    &:hover {
+      background: rgb(255, 233, 235);
+    }
+  }
+}
+
 // The Assigned CMHW filter is the shared <emhip-staff-picker>, which brings its own control
 // chrome; the rules above only reach a native <select>. All it needs from the cluster is the
 // design's chip footprint so it lines up with the chips either side of it.
@@ -281,9 +330,11 @@ $pager-font-stack: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
 // one-to-one (registeredAt and hasRiskFlags don't appear in this frame's table but
 // still ship in the CSV export).
 
-$col-status: 128px; // 614 − 486
+// The design's status column is 128px (614 − 486); it is widened here (and the CMHW column
+// narrowed to match, keeping the 909px total) so an urgent badge fits beside the status pill.
+$col-status: 150px;
 $col-pathway: 170px; // 784 − 614
-$col-cmhw: 180px; // 964 − 784
+$col-cmhw: 158px; // 964 − 784, less the 22px lent to the status column
 $col-activity: 161px; // 1125 − 964
 $col-next: 160px; // 1285 − 1125
 $col-actions: 110px; // 1395 − 1285
@@ -390,10 +441,22 @@ $table-columns: minmax(0, 1fr) $col-status $col-pathway $col-cmhw $col-activity 
   }
 }
 
+// Status cell — the engagement-status pill plus, when raised, the separate urgency badge.
+// They wrap onto a second line inside the 72px row rather than truncating.
+// `.col.status-cell` (not `.status-cell`) so it outranks the `.row .col` truncation rules above.
+.col.status-cell {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  overflow: visible;
+  white-space: normal;
+}
+
 // Status pill — Active matches the Figma table chip exactly (light tint, saturated text,
-// fully rounded). The frame's sample rows are all Active; the other three GuestStatus
-// values borrow the palettes of this same frame's KPI pills: yellow ("awaiting initial
-// conversation"), blue ("in active"), red ("urgent cases").
+// fully rounded). The frame's sample rows are all Active; the other GuestStatus values and
+// the urgency badge borrow the palettes of this same frame's KPI pills: yellow ("awaiting
+// initial conversation"), blue ("in active"), red ("urgent cases").
 .badge {
   display: inline-flex;
   align-items: center;
@@ -412,19 +475,22 @@ $table-columns: minmax(0, 1fr) $col-status $col-pathway $col-cmhw $col-activity 
     color: rgb(20, 113, 41);
   }
 
-  &[data-status='PendingConversation'] {
+  &[data-status='New'] {
     background: rgb(255, 249, 228);
     color: rgb(157, 133, 45);
   }
 
-  &[data-status='Inactive'] {
+  &[data-status='OnHold'] {
     background: rgb(231, 238, 255);
     color: rgb(52, 91, 177);
   }
 
-  &[data-status='Urgent'] {
+  // Urgency is a flag, not a status: this badge sits beside a status pill, never replaces it.
+  &--urgent {
+    padding: 4px 7px;
     background: rgb(255, 240, 241);
     color: rgb(208, 37, 55);
+    font-size: 11px;
   }
 }
 

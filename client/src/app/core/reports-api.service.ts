@@ -66,6 +66,12 @@ export class ReportsApiService {
     return this.http.get<ExportHistoryItemDto[]>(`${this.base}/exports`);
   }
 
+  /** Multi-sheet Excel workbook: summary, pathways, caseload, DIALOG outcomes, data quality. */
+  exportWorkbook(from: string, to: string): Observable<Blob> {
+    const params = new HttpParams().set('from', from).set('to', to);
+    return this.http.get(`${this.base}/export.xlsx`, { params, responseType: 'blob' });
+  }
+
   /** CSV export — fetched via HttpClient so the auth interceptor attaches the JWT
    *  (a plain browser navigation would send no Authorization header and get a 401). */
   exportCsv(from: string, to: string): Observable<Blob> {

@@ -2,6 +2,7 @@ using Dapper;
 using Emhip.Application.Common;
 using Emhip.Application.Guests;
 using Emhip.Application.Guests.Actions;
+using Emhip.Application.Guests.Caseload;
 using Emhip.Application.Guests.Casework;
 using Emhip.Application.Guests.Dialog;
 using Emhip.Application.Guests.Dtos;
@@ -25,13 +26,13 @@ public sealed class GuestReadService(ISqlConnectionFactory connectionFactory, Em
     public async Task<KeysetPage<GuestListItemDto>> GetGuestListAsync(
         Guid hubId, string? searchText, GuestStatus? status, string? cursor, int pageSize,
         PathwayCategory? pathway = null, bool? hasRiskFlags = null, Guid? assignedCmhwId = null,
-        int? lastActivityWithinDays = null, CancellationToken cancellationToken = default)
+        int? lastActivityWithinDays = null, bool? urgentOnly = null, CancellationToken cancellationToken = default)
     {
         var decodedCursor = KeysetCursor.Decode<GuestCursor>(cursor);
 
         const string sql = """
             SELECT TOP (@FetchSize)
-                g.Id, g.GuestNumber, g.FirstName, g.LastName, g.DateOfBirth, g.Status,
+                g.Id, g.GuestNumber, g.FirstName, g.LastName, g.DateOfBirth, g.Status, g.IsUrgent,
                 s.DisplayName AS AssignedCmhwName, g.RegisteredAt, lc.OccurredAt AS LastContactAt,
                 pw.Category AS PathwayCategory, ISNULL(rk.HasFlags, 0) AS HasRiskFlags, nf.DueDate AS NextContactDue
             FROM Guests g
@@ -57,6 +58,7 @@ public sealed class GuestReadService(ISqlConnectionFactory connectionFactory, Em
                 AND (@Pathway IS NULL OR pw.Category = @Pathway)
                 AND (@HasRiskFlags IS NULL OR ISNULL(rk.HasFlags, 0) = @HasRiskFlags)
                 AND (@AssignedCmhwId IS NULL OR g.AssignedCmhwId = @AssignedCmhwId)
+                AND (@UrgentOnly IS NULL OR g.IsUrgent = @UrgentOnly)
                 AND (@LastContactAfter IS NULL OR lc.OccurredAt >= @LastContactAfter)
                 AND (
                     @HasCursor = 0
@@ -76,6 +78,7 @@ public sealed class GuestReadService(ISqlConnectionFactory connectionFactory, Em
             Pathway = pathway?.ToString(),
             HasRiskFlags = hasRiskFlags,
             AssignedCmhwId = assignedCmhwId,
+            UrgentOnly = urgentOnly,
             LastContactAfter = lastActivityWithinDays.HasValue
                 ? (DateTimeOffset?)DateTimeOffset.UtcNow.AddDays(-lastActivityWithinDays.Value)
                 : null,
@@ -130,7 +133,8 @@ public sealed class GuestReadService(ISqlConnectionFactory connectionFactory, Em
                 WHERE g.HubId = @HubId AND g.IsDeleted = 0
                     AND (@Status IS NULL OR g.Status = @Status)
                     AND (@SearchPattern IS NULL OR g.FirstName LIKE @SearchPattern OR g.LastName LIKE @SearchPattern)
-                    AND (@AssignedCmhwId IS NULL OR g.AssignedCmhwId = @AssignedCmhwId){predicates}
+                    AND (@AssignedCmhwId IS NULL OR g.AssignedCmhwId = @AssignedCmhwId)
+                    AND (@UrgentOnly IS NULL OR g.IsUrgent = @UrgentOnly){predicates}
                 """;
             totalCount = await connection.ExecuteScalarAsync<int>(countSql, new
             {
@@ -140,6 +144,7 @@ public sealed class GuestReadService(ISqlConnectionFactory connectionFactory, Em
                 Pathway = pathway?.ToString(),
                 HasRiskFlags = hasRiskFlags,
                 AssignedCmhwId = assignedCmhwId,
+                UrgentOnly = urgentOnly,
                 LastContactAfter = lastActivityWithinDays.HasValue
                     ? (DateTimeOffset?)DateTimeOffset.UtcNow.AddDays(-lastActivityWithinDays.Value)
                     : null,
@@ -151,7 +156,7 @@ public sealed class GuestReadService(ISqlConnectionFactory connectionFactory, Em
             Items = page.Select(r => new GuestListItemDto(
                 r.Id, r.GuestNumber, r.FirstName, r.LastName, DateOnly.FromDateTime(r.DateOfBirth),
                 Enum.Parse<GuestStatus>(r.Status), r.AssignedCmhwName, r.RegisteredAt, r.LastContactAt,
-                r.PathwayCategory, r.HasRiskFlags,
+                r.PathwayCategory, r.HasRiskFlags, r.IsUrgent,
                 r.NextContactDue.HasValue ? DateOnly.FromDateTime(r.NextContactDue.Value) : null)).ToList(),
             NextCursor = nextCursor,
             HasMore = hasMore,
@@ -165,7 +170,7 @@ public sealed class GuestReadService(ISqlConnectionFactory connectionFactory, Em
             .Where(g => g.Id == guestId)
             .Select(g => new
             {
-                g.Id, g.GuestNumber, g.FirstName, g.LastName, g.DateOfBirth, g.Status, g.ContactPhone, g.ContactEmail, g.RegisteredAt,
+                g.Id, g.GuestNumber, g.FirstName, g.LastName, g.DateOfBirth, g.Status, g.IsUrgent, g.ContactPhone, g.ContactEmail, g.RegisteredAt,
                 g.Pathway, g.AfaSupportNeeded, g.ReferralSource,
                 AssignedCmhwName = db.Users.Where(s => s.Id == g.AssignedCmhwId).Select(s => s.DisplayName).FirstOrDefault(),
             })
@@ -316,6 +321,19 @@ public sealed class GuestReadService(ISqlConnectionFactory connectionFactory, Em
             .ToList();
     }
 
+    public async Task<IReadOnlyList<CaseloadAssignmentDto>> GetCaseloadHistoryAsync(Guid guestId, CancellationToken cancellationToken = default) =>
+        await db.CaseloadAssignments.AsNoTracking()
+            .Where(a => a.GuestId == guestId)
+            .OrderByDescending(a => a.RecordedAt)
+            .Select(a => new CaseloadAssignmentDto(
+                a.Id,
+                db.Users.Where(u => u.Id == a.FromStaffId).Select(u => u.DisplayName).FirstOrDefault(),
+                db.Users.Where(u => u.Id == a.ToStaffId).Select(u => u.DisplayName).FirstOrDefault(),
+                a.Reason,
+                db.Users.Where(u => u.Id == a.RecordedByStaffId).Select(u => u.DisplayName).FirstOrDefault() ?? "System",
+                a.RecordedAt))
+            .ToListAsync(cancellationToken);
+
     public async Task<IReadOnlyList<GuestNoteDto>> GetNotesAsync(Guid guestId, CancellationToken cancellationToken = default) =>
         await db.Notes.AsNoTracking()
             .Where(n => n.GuestId == guestId)
@@ -348,6 +366,12 @@ public sealed class GuestReadService(ISqlConnectionFactory connectionFactory, Em
             .Where(r => r.GuestId == guestId)
             .Select(r => new GuestInitialConversationDto(
                 r.GuestId, r.PresentingIssues, r.Notes, r.ConsentConfirmed,
+                r.ImmediateRisk, r.NextContactDate,
+                db.Guests.Where(g => g.Id == r.GuestId).Select(g => g.Pathway).FirstOrDefault(),
+                db.Guests.Where(g => g.Id == r.GuestId).Select(g => g.AfaSupportNeeded).FirstOrDefault(),
+                db.Guests.Where(g => g.Id == r.GuestId)
+                    .Select(g => db.Users.Where(u => u.Id == g.AssignedCmhwId).Select(u => u.DisplayName).FirstOrDefault())
+                    .FirstOrDefault(),
                 db.Users.Where(s => s.Id == r.ConductedByStaffId).Select(s => s.DisplayName).FirstOrDefault() ?? "Unknown", r.ConductedAt))
             .FirstOrDefaultAsync(cancellationToken);
 
@@ -425,6 +449,7 @@ public sealed class GuestReadService(ISqlConnectionFactory connectionFactory, Em
         public string LastName { get; set; } = default!;
         public DateTime DateOfBirth { get; set; }
         public string Status { get; set; } = default!;
+        public bool IsUrgent { get; set; }
         public string? AssignedCmhwName { get; set; }
         public DateTimeOffset RegisteredAt { get; set; }
         public DateTimeOffset? LastContactAt { get; set; }

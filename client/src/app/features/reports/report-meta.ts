@@ -23,16 +23,38 @@ export function pathwayCategoryLabel(category: string | null): string {
   return CATEGORY_META[category]?.label ?? category;
 }
 
-/** Status pill label + modifier class, colors per the design's pill family (Desktop66). */
+/**
+ * Engagement-status pill label + modifier class (spec §4.7), colors per the design's
+ * pill family (Desktop66). Urgency is a separate flag (GuestListItemDto.isUrgent), not
+ * a status — it renders as its own `status-pill--urgent` badge beside these pills.
+ */
 export const STATUS_META: Record<GuestStatus, { label: string; pillClass: string }> = {
+  New: { label: 'New', pillClass: 'status-pill--new' },
   Active: { label: 'Active', pillClass: 'status-pill--active' },
-  PendingConversation: { label: 'Pending conversation', pillClass: 'status-pill--pending' },
-  Inactive: { label: 'Inactive', pillClass: 'status-pill--inactive' },
-  Urgent: { label: 'Urgent', pillClass: 'status-pill--urgent' },
+  OnHold: { label: 'On hold', pillClass: 'status-pill--onhold' },
 };
 
 export function toIsoDate(date: Date): string {
   return date.toISOString().slice(0, 10);
+}
+
+/** The five worksheets in the Excel workbook returned by ReportsApiService.exportWorkbook. */
+export const WORKBOOK_SHEETS = [
+  'Summary',
+  'Pathways',
+  'Caseload',
+  'DIALOG outcomes',
+  'Data quality',
+];
+
+/** Saves an export Blob under `filename` — shared by the header actions and the export dialog. */
+export function downloadBlob(blob: Blob, filename: string): void {
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = filename;
+  anchor.click();
+  URL.revokeObjectURL(url);
 }
 
 /** "08 May" style short day used in the design's table rows (Desktop66/68/69). */

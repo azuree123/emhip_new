@@ -8,15 +8,23 @@ export interface StatusChip {
   fg: string;
 }
 
+/** Engagement status only (spec §4.7). Urgency is a separate flag with its own badge — it is
+ *  deliberately absent here so an urgent guest still shows how engaged they are. "On hold" is
+ *  set automatically once a guest has had no activity for three months. */
 const STATUS_CHIPS: Record<GuestStatus, StatusChip> = {
+  New: { label: 'New', bg: '#fff9e4', fg: '#9d852d' },
   Active: { label: 'Active', bg: '#eafdee', fg: '#147129' },
-  PendingConversation: { label: 'Pending conversation', bg: '#fff9e4', fg: '#9d852d' },
-  Inactive: { label: 'Inactive', bg: '#f0f0f0', fg: '#646464' },
-  Urgent: { label: 'Urgent', bg: '#ffeaec', fg: '#e12628' },
+  OnHold: { label: 'On hold', bg: '#f0f0f0', fg: '#646464' },
 };
 
 export function statusChip(status: GuestStatus | string): StatusChip {
-  return STATUS_CHIPS[status as GuestStatus] ?? { label: status, bg: '#f0f0f0', fg: '#646464' };
+  return STATUS_CHIPS[status as GuestStatus] ?? { label: humanize(status), bg: '#f0f0f0', fg: '#646464' };
+}
+
+/** Red "Urgent" badge shown *beside* the status pill while GuestOverviewDto.isUrgent is true. */
+export function urgentChip(since: string | null | undefined): StatusChip {
+  const from = since ? formatDate(since) : null;
+  return { label: from && from !== '—' ? `Urgent since ${from}` : 'Urgent', bg: '#ffeaec', fg: '#e12628' };
 }
 
 /** Initials for the avatar circle, e.g. "Amara Asante" -> "AA". */

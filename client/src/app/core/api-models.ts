@@ -2,7 +2,11 @@
 // Keep field names/casing exactly in sync with the C# records (System.Text.Json's default
 // camelCase output).
 
-export type GuestStatus = 'Active' | 'PendingConversation' | 'Inactive' | 'Urgent';
+/** Engagement status per spec §4.7. Urgency is a separate flag, not a status. */
+export type GuestStatus = 'New' | 'Active' | 'OnHold';
+
+/** Referral classification (spec §6.2); Secondary referrals carry a subcategory. */
+export type ReferralType = 'Primary' | 'Secondary';
 export type ContactType = 'PhoneCall' | 'InPerson' | 'VideoCall' | 'TextMessage' | 'Email';
 export type ContactOutcome = 'Successful' | 'NoAnswer' | 'LeftMessage' | 'Declined' | 'Rescheduled';
 export type NoteColor = 'Yellow' | 'Green' | 'Orange' | 'Purple';
@@ -41,6 +45,8 @@ export interface GuestListItemDto {
   pathwayCategory: string | null;
   /** True when the guest's latest risk assessment carries any flag. */
   hasRiskFlags: boolean;
+  /** Temporary safety escalation — independent of status and pathway. */
+  isUrgent: boolean;
   /** Due date (yyyy-MM-dd) of the next scheduled follow-up, or null. */
   nextContactDue: string | null;
 }
@@ -93,6 +99,11 @@ export interface GuestOverviewDto {
   pathway: GuestPathway | null;
   afaSupportNeeded: boolean;
   referralSource: string | null;
+  referralType: ReferralType | null;
+  referralSubcategory: string | null;
+  isUrgent: boolean;
+  urgentSince: string | null;
+  lastActivityAt: string | null;
   pinnedNotes: GuestNoteDto[];
   recentContacts: GuestContactSummaryDto[];
 }
@@ -105,6 +116,8 @@ export interface GuestDemographicsDto {
   interpreterNeeded: boolean;
   housingStatus: string | null;
   employmentStatus: string | null;
+  maritalStatus?: string | null;
+  livingGroup?: string | null;
   emergencyContactName: string | null;
   emergencyContactPhone: string | null;
   emergencyContactRelationship: string | null;
@@ -164,7 +177,7 @@ export interface ChangePathwayRequest {
 
 // ---- Casework notes (the SBAR clinical note behind "Add contact") ----
 
-export type CaseworkNoteCategory = 'Casework' | 'Activity' | 'Hospitality' | 'Afa';
+export type CaseworkNoteCategory = 'Casework' | 'Activity' | 'Meeting' | 'DailyLog' | 'Hospitality' | 'Afa';
 export type CaseworkNoteStatus = 'Draft' | 'Submitted';
 export type CaseworkRiskLevel = 'NoRiskDetected' | 'Low' | 'Medium' | 'High';
 
@@ -254,6 +267,13 @@ export interface GuestInitialConversationDto {
   presentingIssues: string | null;
   notes: string | null;
   consentConfirmed: boolean;
+  /** Mandatory answer captured at the conversation (spec §4.2). */
+  immediateRisk: boolean;
+  nextContactDate: string | null;
+  /** The pathway classified at this conversation (the guest's current allocation). */
+  pathway: GuestPathway | null;
+  afaSupportNeeded: boolean;
+  assignedCmhwName: string | null;
   conductedByName: string;
   conductedAt: string;
 }
@@ -402,6 +422,10 @@ export interface RegisterGuestRequest {
   assignedCmhwId?: string | null;
   /** Where the guest was referred from (GP referral, CMHT, Community organisation, Self-referral, …). */
   referralSource?: string | null;
+  /** Primary or Secondary referral (spec §6.2). */
+  referralType?: ReferralType | null;
+  /** Required by the server when referralType is 'Secondary'. */
+  referralSubcategory?: string | null;
 }
 
 export interface AddContactRequest {
@@ -423,10 +447,27 @@ export interface ScheduleFollowUpRequest {
   notes?: string | null;
 }
 
+/** One action captured on the initial conversation form (spec §4.2 actions tracker). */
+export interface InitialConversationActionInput {
+  description: string;
+  dueDate: string;
+  assignedToStaffId?: string | null;
+}
+
 export interface RecordInitialConversationRequest {
   presentingIssues?: string | null;
   notes?: string | null;
   consentConfirmed: boolean;
+  /** Mandatory Yes/No (spec §4.2); true raises the urgent flag automatically. */
+  immediateRisk: boolean;
+  /** Mandatory pathway classification. */
+  pathway: GuestPathway;
+  afaSupportNeeded: boolean;
+  /** Required for Wellbeing Support and Additional / Clinical Support. */
+  assignedCmhwId?: string | null;
+  /** Required for the same one-to-one pathways. */
+  nextContactDate?: string | null;
+  actions?: InitialConversationActionInput[] | null;
 }
 
 export interface RecordRiskAssessmentRequest {
@@ -450,6 +491,8 @@ export interface UpdateDemographicsRequest {
   interpreterNeeded: boolean;
   housingStatus?: string | null;
   employmentStatus?: string | null;
+  maritalStatus?: string | null;
+  livingGroup?: string | null;
   emergencyContactName?: string | null;
   emergencyContactPhone?: string | null;
   emergencyContactRelationship?: string | null;
@@ -642,7 +685,7 @@ export interface ExportHistoryItemDto {
 
 // ---- "Guest Seen" dashboard card ----
 
-export type GuestsSeenPeriod = 'Today' | 'Week' | 'Month';
+export type GuestsSeenPeriod = 'Today' | 'Week' | 'Month' | 'Custom';
 
 export interface GuestsSeenDto {
   period: GuestsSeenPeriod;
@@ -942,4 +985,39 @@ export interface DeleteCustomFieldResult {
   /** False when the field was deactivated instead because it already holds answers. */
   deleted: boolean;
   message: string;
+}
+
+// ---- Caseload allocation history (spec §4.4) ----
+
+export interface CaseloadAssignmentDto {
+  id: string;
+  fromStaffName: string | null;
+  toStaffName: string | null;
+  reason: string | null;
+  recordedByName: string;
+  recordedAt: string;
+}
+
+export interface ReassignGuestRequest {
+  assignedCmhwId?: string | null;
+  reason?: string | null;
+}
+
+// ---- Legacy data migration (spec §7) ----
+
+export interface ImportRowError {
+  rowNumber: number;
+  column: string;
+  message: string;
+}
+
+export interface ImportResultDto {
+  dryRun: boolean;
+  rowsRead: number;
+  guestsCreated: number;
+  guestsUpdated: number;
+  notesCreated: number;
+  dialogAssessmentsCreated: number;
+  errors: ImportRowError[];
+  succeeded: boolean;
 }

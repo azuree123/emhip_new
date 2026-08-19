@@ -18,7 +18,7 @@ import { GuestFollowUpTabComponent } from './guest-followup-tab.component';
 import { GuestActionTabComponent } from './guest-action-tab.component';
 import { GuestNotesTabComponent } from './guest-notes-tab.component';
 import { CaseworkNoteDrawerComponent } from './casework-note-drawer.component';
-import { formatDate, guestPathwayChip, initials, statusChip } from './guest-workspace.util';
+import { formatDate, guestPathwayChip, initials, statusChip, urgentChip } from './guest-workspace.util';
 
 type TabId =
   | 'overview'
@@ -123,12 +123,21 @@ export class GuestWorkspaceComponent {
     return o ? initials(o.firstName, o.lastName) : '';
   });
   readonly chip = computed(() => (this.overview() ? statusChip(this.overview()!.status) : null));
+  /**
+   * Urgency is a flag, not a status (spec §3.3) — this badge sits *alongside* the status pill
+   * rather than replacing it, so an urgent guest still reads as New / Active / On hold.
+   */
+  readonly urgentBadge = computed(() => {
+    const o = this.overview();
+    return o?.isUrgent ? urgentChip(o.urgentSince) : null;
+  });
   readonly pathwayChip = computed(() => guestPathwayChip(this.overview()?.pathway));
   readonly registeredLabel = computed(() => formatDate(this.overview()?.registeredAt));
-  /** Design meta row shows "Last activity: <date>"; the newest recent contact is our real source. */
+  /** Design meta row shows "Last activity: <date>" — the server now derives it (contacts, notes,
+   *  assessments) and hands it over as lastActivityAt, so we no longer guess from contacts. */
   readonly lastActivityLabel = computed(() => {
-    const contacts = this.overview()?.recentContacts;
-    return contacts?.length ? formatDate(contacts[0].occurredAt) : null;
+    const last = this.overview()?.lastActivityAt;
+    return last ? formatDate(last) : null;
   });
 
   constructor() {

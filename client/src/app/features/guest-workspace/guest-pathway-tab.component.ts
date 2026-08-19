@@ -2,7 +2,9 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Component, EventEmitter, Output, computed, effect, inject, input, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
+  CaseloadAssignmentDto,
   CreatePathwayReferralRequest,
+  GuestOverviewDto,
   GuestPathway,
   GuestPathwayDto,
   PathwayCategory,
@@ -11,7 +13,7 @@ import { AuthService } from '../../core/auth.service';
 import { GuestsApiService } from '../../core/guests-api.service';
 import { Permissions } from '../../core/permissions';
 import { StaffPickerComponent } from '../../shared/staff-picker.component';
-import { formatDate, guestPathwayLabel, humanize, pathwayStatusChip } from './guest-workspace.util';
+import { formatDate, formatDateTime, guestPathwayLabel, humanize, pathwayStatusChip } from './guest-workspace.util';
 
 /** One of the three "Select new pathway" option cards in the Change Pathway dialog. */
 interface PathwayOption {
@@ -46,6 +48,15 @@ function problemDetail(err: unknown, fallback: string): string {
  * POST /guests/{id}/pathway-changes, which appends to GuestPathwayDto.changes. The tab's
  * current pathway and AFA flag come from that same DTO; the practical-support referrals
  * are separate data and keep their own secondary card.
+ *
+ * Caseload allocation (spec §4.4) lives here too, in its own "Caseload allocation" card:
+ * who the guest is allocated to, a "Reassign CMHW" action (staff picker + reason, gated on
+ * guests.edit) and the append-only allocation history from GET /guests/{id}/caseload-history.
+ * This tab is already the record's "who owns this guest, and how did that change" history —
+ * pathway changes and allocation changes are read together, both are append-only audit trails
+ * with the same from → to / reason / recorded-by shape, and the staff picker and dialog chrome
+ * they need are already here. The Overview snapshot card keeps its read-only "Assigned CMHW"
+ * line and stays a summary.
  */
 @Component({
   selector: 'app-guest-pathway-tab',
@@ -59,6 +70,8 @@ export class GuestPathwayTabComponent {
   private readonly auth = inject(AuthService);
 
   readonly guestId = input.required<string>();
+  /** Header context (assigned CMHW) so the allocation card reads without a second fetch. */
+  readonly overview = input<GuestOverviewDto | null>(null);
   @Output() readonly refresh = new EventEmitter<void>();
 
   readonly pathway = signal<GuestPathwayDto | null>(null);
@@ -66,6 +79,8 @@ export class GuestPathwayTabComponent {
   readonly error = signal<string | null>(null);
 
   readonly canEdit = this.auth.hasPermission(Permissions.Guests.PathwayEdit);
+  /** Reassignment is a caseload action, not a pathway one — it follows the guests.edit claim. */
+  readonly canReassign = this.auth.hasPermission(Permissions.Guests.Edit);
 
   // "+ New referral" inline form (practical-support referrals, secondary card).
   readonly showReferralForm = signal(false);
@@ -82,9 +97,21 @@ export class GuestPathwayTabComponent {
   readonly changingPathway = signal(false);
   readonly changeError = signal<string | null>(null);
 
+  // "Reassign CMHW" → caseload allocation dialog (spec §4.4).
+  readonly caseloadHistory = signal<CaseloadAssignmentDto[] | null>(null);
+  readonly caseloadLoading = signal(true);
+  readonly caseloadError = signal<string | null>(null);
+  readonly showReassignDialog = signal(false);
+  readonly reassignStaffId = signal<string | null>(null);
+  readonly reassignReason = signal<string>('');
+  readonly reassignSubmitted = signal(false);
+  readonly reassigning = signal(false);
+  readonly reassignError = signal<string | null>(null);
+
   readonly today = isoToday();
 
   readonly formatDate = formatDate;
+  readonly formatDateTime = formatDateTime;
   readonly humanize = humanize;
   readonly pathwayStatusChip = pathwayStatusChip;
   readonly guestPathwayLabel = guestPathwayLabel;
@@ -133,6 +160,15 @@ export class GuestPathwayTabComponent {
     () => !this.pathwayFieldError() && !this.assignedByFieldError() && !this.changedOnFieldError(),
   );
 
+  /** Live allocation — the header's name, falling back to the newest history entry. */
+  readonly assignedCmhwName = computed(
+    () => this.overview()?.assignedCmhwName ?? this.caseloadHistory()?.[0]?.toStaffName ?? null,
+  );
+
+  readonly reassignFieldError = computed(() =>
+    this.reassignStaffId() ? null : 'Select the CMHW who will take this guest on.',
+  );
+
   referralForm: CreatePathwayReferralRequest = { category: 'HousingAdvice', detail: '' };
 
   constructor() {
@@ -141,6 +177,7 @@ export class GuestPathwayTabComponent {
       let cancelled = false;
       onCleanup(() => (cancelled = true));
       this.load(id, () => cancelled);
+      this.loadCaseload(id, () => cancelled);
     });
   }
 
@@ -157,6 +194,62 @@ export class GuestPathwayTabComponent {
         if (isCancelled()) return;
         this.error.set('Could not load pathway history for this guest.');
         this.loading.set(false);
+      },
+    });
+  }
+
+  /** Allocation history is append-only and newest first; a 403 leaves the card empty, not broken. */
+  private loadCaseload(guestId: string, isCancelled: () => boolean): void {
+    this.caseloadLoading.set(true);
+    this.caseloadError.set(null);
+    this.guestsApi.getCaseloadHistory(guestId).subscribe({
+      next: (history) => {
+        if (isCancelled()) return;
+        this.caseloadHistory.set(history);
+        this.caseloadLoading.set(false);
+      },
+      error: () => {
+        if (isCancelled()) return;
+        this.caseloadHistory.set(null);
+        this.caseloadError.set('Could not load the allocation history for this guest.');
+        this.caseloadLoading.set(false);
+      },
+    });
+  }
+
+  openReassignDialog(): void {
+    if (!this.canReassign) return;
+    this.reassignStaffId.set(null);
+    this.reassignReason.set('');
+    this.reassignSubmitted.set(false);
+    this.reassignError.set(null);
+    this.showReassignDialog.set(true);
+  }
+
+  closeReassignDialog(): void {
+    if (this.reassigning()) return;
+    this.showReassignDialog.set(false);
+  }
+
+  reassign(): void {
+    this.reassignSubmitted.set(true);
+    const staffId = this.reassignStaffId();
+    if (!staffId || this.reassigning()) return;
+
+    this.reassigning.set(true);
+    this.reassignError.set(null);
+    const reason = this.reassignReason().trim();
+    this.guestsApi.reassign(this.guestId(), { assignedCmhwId: staffId, reason: reason || null }).subscribe({
+      next: () => {
+        this.reassigning.set(false);
+        this.showReassignDialog.set(false);
+        this.loadCaseload(this.guestId(), () => false);
+        // The workspace header and Overview card both show the assigned CMHW.
+        this.refresh.emit();
+      },
+      error: (err) => {
+        this.reassigning.set(false);
+        this.reassignError.set(problemDetail(err, 'Could not reassign this guest. Please try again.'));
       },
     });
   }

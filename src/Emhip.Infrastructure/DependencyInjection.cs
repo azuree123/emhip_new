@@ -60,6 +60,7 @@ public static class DependencyInjection
         services.AddHttpClient("mailgun");
         services.AddScoped<IEmailProviderFactory, EmailProviderFactory>();
         services.AddScoped<IEmailService, EmailService>();
+        services.AddSingleton<IExcelWorkbookBuilder, Reports.ExcelWorkbookBuilder>();
 
         return services;
     }

@@ -60,19 +60,19 @@
     }
   </div>
 
-  <div class="drill-table" [class.drill-table--pending]="variant() === 'pending'">
+  <div class="drill-table" [class.drill-table--new]="variant() === 'new'">
     <div class="drill-table__header">
       <span>Guest Name</span>
       @switch (variant()) {
-        @case ('pending') {
+        @case ('new') {
           <span>Registered</span>
           <span>Days waiting</span>
           <span>Action</span>
         }
-        @case ('inactive') {
+        @case ('onHold') {
           <span>Pathway</span>
           <span>Last activity</span>
-          <span>Months inactive</span>
+          <span>Months without activity</span>
           <span>CMHW</span>
         }
         @default {
@@ -94,14 +94,14 @@
           </span>
         </span>
         @switch (variant()) {
-          @case ('pending') {
+          @case ('new') {
             <span class="drill-cell">{{ fullDate(g.registeredAt) }}</span>
             <span class="drill-cell">{{ daysWaiting(g) }}</span>
             <span class="drill-cell">
               <button type="button" class="drill-action" (click)="startConversation(g.id, $event)">Start conversation</button>
             </span>
           }
-          @case ('inactive') {
+          @case ('onHold') {
             <span class="drill-cell">{{ pathwayLabel(g) }}</span>
             <span class="drill-cell">{{ fullDate(g.lastContactAt) }}</span>
             <span class="drill-cell">{{ monthsInactive(g) }}</span>
@@ -128,8 +128,8 @@
 
   <div class="drill-panel__footer">
     <span class="drill-panel__count">Showing {{ rows().length }} of {{ footerTotal() }} {{ footerNoun() }}</span>
-    <a class="link-red" routerLink="/guests" [queryParams]="{ status: statusParam() }">
-      View guest list
+    <a class="link-red" [routerLink]="listLink()" [queryParams]="listParams()">
+      {{ listLabel() }}
       <svg width="14" height="14" viewBox="0 0 13.5 13.5" fill="none" aria-hidden="true">
         <path
           d="M 2.437 1.125 C 1.713 1.125 1.125 1.713 1.125 2.438 L 1.125 11.063 C 1.125 11.787 1.713 12.375 2.437 12.375 L 11.062 12.375 C 11.787 12.375 12.375 11.787 12.375 11.063 L 12.375 8.063 C 12.375 7.752 12.627 7.5 12.937 7.5 C 13.248 7.5 13.5 7.752 13.5 8.063 L 13.5 11.063 C 13.5 12.409 12.408 13.5 11.062 13.5 L 2.437 13.5 C 1.091 13.5 0 12.409 0 11.063 L 0 2.438 C 0 1.091 1.091 0 2.437 0 L 5.437 0 C 5.748 0 6 0.252 6 0.563 C 6 0.873 5.748 1.125 5.437 1.125 L 2.437 1.125 Z M 7.5 0.563 C 7.5 0.252 7.752 0 8.062 0 L 12.938 0 C 13.248 0 13.5 0.252 13.5 0.563 L 13.5 5.438 C 13.5 5.748 13.248 6 12.938 6 C 12.627 6 12.375 5.748 12.375 5.438 L 12.375 1.921 L 8.46 5.835 C 8.24 6.055 7.884 6.055 7.665 5.835 C 7.445 5.616 7.445 5.259 7.665 5.04 L 11.58 1.125 L 8.062 1.125 C 7.752 1.125 7.5 0.873 7.5 0.563 Z"

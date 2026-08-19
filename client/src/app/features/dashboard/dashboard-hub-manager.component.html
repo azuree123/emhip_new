@@ -50,16 +50,16 @@
 
         <div
           class="kpi-card kpi-card--interactive"
-          [class.kpi-card--expanded]="expanded() === 'pending'"
+          [class.kpi-card--expanded]="expanded() === 'new'"
           role="button"
           tabindex="0"
-          (click)="toggleExpand('pending')"
-          (keydown.enter)="toggleExpand('pending')"
+          (click)="toggleExpand('new')"
+          (keydown.enter)="toggleExpand('new')"
         >
           <button
             type="button"
             class="kpi-card__expand"
-            [class.kpi-card__expand--open]="expanded() === 'pending'"
+            [class.kpi-card__expand--open]="expanded() === 'new'"
             aria-label="Expand new guests awaiting initial conversation"
             tabindex="-1"
           >
@@ -71,7 +71,7 @@
               />
             </svg>
           </button>
-          <div class="kpi-card__label">New (pending conversation)</div>
+          <div class="kpi-card__label">New</div>
           <div class="kpi-card__number">{{ d.pendingConversationGuests }}</div>
           <div class="kpi-card__pill kpi-card__pill--yellow">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
@@ -85,17 +85,17 @@
 
         <div
           class="kpi-card kpi-card--interactive"
-          [class.kpi-card--expanded]="expanded() === 'inactive'"
+          [class.kpi-card--expanded]="expanded() === 'onHold'"
           role="button"
           tabindex="0"
-          (click)="toggleExpand('inactive')"
-          (keydown.enter)="toggleExpand('inactive')"
+          (click)="toggleExpand('onHold')"
+          (keydown.enter)="toggleExpand('onHold')"
         >
           <button
             type="button"
             class="kpi-card__expand"
-            [class.kpi-card__expand--open]="expanded() === 'inactive'"
-            aria-label="Expand inactive guests"
+            [class.kpi-card__expand--open]="expanded() === 'onHold'"
+            aria-label="Expand on hold guests"
             tabindex="-1"
           >
             <svg width="8" height="13" viewBox="0 0 7.364 12.728" fill="none" aria-hidden="true">
@@ -106,7 +106,7 @@
               />
             </svg>
           </button>
-          <div class="kpi-card__label">Inactive</div>
+          <div class="kpi-card__label">On hold</div>
           <div class="kpi-card__number">{{ d.inactiveGuests }}</div>
           @let closed = closedThisMonth();
           @if (closed !== null) {
@@ -122,14 +122,22 @@
           }
         </div>
 
+        <!-- Urgency is a flag, not a status (spec §3.3) — this panel filters on isUrgent. -->
         <div
           class="kpi-card kpi-card--interactive"
+          [class.kpi-card--expanded]="expanded() === 'urgent'"
           role="button"
           tabindex="0"
-          (click)="goToUrgentCases()"
-          (keydown.enter)="goToUrgentCases()"
+          (click)="toggleExpand('urgent')"
+          (keydown.enter)="toggleExpand('urgent')"
         >
-          <button type="button" class="kpi-card__expand" aria-label="Open urgent cases" tabindex="-1">
+          <button
+            type="button"
+            class="kpi-card__expand"
+            [class.kpi-card__expand--open]="expanded() === 'urgent'"
+            aria-label="Expand urgent guests"
+            tabindex="-1"
+          >
             <svg width="8" height="13" viewBox="0 0 7.364 12.728" fill="none" aria-hidden="true">
               <path
                 d="M 7.071 7.071 L 1.414 12.728 L 0 11.314 L 4.95 6.364 L 0 1.414 L 1.414 0 L 7.071 5.657 C 7.258 5.845 7.364 6.099 7.364 6.364 C 7.364 6.629 7.258 6.883 7.071 7.071 Z"
@@ -213,6 +221,28 @@
 
       <div class="pathway-card__footer">
         <div class="pathway-card__total">Total Guest:<span> {{ d.totalGuestsAcrossHub }}</span></div>
+      </div>
+    </div>
+
+    <!-- Clinical complexity indicators (spec §5.1) — labels come straight from the API
+         (SMI, On medication, Trust involvement, CPN involvement today), never hardcoded. -->
+    <div class="panel-card">
+      <div class="panel-card__head">
+        <div>
+          <div class="panel-card__title">Clinical complexity indicators</div>
+          <div class="panel-card__subtitle">Guests across the hub with each indicator recorded</div>
+        </div>
+      </div>
+
+      <div class="indicator-grid">
+        @for (indicator of d.clinicalComplexity; track indicator.label) {
+          <div class="indicator-tile">
+            <div class="indicator-tile__label">{{ indicator.label }}</div>
+            <div class="indicator-tile__number">{{ indicator.count }}</div>
+          </div>
+        } @empty {
+          <div class="empty">No clinical complexity data recorded yet.</div>
+        }
       </div>
     </div>
 

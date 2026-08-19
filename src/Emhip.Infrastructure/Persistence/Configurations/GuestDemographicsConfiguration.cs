@@ -16,6 +16,8 @@ public class GuestDemographicsConfiguration : IEntityTypeConfiguration<GuestDemo
         builder.Property(d => d.PreferredLanguage).HasMaxLength(100);
         builder.Property(d => d.HousingStatus).HasMaxLength(100);
         builder.Property(d => d.EmploymentStatus).HasMaxLength(100);
+        builder.Property(d => d.MaritalStatus).HasMaxLength(60);
+        builder.Property(d => d.LivingGroup).HasMaxLength(100);
         builder.Property(d => d.EmergencyContactName).HasMaxLength(200);
         builder.Property(d => d.EmergencyContactPhone).HasMaxLength(30);
         builder.Property(d => d.EmergencyContactRelationship).HasMaxLength(100);

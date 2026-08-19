@@ -42,3 +42,14 @@ public class PathwayChangeConfiguration : IEntityTypeConfiguration<PathwayChange
         builder.Property(c => c.AssignedByName).HasMaxLength(200);
     }
 }
+
+public class CaseloadAssignmentConfiguration : IEntityTypeConfiguration<CaseloadAssignment>
+{
+    public void Configure(EntityTypeBuilder<CaseloadAssignment> builder)
+    {
+        builder.ToTable("CaseloadAssignments");
+        builder.HasKey(a => a.Id);
+        builder.HasIndex(a => new { a.GuestId, a.RecordedAt }).HasDatabaseName("IX_CaseloadAssignments_Guest_Recorded");
+        builder.Property(a => a.Reason).HasMaxLength(500);
+    }
+}

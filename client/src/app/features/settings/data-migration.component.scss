@@ -1,0 +1,571 @@
+// Data migration tab of the Settings screen. Same visual vocabulary as the other tabs
+// (lookups-manager.component.scss / settings.component.scss): r12 cards, r4 controls, the
+// btn / banner / pill / data-table shapes and the same greys. Self-contained so it can be
+// dropped into any tab host.
+
+$ink: rgb(42, 42, 42);
+$ink-soft: rgb(50, 50, 50);
+$ink-muted: rgb(100, 100, 100);
+$ink-faint: rgb(140, 140, 140);
+$line: rgb(238, 238, 238);
+$line-soft: rgb(229, 229, 229);
+$red: rgb(225, 38, 40);
+$coral: rgb(235, 60, 44);
+$danger: rgb(208, 37, 55);
+$green: rgb(21, 128, 61);
+
+:host {
+  display: block;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+.migration {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+
+  &__intro {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  &__title {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: $ink;
+  }
+
+  &__subtitle {
+    margin: 6px 0 0;
+    max-width: 68ch;
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 20px;
+    color: $ink-muted;
+  }
+}
+
+// ---- The recommended process ----------------------------------------------
+
+.steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin: 0;
+  padding: 14px 16px;
+  list-style: none;
+  border-radius: 8px;
+  background: rgb(250, 250, 250);
+}
+
+.step {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex: 1 1 200px;
+  min-width: 0;
+
+  &__num {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 200px;
+    background: rgb(255, 240, 241);
+    color: $coral;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 20px;
+  }
+
+  &__text {
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 18px;
+    color: $ink-muted;
+
+    strong {
+      font-weight: 600;
+      color: $ink;
+    }
+  }
+}
+
+// ---- Blocks ---------------------------------------------------------------
+
+.block {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px;
+  border-radius: 12px;
+  box-shadow: inset 0 0 0 1px $line;
+  min-width: 0;
+
+  &__head {
+    min-width: 0;
+  }
+
+  &__title {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 600;
+    color: $ink;
+  }
+
+  &__hint {
+    margin: 6px 0 0;
+    max-width: 78ch;
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 20px;
+    color: $ink-muted;
+  }
+
+  &__actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  &__gate {
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 18px;
+    color: $ink-faint;
+  }
+
+  &--report {
+    box-shadow: inset 0 0 0 1px $line-soft;
+  }
+}
+
+code {
+  font-family: 'SFMono-Regular', Consolas, monospace;
+  font-size: 12px;
+  color: $ink-soft;
+}
+
+// ---- Drop zone -------------------------------------------------------------
+
+.dropzone {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 16px;
+  border-radius: 8px;
+  border: 1px dashed rgb(214, 214, 214);
+  background: rgb(252, 252, 252);
+  cursor: pointer;
+
+  &:hover {
+    background: rgb(248, 248, 248);
+  }
+
+  &:focus-visible {
+    outline: 2px solid $coral;
+    outline-offset: 2px;
+  }
+
+  &--active {
+    border-color: $coral;
+    background: rgb(255, 245, 245);
+  }
+
+  &--filled {
+    border-style: solid;
+    border-color: $line-soft;
+    background: rgb(255, 255, 255);
+  }
+
+  &--disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+
+  &__icon {
+    flex: none;
+    color: $ink-faint;
+  }
+
+  &__file {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+
+  &__name {
+    font-size: 14px;
+    font-weight: 600;
+    color: $ink;
+    overflow-wrap: anywhere;
+  }
+
+  &__meta {
+    font-size: 12px;
+    font-weight: 500;
+    color: $ink-faint;
+  }
+}
+
+// ---- Result panel ----------------------------------------------------------
+
+.result-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 20px;
+
+  svg {
+    flex: none;
+    margin-top: 2px;
+  }
+
+  strong {
+    font-weight: 600;
+  }
+
+  &--ok {
+    background: rgb(240, 253, 244);
+    color: $green;
+    border-left: 3px solid $green;
+  }
+
+  &--fail {
+    background: rgb(254, 242, 242);
+    color: $danger;
+    border-left: 3px solid $red;
+  }
+}
+
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: rgb(249, 249, 249);
+
+  &__value {
+    font-size: 20px;
+    font-weight: 600;
+    line-height: 26px;
+    color: $ink;
+  }
+
+  &__label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: $ink-faint;
+  }
+
+  &--bad {
+    background: rgb(254, 242, 242);
+
+    .tile__value {
+      color: $danger;
+    }
+
+    .tile__label {
+      color: $danger;
+    }
+  }
+}
+
+.report-note {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 18px;
+  color: $ink-faint;
+
+  &--more {
+    padding: 10px 14px;
+    border-radius: 8px;
+    background: rgb(250, 250, 250);
+    color: $ink-muted;
+  }
+}
+
+// ---- Error table -----------------------------------------------------------
+
+.table-scroll {
+  overflow-x: auto;
+  max-height: 420px;
+  overflow-y: auto;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+
+  th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: rgb(255, 255, 255);
+    text-align: left;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: $ink-faint;
+    padding: 10px 12px;
+    border-bottom: 1px solid $line;
+    white-space: nowrap;
+  }
+
+  td {
+    padding: 9px 12px;
+    font-size: 13px;
+    font-weight: 500;
+    color: $ink;
+    border-bottom: 1px solid rgb(244, 244, 244);
+    vertical-align: top;
+    overflow-wrap: anywhere;
+  }
+
+  .col-row {
+    width: 1%;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+    color: $ink-muted;
+  }
+
+  .col-col {
+    width: 1%;
+    white-space: nowrap;
+  }
+}
+
+.mono {
+  font-family: 'SFMono-Regular', Consolas, monospace;
+  font-size: 12px;
+  color: $ink-muted;
+}
+
+.muted {
+  color: $ink-faint;
+}
+
+// ---- Shared vocabulary (btn / banner) --------------------------------------
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 16px;
+  border-radius: 4px;
+  border: none;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: -0.005em;
+  cursor: pointer;
+  white-space: nowrap;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  &--primary {
+    background: $coral;
+    color: rgb(255, 255, 255);
+  }
+
+  &--ghost {
+    background: rgb(246, 246, 246);
+    color: $ink;
+  }
+
+  &--outline {
+    background: rgb(255, 255, 255);
+    color: $ink;
+    box-shadow: inset 0 0 0 1px rgb(217, 217, 217);
+  }
+
+  &--danger {
+    color: $danger;
+    box-shadow: inset 0 0 0 1px rgb(248, 200, 200);
+  }
+
+  &--sm {
+    height: 32px;
+    padding: 0 12px;
+    font-size: 13px;
+  }
+}
+
+.banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+
+  &--error {
+    background: rgb(254, 242, 242);
+    color: $danger;
+    border-left: 3px solid $red;
+  }
+
+  &--info {
+    background: rgb(246, 246, 246);
+    color: $ink-muted;
+    border-left: 3px solid rgb(217, 217, 217);
+  }
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+// ---- Confirmation modal (same shape as the settings/admin modals) ----------
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 16px;
+}
+
+.modal {
+  width: 460px;
+  max-width: calc(100vw - 32px);
+  background: rgb(255, 255, 255);
+  border-radius: 12px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+
+  &__header {
+    padding: 20px 24px 0;
+
+    h2 {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 600;
+      color: $ink;
+    }
+  }
+
+  &__body {
+    padding: 12px 24px 4px;
+
+    p {
+      margin: 0;
+      font-weight: 500;
+      font-size: 14px;
+      line-height: 22px;
+      color: $ink-soft;
+    }
+
+    // Nested rather than a sibling rule so it outranks the `p` above without !important.
+    .modal__counts {
+      margin-top: 10px;
+      font-size: 13px;
+      line-height: 20px;
+      color: $ink-muted;
+    }
+  }
+
+  &__footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 20px 24px 24px;
+  }
+}
+
+// ---- Responsive -------------------------------------------------------------
+
+@media (max-width: 767px) {
+  .steps {
+    flex-direction: column;
+  }
+
+  .block {
+    padding: 16px 14px;
+  }
+
+  .dropzone {
+    flex-wrap: wrap;
+  }
+
+  .data-table {
+    thead {
+      display: none;
+    }
+
+    tr {
+      display: block;
+      padding: 8px 0;
+      border-bottom: 1px solid $line;
+    }
+
+    td {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 4px 0;
+      border-bottom: none;
+      text-align: right;
+
+      &::before {
+        content: attr(data-label);
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        color: $ink-faint;
+        text-align: left;
+      }
+    }
+
+    .col-row,
+    .col-col {
+      width: auto;
+      white-space: normal;
+    }
+  }
+}

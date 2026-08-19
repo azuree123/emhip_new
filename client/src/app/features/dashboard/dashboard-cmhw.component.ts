@@ -27,7 +27,8 @@ function isoDay(date: Date): string {
  *
  * Sections: static KPI row (design note: "Static KPI cards - no interaction"), overdue-contact
  * banner, "Filter contacts" card, the "Guest Seen" card (GET /dashboards/guests-seen with
- * mine=true — the worker's own contacts) and the "Actions pending today" follow-up list
+ * mine=true — the worker's own contacts), the clinical complexity indicators (spec §5.1,
+ * labels supplied by the API) and the "Actions pending today" follow-up list
  * (Mark done → POST /followups/{id}/complete). The design's "Pathway distribution" card has
  * no backing fields on CmhwDashboardDto and is omitted (see feature report). The urgent
  * banner from the previous iteration is kept — it is real data (urgentBanner) the new design

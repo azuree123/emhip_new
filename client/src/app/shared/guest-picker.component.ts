@@ -185,17 +185,13 @@ import { GuestsApiService } from '../core/guests-api.service';
         background: #eafdee;
         color: #147129;
       }
-      .gpicker__status--pendingconversation {
+      .gpicker__status--new {
         background: #fff9e4;
         color: #9d852d;
       }
-      .gpicker__status--inactive {
+      .gpicker__status--onhold {
         background: #e7eeff;
         color: #345bb1;
-      }
-      .gpicker__status--urgent {
-        background: #fff0f1;
-        color: #d02537;
       }
       .gpicker__hint {
         padding: 12px;
@@ -317,7 +313,7 @@ export class GuestPickerComponent implements ControlValueAccessor {
   }
 
   statusLabel(status: GuestStatus): string {
-    return status === 'PendingConversation' ? 'Pending' : status;
+    return status === 'OnHold' ? 'On hold' : status;
   }
 
   @HostListener('document:click', ['$event'])

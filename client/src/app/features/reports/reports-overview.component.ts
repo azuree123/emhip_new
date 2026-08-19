@@ -134,13 +134,19 @@ export class ReportsOverviewComponent {
    * KPI tile row driven by statusCounts. The source draws TOTAL GUESTS / ACTIVE
    * GUESTS / IN ACTIVE / URGENT CASES (Desktop72); the trend chips ("+8% from
    * last month", "Avg res: 2.8 days") have no backing data and are omitted.
+   *
+   * The engagement statuses are New / Active / On hold (spec §4.7) — the DTO's
+   * `pendingConversation` and `inactive` counters are those two buckets under
+   * their pre-rename field names. Urgency is a flag rather than a status, so
+   * "Urgent cases" counts guests in any status carrying the urgent flag.
    */
   readonly kpiTiles = computed<KpiTile[]>(() => {
     const c = this.report()?.statusCounts ?? null;
     return [
       { label: 'Total guests', value: c?.total ?? null },
+      { label: 'New', value: c?.pendingConversation ?? null },
       { label: 'Active guests', value: c?.active ?? null },
-      { label: 'Inactive guests', value: c?.inactive ?? null },
+      { label: 'On hold', value: c?.inactive ?? null },
       { label: 'Urgent cases', value: c?.urgent ?? null },
     ];
   });

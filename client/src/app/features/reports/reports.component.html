@@ -7,8 +7,27 @@
         <span class="header-card__today">Today:&nbsp;{{ todayLabel }}</span>
       </div>
       <div class="header-card__actions">
-        <!-- The source header offers "Export Excel" + "Export CSV"; only a CSV export
-             endpoint exists, so a single primary button opens the export dialog. -->
+        <!-- The source header offers "Export Excel" + "Export CSV": Excel downloads the
+             multi-sheet workbook for the applied range straight away, CSV opens the
+             export dialog where the period can be re-picked. -->
+        <button
+          type="button"
+          class="btn btn--secondary"
+          [disabled]="excelBusy()"
+          [title]="'Multi-sheet workbook: ' + workbookSheetList"
+          (click)="exportExcel()"
+        >
+          <span class="btn__icon" aria-hidden="true">
+            <svg width="12" height="15" viewBox="0 0 12 15" fill="none">
+              <path
+                d="M 6 0 C 6.31 0 6.563 0.252 6.563 0.563 L 6.563 9.545 L 9.352 6.757 C 9.571 6.537 9.928 6.537 10.147 6.757 C 10.367 6.976 10.367 7.333 10.147 7.552 L 6.398 11.302 C 6.178 11.522 5.822 11.522 5.602 11.302 L 1.853 7.552 C 1.633 7.333 1.633 6.976 1.853 6.757 C 2.072 6.537 2.429 6.537 2.648 6.757 L 5.438 9.545 L 5.438 0.563 C 5.438 0.252 5.69 0 6 0 Z M 0.563 13.5 L 11.438 13.5 C 11.748 13.5 12 13.752 12 14.063 C 12 14.373 11.748 14.625 11.438 14.625 L 0.563 14.625 C 0.252 14.625 0 14.373 0 14.063 C 0 13.752 0.252 13.5 0.563 13.5 Z"
+                fill="currentColor"
+                fill-rule="nonzero"
+              />
+            </svg>
+          </span>
+          {{ excelBusy() ? 'Building…' : 'Export to Excel' }}
+        </button>
         <button type="button" class="btn btn--primary" (click)="exportOpen.set(true)">
           <span class="btn__icon" aria-hidden="true">
             <svg width="14" height="15" viewBox="0 0 13.5 15" fill="none">
@@ -23,6 +42,14 @@
         </button>
       </div>
     </div>
+
+    <p class="header-card__export-note">
+      The Excel workbook contains all five sheets — {{ workbookSheetList }} — for the applied
+      reporting period.
+    </p>
+    @if (excelError()) {
+      <div class="error-banner header-card__export-error" role="alert">{{ excelError() }}</div>
+    }
 
     <div class="header-card__divider"></div>
 

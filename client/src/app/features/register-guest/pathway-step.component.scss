@@ -137,6 +137,16 @@
   margin-top: 6px;
 }
 
+// "…is a one-to-one pathway — an assigned CMHW and a next contact date are required…"
+.allocation-note {
+  margin: 0 0 16px;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 20px;
+  color: #9d852d;
+}
+
 @media (max-width: 720px) {
   .pathway-grid {
     grid-template-columns: 1fr;

@@ -4,6 +4,8 @@ import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 import {
   AddContactRequest,
+  CaseloadAssignmentDto,
+  ReassignGuestRequest,
   GuestNoteDto,
   ChangePathwayRequest,
   CaseworkNoteInput,
@@ -52,6 +54,8 @@ export class GuestsApiService {
     cmhw?: string;
     /** Only guests whose last contact falls within the past N days. */
     lastActivityDays?: number;
+    /** true = only guests currently flagged urgent (spec §3.3); false = only non-urgent. */
+    urgent?: boolean;
     cursor?: string;
     pageSize?: number;
   }): Observable<KeysetPage<GuestListItemDto>> {
@@ -63,6 +67,7 @@ export class GuestsApiService {
     if (opts.risk !== undefined) params = params.set('risk', opts.risk);
     if (opts.cmhw) params = params.set('cmhw', opts.cmhw);
     if (opts.lastActivityDays) params = params.set('lastActivityDays', opts.lastActivityDays);
+    if (opts.urgent !== undefined) params = params.set('urgent', opts.urgent);
     if (opts.cursor) params = params.set('cursor', opts.cursor);
     if (opts.pageSize) params = params.set('pageSize', opts.pageSize);
     return this.http.get<KeysetPage<GuestListItemDto>>(this.base, { params });
@@ -167,6 +172,16 @@ export class GuestsApiService {
   /** Discards a draft; submitted notes are part of the clinical record and cannot be deleted. */
   deleteCaseworkNote(guestId: string, noteId: string): Observable<void> {
     return this.http.delete<void>(`${this.base}/${guestId}/casework-notes/${noteId}`);
+  }
+
+  /** Reassigns the guest's CMHW and logs it (spec §4.4). */
+  reassign(guestId: string, request: ReassignGuestRequest): Observable<void> {
+    return this.http.post<void>(`${this.base}/${guestId}/reassign`, request);
+  }
+
+  /** Append-only allocation history for the guest. */
+  getCaseloadHistory(guestId: string): Observable<CaseloadAssignmentDto[]> {
+    return this.http.get<CaseloadAssignmentDto[]>(`${this.base}/${guestId}/caseload-history`);
   }
 
   /** "Change Pathway" — moves the guest and appends the pathway-history entry. */

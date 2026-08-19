@@ -24,14 +24,17 @@ const EXPORT_PAGE_SIZE = 200;
 /** Hard cap on exported rows — if reached, we still download what was fetched. */
 const EXPORT_ROW_CAP = 2000;
 
+/**
+ * Engagement statuses per spec §4.7. Urgency used to sit in this list; it is now a separate
+ * flag (GuestListItemDto.isUrgent) driving the "Urgent only" chip, so it is not a status.
+ */
 const STATUS_OPTIONS: { value: StatusFilterValue; label: string }[] = [
   // "Status" doubles as the closed-state label of the native select, matching the design's
   // filter chip; selecting it clears the filter.
   { value: 'All', label: 'Status' },
+  { value: 'New', label: 'New' },
   { value: 'Active', label: 'Active' },
-  { value: 'PendingConversation', label: 'Pending Conversation' },
-  { value: 'Inactive', label: 'Inactive' },
-  { value: 'Urgent', label: 'Urgent' },
+  { value: 'OnHold', label: 'On hold' },
 ];
 
 const PATHWAY_OPTIONS: { value: PathwayFilterValue; label: string }[] = [
@@ -62,8 +65,8 @@ const ACTIVITY_OPTIONS: { value: ActivityFilterValue; label: string }[] = [
  * screen. Scrolling near the bottom of what's loaded — or pressing "Load more" — fetches the
  * next page by passing the opaque `nextCursor` straight back to the API.
  *
- * All filters (search, status, pathway, assigned CMHW, last activity) are applied
- * server-side; changing any of them resets the keyset list and reloads page one.
+ * All filters (search, status, pathway, assigned CMHW, last activity, urgent-only) are
+ * applied server-side; changing any of them resets the keyset list and reloads page one.
  *
  * Layout/styling follow the Figma GuestDataSheet3 frame (Components.bundle.js lines
  * 9051-13375, 1440px design).
@@ -93,6 +96,12 @@ export class GuestDataSheetComponent {
   protected readonly totalCount = signal<number | null>(null);
   protected readonly error = signal<string | null>(null);
   protected readonly statusFilter = signal<StatusFilterValue>('All');
+  /**
+   * "Urgent only" chip, sent as the `urgent` query param. Urgency is a flag rather than a
+   * status (spec §3.3), so it combines with the status filter — On hold + urgent is a real,
+   * findable combination.
+   */
+  protected readonly urgentOnly = signal(false);
   protected readonly pathwayFilter = signal<PathwayFilterValue>('All');
   /** Assigned CMHW filter — a staff id, or null for "all staff" (the picker's cleared state). */
   protected readonly cmhwFilter = signal<string | null>(null);
@@ -121,17 +130,19 @@ export class GuestDataSheetComponent {
     });
 
     // The header search bar navigates here with ?q=…, and the dashboard KPI cards with
-    // ?status=… — including while this screen is already active, so track the params
-    // instead of reading them once. The first (synchronous) emission doubles as the
-    // initial load.
+    // ?status=… or ?urgent=true (urgency is a flag, not a status) — including while this
+    // screen is already active, so track the params instead of reading them once. The
+    // first (synchronous) emission doubles as the initial load.
     this.route.queryParamMap.pipe(takeUntilDestroyed()).subscribe((params) => {
       const q = params.get('q') ?? '';
       const statusParam = params.get('status');
       const status: StatusFilterValue =
         statusParam && STATUS_OPTIONS.some((o) => o.value === statusParam) ? (statusParam as StatusFilterValue) : 'All';
-      const changed = q !== this.searchTerm || status !== this.statusFilter();
+      const urgent = params.get('urgent') === 'true';
+      const changed = q !== this.searchTerm || status !== this.statusFilter() || urgent !== this.urgentOnly();
       this.searchTerm = q;
       this.statusFilter.set(status);
+      this.urgentOnly.set(urgent);
       if (changed || !this.initialized) {
         this.initialized = true;
         this.resetAndLoad();
@@ -148,6 +159,12 @@ export class GuestDataSheetComponent {
 
   protected onStatusChange(value: string): void {
     this.statusFilter.set(value as StatusFilterValue);
+    this.resetAndLoad();
+  }
+
+  /** "Urgent only" chip — a server-side filter, so it resets paging like the others. */
+  protected toggleUrgentOnly(): void {
+    this.urgentOnly.set(!this.urgentOnly());
     this.resetAndLoad();
   }
 
@@ -171,6 +188,7 @@ export class GuestDataSheetComponent {
   protected clearFilters(): void {
     this.searchTerm = '';
     this.statusFilter.set('All');
+    this.urgentOnly.set(false);
     this.pathwayFilter.set('All');
     this.cmhwFilter.set(null);
     this.activityFilter.set('All');
@@ -208,6 +226,7 @@ export class GuestDataSheetComponent {
     pathway?: PathwayCategory;
     cmhw?: string;
     lastActivityDays?: number;
+    urgent?: boolean;
   } {
     const status = this.statusFilter();
     const pathway = this.pathwayFilter();
@@ -219,6 +238,8 @@ export class GuestDataSheetComponent {
       pathway: pathway === 'All' ? undefined : pathway,
       cmhw: cmhw ?? undefined,
       lastActivityDays: activity === 'All' ? undefined : Number(activity),
+      // Only ever narrows to urgent guests — the chip has no "non-urgent only" state.
+      urgent: this.urgentOnly() ? true : undefined,
     };
   }
 
@@ -308,6 +329,7 @@ export class GuestDataSheetComponent {
       'Last Name',
       'Date of Birth',
       'Status',
+      'Urgent',
       'Pathway',
       'Risk',
       'Assigned CMHW',
@@ -328,6 +350,7 @@ export class GuestDataSheetComponent {
           guest.lastName,
           guest.dateOfBirth,
           this.statusLabel(guest.status),
+          guest.isUrgent ? 'Yes' : 'No',
           guest.pathwayCategory ? this.pathwayLabel(guest.pathwayCategory) : '',
           guest.hasRiskFlags ? 'High' : 'Low',
           guest.assignedCmhwName ?? '',
@@ -359,7 +382,7 @@ export class GuestDataSheetComponent {
   }
 
   protected statusLabel(status: GuestStatus): string {
-    return status === 'PendingConversation' ? 'Pending Conversation' : status;
+    return status === 'OnHold' ? 'On hold' : status;
   }
 
   /** Humanizes a PathwayCategory enum name — "HousingAdvice" → "Housing Advice". */

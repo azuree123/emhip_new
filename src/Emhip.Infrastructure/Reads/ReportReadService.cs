@@ -172,8 +172,8 @@ public sealed class ReportReadService(EmhipDbContext db) : IReportReadService
                 Pathway = grp.Key,
                 Total = grp.Count(),
                 Active = grp.Count(g => g.Status == Domain.Enums.GuestStatus.Active),
-                Urgent = grp.Count(g => g.Status == Domain.Enums.GuestStatus.Urgent),
-                Inactive = grp.Count(g => g.Status == Domain.Enums.GuestStatus.Inactive),
+                Urgent = grp.Count(g => g.IsUrgent),
+                Inactive = grp.Count(g => g.Status == Domain.Enums.GuestStatus.OnHold),
                 Afa = grp.Count(g => g.AfaSupportNeeded),
             })
             .ToListAsync(cancellationToken);
@@ -209,7 +209,7 @@ public sealed class ReportReadService(EmhipDbContext db) : IReportReadService
                 u.DisplayName,
                 db.Guests.Count(g => g.AssignedCmhwId == u.Id),
                 db.Guests.Count(g => g.AssignedCmhwId == u.Id && g.Status == Domain.Enums.GuestStatus.Active),
-                db.Guests.Count(g => g.AssignedCmhwId == u.Id && g.Status == Domain.Enums.GuestStatus.Urgent),
+                db.Guests.Count(g => g.AssignedCmhwId == u.Id && g.IsUrgent),
                 db.FollowUps.Count(f => f.AssigneeStaffId == u.Id && f.Status == Domain.Enums.FollowUpStatus.Scheduled && f.DueDate < today),
                 db.Contacts.Count(c => c.CreatedByStaffId == u.Id && c.OccurredAt >= thirtyDaysAgo)))
             .ToListAsync(cancellationToken);

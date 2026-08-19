@@ -49,7 +49,8 @@
         />
       </div>
 
-      <!-- Design filter cluster, left→right: filter icon | Pathway | Status | Assigned CMHW | Last Activity. -->
+      <!-- Design filter cluster, left→right: filter icon | Pathway | Status | Urgent only |
+         Assigned CMHW | Last Activity. -->
       <div class="filter-cluster">
         <button type="button" class="filter-reset" title="Reset filters" (click)="clearFilters()">
           <svg width="17" height="12" viewBox="0 0 16.5 11.5" fill="none" aria-hidden="true">
@@ -98,6 +99,20 @@
             />
           </svg>
         </div>
+
+        <!-- Urgency is a flag, not a status (spec §3.3), so it gets its own chip and combines
+             with whatever engagement status is selected. Sent as the `urgent` query param. -->
+        <button
+          type="button"
+          class="filter-chip"
+          [class.filter-chip--on]="urgentOnly()"
+          [attr.aria-pressed]="urgentOnly()"
+          title="Show only guests flagged urgent"
+          (click)="toggleUrgentOnly()"
+        >
+          <span class="filter-chip__dot" aria-hidden="true"></span>
+          Urgent only
+        </button>
 
         <!-- Assigned CMHW: the shared searchable staff picker. Clearing it is the "all staff" state. -->
         <emhip-staff-picker
@@ -168,8 +183,12 @@
             </span>
           </span>
 
-          <span class="col col--status">
+          <!-- Status pill + the independent urgency badge — never one instead of the other. -->
+          <span class="col col--status status-cell">
             <span class="badge" [attr.data-status]="guest.status">{{ statusLabel(guest.status) }}</span>
+            @if (guest.isUrgent) {
+              <span class="badge badge--urgent" title="Flagged urgent">Urgent</span>
+            }
           </span>
 
           <span class="col col--pathway">{{ pathwayLabel(guest.pathwayCategory) }}</span>

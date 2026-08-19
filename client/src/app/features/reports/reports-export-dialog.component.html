@@ -3,7 +3,7 @@
     <header class="export-dialog__header">
       <div>
         <h2 class="export-dialog__title" id="export-dialog-title">Export report</h2>
-        <p class="export-dialog__subtitle">CSV download</p>
+        <p class="export-dialog__subtitle">Excel workbook or CSV download</p>
       </div>
       <button type="button" class="export-dialog__close" (click)="closed.emit()" aria-label="Close export dialog">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
@@ -25,9 +25,18 @@
         </label>
       </div>
 
+      <h3 class="export-dialog__section export-dialog__section--spaced">What you get</h3>
       <p class="export-dialog__note">
-        Downloads the service report for the selected period — guest status counts, pathway referral
-        totals, monthly registrations, activity and demographic breakdowns — as a single CSV file.
+        <strong>Excel</strong> — a workbook with all five sheets for the selected period:
+      </p>
+      <ul class="export-dialog__sheets">
+        @for (sheet of workbookSheets; track sheet) {
+          <li class="export-dialog__sheet">{{ sheet }}</li>
+        }
+      </ul>
+      <p class="export-dialog__note">
+        <strong>CSV</strong> — a single file with the service report for the period: guest status
+        counts, pathway referral totals, monthly registrations, activity and demographic breakdowns.
       </p>
 
       @if (error()) {
@@ -37,7 +46,10 @@
 
     <footer class="export-dialog__footer">
       <button type="button" class="btn btn--secondary" (click)="closed.emit()">Cancel</button>
-      <button type="button" class="btn btn--primary" [disabled]="invalid() || busy()" (click)="download()">
+      <button type="button" class="btn btn--secondary" [disabled]="invalid() || busy()" (click)="downloadCsv()">
+        {{ busyFormat() === 'csv' ? 'Preparing…' : 'Download CSV' }}
+      </button>
+      <button type="button" class="btn btn--primary" [disabled]="invalid() || busy()" (click)="downloadExcel()">
         <span class="btn__icon" aria-hidden="true">
           <svg width="12" height="15" viewBox="0 0 12 15" fill="none">
             <path
@@ -47,7 +59,7 @@
             />
           </svg>
         </span>
-        {{ busy() ? 'Preparing…' : 'Download CSV' }}
+        {{ busyFormat() === 'xlsx' ? 'Building…' : 'Export to Excel' }}
       </button>
     </footer>
   </div>

@@ -58,6 +58,8 @@
             [form]="conversationForm"
             [hubWorkerName]="currentUser().displayName"
             [jobTitle]="jobTitle()"
+            (addAction)="addActionRow()"
+            (removeAction)="removeActionRow($event)"
           />
         }
         @case (3) {

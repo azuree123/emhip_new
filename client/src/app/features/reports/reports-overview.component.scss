@@ -12,6 +12,13 @@
   gap: 23px;
 }
 
+// Five status tiles (Total / New / Active / On hold / Urgent) rather than the shared
+// four-up default — the engagement vocabulary needs both New and On hold.
+.stat-row {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 16px;
+}
+
 // ---- DIALOG outcome metrics tiles (365x114 r8 outlined; green/amber accents)
 
 .dm-tiles {
@@ -415,6 +422,13 @@
 }
 
 // ---- Responsive ----------------------------------------------------------
+
+// Five status tiles need a wide content column; drop to three before the grid below.
+@media (max-width: 1360px) {
+  .stat-row {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
 
 @media (max-width: 1100px) {
   .report-grid {

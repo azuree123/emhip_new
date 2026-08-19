@@ -249,7 +249,18 @@ collapse into stacked cards on narrow screens.
   `Emhip.Workers.ReportMaterializerWorker` / `EscalationWorker` — dashboards and reports never
   run a live `GROUP BY` over full history.
 - **Streaming export**: `GET /reports/export` streams CSV rows via `IAsyncEnumerable`, never
-  buffering the full result set.
+  buffering the full result set. `GET /reports/export.xlsx` builds a multi-sheet workbook
+  (summary, pathways, caseload, DIALOG outcomes, data quality) via ClosedXML.
+- **Engagement status vs urgency** (functional spec §3.3/§4.7): a guest's `Status` is one of
+  `New` → `Active` → `OnHold` and nothing else. Urgency is a separate `IsUrgent` flag, so a
+  safety escalation never erases whether the guest is New or On Hold, and resolving it returns
+  them to exactly the state they were in. `New` becomes `Active` only when the initial
+  conversation is recorded; `Active` becomes `OnHold` automatically via
+  `Emhip.Workers.EngagementStatusWorker` once `LastActivityAt` falls outside the configured
+  inactivity window, and any recorded contact flips it straight back.
+- **Pathway and allocation history**: `PathwayChanges` and `CaseloadAssignments` are
+  append-only records of what changed, why, who authorised it and when — the spec requires both
+  to be timestamped and stored historically rather than overwritten on the guest row.
 - **Audit trail**: every write is logged via `AuditSaveChangesInterceptor`; every guest-scoped
   read is logged via `AuditReadLoggingMiddleware` — both append-only, per the clinical-data
   compliance requirement in `ARCHITECTURE.md`.
@@ -258,8 +269,11 @@ See `project/design_handoff_emhip/ARCHITECTURE.md` for the full original design 
 
 ## Known gaps / next steps
 
-- Real email delivery for the forgot-password flow — see "Authentication, roles & permissions"
-  above.
+- Legacy migration (`POST /admin/migration/guests`) imports guests, demographics, notes and
+  DIALOG history from a CSV export with preserved timestamps. Contacts, follow-ups and risk
+  history are **not** imported yet — those columns aren't in the template.
+- `GuestStatusCountsDto` still names its buckets `pendingConversation`/`inactive` on the wire,
+  though the UI labels them New / On hold. Renaming the DTO fields is cosmetic and deferred.
 - No dedicated Hubs CRUD API/UI yet — the admin "Hub ID" field on the Hub Workers form is a
   plain GUID text input rather than a picker, since there's no `HubsController` to list them
   from. Hub rows themselves are created by `tools/Emhip.Seeder` or directly in SQL today.

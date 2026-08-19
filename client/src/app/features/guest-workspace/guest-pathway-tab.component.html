@@ -136,6 +136,140 @@
     </section>
   }
 
+  <!-- Caseload allocation (spec §4.4) — who holds this guest, and every handover since then. -->
+  <section class="card">
+    <div class="card__header-row">
+      <h2 class="card__title">Caseload allocation</h2>
+      @if (canReassign) {
+        <button type="button" class="add-btn" (click)="openReassignDialog()">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+            <path
+              d="M 3.5 7.5 L 14.5 7.5 M 11.5 4.5 L 14.5 7.5 L 11.5 10.5 M 16.5 12.5 L 5.5 12.5 M 8.5 9.5 L 5.5 12.5 L 8.5 15.5"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              fill="none"
+            />
+          </svg>
+          Reassign CMHW
+        </button>
+      }
+    </div>
+
+    <div class="pathway-summary">
+      <span class="pathway-summary__label">Assigned CMHW</span>
+      <span class="pathway-summary__value">{{ assignedCmhwName() || 'Unassigned' }}</span>
+    </div>
+
+    @if (caseloadLoading()) {
+      <p class="empty-state">Loading allocation history…</p>
+    } @else if (caseloadError()) {
+      <p class="form-error">{{ caseloadError() }}</p>
+    } @else {
+      <div class="entries">
+        @for (entry of caseloadHistory() ?? []; track entry.id) {
+          <article class="pathway-entry">
+            <div class="pathway-entry__top">
+              <div class="pathway-entry__heading">
+                <span class="pathway-entry__date">{{ formatDateTime(entry.recordedAt) }}</span>
+                <span class="pathway-entry__title">
+                  {{ entry.fromStaffName || 'Unassigned' }} → {{ entry.toStaffName || 'Unassigned' }}
+                </span>
+              </div>
+            </div>
+            <div class="pathway-entry__cols">
+              <div class="pathway-entry__col">
+                <span class="pathway-entry__label">Reason:</span>
+                <span class="pathway-entry__value">{{ entry.reason || '—' }}</span>
+              </div>
+              <div class="pathway-entry__col">
+                <span class="pathway-entry__label">Recorded By</span>
+                <span class="pathway-entry__value">{{ entry.recordedByName }}</span>
+              </div>
+            </div>
+          </article>
+        } @empty {
+          <p class="empty-state">No reassignments recorded — this guest is still with their first allocation.</p>
+        }
+      </div>
+    }
+  </section>
+
+  @if (showReassignDialog()) {
+    <div class="dialog-backdrop" (click)="closeReassignDialog()">
+      <form
+        class="dialog dialog--narrow"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Reassign CMHW"
+        novalidate
+        (click)="$event.stopPropagation()"
+        (ngSubmit)="reassign()"
+      >
+        <header class="dialog__header">
+          <div>
+            <h2 class="dialog__title">Reassign CMHW</h2>
+            <p class="dialog__subtitle">Move this guest to another worker's caseload</p>
+          </div>
+          <button type="button" class="dialog__close" aria-label="Close" (click)="closeReassignDialog()">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <path d="M 3 3 L 13 13 M 13 3 L 3 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+            </svg>
+          </button>
+        </header>
+
+        <div class="dialog__body">
+          <p class="dialog__banner">
+            <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <circle cx="8" cy="8" r="7.25" stroke="currentColor" stroke-width="1.5" />
+              <path d="M 8 7 L 8 11.5 M 8 4.5 L 8 5.2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+            </svg>
+            Currently allocated to {{ assignedCmhwName() || 'nobody' }}. Every reassignment is logged with who
+            moved it and why.
+          </p>
+
+          <div class="dialog__field">
+            <span class="dialog__label">New CMHW&nbsp;*</span>
+            <emhip-staff-picker
+              name="reassignStaffId"
+              placeholder="Select the new named worker"
+              [allowClear]="false"
+              [ngModel]="reassignStaffId()"
+              (ngModelChange)="reassignStaffId.set($event)"
+            />
+            @if (reassignSubmitted() && reassignFieldError()) {
+              <p class="form-error">{{ reassignFieldError() }}</p>
+            }
+          </div>
+
+          <label class="dialog__field dialog__field--wide">
+            <span class="dialog__label">Reason for reassignment</span>
+            <textarea
+              class="dialog__textarea"
+              name="reassignReason"
+              rows="4"
+              placeholder="Why is this guest moving caseload? (e.g. worker leaving, caseload rebalance, guest request)…"
+              [ngModel]="reassignReason()"
+              (ngModelChange)="reassignReason.set($event)"
+            ></textarea>
+          </label>
+
+          @if (reassignError()) {
+            <p class="form-error">{{ reassignError() }}</p>
+          }
+
+          <div class="dialog__actions">
+            <button type="button" class="btn-ghost" (click)="closeReassignDialog()" [disabled]="reassigning()">Cancel</button>
+            <button type="submit" class="dialog__submit" [disabled]="reassigning()">
+              {{ reassigning() ? 'Saving…' : 'Reassign CMHW' }}
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  }
+
   @if (showChangeDialog()) {
     <div class="dialog-backdrop" (click)="closeChangeDialog()">
       <form

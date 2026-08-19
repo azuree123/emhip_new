@@ -1,6 +1,7 @@
 using Emhip.Application.Abstractions;
 using Emhip.Application.Contacts;
 using Emhip.Application.Guests.Actions;
+using Emhip.Application.Guests.Caseload;
 using Emhip.Application.Guests.Casework;
 using Emhip.Application.Guests.Clinical;
 using Emhip.Application.Guests.Commands;
@@ -29,10 +30,10 @@ public sealed class GuestsController(IMediator mediator, ICurrentUser currentUse
     public async Task<IActionResult> GetGuestList(
         [FromQuery] string? q, [FromQuery] GuestStatus? status, [FromQuery] string? cursor, [FromQuery] int pageSize = 50,
         [FromQuery] PathwayCategory? pathway = null, [FromQuery] bool? risk = null, [FromQuery] Guid? cmhw = null,
-        [FromQuery] int? lastActivityDays = null, CancellationToken cancellationToken = default)
+        [FromQuery] int? lastActivityDays = null, [FromQuery] bool? urgent = null, CancellationToken cancellationToken = default)
     {
         var result = await mediator.Send(
-            new GetGuestListQuery(currentUser.HubId, q, status, cursor, Math.Clamp(pageSize, 1, 200), pathway, risk, cmhw, lastActivityDays),
+            new GetGuestListQuery(currentUser.HubId, q, status, cursor, Math.Clamp(pageSize, 1, 200), pathway, risk, cmhw, lastActivityDays, urgent),
             cancellationToken);
         return Ok(result);
     }
@@ -149,7 +150,10 @@ public sealed class GuestsController(IMediator mediator, ICurrentUser currentUse
     [Authorize(Policy = Permissions.Guests.Register)]
     public async Task<IActionResult> RecordInitialConversation(Guid guestId, [FromBody] RecordInitialConversationRequest request, CancellationToken cancellationToken)
     {
-        var command = new RecordInitialConversationCommand(guestId, request.PresentingIssues, request.Notes, request.ConsentConfirmed);
+        var command = new RecordInitialConversationCommand(
+            guestId, request.PresentingIssues, request.Notes, request.ConsentConfirmed,
+            request.ImmediateRisk, request.Pathway, request.AfaSupportNeeded,
+            request.AssignedCmhwId, request.NextContactDate, request.Actions);
         var id = await mediator.Send(command, cancellationToken);
         return CreatedAtAction(nameof(GetInitialConversation), new { guestId }, new { id });
     }
@@ -302,6 +306,21 @@ public sealed class GuestsController(IMediator mediator, ICurrentUser currentUse
         return NoContent();
     }
 
+    /// <summary>Reassigns the guest's CMHW and logs it (spec §4.4).</summary>
+    [HttpPost("{guestId:guid}/reassign")]
+    [Authorize(Policy = Permissions.Guests.Edit)]
+    public async Task<IActionResult> Reassign(Guid guestId, [FromBody] ReassignGuestRequest request, CancellationToken cancellationToken)
+    {
+        await mediator.Send(new ReassignGuestCommand(guestId, request.AssignedCmhwId, request.Reason), cancellationToken);
+        return NoContent();
+    }
+
+    /// <summary>Append-only allocation history for the guest.</summary>
+    [HttpGet("{guestId:guid}/caseload-history")]
+    [Authorize(Policy = Permissions.Guests.View)]
+    public async Task<IActionResult> GetCaseloadHistory(Guid guestId, CancellationToken cancellationToken) =>
+        Ok(await mediator.Send(new GetCaseloadHistoryQuery(guestId), cancellationToken));
+
     /// <summary>"Change Pathway" — moves the guest and appends the pathway-history entry.</summary>
     [HttpPost("{guestId:guid}/pathway-changes")]
     [Authorize(Policy = Permissions.Guests.PathwayEdit)]
@@ -315,12 +334,13 @@ public sealed class GuestsController(IMediator mediator, ICurrentUser currentUse
 
     public sealed record UpdateDemographicsRequest(
         string? Ethnicity, string? Nationality, string? PreferredLanguage, bool InterpreterNeeded,
-        string? HousingStatus, string? EmploymentStatus,
+        string? HousingStatus, string? EmploymentStatus, string? MaritalStatus, string? LivingGroup,
         string? EmergencyContactName, string? EmergencyContactPhone, string? EmergencyContactRelationship,
         string? GpName, string? GpPractice, string? NhsNumber)
     {
         public UpdateDemographicsCommand ToCommand(Guid guestId) => new(
             guestId, Ethnicity, Nationality, PreferredLanguage, InterpreterNeeded, HousingStatus, EmploymentStatus,
+            MaritalStatus, LivingGroup,
             EmergencyContactName, EmergencyContactPhone, EmergencyContactRelationship, GpName, GpPractice, NhsNumber);
     }
 
@@ -335,7 +355,17 @@ public sealed class GuestsController(IMediator mediator, ICurrentUser currentUse
 
     public sealed record ScheduleFollowUpRequest(DateOnly DueDate, Guid AssigneeStaffId, string? Notes);
 
-    public sealed record RecordInitialConversationRequest(string? PresentingIssues, string? Notes, bool ConsentConfirmed);
+    /// <summary>Spec §4.2 — pathway, immediate risk and (for one-to-one pathways) CMHW and next contact are mandatory.</summary>
+    public sealed record RecordInitialConversationRequest(
+        string? PresentingIssues,
+        string? Notes,
+        bool ConsentConfirmed,
+        bool ImmediateRisk,
+        GuestPathway Pathway,
+        bool AfaSupportNeeded,
+        Guid? AssignedCmhwId,
+        DateOnly? NextContactDate,
+        IReadOnlyList<InitialConversationActionInput>? Actions);
 
     public sealed record AddContactRequest(ContactType Type, ContactOutcome Outcome, DateTimeOffset OccurredAt, string? Notes);
 
@@ -371,6 +401,8 @@ public sealed class GuestsController(IMediator mediator, ICurrentUser currentUse
     public sealed record AllocateGuestRequest(GuestPathway Pathway, bool AfaSupportNeeded, Guid? AssignedCmhwId);
 
     public sealed record SetNotePinnedRequest(bool IsPinned);
+
+    public sealed record ReassignGuestRequest(Guid? AssignedCmhwId, string? Reason);
 
     public sealed record ChangePathwayRequest(
         GuestPathway Pathway, string? Reason, Guid? AssignedByStaffId, string? AssignedByName, DateOnly ChangedOn);

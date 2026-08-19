@@ -40,11 +40,12 @@ interface PathwayRow extends PathwayDistributionDto {
  * project/screens/Components.bundle.js lines 2748-8987). Sidebar/header come from the shared
  * shell; this component is the content area only.
  *
- * Sections: expandable KPI row (drill-down panels per Frame 23/38/39; the Urgent card
- * navigates to /urgent-cases — the design ships no frame for it), Pathway distribution,
- * Guest Seen, Outstanding team actions (live follow-up queue) and Staff activity (recent
- * activity feed). Design sections with no backing data — Caseload per CMHW, Guest
- * demographics and Data quality issues — are omitted (see feature report).
+ * Sections: expandable KPI row (drill-down panels per Frame 23/38/39, plus an urgent panel
+ * that reuses the same language — the design ships no frame for it), Pathway distribution,
+ * Clinical complexity indicators (spec §5.1), Guest Seen, Outstanding team actions (live
+ * follow-up queue) and Staff activity (recent activity feed). Design sections with no
+ * backing data — Caseload per CMHW, Guest demographics and Data quality issues — are
+ * omitted (see feature report).
  */
 @Component({
   selector: 'app-dashboard-hub-manager',
@@ -64,7 +65,7 @@ export class DashboardHubManagerComponent {
   protected readonly loading = signal(true);
   protected readonly error = signal<string | null>(null);
 
-  /** Which KPI drill-down panel is open (Frame 23 / 38 / 39), if any. */
+  /** Which KPI drill-down panel is open (active / new / on hold / urgent), if any. */
   protected readonly expanded = signal<KpiPanelVariant | null>(null);
 
   /** Hub-wide open follow-ups — feeds "Outstanding team actions" and the Urgent KPI pill. */
@@ -98,7 +99,7 @@ export class DashboardHubManagerComponent {
     return latest.newGuests - latest.closedGuests;
   });
 
-  /** Guests closed (moved to inactive) this month — the Inactive card's trend pill. */
+  /** Guests closed (moved to on hold) this month — the On hold card's trend pill. */
   protected readonly closedThisMonth = computed(() => this.latestMonth()?.closedGuests ?? null);
 
   protected readonly pathwayRows = computed<PathwayRow[]>(() => {
@@ -160,10 +161,14 @@ export class DashboardHubManagerComponent {
     const d = this.data();
     if (!d) return 0;
     switch (variant) {
-      case 'pending':
+      // The DTO field names predate the spec §4.7 vocabulary: they carry the New and
+      // On hold counts respectively.
+      case 'new':
         return d.pendingConversationGuests;
-      case 'inactive':
+      case 'onHold':
         return d.inactiveGuests;
+      case 'urgent':
+        return d.urgentGuests;
       default:
         return d.totalActiveGuests;
     }
@@ -198,9 +203,5 @@ export class DashboardHubManagerComponent {
 
   protected openGuest(guestId: string): void {
     this.router.navigate(['/guests', guestId]);
-  }
-
-  protected goToUrgentCases(): void {
-    this.router.navigate(['/urgent-cases']);
   }
 }

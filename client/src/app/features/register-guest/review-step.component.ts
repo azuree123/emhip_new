@@ -1,12 +1,12 @@
 import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
-import { FormGroup } from '@angular/forms';
-import { CmhwOptionDto } from '../../core/api-models';
+import { FormArray, FormGroup } from '@angular/forms';
+import { CmhwOptionDto, GuestStatus } from '../../core/api-models';
 import { DIALOG_DOMAINS } from './dialog-step.component';
 import { PATHWAY_OPTIONS } from './pathway-step.component';
 
 /** One backend call of the final submission sequence, tracked for per-call error surfacing. */
 export interface SubmissionCall {
-  key: 'register' | 'customFields' | 'conversation' | 'dialog' | 'allocation' | 'followUp' | 'demographics' | 'risk';
+  key: 'register' | 'customFields' | 'conversation' | 'dialog' | 'demographics' | 'risk';
   label: string;
   status: 'pending' | 'running' | 'done' | 'failed';
 }
@@ -18,6 +18,10 @@ export interface SubmissionCall {
  * / "Not yet assigned" fallbacks verbatim). Extended below the mock's four cells with the
  * values entered on the previous steps, plus a per-call submission checklist so a failed
  * call is visible (and retried) individually.
+ *
+ * "Status after registration" uses the spec §4.7 vocabulary ('New' | 'Active' | 'OnHold'):
+ * registering creates the guest as New, and submitting the initial conversation moves them to
+ * Active in the same sequence.
  */
 @Component({
   selector: 'app-review-step',
@@ -66,8 +70,38 @@ export class ReviewStepComponent {
     return this.value(this.demographicsForm, 'personal.ethnicity') || '—';
   }
 
-  protected referralType(): string {
-    return this.value(this.demographicsForm, 'referral.referralType') || '—';
+  /** Spec §4.7 statuses: the guest is created as New and the initial conversation makes them Active. */
+  protected readonly statusOnRegistration: GuestStatus = 'New';
+  protected readonly statusAfterConversation: GuestStatus = 'Active';
+
+  protected referralSource(): string {
+    return this.value(this.demographicsForm, 'referral.referralSource') || '—';
+  }
+
+  /** "Primary" / "Secondary — <subcategory>" (spec §6.2). */
+  protected referralClassification(): string {
+    const type = this.value(this.demographicsForm, 'referral.referralType');
+    if (!type) return '—';
+    const subcategory = this.value(this.demographicsForm, 'referral.referralSubcategory');
+    return subcategory ? `${type} — ${subcategory}` : type;
+  }
+
+  protected maritalStatus(): string {
+    return this.value(this.demographicsForm, 'personal.maritalStatus') || '—';
+  }
+
+  protected livingGroup(): string {
+    return this.value(this.demographicsForm, 'contact.livingGroup') || '—';
+  }
+
+  protected immediateRisk(): string {
+    return this.value(this.conversationForm, 'risk.immediateRisk') || '—';
+  }
+
+  protected actionCount(): string {
+    const actions = this.conversationForm.get('actions') as FormArray | null;
+    const count = actions?.length ?? 0;
+    return count === 0 ? 'None recorded' : `${count} action${count === 1 ? '' : 's'}`;
   }
 
   protected sessionDate(): string {
@@ -107,8 +141,11 @@ export class ReviewStepComponent {
     return this.pathwayForm.get('afaSupportNeeded')?.value ? 'Yes' : 'No';
   }
 
-  protected followUpCadence(): string {
-    return this.value(this.pathwayForm, 'followUpCadence') || '—';
+  protected nextContactDate(): string {
+    const raw = this.value(this.pathwayForm, 'nextContactDate');
+    if (!raw) return 'Not scheduled';
+    const date = new Date(raw);
+    return Number.isNaN(date.getTime()) ? raw : date.toLocaleDateString('en-GB');
   }
 
   protected cmhwName(): string {

@@ -69,6 +69,19 @@
     flex-wrap: wrap;
   }
 
+  // Spells out what the Excel action produces, so the two export buttons aren't ambiguous.
+  &__export-note {
+    margin: 10px 0 0;
+    font-weight: 500;
+    font-size: 12px;
+    line-height: 18px;
+    color: $ink-faint;
+  }
+
+  &__export-error {
+    margin-top: 10px;
+  }
+
   &__divider {
     height: 1px;
     background: $line;

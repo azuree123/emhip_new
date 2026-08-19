@@ -1,5 +1,8 @@
-import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, Input, signal, WritableSignal } from '@angular/core';
 import { FormGroup, ReactiveFormsModule } from '@angular/forms';
+import { catchError, of } from 'rxjs';
+import { LookupItemDto, ReferralType } from '../../core/api-models';
+import { LookupCategories, SettingsApiService } from '../../core/settings-api.service';
 
 /**
  * Step 1 of the Register Guest wizard — "Demographics", ported from the Desktop83 screen
@@ -13,20 +16,21 @@ import { FormGroup, ReactiveFormsModule } from '@angular/forms';
  *  - "Completed by *" and "Date *" have no request fields (the API stamps the registering
  *    user and registeredAt server-side), so they render read-only, pre-filled from the login
  *    session, and are never submitted.
- *  - The source's "Marital status *" dropdown renders the sample value "Male" — a Figma
- *    content mismatch (no maritalStatus exists anywhere in the API). Re-labelled "Gender"
- *    since that is the field the value represents (RegisterGuestRequest.gender).
- *  - "Living group" ("Lives alone") has no backend field — its slot captures "Nationality"
- *    (UpdateDemographicsRequest.nationality) instead. "Economic activity" is re-labelled
+ *  - "Marital status" and "Living group" (spec §6.1) are real UpdateDemographicsRequest
+ *    fields, populated from the MaritalStatus / LivingGroup lookups. Gender
+ *    (RegisterGuestRequest.gender) and Nationality (UpdateDemographicsRequest.nationality)
+ *    keep the separate inputs the design gives them. "Economic activity" is re-labelled
  *    "Employment status" (UpdateDemographicsRequest.employmentStatus).
  *  - The second "Phone Number" in Contact & housing has no backend field (only one
  *    contactPhone exists); dropped — emergency-contact numbers live in "Additional details".
  *  - "Additional details" is a functional addition (not in the mock) so every remaining
  *    UpdateDemographicsRequest field (preferred language, interpreter, emergency contact,
  *    GP, NHS number) has a real place to be captured, in the same field styling.
- *  - "Referral type *" maps to RegisterGuestRequest.referralSource (options match the
- *    backend's seeded sources) and is additionally echoed into the initial-conversation
- *    notes on submit (see RegisterGuestComponent.buildConversationRequest).
+ *  - "Referral source *" maps to RegisterGuestRequest.referralSource (options match the
+ *    backend's seeded sources). Next to it, the spec §6.2 Primary/Secondary classification
+ *    and — for Secondary referrals — the subcategory map to RegisterGuestRequest.referralType
+ *    and .referralSubcategory. The subcategory is required client-side for Secondary so the
+ *    user sees it before the server's own rule rejects the registration.
  *  - The consent checkbox is not drawn on any of the redesigned screens, but
  *    RegisterGuestRequest.consentGiven is required — kept at the bottom of this step.
  */
@@ -39,11 +43,41 @@ import { FormGroup, ReactiveFormsModule } from '@angular/forms';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DemographicsStepComponent {
+  private readonly settingsApi = inject(SettingsApiService);
+
   @Input({ required: true }) form!: FormGroup;
   /** "Completed by *" — pre-filled from the logged-in user, read-only (no API field). */
   @Input({ required: true }) completedBy = '';
   /** "Date *" — today, read-only (registeredAt is stamped server-side). */
   @Input({ required: true }) todayLabel = '';
+
+  /** Admin-maintained option lists; a failed load just leaves the dropdown empty. */
+  protected readonly maritalStatusOptions = signal<LookupItemDto[]>([]);
+  protected readonly livingGroupOptions = signal<LookupItemDto[]>([]);
+  protected readonly secondaryReferralOptions = signal<LookupItemDto[]>([]);
+
+  constructor() {
+    this.loadLookups(LookupCategories.MaritalStatus, this.maritalStatusOptions);
+    this.loadLookups(LookupCategories.LivingGroup, this.livingGroupOptions);
+    this.loadLookups(LookupCategories.SecondaryReferralSubcategory, this.secondaryReferralOptions);
+  }
+
+  private loadLookups(category: string, target: WritableSignal<LookupItemDto[]>): void {
+    this.settingsApi
+      .getLookups(category)
+      .pipe(catchError(() => of([] as LookupItemDto[])))
+      .subscribe((items) => target.set(items.filter((item) => item.isActive)));
+  }
+
+  /** True once the Primary/Secondary classification is "Secondary" — reveals the subcategory. */
+  protected get secondaryReferral(): boolean {
+    return this.form.get('referral.referralType')?.value === 'Secondary';
+  }
+
+  protected invalid(path: string): boolean {
+    const control = this.form.get(path);
+    return !!control && control.invalid && control.touched;
+  }
 
   protected readonly genderOptions = ['Male', 'Female', 'Non-binary', 'Prefer not to say', 'Other'];
   protected readonly ethnicityOptions = [
@@ -84,7 +118,7 @@ export class DemographicsStepComponent {
     'Unable to Work',
   ];
   /** Matches the backend's seeded referral sources — submitted as RegisterGuestRequest.referralSource. */
-  protected readonly referralTypeOptions = [
+  protected readonly referralSourceOptions = [
     'GP referral',
     'CMHT',
     'Community organisation',
@@ -92,4 +126,6 @@ export class DemographicsStepComponent {
     'Family / carer',
     'Hospital discharge',
   ];
+  /** Spec §6.2 referral classification — RegisterGuestRequest.referralType. */
+  protected readonly referralTypeOptions: ReferralType[] = ['Primary', 'Secondary'];
 }

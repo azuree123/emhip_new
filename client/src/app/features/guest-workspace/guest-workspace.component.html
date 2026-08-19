@@ -25,6 +25,10 @@
               @if (chip(); as c) {
                 <span class="chip" [style.background]="c.bg" [style.color]="c.fg">{{ c.label }}</span>
               }
+              <!-- Urgency is a flag, not a status (spec §3.3) — it sits beside the status pill. -->
+              @if (urgentBadge(); as u) {
+                <span class="chip" [style.background]="u.bg" [style.color]="u.fg">{{ u.label }}</span>
+              }
               @if (pathwayChip(); as p) {
                 <span class="chip" [style.background]="p.bg" [style.color]="p.fg">{{ p.label }}</span>
               }
@@ -149,7 +153,7 @@
           <emhip-guest-dialog-tab [guestId]="guestId()" (refresh)="reloadOverview()" />
         }
         @case ('pathway') {
-          <app-guest-pathway-tab [guestId]="guestId()" />
+          <app-guest-pathway-tab [guestId]="guestId()" [overview]="guest" (refresh)="reloadOverview()" />
         }
         @case ('documents') {
           <emhip-guest-documents-tab [guestId]="guestId()" (refresh)="reloadOverview()" />

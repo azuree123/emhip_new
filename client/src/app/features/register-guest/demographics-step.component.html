@@ -105,8 +105,6 @@
         }
       </label>
       <label class="field">
-        <!-- The mock labels this "Marital status *" but shows the value "Male"; no
-             maritalStatus exists in the API, so the slot captures RegisterGuestRequest.gender. -->
         <span class="field__label">Gender</span>
         <select class="field__select" formControlName="gender">
           <option value="">Select gender</option>
@@ -114,6 +112,23 @@
             <option [value]="option">{{ option }}</option>
           }
         </select>
+      </label>
+    </div>
+
+    <div class="field-row">
+      <label class="field">
+        <!-- Spec §6.1 — UpdateDemographicsRequest.maritalStatus, options from the
+             "MaritalStatus" lookup category. -->
+        <span class="field__label">Marital status</span>
+        <select class="field__select" formControlName="maritalStatus">
+          <option value="">Select marital status</option>
+          @for (option of maritalStatusOptions(); track option.id) {
+            <option [value]="option.label">{{ option.label }}</option>
+          }
+        </select>
+        @if (maritalStatusOptions().length === 0) {
+          <span class="field__hint">No marital status options are configured in Settings &rarr; Lookups yet.</span>
+        }
       </label>
     </div>
   </section>
@@ -156,9 +171,18 @@
         </select>
       </label>
       <label class="field">
-        <!-- Mock slot "Living group" — no backend field; captures nationality instead. -->
-        <span class="field__label">Nationality</span>
-        <input class="field__input" type="text" formControlName="nationality" placeholder="British" />
+        <!-- Spec §6.1 — UpdateDemographicsRequest.livingGroup, options from the
+             "LivingGroup" lookup category. -->
+        <span class="field__label">Living group</span>
+        <select class="field__select" formControlName="livingGroup">
+          <option value="">Select living group</option>
+          @for (option of livingGroupOptions(); track option.id) {
+            <option [value]="option.label">{{ option.label }}</option>
+          }
+        </select>
+        @if (livingGroupOptions().length === 0) {
+          <span class="field__hint">No living group options are configured in Settings &rarr; Lookups yet.</span>
+        }
       </label>
     </div>
 
@@ -172,6 +196,10 @@
             <option [value]="option">{{ option }}</option>
           }
         </select>
+      </label>
+      <label class="field">
+        <span class="field__label">Nationality</span>
+        <input class="field__input" type="text" formControlName="nationality" placeholder="British" />
       </label>
     </div>
   </section>
@@ -241,15 +269,51 @@
       <h3 class="card__title">Referral information</h3>
     </div>
 
-    <div class="field-row" formGroupName="referral">
-      <label class="field">
-        <span class="field__label">Referral type&nbsp;*</span>
-        <select class="field__select" formControlName="referralType">
-          @for (option of referralTypeOptions; track option) {
-            <option [value]="option">{{ option }}</option>
+    <div formGroupName="referral">
+      <div class="field-row">
+        <label class="field">
+          <span class="field__label">Referral source&nbsp;*</span>
+          <select class="field__select" formControlName="referralSource">
+            @for (option of referralSourceOptions; track option) {
+              <option [value]="option">{{ option }}</option>
+            }
+          </select>
+        </label>
+        <label class="field">
+          <!-- Spec §6.2 referral classification. -->
+          <span class="field__label">Referral type&nbsp;*</span>
+          <select class="field__select" formControlName="referralType">
+            @for (option of referralTypeOptions; track option) {
+              <option [value]="option">{{ option }}</option>
+            }
+          </select>
+          @if (invalid('referral.referralType')) {
+            <span class="field__error">Select whether this is a primary or secondary referral.</span>
           }
-        </select>
-      </label>
+        </label>
+      </div>
+
+      @if (secondaryReferral) {
+        <div class="field-row">
+          <label class="field">
+            <span class="field__label">Secondary referral subcategory&nbsp;*</span>
+            <select class="field__select" formControlName="referralSubcategory">
+              <option value="">Select subcategory</option>
+              @for (option of secondaryReferralOptions(); track option.id) {
+                <option [value]="option.label">{{ option.label }}</option>
+              }
+            </select>
+            @if (invalid('referral.referralSubcategory')) {
+              <span class="field__error">A subcategory is required for secondary referrals.</span>
+            }
+            @if (secondaryReferralOptions().length === 0) {
+              <span class="field__hint">
+                No secondary referral subcategories are configured in Settings &rarr; Lookups yet.
+              </span>
+            }
+          </label>
+        </div>
+      }
     </div>
 
     <div class="consent-block" formGroupName="consent">

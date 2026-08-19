@@ -126,7 +126,7 @@
               on {{ formatDate(o.registeredAt) }}
             }
             but has not yet had their initial conversation. Until it is recorded, the guest stays in
-            “Pending conversation” status.
+            “New” status.
           </span>
         </div>
       </div>
@@ -148,13 +148,14 @@
           <button type="button" class="btn-primary" (click)="startConversation()">Start Initial Conversation</button>
         </div>
       } @else {
-        <form class="edit-form ic-form" (ngSubmit)="submit()">
+        <form class="edit-form ic-form" novalidate (ngSubmit)="submit()">
           <label class="edit-form__field edit-form__field--full">
             <span>Presenting issues</span>
             <textarea
               name="presentingIssues"
               rows="4"
-              [(ngModel)]="presentingIssues"
+              [ngModel]="presentingIssues()"
+              (ngModelChange)="presentingIssues.set($event)"
               placeholder="How is the guest presenting? What are they describing as the main issue right now? Use their own words where possible…"
             ></textarea>
           </label>
@@ -163,20 +164,179 @@
             <textarea
               name="notes"
               rows="3"
-              [(ngModel)]="notes"
+              [ngModel]="notes()"
+              (ngModelChange)="notes.set($event)"
               placeholder="Anything else worth recording from the conversation…"
             ></textarea>
           </label>
+
+          <!-- Immediate risk — mandatory (spec §4.2). A Yes raises the urgent flag server-side. -->
+          <fieldset class="ic-fieldset">
+            <legend class="ic-fieldset__legend">Immediate risk&nbsp;*</legend>
+            <p class="ic-fieldset__hint">
+              Is there an immediate risk to this guest or to others right now? Answering
+              <strong>Yes</strong> raises the urgent flag on the record automatically and puts the
+              guest on the urgent cases list.
+            </p>
+            <div class="ic-choices">
+              <button
+                type="button"
+                class="ic-choice ic-choice--danger"
+                [class.ic-choice--on]="immediateRisk() === true"
+                [attr.aria-pressed]="immediateRisk() === true"
+                (click)="setImmediateRisk(true)"
+              >
+                <span class="ic-choice__radio" aria-hidden="true"></span>
+                <span class="ic-choice__label">Yes — immediate risk</span>
+              </button>
+              <button
+                type="button"
+                class="ic-choice"
+                [class.ic-choice--on]="immediateRisk() === false"
+                [attr.aria-pressed]="immediateRisk() === false"
+                (click)="setImmediateRisk(false)"
+              >
+                <span class="ic-choice__radio" aria-hidden="true"></span>
+                <span class="ic-choice__label">No immediate risk</span>
+              </button>
+            </div>
+            @if (submitted() && riskFieldError()) {
+              <p class="form-error">{{ riskFieldError() }}</p>
+            }
+          </fieldset>
+
+          <!-- Pathway decision — mandatory, plus the AFA flag. -->
+          <fieldset class="ic-fieldset">
+            <legend class="ic-fieldset__legend">Pathway agreed&nbsp;*</legend>
+            <div class="ic-pathway-grid">
+              @for (option of pathwayOptions; track option.key) {
+                <button
+                  type="button"
+                  class="ic-pathway-card"
+                  [class.ic-pathway-card--selected]="selectedPathway() === option.key"
+                  [attr.aria-pressed]="selectedPathway() === option.key"
+                  (click)="selectPathway(option.key)"
+                >
+                  <span
+                    class="ic-pathway-card__radio"
+                    [class.ic-pathway-card__radio--selected]="selectedPathway() === option.key"
+                    aria-hidden="true"
+                  ></span>
+                  <span class="ic-pathway-card__name">{{ option.formLabel }}</span>
+                  <span class="ic-pathway-card__desc">{{ option.description }}</span>
+                </button>
+              }
+            </div>
+            @if (submitted() && pathwayFieldError()) {
+              <p class="form-error">{{ pathwayFieldError() }}</p>
+            }
+            <label class="edit-form__field edit-form__field--checkbox ic-afa">
+              <input
+                type="checkbox"
+                name="afaSupportNeeded"
+                [ngModel]="afaSupportNeeded()"
+                (ngModelChange)="afaSupportNeeded.set($event)"
+              />
+              <span>AFA (Advice, Financial &amp; Advocacy) support is also needed</span>
+            </label>
+          </fieldset>
+
+          <!-- Named worker + next contact — required for the two one-to-one pathways. -->
+          @if (needsNamedWorker()) {
+            <div class="edit-form__grid ic-allocation">
+              <div class="edit-form__field">
+                <span>Named CMHW&nbsp;*</span>
+                <emhip-staff-picker
+                  name="assignedCmhwId"
+                  placeholder="Select the named worker"
+                  [allowClear]="false"
+                  [ngModel]="assignedCmhwId()"
+                  (ngModelChange)="assignedCmhwId.set($event)"
+                />
+                @if (submitted() && cmhwFieldError()) {
+                  <p class="form-error">{{ cmhwFieldError() }}</p>
+                }
+              </div>
+              <label class="edit-form__field">
+                <span>Next contact date&nbsp;*</span>
+                <input
+                  type="date"
+                  name="nextContactDate"
+                  [min]="today"
+                  [ngModel]="nextContactDate()"
+                  (ngModelChange)="nextContactDate.set($event)"
+                />
+                @if (submitted() && nextContactFieldError()) {
+                  <p class="form-error">{{ nextContactFieldError() }}</p>
+                }
+              </label>
+            </div>
+            <p class="ic-hint">
+              Wellbeing and Clinical pathways are one-to-one: both a named CMHW and an agreed next
+              contact date are required before the record can be completed.
+            </p>
+          }
+
+          <!-- Actions arising — repeatable description + due date rows. -->
+          <fieldset class="ic-fieldset">
+            <legend class="ic-fieldset__legend">Actions arising</legend>
+            @for (row of actions(); track row.key) {
+              <div class="ic-action-row">
+                <label class="edit-form__field ic-action-row__desc">
+                  <span>Action</span>
+                  <input
+                    type="text"
+                    [name]="'actionDescription' + row.key"
+                    placeholder="What was agreed?"
+                    [ngModel]="row.description"
+                    (ngModelChange)="setActionDescription(row.key, $event)"
+                  />
+                </label>
+                <label class="edit-form__field ic-action-row__due">
+                  <span>Due date</span>
+                  <input
+                    type="date"
+                    [name]="'actionDueDate' + row.key"
+                    [ngModel]="row.dueDate"
+                    (ngModelChange)="setActionDueDate(row.key, $event)"
+                  />
+                </label>
+                <button
+                  type="button"
+                  class="btn-link ic-action-row__remove"
+                  (click)="removeActionRow(row.key)"
+                >
+                  Remove
+                </button>
+              </div>
+            } @empty {
+              <p class="empty-state">No actions recorded yet.</p>
+            }
+            @if (submitted() && actionsFieldError()) {
+              <p class="form-error">{{ actionsFieldError() }}</p>
+            }
+            <button type="button" class="btn-link ic-add-action" (click)="addActionRow()">+ Add action</button>
+          </fieldset>
+
           <label class="edit-form__field edit-form__field--checkbox">
-            <input type="checkbox" name="consentConfirmed" [(ngModel)]="consentConfirmed" />
+            <input
+              type="checkbox"
+              name="consentConfirmed"
+              [ngModel]="consentConfirmed()"
+              (ngModelChange)="consentConfirmed.set($event)"
+            />
             <span>The guest confirmed consent for EMHIP support during this conversation</span>
           </label>
+          @if (submitted() && consentFieldError()) {
+            <p class="form-error">{{ consentFieldError() }}</p>
+          }
+
           @if (submitError()) {
             <p class="form-error">{{ submitError() }}</p>
           }
           <div class="edit-form__actions">
             <button type="button" class="btn-ghost" (click)="cancelForm()">Cancel</button>
-            <button type="submit" class="btn-primary" [disabled]="!consentConfirmed || submitting()">
+            <button type="submit" class="btn-primary" [disabled]="submitting()">
               {{ submitting() ? 'Saving…' : 'Complete Initial Conversation' }}
             </button>
           </div>

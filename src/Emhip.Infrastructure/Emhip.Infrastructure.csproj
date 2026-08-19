@@ -9,6 +9,7 @@
     <PackageReference Include="AWSSDK.S3" Version="4.0.102.2" />
     <PackageReference Include="AWSSDK.SimpleEmailV2" Version="4.0.102.3" />
     <PackageReference Include="Azure.Storage.Blobs" Version="12.29.1" />
+    <PackageReference Include="ClosedXML" Version="0.105.1" />
     <PackageReference Include="Dapper" Version="2.1.79" />
     <PackageReference Include="Google.Cloud.Storage.V1" Version="4.15.0" />
     <PackageReference Include="MailKit" Version="4.17.0" />

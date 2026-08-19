@@ -18,6 +18,8 @@ public sealed record GuestListItemDto(
     DateTimeOffset? LastContactAt,
     string? PathwayCategory,
     bool HasRiskFlags,
+    /// <summary>Temporary safety escalation — independent of status and pathway (spec §3.3).</summary>
+    bool IsUrgent,
     DateOnly? NextContactDue);
 
 /// <summary>Option for the guest list's "Assigned CMHW" filter dropdown.</summary>

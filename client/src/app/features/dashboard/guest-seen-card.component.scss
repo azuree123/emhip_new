@@ -107,10 +107,11 @@
   }
 }
 
-// Today / Week / Month segmented control (272x32, selected segment #eb3c2c).
+// Today / Week / Month / Custom range segmented control (selected segment #eb3c2c).
 .range-toggle {
   display: inline-flex;
   align-items: stretch;
+  flex-shrink: 0;
   height: 32px;
   border-radius: 4px;
   background: #ffffff;
@@ -123,7 +124,8 @@
   &__item {
     border: none;
     background: none;
-    padding: 0 27px;
+    padding: 0 18px;
+    white-space: nowrap;
     font-family: 'Plus Jakarta Sans', sans-serif;
     font-weight: 500;
     font-size: 12px;
@@ -142,6 +144,56 @@
     width: 1px;
     background: #e5e5e5;
     margin: 1px 0;
+  }
+}
+
+// Custom range inputs — revealed under the segmented control when "Custom range" is picked.
+.custom-range {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 14px;
+
+  &__field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  &__label {
+    font-family: 'Wix Madefor Display', sans-serif;
+    font-weight: 600;
+    font-size: 10px;
+    line-height: 16px;
+    letter-spacing: -0.005em;
+    text-transform: uppercase;
+    color: #8c8c8c;
+  }
+
+  input {
+    height: 36px;
+    padding: 0 12px;
+    border: none;
+    border-radius: 4px;
+    background: #ffffff;
+    box-shadow: inset 0 0 0 1px #e5e5e5;
+    color: #2a2a2a;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-weight: 500;
+    font-size: 12px;
+
+    &:focus {
+      outline: 2px solid #941c3c;
+      outline-offset: -1px;
+    }
+  }
+
+  &__error {
+    font-weight: 500;
+    font-size: 12px;
+    line-height: 36px;
+    color: #d02537;
   }
 }
 
@@ -253,7 +305,11 @@
     grid-template-columns: 1fr;
   }
 
+  .panel-card__head {
+    flex-wrap: wrap;
+  }
+
   .range-toggle__item {
-    padding: 0 16px;
+    padding: 0 10px;
   }
 }

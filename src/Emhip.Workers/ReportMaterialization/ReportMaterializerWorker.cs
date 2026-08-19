@@ -81,7 +81,7 @@ public sealed class ReportMaterializerWorker(IServiceScopeFactory scopeFactory, 
                 g.Key.Year,
                 g.Key.Month,
                 NewGuests = g.Count(),
-                ClosedGuests = g.Count(x => x.Status == GuestStatus.Inactive),
+                ClosedGuests = g.Count(x => x.Status == GuestStatus.OnHold),
             })
             .ToListAsync(cancellationToken);
 
@@ -93,22 +93,20 @@ public sealed class ReportMaterializerWorker(IServiceScopeFactory scopeFactory, 
             monthlyDtos.Add(new MonthlyStatDto(m.Year, m.Month, m.NewGuests, m.ClosedGuests, contactCount));
         }
 
-        // Clinical complexity: guests counted by the flags on their LATEST (highest-version)
-        // risk assessment — historical assessments never contribute, matching how the
-        // escalation logic reads the current clinical picture.
-        var latestFlags = await db.RiskAssessments.AsNoTracking()
-            .Where(r => db.Guests.Any(g => g.Id == r.GuestId && g.HubId == hubId))
-            .Where(r => !db.RiskAssessments.Any(r2 => r2.GuestId == r.GuestId && r2.Version > r.Version))
-            .Select(r => new { r.SuicidalIdeation, r.SelfHarm, r.RiskToOthers, r.SevereDeterioration, r.SafeguardingConcern })
+        // Clinical complexity indicators per spec §5.1 — SMI, medication, Trust involvement and
+        // CPN involvement, taken from the guests' clinical profiles. (Risk-assessment flags drive
+        // the urgent queue instead; they are a safety signal, not a complexity measure.)
+        var profiles = await db.GuestClinicalProfiles.AsNoTracking()
+            .Where(p => db.Guests.Any(g => g.Id == p.GuestId && g.HubId == hubId && !g.IsDeleted))
+            .Select(p => new { p.SmiIndicator, p.CurrentMedications, p.TrustInvolvement, p.CpnInvolved })
             .ToListAsync(cancellationToken);
 
         var clinicalComplexity = new List<ClinicalIndicatorDto>
         {
-            new("Suicidal ideation", latestFlags.Count(r => r.SuicidalIdeation)),
-            new("Self-harm", latestFlags.Count(r => r.SelfHarm)),
-            new("Risk to others", latestFlags.Count(r => r.RiskToOthers)),
-            new("Severe deterioration", latestFlags.Count(r => r.SevereDeterioration)),
-            new("Safeguarding concern", latestFlags.Count(r => r.SafeguardingConcern)),
+            new("SMI", profiles.Count(p => p.SmiIndicator)),
+            new("On medication", profiles.Count(p => p.CurrentMedications != null && p.CurrentMedications != "")),
+            new("Trust involvement", profiles.Count(p => p.TrustInvolvement)),
+            new("CPN involvement", profiles.Count(p => p.CpnInvolved)),
         };
 
         var snapshot = await db.DashboardSnapshots.FirstOrDefaultAsync(s => s.HubId == hubId, cancellationToken);
@@ -119,9 +117,11 @@ public sealed class ReportMaterializerWorker(IServiceScopeFactory scopeFactory, 
         }
 
         snapshot.TotalActiveGuests = CountOf(GuestStatus.Active);
-        snapshot.PendingConversationGuests = CountOf(GuestStatus.PendingConversation);
-        snapshot.InactiveGuests = CountOf(GuestStatus.Inactive);
-        snapshot.UrgentGuests = CountOf(GuestStatus.Urgent);
+        snapshot.PendingConversationGuests = CountOf(GuestStatus.New);
+        snapshot.InactiveGuests = CountOf(GuestStatus.OnHold);
+        // Urgency is a flag now, not a status, so it is counted separately.
+        snapshot.UrgentGuests = await db.Guests.AsNoTracking()
+            .CountAsync(g => g.HubId == hubId && !g.IsDeleted && g.IsUrgent, cancellationToken);
         snapshot.TotalGuestsAcrossHub = statusCounts.Sum(s => s.Count);
         snapshot.PathwayDistributionJson = JsonSerializer.Serialize(pathwayDtos);
         snapshot.MonthlyStatsJson = JsonSerializer.Serialize(monthlyDtos);

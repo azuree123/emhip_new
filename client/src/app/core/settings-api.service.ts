@@ -138,4 +138,7 @@ export const LookupCategories = {
   EscalationUrgency: 'EscalationUrgency',
   FollowUpCadence: 'FollowUpCadence',
   ContactRelationship: 'ContactRelationship',
+  MaritalStatus: 'MaritalStatus',
+  LivingGroup: 'LivingGroup',
+  SecondaryReferralSubcategory: 'SecondaryReferralSubcategory',
 } as const;

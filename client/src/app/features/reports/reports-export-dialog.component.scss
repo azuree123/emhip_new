@@ -81,6 +81,30 @@
     font-size: 14px;
     line-height: 24px;
     color: $ink;
+
+    &--spaced {
+      margin-top: 24px;
+    }
+  }
+
+  // The five worksheets in the Excel workbook, as chips so they read as a set.
+  &__sheets {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 8px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  &__sheet {
+    padding: 3px 10px;
+    border-radius: 200px;
+    background: rgb(246, 246, 246);
+    font-weight: 500;
+    font-size: 12px;
+    line-height: 18px;
+    color: $ink-soft;
   }
 
   &__period {

@@ -1,5 +1,6 @@
 using Emhip.Application.Abstractions;
 using Emhip.Infrastructure;
+using Emhip.Workers.EngagementStatus;
 using Emhip.Workers.EscalationHandling;
 using Emhip.Workers.FollowUpScheduling;
 using Emhip.Workers.Notifications;
@@ -28,6 +29,7 @@ builder.Services.AddHostedService<OutboxRelayWorker>();
 builder.Services.AddHostedService<EscalationWorker>();
 builder.Services.AddHostedService<FollowUpSchedulerWorker>();
 builder.Services.AddHostedService<ReportMaterializerWorker>();
+builder.Services.AddHostedService<EngagementStatusWorker>();
 
 var host = builder.Build();
 host.Run();

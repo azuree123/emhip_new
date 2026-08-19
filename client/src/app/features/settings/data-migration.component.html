@@ -1,0 +1,300 @@
+<section class="migration">
+  <header class="migration__intro">
+    <div>
+      <h2 class="migration__title">Data migration</h2>
+      <p class="migration__subtitle">
+        Brings guest records across from the previous system (InForm) as a CSV upload — demographics, referral details,
+        pathway and status, case notes and DIALOG scores. Original dates are kept as they were, so a migrated guest keeps
+        its real registration and activity history rather than today’s date.
+      </p>
+    </div>
+  </header>
+
+  <!-- The order matters far more here than on any other settings tab: an import writes guest
+       records, so the screen leads with the process rather than the upload box. -->
+  <ol class="steps">
+    <li class="step">
+      <span class="step__num">1</span>
+      <span class="step__text"><strong>Download the template</strong> — one row of example data under every column the importer understands.</span>
+    </li>
+    <li class="step">
+      <span class="step__num">2</span>
+      <span class="step__text"><strong>Map your export onto it</strong> — match your columns to the template’s, one guest per row.</span>
+    </li>
+    <li class="step">
+      <span class="step__num">3</span>
+      <span class="step__text"><strong>Validate (dry run)</strong> — every row is checked and nothing is written.</span>
+    </li>
+    <li class="step">
+      <span class="step__num">4</span>
+      <span class="step__text"><strong>Review the report</strong> — fix any flagged rows in your file and validate again.</span>
+    </li>
+    <li class="step">
+      <span class="step__num">5</span>
+      <span class="step__text"><strong>Import</strong> — the same file, this time written to the live database.</span>
+    </li>
+  </ol>
+
+  @if (!canManage) {
+    <div class="banner banner--info">
+      You don’t have access to data migration. The <code>admin.manageusers</code> permission is required to download the
+      template or run an import — ask an administrator.
+    </div>
+  }
+
+  <!-- ---- Step 1: template ------------------------------------------------ -->
+  <div class="block">
+    <div class="block__head">
+      <h3 class="block__title">Import template</h3>
+      <p class="block__hint">
+        Lists every supported column with an example row: demographics, referral information, pathway and status, notes
+        and DIALOG scores. <code>dialog_scores</code> holds 11 numbers from 1 to 7, separated by spaces or semicolons.
+        Include your old system’s identifier in <code>legacy_id</code> and the import becomes repeatable — running it
+        again updates the guest that reference created instead of adding a duplicate.
+      </p>
+    </div>
+
+    <div class="block__actions">
+      <button type="button" class="btn btn--outline" [disabled]="!canManage || downloading()" (click)="downloadTemplate()">
+        <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
+          <path d="M7 1.5v8m0 0L4 6.5m3 3l3-3M2 11.5h10" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+        {{ downloading() ? 'Preparing…' : 'Download template' }}
+      </button>
+    </div>
+
+    @if (downloadError()) {
+      <div class="banner banner--error">{{ downloadError() }}</div>
+    }
+  </div>
+
+  <!-- ---- Step 2/3: the file --------------------------------------------- -->
+  <div class="block">
+    <div class="block__head">
+      <h3 class="block__title">Your file</h3>
+      <p class="block__hint">A single CSV file laid out like the template. Choosing a different file clears the previous result.</p>
+    </div>
+
+    <input
+      #fileInput
+      class="sr-only"
+      type="file"
+      accept=".csv,text/csv"
+      [disabled]="!canManage || busy()"
+      (change)="onFileChange($event)"
+    />
+
+    <div
+      class="dropzone"
+      [class.dropzone--active]="dragging()"
+      [class.dropzone--filled]="!!file()"
+      [class.dropzone--disabled]="!canManage || busy()"
+      role="button"
+      tabindex="0"
+      [attr.aria-disabled]="!canManage || busy() ? 'true' : null"
+      (click)="openPicker()"
+      (keydown.enter)="openPicker()"
+      (keydown.space)="openPicker()"
+      (dragover)="onDragOver($event)"
+      (dragleave)="onDragLeave($event)"
+      (drop)="onDrop($event)"
+    >
+      @if (file()) {
+        <svg class="dropzone__icon" width="22" height="22" viewBox="0 0 22 22" aria-hidden="true">
+          <path d="M12.5 2.5H6a1.5 1.5 0 0 0-1.5 1.5v14A1.5 1.5 0 0 0 6 19.5h10a1.5 1.5 0 0 0 1.5-1.5V7.5l-5-5z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" />
+          <path d="M12.5 2.5v5h5" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" />
+        </svg>
+        <div class="dropzone__file">
+          <span class="dropzone__name">{{ fileName() }}</span>
+          <span class="dropzone__meta">{{ fileSize() }} · CSV</span>
+        </div>
+        <button type="button" class="btn btn--ghost btn--sm" [disabled]="busy()" (click)="$event.stopPropagation(); clearFile()">
+          Remove
+        </button>
+      } @else {
+        <svg class="dropzone__icon" width="22" height="22" viewBox="0 0 22 22" aria-hidden="true">
+          <path d="M11 14.5v-10m0 0L7.5 8m3.5-3.5L14.5 8M3.5 14.5v2a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-2" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+        <div class="dropzone__file">
+          <span class="dropzone__name">Drop your CSV here, or click to choose one</span>
+          <span class="dropzone__meta">.csv files only</span>
+        </div>
+      }
+    </div>
+
+    @if (fileError()) {
+      <div class="banner banner--error">{{ fileError() }}</div>
+    }
+
+    <div class="block__actions">
+      <button type="button" class="btn btn--primary" [disabled]="!canValidate()" (click)="validate()">
+        {{ running() === 'validate' ? 'Validating…' : 'Validate (dry run)' }}
+      </button>
+      <button type="button" class="btn btn--outline btn--danger" [disabled]="!canImport()" (click)="requestImport()">
+        {{ running() === 'import' ? 'Importing…' : 'Import' }}
+      </button>
+
+      <span class="block__gate">
+        @if (!file()) {
+          Choose a file to validate.
+        } @else if (running() === 'validate') {
+          Checking every row — nothing is being written.
+        } @else if (running() === 'import') {
+          Writing to the live database…
+        } @else if (dryRunPassed()) {
+          Dry run passed — this file is cleared for import.
+        } @else if (lastRunWasLive()) {
+          This file has been imported. Validate it again before running another import.
+        } @else {
+          Import unlocks once a dry run passes for this file.
+        }
+      </span>
+    </div>
+
+    @if (requestError(); as message) {
+      <div class="banner banner--error">
+        <span>{{ message }}</span>
+        <button type="button" class="btn btn--outline btn--sm" (click)="dismissRequestError()">Dismiss</button>
+      </div>
+    }
+  </div>
+
+  <!-- ---- Steps 4/5: the report ------------------------------------------ -->
+  @if (result(); as report) {
+    <div class="block block--report">
+      <div class="block__head">
+        <h3 class="block__title">{{ report.dryRun ? 'Dry run report' : 'Import report' }}</h3>
+      </div>
+
+      <div
+        class="result-banner"
+        [class.result-banner--ok]="report.succeeded"
+        [class.result-banner--fail]="!report.succeeded"
+        role="status"
+      >
+        @if (report.succeeded) {
+          <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+            <path d="M3.5 8.5l3 3 6-7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        } @else {
+          <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+            <path d="M8 4.5v4.5M8 11.5h.01" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+            <circle cx="8" cy="8" r="6.2" fill="none" stroke="currentColor" stroke-width="1.4" />
+          </svg>
+        }
+        <span>
+          @if (report.dryRun && report.succeeded) {
+            Dry run passed — all {{ report.rowsRead }} row(s) are valid. Nothing has been written yet; use
+            <strong>Import</strong> to apply them.
+          } @else if (report.dryRun && !report.succeeded) {
+            Dry run found {{ report.errors.length }} problem(s) in {{ report.rowsRead }} row(s). Nothing was written —
+            fix the rows listed below and validate again.
+          } @else if (!report.dryRun && report.succeeded) {
+            Import complete — {{ report.rowsRead }} row(s) read and written to the live database.
+          } @else {
+            Import finished with {{ report.errors.length }} problem(s) across {{ report.rowsRead }} row(s). The counts
+            below are what the server reported for this run — review them before running it again.
+          }
+        </span>
+      </div>
+
+      <div class="tiles">
+        <div class="tile">
+          <span class="tile__value">{{ report.rowsRead }}</span>
+          <span class="tile__label">Rows read</span>
+        </div>
+        <div class="tile">
+          <span class="tile__value">{{ report.guestsCreated }}</span>
+          <span class="tile__label">Guests created</span>
+        </div>
+        <div class="tile">
+          <span class="tile__value">{{ report.guestsUpdated }}</span>
+          <span class="tile__label">Guests updated</span>
+        </div>
+        <div class="tile">
+          <span class="tile__value">{{ report.notesCreated }}</span>
+          <span class="tile__label">Notes created</span>
+        </div>
+        <div class="tile">
+          <span class="tile__value">{{ report.dialogAssessmentsCreated }}</span>
+          <span class="tile__label">DIALOG assessments</span>
+        </div>
+        <div class="tile" [class.tile--bad]="report.errors.length > 0">
+          <span class="tile__value">{{ report.errors.length }}</span>
+          <span class="tile__label">Rows with problems</span>
+        </div>
+      </div>
+
+      @if (report.dryRun) {
+        <p class="report-note">A dry run never writes: these are the counts the same file would produce if imported.</p>
+      }
+
+      @if (errors().length > 0) {
+        <div class="table-scroll">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th class="col-row">Row</th>
+                <th class="col-col">Column</th>
+                <th>Problem</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (rowError of visibleErrors(); track $index) {
+                <tr>
+                  <td class="col-row" data-label="Row">{{ rowError.rowNumber }}</td>
+                  <td class="col-col" data-label="Column">
+                    @if (rowError.column) {
+                      <code class="mono">{{ rowError.column }}</code>
+                    } @else {
+                      <span class="muted">—</span>
+                    }
+                  </td>
+                  <td data-label="Problem">{{ rowError.message }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        @if (hiddenErrorCount() > 0) {
+          <p class="report-note report-note--more">
+            Showing the first {{ visibleErrors().length }} problems — {{ hiddenErrorCount() }} more not shown. They are
+            usually the same few mistakes repeating, so fixing these and validating again is the quickest way through.
+          </p>
+        }
+      }
+    </div>
+  }
+</section>
+
+<!-- Import is the only action on this screen that writes, and it writes a lot at once. -->
+@if (confirmOpen()) {
+  <div class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="migration-confirm-title">
+    <div class="modal">
+      <div class="modal__header">
+        <h2 id="migration-confirm-title">Import into the live database?</h2>
+      </div>
+      <div class="modal__body">
+        <p>
+          <strong>{{ fileName() }}</strong> ({{ fileSize() }}) passed its dry run. Importing writes these records to the
+          live database — guest records, notes and DIALOG assessments are created for real and this cannot be undone
+          from the portal.
+        </p>
+        @if (result(); as report) {
+          <p class="modal__counts">
+            Expected from the dry run: {{ report.guestsCreated }} guest(s) created, {{ report.guestsUpdated }} updated,
+            {{ report.notesCreated }} note(s), {{ report.dialogAssessmentsCreated }} DIALOG assessment(s).
+          </p>
+        }
+        <p class="modal__counts">
+          Rows carrying a <code>legacy_id</code> update the guest they created last time rather than duplicating it.
+        </p>
+      </div>
+      <div class="modal__footer">
+        <button type="button" class="btn btn--ghost" (click)="cancelImport()">Cancel</button>
+        <button type="button" class="btn btn--primary" (click)="confirmImport()">Import now</button>
+      </div>
+    </div>
+  </div>
+}
