@@ -15,10 +15,11 @@
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
   padding: 40px 32px;
 
-  // The logo lockup brings its own typography; this only positions it in the card.
+  // The logo lockup is a self-contained image; this only centres it in the card.
   &__logo {
-    display: block;
-    margin-bottom: 24px;
+    display: flex;
+    justify-content: center;
+    margin-bottom: 20px;
   }
 
   &__title {
