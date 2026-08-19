@@ -27,6 +27,8 @@ public static class LookupSeeder
         public const string MaritalStatus = "MaritalStatus";
         public const string LivingGroup = "LivingGroup";
         public const string SecondaryReferralSubcategory = "SecondaryReferralSubcategory";
+        public const string Gender = "Gender";
+        public const string CountryOfOrigin = "CountryOfOrigin";
     }
 
     private static readonly (string Category, string[] Labels)[] Seed =
@@ -79,6 +81,12 @@ public static class LookupSeeder
         (Categories.LivingGroup, [
             "Lives alone", "Lives with partner", "Lives with family", "Lives with friends",
             "Shared accommodation", "Supported living", "No fixed abode", "Other",
+        ]),
+        (Categories.Gender, ["Female", "Male", "Non-binary", "Prefer to self-describe", "Prefer not to say"]),
+        (Categories.CountryOfOrigin, [
+            "United Kingdom", "Ireland", "Nigeria", "Ghana", "Jamaica", "Somalia", "Eritrea", "Ethiopia",
+            "India", "Pakistan", "Bangladesh", "Sri Lanka", "Poland", "Romania", "Portugal", "Italy",
+            "Turkey", "Iran", "Iraq", "Afghanistan", "Syria", "Albania", "Brazil", "Colombia", "Other",
         ]),
         (Categories.SecondaryReferralSubcategory, [
             "Community mental health team", "Crisis team", "Inpatient discharge", "Talking therapies",

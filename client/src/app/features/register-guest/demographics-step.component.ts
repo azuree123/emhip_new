@@ -1,5 +1,5 @@
-import { ChangeDetectionStrategy, Component, inject, Input, signal, WritableSignal } from '@angular/core';
-import { FormGroup, ReactiveFormsModule } from '@angular/forms';
+import { ChangeDetectionStrategy, Component, inject, Input, OnInit, signal, WritableSignal } from '@angular/core';
+import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { catchError, of } from 'rxjs';
 import { LookupItemDto, ReferralType } from '../../core/api-models';
 import { LookupCategories, SettingsApiService } from '../../core/settings-api.service';
@@ -21,6 +21,9 @@ import { LookupCategories, SettingsApiService } from '../../core/settings-api.se
  *    (RegisterGuestRequest.gender) and Nationality (UpdateDemographicsRequest.nationality)
  *    keep the separate inputs the design gives them. "Economic activity" is re-labelled
  *    "Employment status" (UpdateDemographicsRequest.employmentStatus).
+ *  - "Country of origin" (UpdateDemographicsRequest.countryOfOrigin) is recorded separately
+ *    from nationality — the demographics reports filter on it — and is populated from the
+ *    CountryOfOrigin lookup, alongside Nationality in "Contact & housing".
  *  - The second "Phone Number" in Contact & housing has no backend field (only one
  *    contactPhone exists); dropped — emergency-contact numbers live in "Additional details".
  *  - "Additional details" is a functional addition (not in the mock) so every remaining
@@ -42,7 +45,7 @@ import { LookupCategories, SettingsApiService } from '../../core/settings-api.se
   styleUrls: ['./demographics-step.component.scss', './_form-shared.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class DemographicsStepComponent {
+export class DemographicsStepComponent implements OnInit {
   private readonly settingsApi = inject(SettingsApiService);
 
   @Input({ required: true }) form!: FormGroup;
@@ -54,12 +57,26 @@ export class DemographicsStepComponent {
   /** Admin-maintained option lists; a failed load just leaves the dropdown empty. */
   protected readonly maritalStatusOptions = signal<LookupItemDto[]>([]);
   protected readonly livingGroupOptions = signal<LookupItemDto[]>([]);
+  protected readonly countryOfOriginOptions = signal<LookupItemDto[]>([]);
   protected readonly secondaryReferralOptions = signal<LookupItemDto[]>([]);
 
   constructor() {
     this.loadLookups(LookupCategories.MaritalStatus, this.maritalStatusOptions);
     this.loadLookups(LookupCategories.LivingGroup, this.livingGroupOptions);
+    this.loadLookups(LookupCategories.CountryOfOrigin, this.countryOfOriginOptions);
     this.loadLookups(LookupCategories.SecondaryReferralSubcategory, this.secondaryReferralOptions);
+  }
+
+  /**
+   * "Country of origin" belongs to this step, but the wizard form group is built by the
+   * parent; register the control here when the parent's "contact" group does not already
+   * declare one, so the field works either way.
+   */
+  ngOnInit(): void {
+    const contact = this.form.get('contact');
+    if (contact instanceof FormGroup && !contact.get('countryOfOrigin')) {
+      contact.addControl('countryOfOrigin', new FormControl('', { nonNullable: true }));
+    }
   }
 
   private loadLookups(category: string, target: WritableSignal<LookupItemDto[]>): void {

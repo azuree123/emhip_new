@@ -19,6 +19,9 @@ public class GuestDemographics : Entity
     /// <summary>Spec §6.1 — dropdown-driven demographic fields.</summary>
     public string? MaritalStatus { get; private set; }
     public string? LivingGroup { get; private set; }
+
+    /// <summary>Country the guest originates from — reported on separately from nationality.</summary>
+    public string? CountryOfOrigin { get; private set; }
     public string? EmergencyContactName { get; private set; }
     public string? EmergencyContactPhone { get; private set; }
     public string? EmergencyContactRelationship { get; private set; }
@@ -37,7 +40,7 @@ public class GuestDemographics : Entity
 
     public void Update(
         string? ethnicity, string? nationality, string? preferredLanguage, bool interpreterNeeded,
-        string? housingStatus, string? employmentStatus, string? maritalStatus, string? livingGroup,
+        string? housingStatus, string? employmentStatus, string? maritalStatus, string? livingGroup, string? countryOfOrigin,
         string? emergencyContactName, string? emergencyContactPhone, string? emergencyContactRelationship,
         string? gpName, string? gpPractice, string? nhsNumber)
     {
@@ -49,6 +52,7 @@ public class GuestDemographics : Entity
         EmploymentStatus = employmentStatus;
         MaritalStatus = maritalStatus;
         LivingGroup = livingGroup;
+        CountryOfOrigin = countryOfOrigin;
         EmergencyContactName = emergencyContactName;
         EmergencyContactPhone = emergencyContactPhone;
         EmergencyContactRelationship = emergencyContactRelationship;

@@ -26,7 +26,9 @@ public sealed class GuestReadService(ISqlConnectionFactory connectionFactory, Em
     public async Task<KeysetPage<GuestListItemDto>> GetGuestListAsync(
         Guid hubId, string? searchText, GuestStatus? status, string? cursor, int pageSize,
         PathwayCategory? pathway = null, bool? hasRiskFlags = null, Guid? assignedCmhwId = null,
-        int? lastActivityWithinDays = null, bool? urgentOnly = null, CancellationToken cancellationToken = default)
+        int? lastActivityWithinDays = null, bool? urgentOnly = null,
+        string? ethnicity = null, string? gender = null, string? countryOfOrigin = null,
+        int? ageMin = null, int? ageMax = null, CancellationToken cancellationToken = default)
     {
         var decodedCursor = KeysetCursor.Decode<GuestCursor>(cursor);
 
@@ -37,6 +39,7 @@ public sealed class GuestReadService(ISqlConnectionFactory connectionFactory, Em
                 pw.Category AS PathwayCategory, ISNULL(rk.HasFlags, 0) AS HasRiskFlags, nf.DueDate AS NextContactDue
             FROM Guests g
             LEFT JOIN AspNetUsers s ON s.Id = g.AssignedCmhwId
+            LEFT JOIN GuestDemographics gd ON gd.GuestId = g.Id
             OUTER APPLY (
                 SELECT TOP 1 c.OccurredAt FROM Contacts c WHERE c.GuestId = g.Id ORDER BY c.OccurredAt DESC
             ) lc
@@ -59,6 +62,13 @@ public sealed class GuestReadService(ISqlConnectionFactory connectionFactory, Em
                 AND (@HasRiskFlags IS NULL OR ISNULL(rk.HasFlags, 0) = @HasRiskFlags)
                 AND (@AssignedCmhwId IS NULL OR g.AssignedCmhwId = @AssignedCmhwId)
                 AND (@UrgentOnly IS NULL OR g.IsUrgent = @UrgentOnly)
+                AND (@Ethnicity IS NULL OR gd.Ethnicity = @Ethnicity)
+                AND (@CountryOfOrigin IS NULL OR gd.CountryOfOrigin = @CountryOfOrigin)
+                AND (@Gender IS NULL OR g.Gender = @Gender)
+                -- Age is derived from the date of birth rather than stored, so the band filter
+                -- compares against the birth-date window the band implies.
+                AND (@BornOnOrBefore IS NULL OR g.DateOfBirth <= @BornOnOrBefore)
+                AND (@BornOnOrAfter IS NULL OR g.DateOfBirth >= @BornOnOrAfter)
                 AND (@LastContactAfter IS NULL OR lc.OccurredAt >= @LastContactAfter)
                 AND (
                     @HasCursor = 0
@@ -78,6 +88,12 @@ public sealed class GuestReadService(ISqlConnectionFactory connectionFactory, Em
             Pathway = pathway?.ToString(),
             HasRiskFlags = hasRiskFlags,
             AssignedCmhwId = assignedCmhwId,
+            Ethnicity = ethnicity,
+            CountryOfOrigin = countryOfOrigin,
+            Gender = gender,
+            // ageMin 35 => born on or before today-35y; ageMax 44 => born on or after today-45y+1d.
+            BornOnOrBefore = ageMin.HasValue ? DateOnly.FromDateTime(DateTime.UtcNow).AddYears(-ageMin.Value) : (DateOnly?)null,
+            BornOnOrAfter = ageMax.HasValue ? DateOnly.FromDateTime(DateTime.UtcNow).AddYears(-(ageMax.Value + 1)).AddDays(1) : (DateOnly?)null,
             UrgentOnly = urgentOnly,
             LastContactAfter = lastActivityWithinDays.HasValue
                 ? (DateTimeOffset?)DateTimeOffset.UtcNow.AddDays(-lastActivityWithinDays.Value)
@@ -126,6 +142,15 @@ public sealed class GuestReadService(ISqlConnectionFactory connectionFactory, Em
                 applies += "\nOUTER APPLY (SELECT TOP 1 c.OccurredAt FROM Contacts c WHERE c.GuestId = g.Id ORDER BY c.OccurredAt DESC) lc";
                 predicates += "\n    AND lc.OccurredAt >= @LastContactAfter";
             }
+            if (ethnicity is not null || countryOfOrigin is not null)
+            {
+                applies += "\nLEFT JOIN GuestDemographics gd ON gd.GuestId = g.Id";
+                if (ethnicity is not null) predicates += "\n    AND gd.Ethnicity = @Ethnicity";
+                if (countryOfOrigin is not null) predicates += "\n    AND gd.CountryOfOrigin = @CountryOfOrigin";
+            }
+            if (gender is not null) predicates += "\n    AND g.Gender = @Gender";
+            if (ageMax is not null) predicates += "\n    AND g.DateOfBirth >= @BornOnOrAfter";
+            if (ageMin is not null) predicates += "\n    AND g.DateOfBirth <= @BornOnOrBefore";
 
             var countSql = $"""
                 SELECT COUNT(*)
@@ -134,7 +159,14 @@ public sealed class GuestReadService(ISqlConnectionFactory connectionFactory, Em
                     AND (@Status IS NULL OR g.Status = @Status)
                     AND (@SearchPattern IS NULL OR g.FirstName LIKE @SearchPattern OR g.LastName LIKE @SearchPattern)
                     AND (@AssignedCmhwId IS NULL OR g.AssignedCmhwId = @AssignedCmhwId)
-                    AND (@UrgentOnly IS NULL OR g.IsUrgent = @UrgentOnly){predicates}
+                    AND (@UrgentOnly IS NULL OR g.IsUrgent = @UrgentOnly)
+                AND (@Ethnicity IS NULL OR gd.Ethnicity = @Ethnicity)
+                AND (@CountryOfOrigin IS NULL OR gd.CountryOfOrigin = @CountryOfOrigin)
+                AND (@Gender IS NULL OR g.Gender = @Gender)
+                -- Age is derived from the date of birth rather than stored, so the band filter
+                -- compares against the birth-date window the band implies.
+                AND (@BornOnOrBefore IS NULL OR g.DateOfBirth <= @BornOnOrBefore)
+                AND (@BornOnOrAfter IS NULL OR g.DateOfBirth >= @BornOnOrAfter){predicates}
                 """;
             totalCount = await connection.ExecuteScalarAsync<int>(countSql, new
             {
@@ -144,6 +176,12 @@ public sealed class GuestReadService(ISqlConnectionFactory connectionFactory, Em
                 Pathway = pathway?.ToString(),
                 HasRiskFlags = hasRiskFlags,
                 AssignedCmhwId = assignedCmhwId,
+                Ethnicity = ethnicity,
+                CountryOfOrigin = countryOfOrigin,
+                Gender = gender,
+                // ageMin 35 => born on or before today-35y; ageMax 44 => born on or after today-45y+1d.
+                BornOnOrBefore = ageMin.HasValue ? DateOnly.FromDateTime(DateTime.UtcNow).AddYears(-ageMin.Value) : (DateOnly?)null,
+                BornOnOrAfter = ageMax.HasValue ? DateOnly.FromDateTime(DateTime.UtcNow).AddYears(-(ageMax.Value + 1)).AddDays(1) : (DateOnly?)null,
                 UrgentOnly = urgentOnly,
                 LastContactAfter = lastActivityWithinDays.HasValue
                     ? (DateTimeOffset?)DateTimeOffset.UtcNow.AddDays(-lastActivityWithinDays.Value)
@@ -215,7 +253,8 @@ public sealed class GuestReadService(ISqlConnectionFactory connectionFactory, Em
             .Where(d => d.GuestId == guestId)
             .Select(d => new GuestDemographicsDto(
                 d.GuestId, d.Ethnicity, d.Nationality, d.PreferredLanguage, d.InterpreterNeeded,
-                d.HousingStatus, d.EmploymentStatus, d.EmergencyContactName, d.EmergencyContactPhone,
+                d.HousingStatus, d.EmploymentStatus, d.MaritalStatus, d.LivingGroup, d.CountryOfOrigin,
+                d.EmergencyContactName, d.EmergencyContactPhone,
                 d.EmergencyContactRelationship, d.GpName, d.GpPractice, d.NhsNumber))
             .FirstOrDefaultAsync(cancellationToken);
         if (dto is not null) return dto;
@@ -224,7 +263,7 @@ public sealed class GuestReadService(ISqlConnectionFactory connectionFactory, Em
         // "nothing recorded yet", not 404 — mirror GetClinicalAsync's exists check.
         var exists = await db.Guests.AsNoTracking().AnyAsync(g => g.Id == guestId, cancellationToken);
         return exists
-            ? new GuestDemographicsDto(guestId, null, null, null, false, null, null, null, null, null, null, null, null)
+            ? new GuestDemographicsDto(guestId, null, null, null, false, null, null, null, null, null, null, null, null, null, null, null)
             : null;
     }
 

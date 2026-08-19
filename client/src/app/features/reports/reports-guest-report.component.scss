@@ -92,6 +92,202 @@
   }
 }
 
+// ---- "Additional Filters" drawer (red Filters button + demographic panel) ----
+
+.filter-menu {
+  position: relative;
+  flex-shrink: 0;
+
+  &__trigger {
+    // .btn--primary supplies the red fill; the badge sits inside the label.
+    white-space: nowrap;
+  }
+
+  &__trigger--open {
+    box-shadow: 0 0 0 3px rgba(225, 38, 40, 0.18);
+  }
+
+  &__badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: 200px;
+    background: rgb(255, 255, 255);
+    color: $red;
+    font-weight: 600;
+    font-size: 11px;
+    line-height: 18px;
+  }
+}
+
+.filter-drawer {
+  position: absolute;
+  z-index: 50;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 280px;
+  box-sizing: border-box;
+  padding: 16px;
+  border-radius: 12px;
+  background: rgb(255, 255, 255);
+  box-shadow:
+    0 12px 32px rgba(0, 0, 0, 0.14),
+    inset 0 0 0 1px $line-soft;
+
+  &__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  &__title {
+    font-weight: 600;
+    font-size: 14px;
+    line-height: 24px;
+    letter-spacing: -0.005em;
+    color: $ink;
+  }
+
+  &__close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: none;
+    border-radius: 4px;
+    background: transparent;
+    color: $ink-muted;
+    cursor: pointer;
+
+    &:hover {
+      background: rgb(246, 246, 246);
+      color: $ink;
+    }
+  }
+
+  &__field {
+    display: block;
+
+    & + & {
+      margin-top: 12px;
+    }
+  }
+
+  &__label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 600;
+    font-size: 12px;
+    line-height: 20px;
+    letter-spacing: -0.005em;
+    color: $ink-soft;
+  }
+
+  &__select {
+    width: 100%;
+    box-sizing: border-box;
+
+    &:disabled {
+      background-color: rgb(248, 248, 248);
+      color: $ink-faint;
+      cursor: not-allowed;
+    }
+  }
+
+  &__hint {
+    display: block;
+    margin-top: 4px;
+    font-weight: 500;
+    font-size: 11px;
+    line-height: 16px;
+    color: $ink-faint;
+  }
+
+  &__actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 1px solid $line;
+  }
+}
+
+// ---- Applied-filter chips -------------------------------------------------
+
+.chip-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: -12px 0 20px;
+
+  &__clear {
+    border: none;
+    background: transparent;
+    padding: 0;
+    font-family: inherit;
+    font-weight: 600;
+    font-size: 12px;
+    line-height: 24px;
+    color: $red;
+    cursor: pointer;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  padding: 0 6px 0 10px;
+  border-radius: 200px;
+  background: rgb(255, 240, 241);
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 16px;
+  color: $coral;
+  white-space: nowrap;
+
+  &__caption {
+    color: rgb(168, 66, 56);
+  }
+
+  &__value {
+    font-weight: 600;
+  }
+
+  &__remove {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    padding: 0;
+    border: none;
+    border-radius: 200px;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+
+    &:hover {
+      background: rgba(235, 60, 44, 0.16);
+    }
+  }
+}
+
 // The CMHW filter is the shared <emhip-staff-picker>, which carries its own control chrome
 // rather than the .pill-select styling; it just needs a pill-sized footprint in the filter row.
 .cmhw-picker {
@@ -191,5 +387,12 @@
 
   .search-field {
     max-width: none;
+  }
+
+  // Anchored right, the panel would hang off a narrow viewport.
+  .filter-drawer {
+    right: auto;
+    left: 0;
+    width: min(280px, calc(100vw - 48px));
   }
 }

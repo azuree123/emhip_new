@@ -228,6 +228,7 @@ export class RegisterGuestComponent {
       contactEmail: ['', Validators.email],
       housingStatus: [''],
       nationality: [''],
+      countryOfOrigin: [''],
       livingGroup: [''],
       employmentStatus: [''],
     }),
@@ -674,6 +675,7 @@ export class RegisterGuestComponent {
     return {
       ethnicity: personal.ethnicity || null,
       nationality: contact.nationality || null,
+      countryOfOrigin: contact.countryOfOrigin || null,
       preferredLanguage: additional.preferredLanguage || null,
       interpreterNeeded: additional.interpreterNeeded,
       housingStatus: contact.housingStatus || null,

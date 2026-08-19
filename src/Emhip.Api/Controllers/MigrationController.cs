@@ -26,13 +26,13 @@ public sealed class MigrationController(IMediator mediator) : ControllerBase
         const string header = "legacy_id,first_name,last_name,date_of_birth,gender,phone,email," +
             "address_line1,address_line2,post_code,registered_at,status,pathway,afa_support," +
             "referral_source,referral_type,referral_subcategory,ethnicity,nationality,preferred_language," +
-            "housing_status,employment_status,marital_status,living_group,gp_name,gp_practice,nhs_number," +
+            "housing_status,employment_status,marital_status,living_group,country_of_origin,gp_name,gp_practice,nhs_number," +
             "last_activity_at,notes,dialog_scores,dialog_assessed_at\n";
 
         const string example = "INF-1001,Jordan,Fielding,1988-03-14,Female,07700900123,jordan@example.org," +
             "12 High Street,,SW9 8AB,2024-06-01,Active,MentalWellbeing,false," +
             "GP referral,Secondary,Community mental health team,Black African,British,English," +
-            "Private rented,Part-time employed,Single,Lives alone,Dr A Mensah,Brixton Practice,4857773456," +
+            "Private rented,Part-time employed,Single,Lives alone,Nigeria,Dr A Mensah,Brixton Practice,4857773456," +
             "2026-05-12,\"Migrated from InForm — see legacy record for full history.\",4 5 3 6 2 5 4 6 3 5 4,2024-06-08\n";
 
         return File(System.Text.Encoding.UTF8.GetBytes(header + example), "text/csv", "emhip-guest-import-template.csv");

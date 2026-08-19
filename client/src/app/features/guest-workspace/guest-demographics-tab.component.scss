@@ -31,6 +31,15 @@
   }
 }
 
+// Sits under a lookup-backed select in the edit form when the category has no options yet.
+.edit-form__hint {
+  font-family: t.$font-primary;
+  font-weight: 400;
+  font-size: 11px;
+  line-height: 16px;
+  color: t.$color-text-meta;
+}
+
 .chip--complete {
   background: t.$color-success-bg;
   color: t.$color-success-text;

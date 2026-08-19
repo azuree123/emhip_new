@@ -30,10 +30,12 @@ public sealed class GuestsController(IMediator mediator, ICurrentUser currentUse
     public async Task<IActionResult> GetGuestList(
         [FromQuery] string? q, [FromQuery] GuestStatus? status, [FromQuery] string? cursor, [FromQuery] int pageSize = 50,
         [FromQuery] PathwayCategory? pathway = null, [FromQuery] bool? risk = null, [FromQuery] Guid? cmhw = null,
-        [FromQuery] int? lastActivityDays = null, [FromQuery] bool? urgent = null, CancellationToken cancellationToken = default)
+        [FromQuery] int? lastActivityDays = null, [FromQuery] bool? urgent = null,
+        [FromQuery] string? ethnicity = null, [FromQuery] string? gender = null, [FromQuery] string? countryOfOrigin = null,
+        [FromQuery] int? ageMin = null, [FromQuery] int? ageMax = null, CancellationToken cancellationToken = default)
     {
         var result = await mediator.Send(
-            new GetGuestListQuery(currentUser.HubId, q, status, cursor, Math.Clamp(pageSize, 1, 200), pathway, risk, cmhw, lastActivityDays, urgent),
+            new GetGuestListQuery(currentUser.HubId, q, status, cursor, Math.Clamp(pageSize, 1, 200), pathway, risk, cmhw, lastActivityDays, urgent, ethnicity, gender, countryOfOrigin, ageMin, ageMax),
             cancellationToken);
         return Ok(result);
     }
@@ -334,13 +336,13 @@ public sealed class GuestsController(IMediator mediator, ICurrentUser currentUse
 
     public sealed record UpdateDemographicsRequest(
         string? Ethnicity, string? Nationality, string? PreferredLanguage, bool InterpreterNeeded,
-        string? HousingStatus, string? EmploymentStatus, string? MaritalStatus, string? LivingGroup,
+        string? HousingStatus, string? EmploymentStatus, string? MaritalStatus, string? LivingGroup, string? CountryOfOrigin,
         string? EmergencyContactName, string? EmergencyContactPhone, string? EmergencyContactRelationship,
         string? GpName, string? GpPractice, string? NhsNumber)
     {
         public UpdateDemographicsCommand ToCommand(Guid guestId) => new(
             guestId, Ethnicity, Nationality, PreferredLanguage, InterpreterNeeded, HousingStatus, EmploymentStatus,
-            MaritalStatus, LivingGroup,
+            MaritalStatus, LivingGroup, CountryOfOrigin,
             EmergencyContactName, EmergencyContactPhone, EmergencyContactRelationship, GpName, GpPractice, NhsNumber);
     }
 

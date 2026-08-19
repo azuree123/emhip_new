@@ -45,7 +45,7 @@ public sealed class ImportGuestsCommandHandler(IAppDbContext db, ICurrentUser cu
         "address_line1", "address_line2", "post_code", "registered_at", "status", "pathway",
         "afa_support", "referral_source", "referral_type", "referral_subcategory",
         "ethnicity", "nationality", "preferred_language", "housing_status", "employment_status",
-        "marital_status", "living_group", "gp_name", "gp_practice", "nhs_number",
+        "marital_status", "living_group", "country_of_origin", "gp_name", "gp_practice", "nhs_number",
         "last_activity_at", "notes", "dialog_scores", "dialog_assessed_at",
     ];
 
@@ -206,7 +206,7 @@ public sealed class ImportGuestsCommandHandler(IAppDbContext db, ICurrentUser cu
         demographics.Update(
             Value(row, "ethnicity"), Value(row, "nationality"), Value(row, "preferred_language"), interpreterNeeded: false,
             Value(row, "housing_status"), Value(row, "employment_status"),
-            Value(row, "marital_status"), Value(row, "living_group"),
+            Value(row, "marital_status"), Value(row, "living_group"), Value(row, "country_of_origin"),
             emergencyContactName: null, emergencyContactPhone: null, emergencyContactRelationship: null,
             Value(row, "gp_name"), Value(row, "gp_practice"), Value(row, "nhs_number"));
     }

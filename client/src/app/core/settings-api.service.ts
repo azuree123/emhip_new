@@ -141,4 +141,6 @@ export const LookupCategories = {
   MaritalStatus: 'MaritalStatus',
   LivingGroup: 'LivingGroup',
   SecondaryReferralSubcategory: 'SecondaryReferralSubcategory',
+  Gender: 'Gender',
+  CountryOfOrigin: 'CountryOfOrigin',
 } as const;

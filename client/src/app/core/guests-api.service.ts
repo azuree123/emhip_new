@@ -56,6 +56,13 @@ export class GuestsApiService {
     lastActivityDays?: number;
     /** true = only guests currently flagged urgent (spec §3.3); false = only non-urgent. */
     urgent?: boolean;
+    /** Demographic filters behind the Guest Report's "Additional filters" drawer. */
+    ethnicity?: string;
+    gender?: string;
+    countryOfOrigin?: string;
+    /** Inclusive age bounds in years, derived from date of birth server-side. */
+    ageMin?: number;
+    ageMax?: number;
     cursor?: string;
     pageSize?: number;
   }): Observable<KeysetPage<GuestListItemDto>> {
@@ -68,6 +75,11 @@ export class GuestsApiService {
     if (opts.cmhw) params = params.set('cmhw', opts.cmhw);
     if (opts.lastActivityDays) params = params.set('lastActivityDays', opts.lastActivityDays);
     if (opts.urgent !== undefined) params = params.set('urgent', opts.urgent);
+    if (opts.ethnicity) params = params.set('ethnicity', opts.ethnicity);
+    if (opts.gender) params = params.set('gender', opts.gender);
+    if (opts.countryOfOrigin) params = params.set('countryOfOrigin', opts.countryOfOrigin);
+    if (opts.ageMin !== undefined) params = params.set('ageMin', opts.ageMin);
+    if (opts.ageMax !== undefined) params = params.set('ageMax', opts.ageMax);
     if (opts.cursor) params = params.set('cursor', opts.cursor);
     if (opts.pageSize) params = params.set('pageSize', opts.pageSize);
     return this.http.get<KeysetPage<GuestListItemDto>>(this.base, { params });

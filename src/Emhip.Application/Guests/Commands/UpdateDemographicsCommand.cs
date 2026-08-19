@@ -16,6 +16,7 @@ public sealed record UpdateDemographicsCommand(
     string? EmploymentStatus,
     string? MaritalStatus,
     string? LivingGroup,
+    string? CountryOfOrigin,
     string? EmergencyContactName,
     string? EmergencyContactPhone,
     string? EmergencyContactRelationship,
@@ -47,7 +48,7 @@ public sealed class UpdateDemographicsCommandHandler(IAppDbContext db) : IReques
 
         demographics.Update(
             request.Ethnicity, request.Nationality, request.PreferredLanguage, request.InterpreterNeeded,
-            request.HousingStatus, request.EmploymentStatus, request.MaritalStatus, request.LivingGroup,
+            request.HousingStatus, request.EmploymentStatus, request.MaritalStatus, request.LivingGroup, request.CountryOfOrigin,
             request.EmergencyContactName, request.EmergencyContactPhone, request.EmergencyContactRelationship,
             request.GpName, request.GpPractice, request.NhsNumber);
 

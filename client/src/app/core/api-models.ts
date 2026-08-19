@@ -118,6 +118,8 @@ export interface GuestDemographicsDto {
   employmentStatus: string | null;
   maritalStatus?: string | null;
   livingGroup?: string | null;
+  /** Reported separately from nationality; drives the demographics filters. */
+  countryOfOrigin?: string | null;
   emergencyContactName: string | null;
   emergencyContactPhone: string | null;
   emergencyContactRelationship: string | null;
@@ -493,6 +495,8 @@ export interface UpdateDemographicsRequest {
   employmentStatus?: string | null;
   maritalStatus?: string | null;
   livingGroup?: string | null;
+  /** Reported separately from nationality; drives the demographics filters. */
+  countryOfOrigin?: string | null;
   emergencyContactName?: string | null;
   emergencyContactPhone?: string | null;
   emergencyContactRelationship?: string | null;
@@ -1021,3 +1025,18 @@ export interface ImportResultDto {
   errors: ImportRowError[];
   succeeded: boolean;
 }
+
+// ---- Guest Report "Additional filters" ----
+
+/** Age bands offered by the Guest Report filter drawer; mapped to ageMin/ageMax on the query. */
+export const AGE_BANDS = [
+  { label: 'Under 18', ageMin: undefined, ageMax: 17 },
+  { label: '18–24', ageMin: 18, ageMax: 24 },
+  { label: '25–34', ageMin: 25, ageMax: 34 },
+  { label: '35–44', ageMin: 35, ageMax: 44 },
+  { label: '45–54', ageMin: 45, ageMax: 54 },
+  { label: '55–64', ageMin: 55, ageMax: 64 },
+  { label: '65 and over', ageMin: 65, ageMax: undefined },
+] as const;
+
+export type AgeBandLabel = (typeof AGE_BANDS)[number]['label'];

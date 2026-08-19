@@ -40,6 +40,7 @@
             </div>
             <div class="field-grid">
               <div class="field"><span class="field__label">Nationality</span><span class="field__value">{{ d.nationality || '—' }}</span></div>
+              <div class="field"><span class="field__label">Country of origin</span><span class="field__value">{{ d.countryOfOrigin || '—' }}</span></div>
               <div class="field"><span class="field__label">Preferred language</span><span class="field__value">{{ d.preferredLanguage || '—' }}</span></div>
               <div class="field"><span class="field__label">Interpreter needed</span><span class="field__value">{{ d.interpreterNeeded ? 'Yes' : 'No' }}</span></div>
             </div>
@@ -99,6 +100,19 @@
                 <label class="edit-form__field">
                   <span>Nationality</span>
                   <input type="text" name="nationality" [(ngModel)]="form.nationality" />
+                </label>
+                <label class="edit-form__field">
+                  <!-- Recorded separately from nationality — options from the "CountryOfOrigin" lookup category. -->
+                  <span>Country of origin</span>
+                  <select name="countryOfOrigin" [(ngModel)]="form.countryOfOrigin">
+                    <option [ngValue]="null">Not recorded</option>
+                    @for (option of countryOfOriginChoices(); track option) {
+                      <option [ngValue]="option">{{ option }}</option>
+                    }
+                  </select>
+                  @if (countryOfOriginChoices().length === 0) {
+                    <span class="edit-form__hint">No country of origin options are configured in Settings &rarr; Lookups yet.</span>
+                  }
                 </label>
                 <label class="edit-form__field">
                   <span>Preferred language</span>

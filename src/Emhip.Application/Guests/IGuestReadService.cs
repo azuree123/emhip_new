@@ -14,7 +14,9 @@ public interface IGuestReadService
     Task<KeysetPage<GuestListItemDto>> GetGuestListAsync(
         Guid hubId, string? searchText, GuestStatus? status, string? cursor, int pageSize,
         PathwayCategory? pathway = null, bool? hasRiskFlags = null, Guid? assignedCmhwId = null,
-        int? lastActivityWithinDays = null, bool? urgentOnly = null, CancellationToken cancellationToken = default);
+        int? lastActivityWithinDays = null, bool? urgentOnly = null,
+        string? ethnicity = null, string? gender = null, string? countryOfOrigin = null,
+        int? ageMin = null, int? ageMax = null, CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<CmhwOptionDto>> GetHubCmhwsAsync(Guid hubId, CancellationToken cancellationToken = default);
 

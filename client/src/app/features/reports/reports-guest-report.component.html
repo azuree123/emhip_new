@@ -54,8 +54,150 @@
           <option [value]="opt.value">{{ opt.label }}</option>
         }
       </select>
+
+      <!-- Desktop66's "Filters" button + "Additional Filters" affordance: the red button
+           opens the demographic drawer (ethnicity / age / gender / country of origin). -->
+      <div class="filter-menu">
+        <button
+          type="button"
+          class="btn btn--primary filter-menu__trigger"
+          [class.filter-menu__trigger--open]="drawerOpen()"
+          [attr.aria-expanded]="drawerOpen()"
+          aria-haspopup="dialog"
+          aria-controls="guest-report-filter-drawer"
+          (click)="toggleDrawer()"
+        >
+          <span class="btn__icon" aria-hidden="true">
+            <svg width="17" height="12" viewBox="0 0 16.5 11.5" fill="none">
+              <path
+                d="M 9.75 10 C 10.164 10 10.5 10.336 10.5 10.75 C 10.5 11.164 10.164 11.5 9.75 11.5 L 6.75 11.5 C 6.336 11.5 6 11.164 6 10.75 C 6 10.336 6.336 10 6.75 10 L 9.75 10 Z M 12.75 5 C 13.164 5 13.5 5.336 13.5 5.75 C 13.5 6.164 13.164 6.5 12.75 6.5 L 3.75 6.5 C 3.336 6.5 3 6.164 3 5.75 C 3 5.336 3.336 5 3.75 5 L 12.75 5 Z M 15.75 0 C 16.164 0 16.5 0.336 16.5 0.75 C 16.5 1.164 16.164 1.5 15.75 1.5 L 0.75 1.5 C 0.336 1.5 0 1.164 0 0.75 C 0 0.336 0.336 0 0.75 0 L 15.75 0 Z"
+                fill="currentColor"
+                fill-rule="nonzero"
+              />
+            </svg>
+          </span>
+          Filters
+          @if (activeFilterCount() > 0) {
+            <span class="filter-menu__badge" aria-label="{{ activeFilterCount() }} additional filters applied">
+              {{ activeFilterCount() }}
+            </span>
+          }
+        </button>
+
+        @if (drawerOpen()) {
+          <div
+            #drawerPanel
+            id="guest-report-filter-drawer"
+            class="filter-drawer"
+            role="dialog"
+            aria-modal="false"
+            aria-label="Additional filters"
+          >
+            <div class="filter-drawer__head">
+              <span class="filter-drawer__title">Additional Filters</span>
+              <button type="button" class="filter-drawer__close" aria-label="Close additional filters" (click)="closeDrawer()">
+                <svg width="11" height="11" viewBox="0 0 10 10" fill="none" aria-hidden="true">
+                  <path d="M 1 1 L 9 9 M 9 1 L 1 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                </svg>
+              </button>
+            </div>
+
+            <label class="filter-drawer__field">
+              <span class="filter-drawer__label">Ethnicity</span>
+              <!-- The drawer is created with its drafts already set, and a <select>'s [value]
+                   binding runs before its @for options exist — so the selection is expressed
+                   per-option with [selected] instead. -->
+              <select
+                class="pill-select filter-drawer__select"
+                [disabled]="ethnicityState() !== 'ready'"
+                (change)="onDraftChange('ethnicity', $event)"
+              >
+                <option value="" [selected]="!draftEthnicity()">All ethnicities</option>
+                @for (opt of ethnicityOptions(); track opt.id) {
+                  <option [value]="opt.label" [selected]="opt.label === draftEthnicity()">{{ opt.label }}</option>
+                }
+              </select>
+              @if (lookupHint(ethnicityState()); as hint) {
+                <span class="filter-drawer__hint">{{ hint }}</span>
+              }
+            </label>
+
+            <label class="filter-drawer__field">
+              <span class="filter-drawer__label">Age group</span>
+              <select class="pill-select filter-drawer__select" (change)="onDraftChange('ageBand', $event)">
+                <option value="" [selected]="!draftAgeBand()">All ages</option>
+                @for (band of ageBands; track band.label) {
+                  <option [value]="band.label" [selected]="band.label === draftAgeBand()">{{ band.label }}</option>
+                }
+              </select>
+            </label>
+
+            <label class="filter-drawer__field">
+              <span class="filter-drawer__label">Gender</span>
+              <select
+                class="pill-select filter-drawer__select"
+                [disabled]="genderState() !== 'ready'"
+                (change)="onDraftChange('gender', $event)"
+              >
+                <option value="" [selected]="!draftGender()">All genders</option>
+                @for (opt of genderOptions(); track opt.id) {
+                  <option [value]="opt.label" [selected]="opt.label === draftGender()">{{ opt.label }}</option>
+                }
+              </select>
+              @if (lookupHint(genderState()); as hint) {
+                <span class="filter-drawer__hint">{{ hint }}</span>
+              }
+            </label>
+
+            <label class="filter-drawer__field">
+              <span class="filter-drawer__label">Country of origin</span>
+              <select
+                class="pill-select filter-drawer__select"
+                [disabled]="countryState() !== 'ready'"
+                (change)="onDraftChange('countryOfOrigin', $event)"
+              >
+                <option value="" [selected]="!draftCountryOfOrigin()">All countries</option>
+                @for (opt of countryOptions(); track opt.id) {
+                  <option [value]="opt.label" [selected]="opt.label === draftCountryOfOrigin()">{{ opt.label }}</option>
+                }
+              </select>
+              @if (lookupHint(countryState()); as hint) {
+                <span class="filter-drawer__hint">{{ hint }}</span>
+              }
+            </label>
+
+            <div class="filter-drawer__actions">
+              <button type="button" class="btn btn--secondary" (click)="clearDemographics()">Clear all</button>
+              <button type="button" class="btn btn--primary" (click)="applyDrawer()">Apply</button>
+            </div>
+          </div>
+        }
+      </div>
     </div>
   </div>
+
+  <!-- Applied demographic filters stay visible as removable chips once the drawer closes. -->
+  @if (activeChips().length > 0) {
+    <div class="chip-row">
+      @for (chip of activeChips(); track chip.key) {
+        <span class="chip">
+          <span class="chip__caption">{{ chip.caption }}:</span>
+          <span class="chip__value">{{ chip.value }}</span>
+          <button
+            type="button"
+            class="chip__remove"
+            [attr.aria-label]="'Remove ' + chip.caption + ' filter'"
+            (click)="removeChip(chip.key)"
+          >
+            <svg width="9" height="9" viewBox="0 0 10 10" fill="none" aria-hidden="true">
+              <path d="M 1 1 L 9 9 M 9 1 L 1 9" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+            </svg>
+          </button>
+        </span>
+      }
+      <button type="button" class="chip-row__clear" (click)="clearDemographics()">Clear all</button>
+    </div>
+  }
 
   @if (error()) {
     <div class="error-banner guest-report__error">Couldn't load the guest list — {{ error() }}</div>
@@ -111,10 +253,16 @@
 
     <!-- Keyset paging: the endpoint returns no total count, so no numbered pages. -->
     <div class="guest-report__footer">
+      <!-- The server returns totalCount for the applied filters on the first page, so the
+           count reflects every filter including the drawer's demographics. -->
       <span class="guest-report__count">
-        Showing {{ items().length }} guest{{ items().length === 1 ? '' : 's' }} — page {{ pageIndex() + 1 }}
-        @if (hasMore()) {
-          · more available
+        @if (totalCount() !== null) {
+          Showing {{ rangeStart() }} to {{ rangeEnd() }} of {{ totalCount() }} entries
+        } @else {
+          Showing {{ items().length }} guest{{ items().length === 1 ? '' : 's' }} — page {{ pageIndex() + 1 }}
+          @if (hasMore()) {
+            · more available
+          }
         }
       </span>
       <div class="pager">

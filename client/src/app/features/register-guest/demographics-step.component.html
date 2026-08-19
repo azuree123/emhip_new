@@ -202,6 +202,24 @@
         <input class="field__input" type="text" formControlName="nationality" placeholder="British" />
       </label>
     </div>
+
+    <div class="field-row">
+      <label class="field">
+        <!-- Recorded separately from nationality (the demographics reports filter on it) —
+             UpdateDemographicsRequest.countryOfOrigin, options from the "CountryOfOrigin"
+             lookup category. -->
+        <span class="field__label">Country of origin</span>
+        <select class="field__select" formControlName="countryOfOrigin">
+          <option value="">Select country of origin</option>
+          @for (option of countryOfOriginOptions(); track option.id) {
+            <option [value]="option.label">{{ option.label }}</option>
+          }
+        </select>
+        @if (countryOfOriginOptions().length === 0) {
+          <span class="field__hint">No country of origin options are configured in Settings &rarr; Lookups yet.</span>
+        }
+      </label>
+    </div>
   </section>
 
   <!-- Additional details (functional addition — carries the remaining demographics fields) -->

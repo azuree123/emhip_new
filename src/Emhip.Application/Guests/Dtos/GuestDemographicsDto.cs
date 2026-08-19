@@ -8,6 +8,10 @@ public sealed record GuestDemographicsDto(
     bool InterpreterNeeded,
     string? HousingStatus,
     string? EmploymentStatus,
+    string? MaritalStatus,
+    string? LivingGroup,
+    /// <summary>Reported separately from nationality — drives the demographics breakdowns and filters.</summary>
+    string? CountryOfOrigin,
     string? EmergencyContactName,
     string? EmergencyContactPhone,
     string? EmergencyContactRelationship,
