@@ -160,14 +160,7 @@ public sealed class GuestReadService(ISqlConnectionFactory connectionFactory, Em
                     AND (@Status IS NULL OR g.Status = @Status)
                     AND (@SearchPattern IS NULL OR g.FirstName LIKE @SearchPattern OR g.LastName LIKE @SearchPattern)
                     AND (@AssignedCmhwId IS NULL OR g.AssignedCmhwId = @AssignedCmhwId)
-                    AND (@UrgentOnly IS NULL OR g.IsUrgent = @UrgentOnly)
-                AND (@Ethnicity IS NULL OR gd.Ethnicity = @Ethnicity)
-                AND (@CountryOfOrigin IS NULL OR gd.CountryOfOrigin = @CountryOfOrigin)
-                AND (@Gender IS NULL OR g.Gender = @Gender)
-                -- Age is derived from the date of birth rather than stored, so the band filter
-                -- compares against the birth-date window the band implies.
-                AND (@BornOnOrBefore IS NULL OR g.DateOfBirth <= @BornOnOrBefore)
-                AND (@BornOnOrAfter IS NULL OR g.DateOfBirth >= @BornOnOrAfter){predicates}
+                    AND (@UrgentOnly IS NULL OR g.IsUrgent = @UrgentOnly){predicates}
                 """;
             totalCount = await connection.ExecuteScalarAsync<int>(countSql, new
             {
