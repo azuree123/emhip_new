@@ -92,8 +92,9 @@ public sealed class GuestReadService(ISqlConnectionFactory connectionFactory, Em
             CountryOfOrigin = countryOfOrigin,
             Gender = gender,
             // ageMin 35 => born on or before today-35y; ageMax 44 => born on or after today-45y+1d.
-            BornOnOrBefore = ageMin.HasValue ? DateOnly.FromDateTime(DateTime.UtcNow).AddYears(-ageMin.Value) : (DateOnly?)null,
-            BornOnOrAfter = ageMax.HasValue ? DateOnly.FromDateTime(DateTime.UtcNow).AddYears(-(ageMax.Value + 1)).AddDays(1) : (DateOnly?)null,
+            // Passed as DateTime because Dapper has no DateOnly parameter mapping.
+            BornOnOrBefore = ageMin.HasValue ? DateTime.UtcNow.Date.AddYears(-ageMin.Value) : (DateTime?)null,
+            BornOnOrAfter = ageMax.HasValue ? DateTime.UtcNow.Date.AddYears(-(ageMax.Value + 1)).AddDays(1) : (DateTime?)null,
             UrgentOnly = urgentOnly,
             LastContactAfter = lastActivityWithinDays.HasValue
                 ? (DateTimeOffset?)DateTimeOffset.UtcNow.AddDays(-lastActivityWithinDays.Value)
@@ -180,8 +181,9 @@ public sealed class GuestReadService(ISqlConnectionFactory connectionFactory, Em
                 CountryOfOrigin = countryOfOrigin,
                 Gender = gender,
                 // ageMin 35 => born on or before today-35y; ageMax 44 => born on or after today-45y+1d.
-                BornOnOrBefore = ageMin.HasValue ? DateOnly.FromDateTime(DateTime.UtcNow).AddYears(-ageMin.Value) : (DateOnly?)null,
-                BornOnOrAfter = ageMax.HasValue ? DateOnly.FromDateTime(DateTime.UtcNow).AddYears(-(ageMax.Value + 1)).AddDays(1) : (DateOnly?)null,
+                // Passed as DateTime because Dapper has no DateOnly parameter mapping.
+                BornOnOrBefore = ageMin.HasValue ? DateTime.UtcNow.Date.AddYears(-ageMin.Value) : (DateTime?)null,
+                BornOnOrAfter = ageMax.HasValue ? DateTime.UtcNow.Date.AddYears(-(ageMax.Value + 1)).AddDays(1) : (DateTime?)null,
                 UrgentOnly = urgentOnly,
                 LastContactAfter = lastActivityWithinDays.HasValue
                     ? (DateTimeOffset?)DateTimeOffset.UtcNow.AddDays(-lastActivityWithinDays.Value)
