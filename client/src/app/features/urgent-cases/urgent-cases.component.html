@@ -256,10 +256,13 @@
           <span>Due date</span>
           <input type="datetime-local" [(ngModel)]="scheduleForm.dueDate" />
         </label>
-        <label class="field">
-          <span>Assignee staff ID</span>
-          <input type="text" [(ngModel)]="scheduleForm.assigneeStaffId" />
-        </label>
+        <div class="field">
+          <span>Assignee</span>
+          <emhip-staff-picker
+            name="assigneeStaffId"
+            [(ngModel)]="scheduleForm.assigneeStaffId"
+            placeholder="Select an assignee" />
+        </div>
         <label class="field">
           <span>Notes</span>
           <textarea rows="3" [(ngModel)]="scheduleForm.notes"></textarea>

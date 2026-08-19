@@ -746,3 +746,37 @@ export interface UpdateLookupRequest {
   sortOrder: number;
   isActive: boolean;
 }
+
+// ---- Email templates ----
+
+export interface EmailTemplateDto {
+  key: string;
+  name: string;
+  description: string;
+  subject: string;
+  htmlBody: string;
+  textBody: string | null;
+  /** Disabled templates are skipped by their trigger; the underlying action still succeeds. */
+  isEnabled: boolean;
+  updatedAt: string;
+  /** Placeholder names usable as {{token}} in the subject and body. */
+  tokens: string[];
+}
+
+export interface UpdateEmailTemplateRequest {
+  subject: string;
+  htmlBody: string;
+  textBody?: string | null;
+  isEnabled: boolean;
+}
+
+export interface EmailPreviewDto {
+  subject: string;
+  htmlBody: string;
+  textBody: string;
+}
+
+export interface EmailTestResultDto {
+  success: boolean;
+  message: string;
+}

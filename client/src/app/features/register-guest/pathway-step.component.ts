@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
 import { FormGroup, ReactiveFormsModule } from '@angular/forms';
-import { CmhwOptionDto, GuestPathway } from '../../core/api-models';
+import { GuestPathway } from '../../core/api-models';
+import { StaffPickerComponent } from '../../shared/staff-picker.component';
 
 /** The three pathway cards of Desktop81, keyed by the GuestPathway enum (core/api-models.ts). */
 export const PATHWAY_OPTIONS: { value: GuestPathway; title: string; description: string }[] = [
@@ -33,19 +34,19 @@ export const PATHWAY_OPTIONS: { value: GuestPathway; title: string; description:
  * cadence, assigned to that CMHW); with no CMHW selected it stays notes-only, since the
  * endpoint requires an assignee. The "Assigned CMHW" dropdown is not drawn on Desktop81 but
  * is a real AllocateGuestRequest field (and the Desktop87 review card shows "Assigned CMHW"),
- * so it is added here in the same field styling, fed by GET /guests/cmhws.
+ * so it is added here as the shared searchable staff picker, which sources the hub's staff
+ * list from the cached StaffDirectoryService (GET /guests/cmhws).
  */
 @Component({
   selector: 'app-pathway-step',
   standalone: true,
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, StaffPickerComponent],
   templateUrl: './pathway-step.component.html',
   styleUrls: ['./pathway-step.component.scss', './_form-shared.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PathwayStepComponent {
   @Input({ required: true }) form!: FormGroup;
-  @Input({ required: true }) cmhwOptions: CmhwOptionDto[] = [];
 
   protected readonly pathways = PATHWAY_OPTIONS;
   protected readonly cadenceOptions = [

@@ -1,8 +1,9 @@
 import { Component, EventEmitter, Output, computed, effect, inject, input, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { CmhwOptionDto, FollowUpItemDto, GuestFollowUpsDto, ScheduleFollowUpRequest } from '../../core/api-models';
+import { FollowUpItemDto, GuestFollowUpsDto, ScheduleFollowUpRequest } from '../../core/api-models';
 import { AuthService } from '../../core/auth.service';
 import { GuestsApiService } from '../../core/guests-api.service';
+import { StaffPickerComponent } from '../../shared/staff-picker.component';
 import { followUpStatusChip, formatDate, formatDateTime } from './guest-workspace.util';
 
 /**
@@ -16,7 +17,7 @@ import { followUpStatusChip, formatDate, formatDateTime } from './guest-workspac
 @Component({
   selector: 'app-guest-followup-tab',
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule, StaffPickerComponent],
   templateUrl: './guest-followup-tab.component.html',
   styleUrl: './guest-followup-tab.component.scss',
 })
@@ -28,7 +29,6 @@ export class GuestFollowUpTabComponent {
   @Output() readonly refresh = new EventEmitter<void>();
 
   readonly followUps = signal<GuestFollowUpsDto | null>(null);
-  readonly cmhwOptions = signal<CmhwOptionDto[]>([]);
   readonly loading = signal(true);
   readonly error = signal<string | null>(null);
 
@@ -66,10 +66,6 @@ export class GuestFollowUpTabComponent {
       let cancelled = false;
       onCleanup(() => (cancelled = true));
       this.load(id, () => cancelled);
-    });
-    this.guestsApi.getCmhwOptions().subscribe({
-      next: (options) => this.cmhwOptions.set(options),
-      error: () => this.cmhwOptions.set([]),
     });
   }
 

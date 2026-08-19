@@ -14,6 +14,8 @@ import {
 import { FollowUpsApiService } from '../../core/follow-ups-api.service';
 import { GuestsApiService } from '../../core/guests-api.service';
 import { IconComponent } from '../../design-system/icon.component';
+import { GuestPickerComponent } from '../../shared/guest-picker.component';
+import { StaffPickerComponent } from '../../shared/staff-picker.component';
 
 const PAGE_SIZE = 5;
 
@@ -40,7 +42,7 @@ type DateRangeFilter = '' | 'today' | 'week' | 'month';
 @Component({
   selector: 'app-follow-ups',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, IconComponent],
+  imports: [CommonModule, FormsModule, RouterLink, IconComponent, StaffPickerComponent, GuestPickerComponent],
   templateUrl: './follow-ups.component.html',
   styleUrl: './follow-ups.component.scss',
 })
@@ -245,7 +247,9 @@ export class FollowUpsComponent implements OnInit {
     this.loadFirstPage();
   }
 
-  applyAssigneeFilter(): void {
+  /** Assignee filter — the picker yields a staff id, which is what GET /followups?assignee= expects. */
+  setAssigneeFilter(staffId: string | null): void {
+    this.assigneeFilter.set(staffId ?? '');
     this.loadFirstPage();
   }
 
@@ -289,7 +293,7 @@ export class FollowUpsComponent implements OnInit {
   submitModal(): void {
     const guestId = this.modalGuestId().trim();
     if (!guestId) {
-      this.saveError.set('Guest ID is required.');
+      this.saveError.set('Select a guest.');
       return;
     }
     this.saving.set(true);

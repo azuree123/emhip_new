@@ -251,7 +251,6 @@
   }
 }
 
-.filter-input,
 .filter-select {
   height: 36px;
   border: none;
@@ -271,13 +270,10 @@
   }
 }
 
-.filter-input {
-  width: 128px;
-
-  &::placeholder {
-    color: rgb(42, 42, 42);
-    opacity: 1;
-  }
+// The assignee filter is a staff picker (it carries its own control styling); the page only
+// fixes its width so the filter row keeps the original rhythm.
+.filter-picker {
+  width: 168px;
 }
 
 .filter-select {

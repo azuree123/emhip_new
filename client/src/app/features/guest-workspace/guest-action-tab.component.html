@@ -26,15 +26,10 @@
               <span>Due date</span>
               <input type="date" name="dueDate" [(ngModel)]="form.dueDate" />
             </label>
-            <label class="edit-form__field">
+            <div class="edit-form__field">
               <span>Assigned to</span>
-              <select name="assignedToStaffId" [(ngModel)]="form.assignedToStaffId">
-                <option [ngValue]="null">Unassigned</option>
-                @for (option of cmhwOptions(); track option.id) {
-                  <option [ngValue]="option.id">{{ option.displayName }}</option>
-                }
-              </select>
-            </label>
+              <emhip-staff-picker name="assignedToStaffId" [(ngModel)]="form.assignedToStaffId" placeholder="Unassigned" />
+            </div>
           </div>
           @if (submitError()) {
             <p class="form-error">{{ submitError() }}</p>

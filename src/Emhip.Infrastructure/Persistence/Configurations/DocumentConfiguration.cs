@@ -56,6 +56,20 @@ public class AppSettingConfiguration : IEntityTypeConfiguration<AppSetting>
     }
 }
 
+public class EmailTemplateConfiguration : IEntityTypeConfiguration<EmailTemplate>
+{
+    public void Configure(EntityTypeBuilder<EmailTemplate> builder)
+    {
+        builder.ToTable("EmailTemplates");
+        builder.HasKey(t => t.Id);
+        builder.HasIndex(t => t.Key).IsUnique();
+        builder.Property(t => t.Key).HasMaxLength(80).IsRequired();
+        builder.Property(t => t.Name).HasMaxLength(150).IsRequired();
+        builder.Property(t => t.Subject).HasMaxLength(300).IsRequired();
+        builder.Property(t => t.HtmlBody).IsRequired();
+    }
+}
+
 public class LookupItemConfiguration : IEntityTypeConfiguration<LookupItem>
 {
     public void Configure(EntityTypeBuilder<LookupItem> builder)

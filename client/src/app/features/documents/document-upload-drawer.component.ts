@@ -1,18 +1,13 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, output, signal } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { Subject, of } from 'rxjs';
-import { catchError, debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
+import { FormsModule } from '@angular/forms';
 
-import { GuestSuggestionDto, LookupItemDto } from '../../core/api-models';
+import { LookupItemDto } from '../../core/api-models';
 import { AuthService } from '../../core/auth.service';
 import { DocumentsApiService, documentErrorMessage } from '../../core/documents-api.service';
-import { GuestsApiService } from '../../core/guests-api.service';
 import { Permissions } from '../../core/permissions';
 import { IconComponent } from '../../design-system/icon.component';
+import { GuestPickerComponent } from '../../shared/guest-picker.component';
 import { fileExtension, formatBytes } from './documents.util';
-
-/** How long to wait after typing before asking the API for guest suggestions. */
-const GUEST_SEARCH_DEBOUNCE_MS = 250;
 
 /**
  * "Upload document" drawer — the single entry point for adding a document to the register.
@@ -27,14 +22,13 @@ const GUEST_SEARCH_DEBOUNCE_MS = 250;
 @Component({
   selector: 'app-document-upload-drawer',
   standalone: true,
-  imports: [IconComponent],
+  imports: [IconComponent, FormsModule, GuestPickerComponent],
   templateUrl: './document-upload-drawer.component.html',
   styleUrl: './document-upload-drawer.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DocumentUploadDrawerComponent {
   private readonly documentsApi = inject(DocumentsApiService);
-  private readonly guestsApi = inject(GuestsApiService);
   private readonly auth = inject(AuthService);
 
   /** DocumentCategory lookups, already loaded by the parent screen. */
@@ -57,7 +51,8 @@ export class DocumentUploadDrawerComponent {
   protected readonly tags = signal<string[]>([]);
   protected readonly tagDraft = signal('');
   protected readonly retainUntil = signal('');
-  protected readonly guest = signal<GuestSuggestionDto | null>(null);
+  /** Optional guest link — the shared picker's value, null when no guest is linked. */
+  protected readonly guestId = signal<string | null>(null);
 
   // ---- Drag & drop / request state ---------------------------------------
 
@@ -72,10 +67,6 @@ export class DocumentUploadDrawerComponent {
 
   /** The picker is pointless (and would 403) without permission to read guests. */
   protected readonly canLinkGuest = this.auth.hasPermission(Permissions.Guests.View);
-  protected readonly guestQuery = signal('');
-  protected readonly guestResults = signal<GuestSuggestionDto[]>([]);
-  protected readonly guestSearching = signal(false);
-  private readonly guestQuery$ = new Subject<string>();
 
   protected readonly maxBytes = computed(() => {
     const mb = this.maxUploadMb();
@@ -92,27 +83,6 @@ export class DocumentUploadDrawerComponent {
   protected readonly canSubmit = computed(
     () => !this.busy() && !!this.file() && !!this.title().trim() && !!this.category() && !this.fileError(),
   );
-
-  constructor() {
-    this.guestQuery$
-      .pipe(
-        debounceTime(GUEST_SEARCH_DEBOUNCE_MS),
-        distinctUntilChanged(),
-        switchMap((term) => {
-          if (term.trim().length < 2) {
-            this.guestSearching.set(false);
-            return of([] as GuestSuggestionDto[]);
-          }
-          this.guestSearching.set(true);
-          return this.guestsApi.suggest(term.trim()).pipe(catchError(() => of([] as GuestSuggestionDto[])));
-        }),
-        takeUntilDestroyed(),
-      )
-      .subscribe((results) => {
-        this.guestSearching.set(false);
-        this.guestResults.set(results);
-      });
-  }
 
   // ---- File selection -----------------------------------------------------
 
@@ -209,22 +179,9 @@ export class DocumentUploadDrawerComponent {
 
   // ---- Guest link ---------------------------------------------------------
 
-  protected onGuestQuery(event: Event): void {
-    const value = (event.target as HTMLInputElement).value;
-    this.guestQuery.set(value);
-    this.guestQuery$.next(value);
-  }
-
-  protected selectGuest(suggestion: GuestSuggestionDto): void {
-    this.guest.set(suggestion);
-    this.guestQuery.set('');
-    this.guestResults.set([]);
-  }
-
-  protected clearGuest(): void {
-    this.guest.set(null);
-    this.guestQuery.set('');
-    this.guestResults.set([]);
+  /** Fed by the shared guest picker; null (its cleared state) files this as a hub document. */
+  protected onGuestChange(guestId: string | null): void {
+    this.guestId.set(guestId);
   }
 
   // ---- Plain text inputs --------------------------------------------------
@@ -266,7 +223,7 @@ export class DocumentUploadDrawerComponent {
         file,
         title: this.title().trim(),
         category: this.category(),
-        guestId: this.guest()?.id ?? null,
+        guestId: this.guestId(),
         description: this.description().trim() || null,
         tags: this.tags().length ? this.tags().join(', ') : null,
         retainUntil: this.retainUntil() || null,

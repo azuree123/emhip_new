@@ -1,12 +1,13 @@
 import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, inject, input, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import {
-  CmhwOptionDto,
   GuestListItemDto,
   GuestStatus,
   PathwayCategory,
 } from '../../core/api-models';
 import { GuestsApiService } from '../../core/guests-api.service';
+import { StaffPickerComponent } from '../../shared/staff-picker.component';
 import { CATEGORY_META, STATUS_META, pathwayCategoryLabel, shortDay } from './report-meta';
 
 const PAGE_SIZE = 10;
@@ -21,7 +22,7 @@ const PAGE_SIZE = 10;
 @Component({
   selector: 'app-reports-guest-report',
   standalone: true,
-  imports: [RouterLink],
+  imports: [RouterLink, FormsModule, StaffPickerComponent],
   templateUrl: './reports-guest-report.component.html',
   styleUrl: './reports-guest-report.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -56,8 +57,6 @@ export class ReportsGuestReportComponent implements OnInit, OnDestroy {
   readonly cmhw = signal('');
   readonly lastActivityDays = signal('');
 
-  readonly cmhwOptions = signal<CmhwOptionDto[]>([]);
-
   readonly items = signal<GuestListItemDto[]>([]);
   readonly loading = signal(false);
   readonly error = signal<string | null>(null);
@@ -70,11 +69,9 @@ export class ReportsGuestReportComponent implements OnInit, OnDestroy {
   private searchTimer: ReturnType<typeof setTimeout> | undefined;
 
   ngOnInit(): void {
+    // The Caseload drill-down hands over a staff id; the shared picker resolves it to that
+    // person's name from the cached staff directory, so no options are fetched here.
     if (this.initialCmhw()) this.cmhw.set(this.initialCmhw());
-    this.guestsApi.getCmhwOptions().subscribe({
-      next: (options) => this.cmhwOptions.set(options),
-      error: () => this.cmhwOptions.set([]),
-    });
     this.load();
   }
 
@@ -98,8 +95,9 @@ export class ReportsGuestReportComponent implements OnInit, OnDestroy {
     this.resetAndLoad();
   }
 
-  onCmhwChange(event: Event): void {
-    this.cmhw.set((event.target as HTMLSelectElement).value);
+  /** The staff picker emits null when cleared, which is the "All CMHW" state. */
+  onCmhwChange(staffId: string | null): void {
+    this.cmhw.set(staffId ?? '');
     this.resetAndLoad();
   }
 

@@ -1,10 +1,13 @@
 using Emhip.Application.Abstractions;
+using Emhip.Application.Emails;
+using Emhip.Application.Settings;
 using Emhip.Application.UrgentCases;
 using Emhip.Domain.Events;
 using Emhip.Infrastructure.Persistence;
 using Emhip.Infrastructure.ReadModels;
 using Emhip.Workers.Outbox;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -80,6 +83,61 @@ public sealed class EscalationWorker(IServiceScopeFactory scopeFactory, IOutboxE
             readModel.AssignedCmhwName, readModel.EscalatedAt);
 
         await notifier.NotifyUrgentCaseAsync(readModel.HubId, dto, cancellationToken);
+        await SendUrgentEmailAsync(scope, db, guest, readModel, cancellationToken);
+    }
+
+    /// <summary>
+    /// Emails the assigned worker that their guest has been escalated. Entirely best-effort:
+    /// the read model and SignalR push have already happened, and a mail failure must not
+    /// retry or undo them.
+    /// </summary>
+    private async Task SendUrgentEmailAsync(
+        IServiceScope scope, EmhipDbContext db, Domain.Entities.Guest guest,
+        UrgentCaseReadModel readModel, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var settings = scope.ServiceProvider.GetRequiredService<IAppSettingsService>();
+            if (!await settings.GetBoolAsync(SettingsCatalog.Keys.NotifyUrgentCase, true, cancellationToken)) return;
+            if (guest.AssignedCmhwId is null) return;
+
+            var recipient = await db.Users.AsNoTracking()
+                .Where(u => u.Id == guest.AssignedCmhwId && u.IsActive)
+                .Select(u => new { u.Email, u.DisplayName })
+                .FirstOrDefaultAsync(cancellationToken);
+
+            if (recipient?.Email is null) return;
+
+            var flags = new List<string>();
+            if (readModel.SuicidalIdeation) flags.Add("Suicidal ideation");
+            if (readModel.SelfHarm) flags.Add("Self-harm");
+            if (readModel.RiskToOthers) flags.Add("Risk to others");
+            if (readModel.SevereDeterioration) flags.Add("Severe deterioration");
+            if (readModel.SafeguardingConcern) flags.Add("Safeguarding concern");
+
+            var portalUrl = scope.ServiceProvider.GetRequiredService<IConfiguration>()["Frontend:BaseUrl"] ?? string.Empty;
+            var emailService = scope.ServiceProvider.GetRequiredService<IEmailService>();
+
+            await emailService.SendTemplateAsync(
+                EmailTemplateCatalog.Keys.UrgentCaseRaised,
+                recipient.Email,
+                new Dictionary<string, string?>
+                {
+                    ["recipientName"] = recipient.DisplayName,
+                    ["guestName"] = readModel.GuestName,
+                    ["guestReference"] = $"G-{guest.GuestNumber}",
+                    ["riskFlags"] = flags.Count > 0 ? string.Join(", ", flags) : "Risk flag raised",
+                    ["raisedAt"] = readModel.EscalatedAt.ToString("dd MMM yyyy HH:mm"),
+                    ["guestUrl"] = $"{portalUrl}/guests/{guest.Id}",
+                    ["responseHours"] = (await settings.GetIntAsync(SettingsCatalog.Keys.UrgentResponseHours, 72, cancellationToken)).ToString(),
+                },
+                recipient.DisplayName,
+                cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Urgent-case email failed for guest {GuestId}", guest.Id);
+        }
     }
 
     private async Task HandleResolvedAsync(UrgentCaseResolvedEvent evt, CancellationToken cancellationToken)

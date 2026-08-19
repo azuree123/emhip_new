@@ -5,6 +5,7 @@ using Emhip.Application.FollowUps;
 using Emhip.Application.Guests;
 using Emhip.Application.Reports;
 using Emhip.Application.UrgentCases;
+using Emhip.Infrastructure.Email;
 using Emhip.Infrastructure.Persistence;
 using Emhip.Infrastructure.Persistence.Interceptors;
 using Emhip.Infrastructure.Reads;
@@ -54,6 +55,11 @@ public static class DependencyInjection
         services.AddScoped<IAppSettingsService, AppSettingsService>();
         services.AddSingleton<DocumentStorageClientCache>();
         services.AddScoped<IDocumentStorageFactory, DocumentStorageFactory>();
+
+        // Transactional email — provider (SMTP/SES/Mailgun) resolved from settings at send time.
+        services.AddHttpClient("mailgun");
+        services.AddScoped<IEmailProviderFactory, EmailProviderFactory>();
+        services.AddScoped<IEmailService, EmailService>();
 
         return services;
     }

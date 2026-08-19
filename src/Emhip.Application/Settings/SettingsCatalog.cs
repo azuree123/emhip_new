@@ -55,9 +55,30 @@ public static class SettingsCatalog
         public const string DialogReviewWeeks = "clinical.dialogReviewWeeks";
 
         public const string GuestListPageSize = "ui.guestListPageSize";
+
+        public const string EmailProvider = "email.provider";
+        public const string EmailFromAddress = "email.fromAddress";
+        public const string EmailFromName = "email.fromName";
+        public const string EmailReplyTo = "email.replyTo";
+        public const string SmtpHost = "email.smtp.host";
+        public const string SmtpPort = "email.smtp.port";
+        public const string SmtpUsername = "email.smtp.username";
+        public const string SmtpPassword = "email.smtp.password";
+        public const string SmtpSecurity = "email.smtp.security";
+        public const string SesRegion = "email.ses.region";
+        public const string SesAccessKey = "email.ses.accessKey";
+        public const string SesSecretKey = "email.ses.secretKey";
+        public const string MailgunDomain = "email.mailgun.domain";
+        public const string MailgunApiKey = "email.mailgun.apiKey";
+        public const string MailgunRegion = "email.mailgun.region";
+        public const string NotifyUrgentCase = "email.notifyOnUrgentCase";
+        public const string NotifyOverdueFollowUps = "email.notifyOnOverdueFollowUps";
     }
 
     private const string StorageSection = "Document storage";
+    private const string EmailSection = "Email";
+
+    private static readonly string[] EmailProviders = ["Smtp", "AwsSes", "Mailgun"];
 
     private static readonly IReadOnlyList<SettingOption> ProviderOptions =
     [
@@ -109,6 +130,43 @@ public static class SettingsCatalog
         new(Keys.DialogReviewWeeks, "Clinical", "DIALOG review interval (weeks)", "Used to suggest when the next DIALOG assessment is due.", SettingKind.Number, "12"),
 
         new(Keys.GuestListPageSize, "Interface", "Guest list page size", "Rows fetched per page in the guest list.", SettingKind.Number, "50"),
+
+        new(Keys.EmailProvider, EmailSection, "Email provider", "How transactional email is delivered. \"Not configured\" logs messages instead of sending them.", SettingKind.Select, "None",
+            [new("None", "Not configured (log only)"), new("Smtp", "SMTP server"), new("AwsSes", "Amazon SES"), new("Mailgun", "Mailgun")]),
+        new(Keys.EmailFromAddress, EmailSection, "From address", "The address staff will see messages arrive from.", SettingKind.Text, null,
+            VisibleWhenKey: Keys.EmailProvider, VisibleWhenValues: EmailProviders),
+        new(Keys.EmailFromName, EmailSection, "From name", null, SettingKind.Text, "EMHIP Portal",
+            VisibleWhenKey: Keys.EmailProvider, VisibleWhenValues: EmailProviders),
+        new(Keys.EmailReplyTo, EmailSection, "Reply-to address", "Optional — where replies should go if different from the sender.", SettingKind.Text, null,
+            VisibleWhenKey: Keys.EmailProvider, VisibleWhenValues: EmailProviders),
+        new(Keys.SmtpHost, EmailSection, "SMTP host", "e.g. smtp.office365.com", SettingKind.Text, null,
+            VisibleWhenKey: Keys.EmailProvider, VisibleWhenValues: ["Smtp"]),
+        new(Keys.SmtpPort, EmailSection, "SMTP port", "587 for STARTTLS, 465 for implicit SSL, 25 for unencrypted relays.", SettingKind.Number, "587",
+            VisibleWhenKey: Keys.EmailProvider, VisibleWhenValues: ["Smtp"]),
+        new(Keys.SmtpSecurity, EmailSection, "Encryption", null, SettingKind.Select, "StartTls",
+            [new("StartTls", "STARTTLS (recommended)"), new("SslOnConnect", "SSL on connect"), new("None", "None (internal relay)")],
+            VisibleWhenKey: Keys.EmailProvider, VisibleWhenValues: ["Smtp"]),
+        new(Keys.SmtpUsername, EmailSection, "SMTP username", "Leave blank for relays that don't require authentication.", SettingKind.Text, null,
+            VisibleWhenKey: Keys.EmailProvider, VisibleWhenValues: ["Smtp"]),
+        new(Keys.SmtpPassword, EmailSection, "SMTP password", null, SettingKind.Secret, null,
+            VisibleWhenKey: Keys.EmailProvider, VisibleWhenValues: ["Smtp"]),
+        new(Keys.SesRegion, EmailSection, "SES region", "e.g. eu-west-2. The sending identity must be verified in this region.", SettingKind.Text, "eu-west-2",
+            VisibleWhenKey: Keys.EmailProvider, VisibleWhenValues: ["AwsSes"]),
+        new(Keys.SesAccessKey, EmailSection, "SES access key", null, SettingKind.Secret, null,
+            VisibleWhenKey: Keys.EmailProvider, VisibleWhenValues: ["AwsSes"]),
+        new(Keys.SesSecretKey, EmailSection, "SES secret key", null, SettingKind.Secret, null,
+            VisibleWhenKey: Keys.EmailProvider, VisibleWhenValues: ["AwsSes"]),
+        new(Keys.MailgunDomain, EmailSection, "Mailgun domain", "e.g. mg.yourhub.org", SettingKind.Text, null,
+            VisibleWhenKey: Keys.EmailProvider, VisibleWhenValues: ["Mailgun"]),
+        new(Keys.MailgunApiKey, EmailSection, "Mailgun API key", null, SettingKind.Secret, null,
+            VisibleWhenKey: Keys.EmailProvider, VisibleWhenValues: ["Mailgun"]),
+        new(Keys.MailgunRegion, EmailSection, "Mailgun region", "EU-hosted domains use api.eu.mailgun.net.", SettingKind.Select, "US",
+            [new("US", "United States (api.mailgun.net)"), new("EU", "Europe (api.eu.mailgun.net)")],
+            VisibleWhenKey: Keys.EmailProvider, VisibleWhenValues: ["Mailgun"]),
+        new(Keys.NotifyUrgentCase, EmailSection, "Email the worker when a case becomes urgent", "Uses the \"Urgent case raised\" template.", SettingKind.Boolean, "true",
+            VisibleWhenKey: Keys.EmailProvider, VisibleWhenValues: EmailProviders),
+        new(Keys.NotifyOverdueFollowUps, EmailSection, "Email workers about overdue follow-ups", "Daily summary using the \"Follow-up overdue\" template.", SettingKind.Boolean, "true",
+            VisibleWhenKey: Keys.EmailProvider, VisibleWhenValues: EmailProviders),
     ];
 
     private static readonly Dictionary<string, SettingDefinition> ByKey = All.ToDictionary(d => d.Key, StringComparer.OrdinalIgnoreCase);

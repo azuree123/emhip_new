@@ -150,7 +150,7 @@ export class RegisterGuestComponent {
     'Monthly - 28 days': 28,
   };
 
-  /** CMHW dropdown options for the Pathway & allocation step. */
+  /** CMHW names for the Review step's "Assigned CMHW" summary line. */
   protected readonly cmhwOptions = toSignal(
     this.guestsApi.getCmhwOptions().pipe(catchError(() => of([] as CmhwOptionDto[]))),
     { initialValue: [] as CmhwOptionDto[] },

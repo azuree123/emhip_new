@@ -255,12 +255,19 @@ $pager-font-stack: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
     min-width: 89px;
   }
 
-  &--cmhw .filter__select {
-    min-width: 163px;
-  }
-
   &--activity .filter__select {
     min-width: 137px;
+  }
+}
+
+// The Assigned CMHW filter is the shared <emhip-staff-picker>, which brings its own control
+// chrome; the rules above only reach a native <select>. All it needs from the cluster is the
+// design's chip footprint so it lines up with the chips either side of it.
+.filter-picker {
+  flex-shrink: 0;
+
+  &--cmhw {
+    width: 163px; // "Assigned CMHW" chip width in the design frame
   }
 }
 

@@ -29,6 +29,7 @@ public interface IAppDbContext
     DbSet<DocumentVersion> DocumentVersions { get; }
     DbSet<AppSetting> AppSettings { get; }
     DbSet<LookupItem> LookupItems { get; }
+    DbSet<EmailTemplate> EmailTemplates { get; }
     DbSet<AuditEvent> AuditEvents { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);

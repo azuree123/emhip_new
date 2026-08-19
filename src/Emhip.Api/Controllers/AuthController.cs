@@ -14,7 +14,7 @@ namespace Emhip.Api.Controllers;
 public sealed class AuthController(
     UserManager<ApplicationUser> userManager,
     TokenService tokenService,
-    IEmailSender emailSender,
+    Application.Abstractions.IEmailService emailService,
     ICurrentUser currentUser,
     IConfiguration configuration) : ControllerBase
 {
@@ -51,10 +51,15 @@ public sealed class AuthController(
             var encodedToken = HttpUtility.UrlEncode(token);
             var resetUrl = $"{configuration["Frontend:BaseUrl"] ?? "http://localhost:4200"}/reset-password?email={HttpUtility.UrlEncode(user.Email)}&token={encodedToken}";
 
-            await emailSender.SendAsync(
+            await emailService.SendTemplateAsync(
+                Application.Emails.EmailTemplateCatalog.Keys.PasswordReset,
                 user.Email!,
-                "Reset your EMHIP password",
-                $"Reset your password using this link: {resetUrl}\n\nThis link expires shortly and can only be used once.",
+                new Dictionary<string, string?>
+                {
+                    ["recipientName"] = user.DisplayName,
+                    ["resetUrl"] = resetUrl,
+                },
+                user.DisplayName,
                 cancellationToken);
         }
 

@@ -473,7 +473,36 @@ $green: rgb(20, 113, 41);
   }
 }
 
-// ---- Storage test result ---------------------------------------------------
+// ---- Send test email -------------------------------------------------------
+
+.test-email {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1 1 100%;
+  min-width: 0;
+
+  &__label {
+    font-weight: 600;
+    font-size: 13px;
+    line-height: 20px;
+    color: $ink;
+  }
+
+  &__row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  &__input {
+    width: 300px;
+    max-width: 100%;
+  }
+}
+
+// ---- Storage / email test result -------------------------------------------
 
 .test-result {
   flex-basis: 100%;

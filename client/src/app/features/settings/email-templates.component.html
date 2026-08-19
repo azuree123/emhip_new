@@ -1,0 +1,353 @@
+<section class="templates">
+  <header class="templates__intro">
+    <div>
+      <h2 class="templates__title">Email templates</h2>
+      <p class="templates__subtitle">
+        The wording of every message the portal sends. Each template is triggered by something the app does — turning one
+        off stops that notification without affecting the action behind it. Delivery itself is configured on the Email tab.
+      </p>
+    </div>
+  </header>
+
+  @if (!canManage) {
+    <div class="banner banner--info">
+      You have read-only access to email templates — the <code>settings.manage</code> permission is required to edit them.
+    </div>
+  }
+
+  @if (loading()) {
+    <div class="card state-row">Loading email templates…</div>
+  } @else if (loadError()) {
+    <div class="banner banner--error">
+      <span>{{ loadError() }}</span>
+      <button type="button" class="btn btn--outline btn--sm" (click)="load()">Try again</button>
+    </div>
+  } @else if (templates().length === 0) {
+    <div class="card state-row">This build doesn't send any templated email yet.</div>
+  } @else {
+    <div class="panes">
+      <!-- Left: every template the code can send, in catalog order. -->
+      <nav class="tpl-list card" aria-label="Email templates">
+        @for (template of templates(); track template.key) {
+          <button
+            type="button"
+            class="tpl"
+            [class.tpl--active]="template.key === selectedKey()"
+            [attr.aria-current]="template.key === selectedKey() ? 'true' : null"
+            (click)="selectTemplate(template.key)"
+          >
+            <span class="tpl__top">
+              <span class="tpl__name">{{ template.name }}</span>
+              @if (!template.isEnabled) {
+                <span class="pill pill--off">Off</span>
+              }
+            </span>
+            <span class="tpl__desc">{{ template.description }}</span>
+          </button>
+        }
+      </nav>
+
+      <!-- Right: the editor for the selected template. -->
+      @if (selected(); as template) {
+        <div class="editor card">
+          <div class="editor__head">
+            <div class="editor__heading">
+              <h3 class="editor__title">{{ template.name }}</h3>
+              <p class="editor__desc">{{ template.description }}</p>
+              <p class="editor__meta">
+                <code class="mono">{{ template.key }}</code>
+                <span class="editor__dot" aria-hidden="true">·</span>
+                {{ lastEdited(template) }}
+              </p>
+            </div>
+
+            <div class="editor__actions">
+              @if (saving()) {
+                <span class="save-state save-state--busy">Saving…</span>
+              } @else if (saved()) {
+                <span class="save-state save-state--ok">Saved</span>
+              } @else if (isDirty()) {
+                <span class="save-state save-state--dirty">
+                  {{ dirtyCount() }} unsaved {{ dirtyCount() === 1 ? 'change' : 'changes' }}
+                </span>
+              }
+
+              <button type="button" class="btn btn--outline btn--sm" (click)="openPreview()">
+                <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true">
+                  <path
+                    d="M1.5 8s2.4-4 6.5-4 6.5 4 6.5 4-2.4 4-6.5 4S1.5 8 1.5 8Z"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.4"
+                    stroke-linejoin="round"
+                  />
+                  <circle cx="8" cy="8" r="1.75" fill="none" stroke="currentColor" stroke-width="1.4" />
+                </svg>
+                Preview
+              </button>
+
+              @if (canManage) {
+                <button
+                  type="button"
+                  class="btn btn--outline btn--sm btn--danger"
+                  [disabled]="resetting() || saving()"
+                  (click)="askReset()"
+                >
+                  {{ resetting() ? 'Restoring…' : 'Restore default' }}
+                </button>
+                <button type="button" class="btn btn--ghost btn--sm" [disabled]="!isDirty() || saving()" (click)="discardChanges()">
+                  Discard
+                </button>
+                <button type="button" class="btn btn--primary btn--sm" [disabled]="!canSave()" (click)="save()">
+                  {{ saving() ? 'Saving…' : 'Save template' }}
+                </button>
+              }
+            </div>
+          </div>
+
+          @if (saveError()) {
+            <div class="banner banner--error">{{ saveError() }}</div>
+          }
+
+          <div class="editor__body">
+            <!-- Enable / disable ------------------------------------------------------------ -->
+            <div class="field">
+              <span class="field__label">
+                <span class="field__label-text">Send this email</span>
+                @if (!isEnabled()) {
+                  <span class="pill pill--off">Off</span>
+                }
+              </span>
+              <label class="toggle" [attr.for]="'email-template-enabled'">
+                <input
+                  class="toggle__input"
+                  type="checkbox"
+                  id="email-template-enabled"
+                  [checked]="isEnabled()"
+                  [disabled]="!canManage"
+                  (change)="onEnabledChange($event)"
+                />
+                <span class="toggle__track" aria-hidden="true"><span class="toggle__thumb"></span></span>
+                <span class="toggle__caption">{{ isEnabled() ? 'Enabled' : 'Disabled' }}</span>
+              </label>
+              <p class="field__hint">
+                Turning this off stops this notification only — the action that triggers it still happens, and nothing else
+                about it changes. Nobody receives this message while it is off.
+              </p>
+            </div>
+
+            <!-- Token helper ---------------------------------------------------------------- -->
+            <div class="tokens">
+              <div class="tokens__head">
+                <span class="tokens__title">Tokens</span>
+                <span class="tokens__target">
+                  @if (canManage) {
+                    Inserts into <strong>{{ lastFocusedLabel() }}</strong> at the cursor
+                  } @else {
+                    Available in the subject and both bodies
+                  }
+                </span>
+              </div>
+              <div class="tokens__chips">
+                @for (token of template.tokens; track token) {
+                  @if (canManage) {
+                    <button type="button" class="token" [title]="tokenTitle(token)" (click)="insertToken(token)">
+                      {{ tokenText(token) }}
+                    </button>
+                  } @else {
+                    <span class="token token--static">{{ tokenText(token) }}</span>
+                  }
+                }
+              </div>
+              <p class="tokens__hint">
+                Tokens are the only templating available — each one is replaced with real data when the email is sent.
+                Anything else between braces is left exactly as typed.
+              </p>
+            </div>
+
+            <!-- Subject --------------------------------------------------------------------- -->
+            <div class="field">
+              <label class="field__label" for="email-template-subject">
+                <span class="field__label-text">Subject</span>
+              </label>
+              <input
+                #subjectInput
+                class="control"
+                type="text"
+                id="email-template-subject"
+                autocomplete="off"
+                [value]="subject()"
+                [disabled]="!canManage"
+                (focus)="noteFocus('subject')"
+                (click)="noteFocus('subject')"
+                (input)="onSubjectInput($event)"
+              />
+              @if (canManage && !subject().trim()) {
+                <p class="field__hint field__hint--warn">A subject is required.</p>
+              }
+            </div>
+
+            <!-- HTML body ------------------------------------------------------------------- -->
+            <div class="field">
+              <label class="field__label" for="email-template-html">
+                <span class="field__label-text">HTML body</span>
+              </label>
+              <p class="field__hint">
+                Inline styles only — email clients ignore stylesheets. Preview it before saving to see how it renders.
+              </p>
+              <textarea
+                #htmlInput
+                class="control control--code"
+                id="email-template-html"
+                rows="20"
+                spellcheck="false"
+                [value]="htmlBody()"
+                [disabled]="!canManage"
+                (focus)="noteFocus('html')"
+                (click)="noteFocus('html')"
+                (input)="onHtmlInput($event)"
+              ></textarea>
+              @if (canManage && !htmlBody().trim()) {
+                <p class="field__hint field__hint--warn">The HTML body cannot be empty.</p>
+              }
+            </div>
+
+            <!-- Plain-text body ------------------------------------------------------------- -->
+            <div class="field">
+              <label class="field__label" for="email-template-text">
+                <span class="field__label-text">Plain-text body</span>
+                <span class="pill pill--muted">Optional</span>
+              </label>
+              <p class="field__hint">
+                Sent alongside the HTML for clients that can't show it. Leave blank and a plain-text version is generated
+                from the HTML automatically.
+              </p>
+              <textarea
+                #textInput
+                class="control control--code"
+                id="email-template-text"
+                rows="8"
+                spellcheck="false"
+                [value]="textBody()"
+                [disabled]="!canManage"
+                (focus)="noteFocus('text')"
+                (click)="noteFocus('text')"
+                (input)="onTextInput($event)"
+              ></textarea>
+            </div>
+          </div>
+        </div>
+      } @else {
+        <div class="editor card">
+          <div class="state-row">Select a template to edit it.</div>
+        </div>
+      }
+    </div>
+  }
+</section>
+
+<!-- Dirty-state guard: one editor serves every template, so switching would strand the edits. -->
+@if (pendingKey(); as target) {
+  <div class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="template-discard-title">
+    <div class="modal">
+      <div class="modal__header">
+        <h2 id="template-discard-title">Discard unsaved changes?</h2>
+      </div>
+      <div class="modal__body">
+        <p>
+          You have {{ dirtyCount() }} unsaved {{ dirtyCount() === 1 ? 'change' : 'changes' }} to
+          <strong>{{ selected()?.name }}</strong>. Opening another template will discard
+          {{ dirtyCount() === 1 ? 'it' : 'them' }}.
+        </p>
+      </div>
+      <div class="modal__footer">
+        <button type="button" class="btn btn--ghost btn--sm" (click)="cancelSwitch()">Keep editing</button>
+        <button type="button" class="btn btn--primary btn--sm" (click)="confirmSwitch()">Discard and switch</button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Restore default confirm. -->
+@if (resetConfirmOpen()) {
+  <div class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="template-reset-title">
+    <div class="modal">
+      <div class="modal__header">
+        <h2 id="template-reset-title">Restore the default wording?</h2>
+      </div>
+      <div class="modal__body">
+        <p>
+          <strong>{{ selected()?.name }}</strong> goes back to the subject and body shipped with the portal, and the
+          template is switched back on. Your current wording cannot be recovered afterwards.
+        </p>
+      </div>
+      <div class="modal__footer">
+        <button type="button" class="btn btn--ghost btn--sm" (click)="cancelReset()">Cancel</button>
+        <button type="button" class="btn btn--primary btn--sm" [disabled]="resetting()" (click)="confirmReset()">
+          {{ resetting() ? 'Restoring…' : 'Restore default' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Preview: rendered server-side with sample data, shown in a sandboxed frame. -->
+@if (previewOpen()) {
+  <div class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="template-preview-title">
+    <div class="modal modal--wide">
+      <div class="modal__header modal__header--split">
+        <div>
+          <h2 id="template-preview-title">Preview</h2>
+          <p class="modal__sub">Rendered with sample data, using what's in the editor right now.</p>
+        </div>
+        <button type="button" class="icon-btn" aria-label="Close preview" (click)="closePreview()">
+          <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
+            <path d="M3 3l8 8M11 3l-8 8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+          </svg>
+        </button>
+      </div>
+
+      <div class="modal__body modal__body--preview">
+        @if (previewLoading()) {
+          <div class="state-row">Rendering preview…</div>
+        } @else if (previewError()) {
+          <div class="banner banner--error">
+            <span>{{ previewError() }}</span>
+            <button type="button" class="btn btn--outline btn--sm" (click)="openPreview()">Try again</button>
+          </div>
+        } @else if (preview(); as rendered) {
+          <div class="preview">
+            <div class="preview__subject">
+              <span class="preview__subject-label">Subject</span>
+              <span class="preview__subject-text">{{ rendered.subject }}</span>
+            </div>
+
+            @if (previewShowsText()) {
+              <pre class="preview__text">{{ rendered.textBody }}</pre>
+            } @else {
+              <!-- sandbox with no allow-* tokens: unique origin, no scripts, no forms, no navigation. -->
+              <iframe
+                class="preview__frame"
+                title="Rendered email preview"
+                sandbox=""
+                referrerpolicy="no-referrer"
+                [srcdoc]="previewDoc()"
+              ></iframe>
+            }
+          </div>
+        }
+      </div>
+
+      <div class="modal__footer modal__footer--split">
+        @if (preview()) {
+          <button type="button" class="btn btn--ghost btn--sm" (click)="togglePreviewText()">
+            {{ previewShowsText() ? 'Show HTML version' : 'Show plain-text version' }}
+          </button>
+        } @else {
+          <span></span>
+        }
+        <button type="button" class="btn btn--primary btn--sm" (click)="closePreview()">Close</button>
+      </div>
+    </div>
+  </div>
+}

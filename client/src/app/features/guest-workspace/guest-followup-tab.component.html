@@ -47,14 +47,16 @@
               <span>Due date</span>
               <input type="date" name="dueDate" [(ngModel)]="form.dueDate" />
             </label>
-            <label class="edit-form__field">
+            <div class="edit-form__field">
               <span>Assignee</span>
-              <select name="assigneeStaffId" [(ngModel)]="form.assigneeStaffId">
-                @for (option of cmhwOptions(); track option.id) {
-                  <option [ngValue]="option.id">{{ option.displayName }}</option>
-                }
-              </select>
-            </label>
+              <emhip-staff-picker
+                name="assigneeStaffId"
+                required
+                [(ngModel)]="form.assigneeStaffId"
+                placeholder="Select an assignee"
+                [allowClear]="false"
+              />
+            </div>
           </div>
           <label class="edit-form__field edit-form__field--full">
             <span>Notes</span>

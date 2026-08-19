@@ -78,15 +78,10 @@
           }
         </select>
       </label>
-      <label class="field">
+      <div class="field">
         <span class="field__label">Assigned CMHW</span>
-        <select class="field__select" formControlName="assignedCmhwId">
-          <option value="">Not yet assigned</option>
-          @for (option of cmhwOptions; track option.id) {
-            <option [value]="option.id">{{ option.displayName }}</option>
-          }
-        </select>
-      </label>
+        <emhip-staff-picker formControlName="assignedCmhwId" placeholder="Select a CMHW" />
+      </div>
     </div>
   </section>
 </div>

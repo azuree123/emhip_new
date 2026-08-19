@@ -4,12 +4,12 @@
       <div class="header-card__intro">
         <h1 class="header-card__title">Settings</h1>
         <p class="header-card__subtitle">
-          Portal configuration — organisation details, document storage, upload limits, clinical thresholds and the
-          drop-down lists used across the app.
+          Portal configuration — organisation details, document storage, upload limits, clinical thresholds, email
+          delivery and the wording of the messages the portal sends, plus the drop-down lists used across the app.
         </p>
       </div>
 
-      @if (!loading() && !loadError() && activeTab() !== lookupsTab) {
+      @if (!loading() && !loadError() && isSectionTab()) {
         <div class="header-card__actions">
           @if (saving()) {
             <span class="save-state save-state--busy">Saving…</span>
@@ -71,6 +71,8 @@
       <section class="panel">
         @if (activeTab() === lookupsTab) {
           <emhip-lookups-manager />
+        } @else if (activeTab() === emailTemplatesTab) {
+          <emhip-email-templates />
         } @else if (activeSection(); as section) {
           <header class="panel__head">
             <h2 class="panel__title">{{ section.section }}</h2>
@@ -79,6 +81,14 @@
                 Choose where newly uploaded documents are written. Existing files stay readable on the provider they were
                 uploaded to. Secret fields are never sent back to the browser — leave one blank to keep the value already
                 stored, including when running a connection test.
+              </p>
+            }
+            @if (isEmailTab()) {
+              <p class="panel__note">
+                How the portal delivers email. With no provider chosen, messages are written to the server log instead of
+                being sent. The wording of each message lives on the <strong>Email templates</strong> tab. Secret fields
+                are never sent back to the browser — leave one blank to keep the value already stored, including when
+                sending a test.
               </p>
             }
           </header>
@@ -205,6 +215,49 @@
               }
             </footer>
           }
+
+          <!-- Same idea for email: send a real message through the values on screen (blank secrets
+               fall back to the stored ones) rather than waiting for the first real notification. -->
+          @if (isEmailTab()) {
+            <footer class="panel__foot">
+              <div class="test-email">
+                <label class="test-email__label" for="settings-test-email">Send test email to</label>
+                <div class="test-email__row">
+                  <input
+                    class="control test-email__input"
+                    type="email"
+                    id="settings-test-email"
+                    autocomplete="off"
+                    placeholder="you@example.org"
+                    [value]="testEmailTo()"
+                    [disabled]="!canManage || sendingTest()"
+                    (input)="onTestEmailInput($event)"
+                  />
+                  <button type="button" class="btn btn--secondary" [disabled]="!canSendTestEmail()" (click)="sendTestEmail()">
+                    {{ sendingTest() ? 'Sending…' : 'Send test email' }}
+                  </button>
+                </div>
+
+                <p class="panel__foot-hint">
+                  @if (emailProvider() === 'None') {
+                    Choose an email provider above before sending a test.
+                  } @else {
+                    The settings above are used as they appear, saved or not — leave a secret blank to reuse the value
+                    already stored.
+                    @if (isDirty()) {
+                      Unsaved changes still need saving before real notifications use them.
+                    }
+                  }
+                </p>
+              </div>
+
+              @if (emailTestResult(); as result) {
+                <p class="test-result" [class.test-result--ok]="result.success" [class.test-result--fail]="!result.success">
+                  {{ result.message }}
+                </p>
+              }
+            </footer>
+          }
         } @else {
           <p class="fields__empty">This section is no longer available.</p>
         }
@@ -213,7 +266,8 @@
   }
 </div>
 
-<!-- Dirty-state guard: the working values are shared across tabs, so moving away would strand edits. -->
+<!-- Dirty-state guard: the working values are shared across tabs (and the Email templates tab keeps
+     its own draft), so moving away would strand edits. -->
 @if (pendingTab(); as target) {
   <div class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="settings-discard-title">
     <div class="modal">
@@ -222,8 +276,8 @@
       </div>
       <div class="modal__body">
         <p>
-          You have {{ changedKeys().length }} unsaved {{ changedKeys().length === 1 ? 'change' : 'changes' }}. Opening
-          <strong>{{ target }}</strong> will discard {{ changedKeys().length === 1 ? 'it' : 'them' }}.
+          You have {{ guardCount() }} unsaved {{ guardCount() === 1 ? 'change' : 'changes' }}. Opening
+          <strong>{{ target }}</strong> will discard {{ guardCount() === 1 ? 'it' : 'them' }}.
         </p>
       </div>
       <div class="modal__footer">

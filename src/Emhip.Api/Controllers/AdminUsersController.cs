@@ -15,7 +15,10 @@ namespace Emhip.Api.Controllers;
 [ApiController]
 [Route("admin/users")]
 [Authorize(Policy = Permissions.Admin.ManageUsers)]
-public sealed class AdminUsersController(UserManager<ApplicationUser> userManager) : ControllerBase
+public sealed class AdminUsersController(
+    UserManager<ApplicationUser> userManager,
+    Emhip.Application.Abstractions.IEmailService emailService,
+    IConfiguration configuration) : ControllerBase
 {
     public sealed record UserSummaryDto(Guid Id, string Email, string DisplayName, Guid HubId, bool IsActive, string[] Roles);
 
@@ -61,6 +64,19 @@ public sealed class AdminUsersController(UserManager<ApplicationUser> userManage
         {
             await userManager.AddToRolesAsync(user, request.Roles);
         }
+
+        // Best-effort welcome email — a delivery failure must not undo the created account.
+        await emailService.SendTemplateAsync(
+            Emhip.Application.Emails.EmailTemplateCatalog.Keys.AccountCreated,
+            user.Email!,
+            new Dictionary<string, string?>
+            {
+                ["recipientName"] = user.DisplayName,
+                ["email"] = user.Email,
+                ["temporaryPassword"] = request.TemporaryPassword,
+                ["portalUrl"] = configuration["Frontend:BaseUrl"] ?? string.Empty,
+            },
+            user.DisplayName);
 
         return CreatedAtAction(nameof(GetUsers), new { }, new CreateUserResponse(user.Id));
     }

@@ -5,10 +5,14 @@ import { environment } from '../../environments/environment';
 import {
   CreateLookupRequest,
   DocumentStorageProvider,
+  EmailPreviewDto,
+  EmailTemplateDto,
+  EmailTestResultDto,
   LookupItemDto,
   PublicSettings,
   SettingsSectionDto,
   StorageTestResultDto,
+  UpdateEmailTemplateRequest,
   UpdateLookupRequest,
 } from './api-models';
 
@@ -33,6 +37,7 @@ export class SettingsApiService {
   private readonly http = inject(HttpClient);
   private readonly base = `${environment.apiBaseUrl}/settings`;
   private readonly lookupsBase = `${environment.apiBaseUrl}/lookups`;
+  private readonly emailTemplatesBase = `${environment.apiBaseUrl}/email-templates`;
 
   /** Cached display settings, loaded once after sign-in. */
   private readonly publicSettings = signal<PublicSettings>({});
@@ -68,6 +73,30 @@ export class SettingsApiService {
   /** Writes and removes a probe object to prove the credentials work. Blank values fall back to what's saved. */
   testStorage(provider: DocumentStorageProvider, values: Record<string, string | null>): Observable<StorageTestResultDto> {
     return this.http.post<StorageTestResultDto>(`${this.base}/storage/test`, { provider, values });
+  }
+
+  /** Editable transactional email templates (keys are fixed by the code that sends them). */
+  getEmailTemplates(): Observable<EmailTemplateDto[]> {
+    return this.http.get<EmailTemplateDto[]>(this.emailTemplatesBase);
+  }
+
+  updateEmailTemplate(key: string, request: UpdateEmailTemplateRequest): Observable<void> {
+    return this.http.put<void>(`${this.emailTemplatesBase}/${key}`, request);
+  }
+
+  /** Restores the template shipped with the application. */
+  resetEmailTemplate(key: string): Observable<void> {
+    return this.http.post<void>(`${this.emailTemplatesBase}/${key}/reset`, {});
+  }
+
+  /** Renders with sample data; pass unsaved editor content to preview before saving. */
+  previewEmailTemplate(key: string, subject?: string, htmlBody?: string): Observable<EmailPreviewDto> {
+    return this.http.post<EmailPreviewDto>(`${this.emailTemplatesBase}/${key}/preview`, { subject, htmlBody });
+  }
+
+  /** Sends a real message using the supplied (possibly unsaved) email settings. */
+  testEmail(toEmail: string, provider: string, values: Record<string, string | null>): Observable<EmailTestResultDto> {
+    return this.http.post<EmailTestResultDto>(`${this.base}/email/test`, { toEmail, provider, values });
   }
 
   getLookups(category?: string, includeInactive = false): Observable<LookupItemDto[]> {

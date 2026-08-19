@@ -92,6 +92,13 @@
   }
 }
 
+// The CMHW filter is the shared <emhip-staff-picker>, which carries its own control chrome
+// rather than the .pill-select styling; it just needs a pill-sized footprint in the filter row.
+.cmhw-picker {
+  width: 176px;
+  flex-shrink: 0;
+}
+
 .guest-table {
   td {
     padding-top: 17px;

@@ -154,47 +154,14 @@
       @if (canLinkGuest) {
         <div class="field">
           <span class="field__label">Linked guest <span class="field__optional">(optional)</span></span>
-          @if (guest(); as linked) {
-            <div class="guest-picked">
-              <span class="guest-picked__ref">G-{{ linked.guestNumber }}</span>
-              <span class="guest-picked__name">{{ linked.fullName }}</span>
-              <button type="button" class="icon-btn icon-btn--small" (click)="clearGuest()" [disabled]="busy()" aria-label="Unlink guest">
-                <svg width="10" height="10" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-                  <path d="M 1 1 L 11 11 M 11 1 L 1 11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
-                </svg>
-              </button>
-            </div>
-          } @else {
-            <div class="guest-search">
-              <input
-                type="text"
-                class="input"
-                placeholder="Search by name or G-1001…"
-                autocomplete="off"
-                [value]="guestQuery()"
-                (input)="onGuestQuery($event)"
-                [disabled]="busy()"
-              />
-              @if (guestSearching()) {
-                <p class="field__hint">Searching…</p>
-              } @else if (guestResults().length > 0) {
-                <ul class="guest-results">
-                  @for (result of guestResults(); track result.id) {
-                    <li>
-                      <button type="button" class="guest-results__item" (click)="selectGuest(result)">
-                        <span class="guest-results__ref">G-{{ result.guestNumber }}</span>
-                        <span class="guest-results__name">{{ result.fullName }}</span>
-                      </button>
-                    </li>
-                  }
-                </ul>
-              } @else if (guestQuery().trim().length >= 2) {
-                <p class="field__hint">No guests match that search.</p>
-              } @else {
-                <p class="field__hint">Leave blank to file this as a hub document.</p>
-              }
-            </div>
-          }
+          <!-- Shared type-ahead over /guests/suggest; cleared means "no guest link". -->
+          <emhip-guest-picker
+            placeholder="Search by name or G-1001…"
+            [ngModel]="guestId()"
+            (ngModelChange)="onGuestChange($event)"
+            [disabled]="busy()"
+          />
+          <span class="field__hint">Leave blank to file this as a hub document.</span>
         </div>
       }
 

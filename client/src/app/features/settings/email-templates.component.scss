@@ -1,0 +1,767 @@
+// Email templates tab of the Settings screen. Same visual vocabulary as its siblings — the r12
+// white cards and two-pane shell from the lookups editor, the r4 controls, chips, toggle and
+// modal shapes from settings.component.scss — so the tab reads as part of the same page.
+
+$ink: rgb(42, 42, 42);
+$ink-soft: rgb(50, 50, 50);
+$ink-muted: rgb(100, 100, 100);
+$ink-faint: rgb(140, 140, 140);
+$line: rgb(238, 238, 238);
+$line-soft: rgb(229, 229, 229);
+$red: rgb(225, 38, 40);
+$coral: rgb(235, 60, 44);
+$maroon: rgb(148, 28, 60);
+$danger: rgb(208, 37, 55);
+$green: rgb(21, 128, 61);
+
+:host {
+  display: block;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+.templates {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+
+  &__intro {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  &__title {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: $ink;
+  }
+
+  &__subtitle {
+    margin: 6px 0 0;
+    max-width: 74ch;
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 20px;
+    color: $ink-muted;
+  }
+}
+
+// ---- Two-pane shell -------------------------------------------------------
+
+.panes {
+  display: grid;
+  grid-template-columns: minmax(220px, 290px) minmax(0, 1fr);
+  align-items: start;
+  gap: 16px;
+}
+
+.card {
+  background: rgb(255, 255, 255);
+  border-radius: 12px;
+  padding: 20px;
+}
+
+// ---- Template list --------------------------------------------------------
+
+.tpl-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px;
+}
+
+.tpl {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 100%;
+  padding: 10px 12px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+
+  &:hover {
+    background: rgb(246, 246, 246);
+  }
+
+  &--active {
+    background: rgb(255, 240, 241);
+  }
+
+  &__top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  &__name {
+    min-width: 0;
+    font-size: 13px;
+    font-weight: 600;
+    color: $ink;
+  }
+
+  &--active &__name {
+    color: $coral;
+  }
+
+  &__desc {
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 17px;
+    color: $ink-faint;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+}
+
+// ---- Editor ----------------------------------------------------------------
+
+.editor {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+
+  &__head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    padding-bottom: 16px;
+    border-bottom: 1px solid $line;
+  }
+
+  &__heading {
+    flex: 1 1 260px;
+    min-width: 0;
+  }
+
+  &__title {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: $ink;
+  }
+
+  &__desc {
+    margin: 4px 0 0;
+    max-width: 62ch;
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 20px;
+    color: $ink-muted;
+  }
+
+  &__meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin: 8px 0 0;
+    font-size: 12px;
+    font-weight: 500;
+    color: $ink-faint;
+  }
+
+  &__dot {
+    color: rgb(200, 200, 200);
+  }
+
+  &__actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  &__body {
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+  }
+}
+
+.save-state {
+  font-weight: 500;
+  font-size: 13px;
+  line-height: 20px;
+  white-space: nowrap;
+
+  &--busy,
+  &--dirty {
+    color: $ink-muted;
+  }
+
+  &--ok {
+    color: $green;
+  }
+}
+
+// ---- Fields -----------------------------------------------------------------
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+
+  &__label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    font-weight: 600;
+    font-size: 13px;
+    line-height: 20px;
+    color: $ink;
+  }
+
+  &__label-text {
+    color: $ink;
+  }
+
+  &__hint {
+    margin: 0;
+    max-width: 74ch;
+    font-weight: 500;
+    font-size: 12px;
+    line-height: 18px;
+    color: $ink-muted;
+
+    &--warn {
+      color: $maroon;
+    }
+  }
+}
+
+.control {
+  box-sizing: border-box;
+  width: 100%;
+  height: 38px;
+  padding: 0 12px;
+  border: none;
+  border-radius: 4px;
+  box-shadow: inset 0 0 0 1px $line-soft;
+  background: rgb(255, 255, 255);
+  font-family: inherit;
+  font-weight: 500;
+  font-size: 14px;
+  letter-spacing: -0.005em;
+  color: $ink-soft;
+
+  &::placeholder {
+    color: rgb(170, 170, 170);
+  }
+
+  &:focus {
+    outline: none;
+    box-shadow: inset 0 0 0 1px $maroon;
+  }
+
+  &:disabled {
+    background: rgb(248, 248, 248);
+    color: $ink-muted;
+    cursor: not-allowed;
+  }
+
+  // Generous, resizable monospace area — these bodies are real HTML documents.
+  &--code {
+    height: auto;
+    min-height: 220px;
+    padding: 12px;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    font-size: 12.5px;
+    line-height: 19px;
+    tab-size: 2;
+    white-space: pre;
+    overflow-wrap: normal;
+    overflow-x: auto;
+    resize: vertical;
+  }
+}
+
+// ---- Token helper ------------------------------------------------------------
+
+.tokens {
+  position: sticky;
+  top: 12px;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+  border-radius: 8px;
+  background: rgb(250, 250, 250);
+  box-shadow: inset 0 0 0 1px $line;
+
+  &__head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  &__title {
+    font-size: 13px;
+    font-weight: 600;
+    color: $ink;
+  }
+
+  &__target {
+    font-size: 12px;
+    font-weight: 500;
+    color: $ink-muted;
+
+    strong {
+      font-weight: 600;
+      color: $coral;
+    }
+  }
+
+  &__chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  &__hint {
+    margin: 0;
+    max-width: 74ch;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 18px;
+    color: $ink-faint;
+  }
+}
+
+.token {
+  display: inline-flex;
+  align-items: center;
+  height: 26px;
+  padding: 0 10px;
+  border: none;
+  border-radius: 200px;
+  background: rgb(255, 255, 255);
+  box-shadow: inset 0 0 0 1px rgb(222, 222, 222);
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  font-size: 12px;
+  color: $ink-soft;
+  white-space: nowrap;
+  cursor: pointer;
+
+  &:hover {
+    background: rgb(255, 240, 241);
+    box-shadow: inset 0 0 0 1px rgb(247, 193, 195);
+    color: $coral;
+  }
+
+  &:focus-visible {
+    outline: 2px solid $coral;
+    outline-offset: 1px;
+  }
+
+  &--static {
+    cursor: default;
+
+    &:hover {
+      background: rgb(255, 255, 255);
+      box-shadow: inset 0 0 0 1px rgb(222, 222, 222);
+      color: $ink-soft;
+    }
+  }
+}
+
+// ---- Boolean toggle (same shape as the settings catalog fields) -------------
+
+.toggle {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  width: fit-content;
+
+  &__input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  &__track {
+    position: relative;
+    flex-shrink: 0;
+    width: 42px;
+    height: 24px;
+    border-radius: 200px;
+    background: rgb(226, 226, 226);
+    transition: background 0.15s ease;
+  }
+
+  &__thumb {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: rgb(255, 255, 255);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+    transition: transform 0.15s ease;
+  }
+
+  &__caption {
+    font-weight: 500;
+    font-size: 13px;
+    line-height: 20px;
+    color: $ink-soft;
+  }
+
+  &__input:checked + &__track {
+    background: $green;
+  }
+
+  &__input:checked + &__track &__thumb {
+    transform: translateX(18px);
+  }
+
+  &__input:focus-visible + &__track {
+    outline: 2px solid $maroon;
+    outline-offset: 2px;
+  }
+
+  &__input:disabled + &__track {
+    opacity: 0.5;
+  }
+
+  &:has(&__input:disabled) {
+    cursor: not-allowed;
+  }
+}
+
+// ---- Pills / buttons / banners (shared vocabulary) --------------------------
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 200px;
+  padding: 2px 9px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 16px;
+  white-space: nowrap;
+  width: fit-content;
+  background: rgb(240, 240, 240);
+  color: rgb(50, 50, 50);
+
+  &--muted {
+    background: rgb(246, 246, 246);
+    color: $ink-muted;
+    font-weight: 500;
+  }
+
+  &--off {
+    background: rgb(246, 246, 246);
+    color: rgb(114, 114, 114);
+    box-shadow: inset 0 0 0 1px rgb(226, 226, 226);
+  }
+}
+
+.mono {
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  font-size: 11.5px;
+  color: $ink-muted;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 16px;
+  border-radius: 4px;
+  border: none;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: -0.005em;
+  cursor: pointer;
+  white-space: nowrap;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  &--primary {
+    background: $coral;
+    color: rgb(255, 255, 255);
+  }
+
+  &--ghost {
+    background: rgb(246, 246, 246);
+    color: $ink;
+  }
+
+  &--outline {
+    background: rgb(255, 255, 255);
+    color: $ink;
+    box-shadow: inset 0 0 0 1px rgb(217, 217, 217);
+  }
+
+  &--danger {
+    color: $danger;
+    box-shadow: inset 0 0 0 1px rgb(248, 200, 200);
+  }
+
+  &--sm {
+    height: 32px;
+    padding: 0 12px;
+    font-size: 13px;
+  }
+}
+
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background: rgb(246, 246, 246);
+  color: $ink;
+  cursor: pointer;
+
+  &:hover {
+    background: rgb(238, 238, 238);
+  }
+}
+
+.banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-size: 14px;
+  font-weight: 500;
+
+  &--error {
+    background: rgb(254, 242, 242);
+    color: $danger;
+    border-left: 3px solid $red;
+  }
+
+  &--info {
+    background: rgb(246, 246, 246);
+    color: $ink-muted;
+    border-left: 3px solid rgb(217, 217, 217);
+
+    code {
+      font-family: 'SFMono-Regular', Consolas, monospace;
+      font-size: 12px;
+    }
+  }
+}
+
+.state-row {
+  padding: 32px;
+  text-align: center;
+  color: $ink-faint;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+// ---- Modals (discard / restore / preview) -----------------------------------
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 120;
+  padding: 16px;
+}
+
+.modal {
+  width: 440px;
+  max-width: calc(100vw - 32px);
+  max-height: calc(100vh - 32px);
+  background: rgb(255, 255, 255);
+  border-radius: 12px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+
+  &--wide {
+    width: 820px;
+  }
+
+  &__header {
+    padding: 20px 24px 0;
+
+    h2 {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 600;
+      color: $ink;
+    }
+
+    &--split {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+    }
+  }
+
+  &__sub {
+    margin: 4px 0 0;
+    font-size: 13px;
+    font-weight: 500;
+    color: $ink-muted;
+  }
+
+  &__body {
+    padding: 12px 24px 4px;
+    min-height: 0;
+
+    p {
+      margin: 0;
+      font-weight: 500;
+      font-size: 14px;
+      line-height: 22px;
+      color: $ink-soft;
+    }
+
+    &--preview {
+      display: flex;
+      flex-direction: column;
+      padding: 16px 24px 8px;
+      overflow: auto;
+    }
+  }
+
+  &__footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 20px 24px 24px;
+
+    &--split {
+      justify-content: space-between;
+    }
+  }
+}
+
+// ---- Preview ------------------------------------------------------------------
+
+.preview {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+
+  &__subject {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    flex-wrap: wrap;
+    padding: 10px 14px;
+    border-radius: 8px;
+    background: rgb(248, 248, 248);
+  }
+
+  &__subject-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: $ink-faint;
+  }
+
+  &__subject-text {
+    min-width: 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: $ink;
+    word-break: break-word;
+  }
+
+  &__frame {
+    width: 100%;
+    height: 460px;
+    border: 1px solid $line;
+    border-radius: 8px;
+    background: rgb(255, 255, 255);
+  }
+
+  &__text {
+    margin: 0;
+    max-height: 460px;
+    overflow: auto;
+    padding: 16px;
+    border: 1px solid $line;
+    border-radius: 8px;
+    background: rgb(252, 252, 252);
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    font-size: 12.5px;
+    line-height: 19px;
+    color: $ink-soft;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+}
+
+// ---- Responsive ----------------------------------------------------------------
+
+@media (max-width: 1024px) {
+  .panes {
+    grid-template-columns: 1fr;
+  }
+
+  .tpl-list {
+    flex-direction: row;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    gap: 6px;
+  }
+
+  .tpl {
+    width: auto;
+    flex: 0 0 220px;
+  }
+
+  .tokens {
+    position: static;
+  }
+}
+
+@media (max-width: 767px) {
+  .editor__actions {
+    width: 100%;
+  }
+
+  .preview__frame {
+    height: 320px;
+  }
+}

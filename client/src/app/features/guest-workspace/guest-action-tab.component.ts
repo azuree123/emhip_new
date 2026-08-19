@@ -1,8 +1,9 @@
 import { Component, EventEmitter, Output, computed, effect, inject, input, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Observable } from 'rxjs';
-import { CmhwOptionDto, GuestActionDto, GuestActionRequest } from '../../core/api-models';
+import { GuestActionDto, GuestActionRequest } from '../../core/api-models';
 import { GuestsApiService } from '../../core/guests-api.service';
+import { StaffPickerComponent } from '../../shared/staff-picker.component';
 import { formatDate } from './guest-workspace.util';
 
 /**
@@ -16,7 +17,7 @@ import { formatDate } from './guest-workspace.util';
 @Component({
   selector: 'emhip-guest-action-tab',
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule, StaffPickerComponent],
   templateUrl: './guest-action-tab.component.html',
   styleUrl: './guest-action-tab.component.scss',
 })
@@ -27,7 +28,6 @@ export class GuestActionTabComponent {
   @Output() readonly refresh = new EventEmitter<void>();
 
   readonly actions = signal<GuestActionDto[] | null>(null);
-  readonly cmhwOptions = signal<CmhwOptionDto[]>([]);
   readonly loading = signal(true);
   readonly error = signal<string | null>(null);
 
@@ -52,10 +52,6 @@ export class GuestActionTabComponent {
       let cancelled = false;
       onCleanup(() => (cancelled = true));
       this.load(id, () => cancelled);
-    });
-    this.guestsApi.getCmhwOptions().subscribe({
-      next: (options) => this.cmhwOptions.set(options),
-      error: () => this.cmhwOptions.set([]),
     });
   }
 

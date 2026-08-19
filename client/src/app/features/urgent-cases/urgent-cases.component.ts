@@ -19,6 +19,7 @@ import {
 import { GuestsApiService } from '../../core/guests-api.service';
 import { UrgentCasesApiService } from '../../core/urgent-cases-api.service';
 import { UrgentCasesHubService } from '../../core/urgent-cases-hub.service';
+import { StaffPickerComponent } from '../../shared/staff-picker.component';
 
 const WINDOW_HOURS = 72;
 
@@ -59,7 +60,7 @@ const RISK_FLAGS: RiskFlagDef[] = [
 @Component({
   selector: 'app-urgent-cases',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule, RouterLink, StaffPickerComponent],
   templateUrl: './urgent-cases.component.html',
   styleUrl: './urgent-cases.component.scss',
 })

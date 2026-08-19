@@ -1,12 +1,14 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ScrollingModule } from '@angular/cdk/scrolling';
+import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterOutlet } from '@angular/router';
 import { Subject, firstValueFrom, of } from 'rxjs';
 import { catchError, debounceTime } from 'rxjs/operators';
 
 import { GuestsApiService } from '../../core/guests-api.service';
-import { CmhwOptionDto, GuestListItemDto, GuestStatus, PathwayCategory } from '../../core/api-models';
+import { GuestListItemDto, GuestStatus, PathwayCategory } from '../../core/api-models';
+import { StaffPickerComponent } from '../../shared/staff-picker.component';
 
 type StatusFilterValue = GuestStatus | 'All';
 type PathwayFilterValue = PathwayCategory | 'All';
@@ -69,7 +71,7 @@ const ACTIVITY_OPTIONS: { value: ActivityFilterValue; label: string }[] = [
 @Component({
   selector: 'app-guest-data-sheet',
   standalone: true,
-  imports: [ScrollingModule, RouterOutlet],
+  imports: [ScrollingModule, RouterOutlet, FormsModule, StaffPickerComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './guest-data-sheet.component.html',
   styleUrl: './guest-data-sheet.component.scss',
@@ -92,9 +94,9 @@ export class GuestDataSheetComponent {
   protected readonly error = signal<string | null>(null);
   protected readonly statusFilter = signal<StatusFilterValue>('All');
   protected readonly pathwayFilter = signal<PathwayFilterValue>('All');
-  protected readonly cmhwFilter = signal<string>('All');
+  /** Assigned CMHW filter — a staff id, or null for "all staff" (the picker's cleared state). */
+  protected readonly cmhwFilter = signal<string | null>(null);
   protected readonly activityFilter = signal<ActivityFilterValue>('All');
-  protected readonly cmhwOptions = signal<CmhwOptionDto[]>([]);
   protected readonly exporting = signal(false);
   protected readonly exportError = signal<string | null>(null);
 
@@ -136,15 +138,8 @@ export class GuestDataSheetComponent {
       }
     });
 
-    // "Assigned CMHW" options load once per visit; a failure just leaves the dropdown with
-    // its unfiltered "Assigned CMHW" default rather than blocking the list.
-    this.guestsApi
-      .getCmhwOptions()
-      .pipe(
-        catchError(() => of([] as CmhwOptionDto[])),
-        takeUntilDestroyed(),
-      )
-      .subscribe((options) => this.cmhwOptions.set(options));
+    // The "Assigned CMHW" filter is the shared staff picker, which loads (and caches) the hub's
+    // staff list itself through StaffDirectoryService — nothing to fetch here.
   }
 
   protected onSearchInput(value: string): void {
@@ -161,7 +156,8 @@ export class GuestDataSheetComponent {
     this.resetAndLoad();
   }
 
-  protected onCmhwChange(value: string): void {
+  /** Null when the picker is cleared, which is the "all staff" state. */
+  protected onCmhwChange(value: string | null): void {
     this.cmhwFilter.set(value);
     this.resetAndLoad();
   }
@@ -176,7 +172,7 @@ export class GuestDataSheetComponent {
     this.searchTerm = '';
     this.statusFilter.set('All');
     this.pathwayFilter.set('All');
-    this.cmhwFilter.set('All');
+    this.cmhwFilter.set(null);
     this.activityFilter.set('All');
     this.resetAndLoad();
   }
@@ -221,7 +217,7 @@ export class GuestDataSheetComponent {
       q: this.searchTerm || undefined,
       status: status === 'All' ? undefined : status,
       pathway: pathway === 'All' ? undefined : pathway,
-      cmhw: cmhw === 'All' ? undefined : cmhw,
+      cmhw: cmhw ?? undefined,
       lastActivityDays: activity === 'All' ? undefined : Number(activity),
     };
   }

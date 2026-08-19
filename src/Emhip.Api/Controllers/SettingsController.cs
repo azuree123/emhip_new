@@ -46,5 +46,18 @@ public sealed class SettingsController(IMediator mediator) : ControllerBase
         return Ok(result);
     }
 
+    /// <summary>Sends a real message through the (possibly unsaved) email settings to prove delivery works.</summary>
+    [HttpPost("email/test")]
+    [Authorize(Policy = Permissions.Settings.Manage)]
+    public async Task<ActionResult<Application.Emails.EmailTestResultDto>> TestEmail([FromBody] TestEmailRequest request, CancellationToken cancellationToken)
+    {
+        var result = await mediator.Send(
+            new Application.Emails.SendTestEmailCommand(request.ToEmail, request.Provider, request.Values ?? new Dictionary<string, string?>()),
+            cancellationToken);
+        return Ok(result);
+    }
+
     public sealed record TestStorageRequest(DocumentStorageProvider Provider, Dictionary<string, string?>? Values);
+
+    public sealed record TestEmailRequest(string ToEmail, string Provider, Dictionary<string, string?>? Values);
 }

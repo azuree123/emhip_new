@@ -29,6 +29,7 @@ public class EmhipDbContext(DbContextOptions<EmhipDbContext> options)
     public DbSet<DocumentVersion> DocumentVersions => Set<DocumentVersion>();
     public DbSet<AppSetting> AppSettings => Set<AppSetting>();
     public DbSet<LookupItem> LookupItems => Set<LookupItem>();
+    public DbSet<EmailTemplate> EmailTemplates => Set<EmailTemplate>();
     public DbSet<AuditEvent> AuditEvents => Set<AuditEvent>();
     public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
 

@@ -37,12 +37,16 @@
         }
       </select>
 
-      <select class="pill-select" [value]="cmhw()" (change)="onCmhwChange($event)" aria-label="Filter by assigned CMHW">
-        <option value="">All CMHW</option>
-        @for (opt of cmhwOptions(); track opt.id) {
-          <option [value]="opt.id">{{ opt.displayName }}</option>
-        }
-      </select>
+      <!-- Assigned CMHW: the shared searchable staff picker. Clearing it means "All CMHW",
+           and a drill-down's [initialCmhw] shows that staff member's name. -->
+      <emhip-staff-picker
+        class="cmhw-picker"
+        placeholder="All CMHW"
+        searchPlaceholder="Search CMHW…"
+        [allowClear]="true"
+        [ngModel]="cmhw() || null"
+        (ngModelChange)="onCmhwChange($event)"
+      />
 
       <select class="pill-select" [value]="lastActivityDays()" (change)="onActivityChange($event)" aria-label="Filter by last activity">
         <option value="">All Dates</option>

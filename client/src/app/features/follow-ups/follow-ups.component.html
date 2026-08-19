@@ -79,14 +79,14 @@
             <option [value]="s">{{ s }}</option>
           }
         </select>
-        <input
-          class="filter-input"
-          type="text"
+        <emhip-staff-picker
+          class="filter-picker"
+          name="assigneeFilter"
           [ngModel]="assigneeFilter()"
-          (ngModelChange)="assigneeFilter.set($event)"
-          (change)="applyAssigneeFilter()"
+          (ngModelChange)="setAssigneeFilter($event)"
           placeholder="All Workers"
-          title="Filter by assignee staff ID (applies on Enter)" />
+          searchPlaceholder="Search workers…"
+          title="Filter the queue by assignee" />
         <select class="filter-select" [ngModel]="dateRange()" (ngModelChange)="dateRange.set($event)" aria-label="Date range">
           <option value="">Date Range</option>
           <option value="today">Today</option>
@@ -239,10 +239,14 @@
             <strong>{{ modalGuestName() }}</strong>
           </div>
         } @else {
-          <label class="field">
-            <span>Guest ID</span>
-            <input type="text" [ngModel]="modalGuestId()" (ngModelChange)="modalGuestId.set($event)" placeholder="Paste a guest ID" />
-          </label>
+          <div class="field">
+            <span>Guest</span>
+            <emhip-guest-picker
+              name="guestId"
+              [ngModel]="modalGuestId()"
+              (ngModelChange)="modalGuestId.set($event ?? '')"
+              placeholder="Search guests by name or reference…" />
+          </div>
         }
 
         @if (modalMode() === 'schedule') {
@@ -250,10 +254,13 @@
             <span>Due date</span>
             <input type="datetime-local" [(ngModel)]="scheduleForm.dueDate" />
           </label>
-          <label class="field">
-            <span>Assignee staff ID</span>
-            <input type="text" [(ngModel)]="scheduleForm.assigneeStaffId" />
-          </label>
+          <div class="field">
+            <span>Assignee</span>
+            <emhip-staff-picker
+              name="assigneeStaffId"
+              [(ngModel)]="scheduleForm.assigneeStaffId"
+              placeholder="Select an assignee" />
+          </div>
           <label class="field">
             <span>Notes</span>
             <textarea rows="3" [(ngModel)]="scheduleForm.notes"></textarea>
