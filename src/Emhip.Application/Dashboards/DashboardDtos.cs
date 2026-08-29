@@ -28,10 +28,24 @@ public sealed record HubManagerDashboardDto(
     IReadOnlyList<PathwayDistributionDto> PathwayDistribution,
     IReadOnlyList<MonthlyStatDto> MonthlyStats,
     IReadOnlyList<RecentActivityDto> RecentActivity,
-    IReadOnlyList<ClinicalIndicatorDto> ClinicalComplexity);
+    IReadOnlyList<ClinicalIndicatorDto> ClinicalComplexity,
+    GuestDemographicsBreakdownDto Demographics,
+    IReadOnlyList<DataQualityIssueTileDto> DataQuality);
 
 public sealed record PathwayDistributionDto(string Category, int Count, double Percentage);
 
 public sealed record MonthlyStatDto(int Year, int Month, int NewGuests, int ClosedGuests, int Contacts);
 
 public sealed record RecentActivityDto(string Description, string ActorName, DateTimeOffset OccurredAt);
+
+/// <summary>"Guest demographics" dashboard card (design: ethnicity, age groups, country of origin).</summary>
+public sealed record GuestDemographicsBreakdownDto(
+    IReadOnlyList<DemographicSliceDto> Ethnicity,
+    IReadOnlyList<DemographicSliceDto> AgeGroups,
+    IReadOnlyList<DemographicSliceDto> Gender,
+    IReadOnlyList<DemographicSliceDto> CountryOfOrigin);
+
+public sealed record DemographicSliceDto(string Label, int Count, double Percentage);
+
+/// <summary>One row of the "Data quality issues" card.</summary>
+public sealed record DataQualityIssueTileDto(string Key, string Label, int Count);

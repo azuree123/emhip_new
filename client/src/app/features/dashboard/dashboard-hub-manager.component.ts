@@ -5,34 +5,57 @@ import { AuthService } from '../../core/auth.service';
 import { DashboardsApiService } from '../../core/dashboards-api.service';
 import { FollowUpsApiService } from '../../core/follow-ups-api.service';
 import { Permissions } from '../../core/permissions';
-import { FollowUpQueueItemDto, HubManagerDashboardDto, MonthlyStatDto, PathwayDistributionDto } from '../../core/api-models';
+import {
+  DataQualityIssueTileDto,
+  DemographicSliceDto,
+  FollowUpQueueItemDto,
+  HubManagerDashboardDto,
+  MonthlyStatDto,
+  PathwayDistributionDto,
+} from '../../core/api-models';
 import { GuestSeenCardComponent } from './guest-seen-card.component';
 import { KpiGuestsPanelComponent, KpiPanelVariant } from './kpi-guests-panel.component';
 
 /**
- * Pathway distribution rows — the design (GuestDataSheet2) shows the three allocation
- * pathways; the API may also return the six referral categories, so both label sets are
- * mapped. Bar colors cycle the design's red / yellow / maroon.
+ * Bar colors for "Pathway distribution" — the design's red / yellow / maroon, in the order the
+ * API returns the three clinical pathways (Mental Wellbeing, Clinical Support, Community
+ * Recovery). Row labels are whatever the API sends; nothing here assumes a category name or a
+ * particular number of rows.
  */
-const PATHWAY_LABELS: Record<string, string> = {
-  MentalWellbeing: 'Wellbeing support',
-  ClinicalSupport: 'Additional / clinical support',
-  CommunityRecovery: 'Community & recovery',
-  HousingAdvice: 'Housing Advice',
-  EmploymentSupport: 'Employment Support',
-  BenefitsFinancialSupport: 'Benefits & Financial Support',
-  FoodEssentials: 'Food & Essentials',
-  ImmigrationLegalAdvice: 'Immigration & Legal Advice',
-  OtherPracticalAdvice: 'Other Practical Advice',
-};
-
-const PATHWAY_COLORS = ['#eb3c2c', '#c9a723', '#941c3c', '#0f766e', '#1d4ed8', '#6d28d9'];
+const PATHWAY_COLORS = ['#eb3c2c', '#c9a723', '#941c3c'];
 
 interface PathwayRow extends PathwayDistributionDto {
-  label: string;
   color: string;
-  /** 0 = heart, 1 = first-aid box, 2 = community grid (icons cycle for extra rows). */
+  /** 0 = heart, 1 = first-aid box, 2 = community grid (icons cycle if more rows ever arrive). */
   icon: number;
+}
+
+/** One breakdown panel inside the "Guest demographics" card. */
+interface DemographicGroup {
+  key: string;
+  title: string;
+  color: string;
+  slices: DemographicSliceDto[];
+  /** Biggest slice, for the panel footnote — null when the breakdown is empty. */
+  largest: DemographicSliceDto | null;
+  /** Country of origin runs the full width under the other three, as in the design. */
+  wide: boolean;
+}
+
+/**
+ * Design copy for each "Data quality issues" row, keyed by the API's stable issue key. The rows
+ * themselves — and their labels and counts — always come from the API; an unknown key simply
+ * renders without a hint rather than being dropped.
+ */
+const DATA_QUALITY_HINTS: Record<string, string> = {
+  missingPathway: 'Guest is registered but has no pathway — cannot become Active until resolved',
+  missingInitialConversation: 'Status is New — DIALOG baseline and pathway cannot be assigned until completed',
+  missingDialogBaseline: 'Initial conversation completed but DIALOG not recorded — outcome comparison not possible',
+  autoOnHold: 'No activity recorded in past 3 months — status changed automatically by the system',
+};
+
+interface DataQualityRow extends DataQualityIssueTileDto {
+  hint: string | null;
 }
 
 /**
@@ -42,10 +65,9 @@ interface PathwayRow extends PathwayDistributionDto {
  *
  * Sections: expandable KPI row (drill-down panels per Frame 23/38/39, plus an urgent panel
  * that reuses the same language — the design ships no frame for it), Pathway distribution,
- * Clinical complexity indicators (spec §5.1), Guest Seen, Outstanding team actions (live
- * follow-up queue) and Staff activity (recent activity feed). Design sections with no
- * backing data — Caseload per CMHW, Guest demographics and Data quality issues — are
- * omitted (see feature report).
+ * Clinical complexity indicators (spec §5.1), Guest Seen, Guest demographics, Outstanding team
+ * actions (live follow-up queue), Staff activity (recent activity feed) and Data quality
+ * issues. Caseload per CMHW is still omitted — no backing data (see feature report).
  */
 @Component({
   selector: 'app-dashboard-hub-manager',
@@ -102,18 +124,65 @@ export class DashboardHubManagerComponent {
   /** Guests closed (moved to on hold) this month — the On hold card's trend pill. */
   protected readonly closedThisMonth = computed(() => this.latestMonth()?.closedGuests ?? null);
 
+  /**
+   * Pathway distribution rows, in the order the API sends them — the three clinical pathways
+   * (Mental Wellbeing, Clinical Support, Community Recovery). Server order is preserved so the
+   * icon and bar color stay attached to the same pathway between refreshes.
+   */
   protected readonly pathwayRows = computed<PathwayRow[]>(() => {
     const dto = this.data();
     if (!dto) return [];
-    return [...dto.pathwayDistribution]
-      .sort((a, b) => b.percentage - a.percentage)
-      .map((p, index) => ({
-        ...p,
-        label: PATHWAY_LABELS[p.category] ?? p.category.replace(/([a-z])([A-Z])/g, '$1 $2'),
-        color: PATHWAY_COLORS[index % PATHWAY_COLORS.length],
-        icon: index % 3,
-      }));
+    return dto.pathwayDistribution.map((p, index) => ({
+      ...p,
+      color: PATHWAY_COLORS[index % PATHWAY_COLORS.length],
+      icon: index % 3,
+    }));
   });
+
+  /** Total guests counted by the pathway bars — the denominator behind the percentages. */
+  protected readonly pathwayTotal = computed(() =>
+    this.pathwayRows().reduce((sum, row) => sum + row.count, 0),
+  );
+
+  /**
+   * The four "Guest demographics" breakdowns, in the design's order: Ethnicity, Age groups and
+   * Gender share the top row, Country of origin runs full width beneath them. Bar colors are the
+   * design's — the red / yellow / maroon triad on the top row and its grey for country. A
+   * breakdown stays in the list even when it is empty (country of origin is not captured yet);
+   * the panel then shows a short empty line instead of a chart.
+   */
+  protected readonly demographicGroups = computed<DemographicGroup[]>(() => {
+    const demographics = this.data()?.demographics;
+    if (!demographics) return [];
+    const build = (
+      key: string,
+      title: string,
+      color: string,
+      slices: DemographicSliceDto[] | undefined,
+      wide = false,
+    ): DemographicGroup => {
+      const rows = slices ?? [];
+      const largest = rows.reduce<DemographicSliceDto | null>(
+        (best, slice) => (best === null || slice.count > best.count ? slice : best),
+        null,
+      );
+      return { key, title, color, slices: rows, largest: largest && largest.count > 0 ? largest : null, wide };
+    };
+    return [
+      build('ethnicity', 'Ethnicity', '#eb3c2c', demographics.ethnicity),
+      build('ageGroups', 'Age groups', '#c9a723', demographics.ageGroups),
+      build('gender', 'Gender', '#941c3c', demographics.gender),
+      build('countryOfOrigin', 'Country of origin', '#8f8f8f', demographics.countryOfOrigin, true),
+    ];
+  });
+
+  /** "Data quality issues" rows — labels and counts straight from the API, hints by issue key. */
+  protected readonly dataQualityRows = computed<DataQualityRow[]>(() =>
+    (this.data()?.dataQuality ?? []).map((issue) => ({
+      ...issue,
+      hint: DATA_QUALITY_HINTS[issue.key] ?? null,
+    })),
+  );
 
   constructor() {
     this.dashboardsApi

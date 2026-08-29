@@ -129,6 +129,13 @@ public sealed class DashboardReadService(EmhipDbContext db, IUrgentCaseReadServi
             pathwayDistribution,
             monthlyStats,
             recentActivity,
-            DeserializeClinicalComplexity(snapshot));
+            DeserializeClinicalComplexity(snapshot),
+            snapshot is null
+                ? new GuestDemographicsBreakdownDto([], [], [], [])
+                : JsonSerializer.Deserialize<GuestDemographicsBreakdownDto>(snapshot.DemographicsJson)
+                  ?? new GuestDemographicsBreakdownDto([], [], [], []),
+            snapshot is null
+                ? []
+                : JsonSerializer.Deserialize<List<DataQualityIssueTileDto>>(snapshot.DataQualityJson) ?? []);
     }
 }

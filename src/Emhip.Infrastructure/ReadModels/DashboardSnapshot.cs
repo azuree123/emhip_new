@@ -22,5 +22,11 @@ public class DashboardSnapshot
     /// <summary>JSON-serialized IReadOnlyList&lt;ClinicalIndicatorDto&gt; — see ReportMaterializerWorker.</summary>
     public string ClinicalComplexityJson { get; set; } = "[]";
 
+    /// <summary>Guest demographics card: ethnicity, age bands and country of origin breakdowns.</summary>
+    public string DemographicsJson { get; set; } = "{}";
+
+    /// <summary>Data quality issues card — the same checks as the Data Quality report.</summary>
+    public string DataQualityJson { get; set; } = "[]";
+
     public DateTimeOffset RefreshedAt { get; set; }
 }

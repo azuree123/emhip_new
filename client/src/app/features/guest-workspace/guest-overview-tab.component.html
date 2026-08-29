@@ -29,7 +29,7 @@
             />
           </svg>
         </span>
-        See Follow-up Log tab
+        Tracked on the Follow-ups screen
       </span>
     </div>
     <div class="stat-tile">
@@ -181,14 +181,15 @@
         }
 
         <div class="card__footer">
-          @if (overview().openFollowUpCount > 0) {
+          @if (overview().recentContacts.length) {
             <span class="card__footer-text">
-              {{ overview().openFollowUpCount }} open {{ overview().openFollowUpCount === 1 ? 'entry' : 'entries' }} in follow-up log
+              Showing the {{ overview().recentContacts.length }} most recent
+              {{ overview().recentContacts.length === 1 ? 'contact' : 'contacts' }}
             </span>
           } @else {
-            <span class="card__footer-text card__footer-text--muted">Follow-up log up to date</span>
+            <span class="card__footer-text card__footer-text--muted">Nothing logged yet</span>
           }
-          <button type="button" class="btn-link" (click)="viewFollowUps.emit()">View all →</button>
+          <button type="button" class="btn-link" (click)="viewContactHistory.emit()">View all →</button>
         </div>
       </section>
     </div>

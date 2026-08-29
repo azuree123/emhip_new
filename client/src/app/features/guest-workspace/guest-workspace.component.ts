@@ -14,7 +14,8 @@ import { GuestClinicalDetailsTabComponent } from './guest-clinical-details-tab.c
 import { GuestDialogTabComponent } from './guest-dialog-tab.component';
 import { GuestPathwayTabComponent } from './guest-pathway-tab.component';
 import { GuestDocumentsTabComponent } from './guest-documents-tab.component';
-import { GuestFollowUpTabComponent } from './guest-followup-tab.component';
+import { GuestCarePlanTabComponent } from './guest-care-plan-tab.component';
+import { GuestContactHistoryTabComponent } from './guest-contact-history-tab.component';
 import { GuestActionTabComponent } from './guest-action-tab.component';
 import { GuestNotesTabComponent } from './guest-notes-tab.component';
 import { CaseworkNoteDrawerComponent } from './casework-note-drawer.component';
@@ -25,9 +26,10 @@ type TabId =
   | 'demographics'
   | 'initial'
   | 'clinical'
-  | 'followup'
   | 'dialog'
   | 'pathway'
+  | 'careplan'
+  | 'contacts'
   | 'documents'
   | 'action'
   | 'notes';
@@ -44,14 +46,14 @@ interface TabDef {
  * between sibling tab components, each of which fetches its own slice of data from
  * GuestsApiService.
  *
- * Tab set/order comes straight from the bundle's segmented bar: Overview · Demographics ·
- * Initial Conversation · Clinical Details · Follow-up Log · DIALOG Scores · Pathway History ·
- * Actions & Reminders. (The source uses three label variants for the 5th slot — "Activity
- * History", "Follow Up Log", "Contact History" — we standardise on "Follow-up Log".)
- * "Documents" sits between Pathway History and Actions & Reminders and "Notes" closes the bar
- * — neither has a slot in the bundle's segmented bar, but the guest-scoped document store
- * (DocumentsController) and the casework/quick notes both belong on the record, and the
- * casework notes are the record the design's "Add contact" drawer writes to.
+ * Tab set/order follows the bundle's segmented bar: Overview · Demographics · Initial
+ * Conversation · Clinical Details · DIALOG Scores · Pathway History, then "Care Plan" and
+ * "Contact History" (the latter is one of the bundle's three label variants for that slot;
+ * the other two — "Activity History" and "Follow Up Log" — are dropped: per-guest follow-ups
+ * are worked from the Follow-ups screen, not from a workspace tab). "Documents" and "Notes"
+ * close the bar — neither has a slot in the bundle's segmented bar, but the guest-scoped
+ * document store (DocumentsController) and the casework/quick notes both belong on the
+ * record, and the casework notes are the record the design's "Add contact" drawer writes to.
  *
  * The header's "Add Contact" button opens CaseworkNoteDrawerComponent — in the design that
  * button leads to the SBAR casework note (GuestOverviewTab2, bundle 50271-54563), not a bare
@@ -71,7 +73,8 @@ interface TabDef {
     GuestDialogTabComponent,
     GuestPathwayTabComponent,
     GuestDocumentsTabComponent,
-    GuestFollowUpTabComponent,
+    GuestCarePlanTabComponent,
+    GuestContactHistoryTabComponent,
     GuestActionTabComponent,
     GuestNotesTabComponent,
     CaseworkNoteDrawerComponent,
@@ -95,9 +98,10 @@ export class GuestWorkspaceComponent {
     { id: 'demographics', label: 'Demographics' },
     { id: 'initial', label: 'Initial Conversation' },
     { id: 'clinical', label: 'Clinical Details' },
-    { id: 'followup', label: 'Follow-up Log' },
     { id: 'dialog', label: 'DIALOG Scores' },
     { id: 'pathway', label: 'Pathway History' },
+    { id: 'careplan', label: 'Care Plan' },
+    { id: 'contacts', label: 'Contact History' },
     { id: 'documents', label: 'Documents' },
     { id: 'action', label: 'Actions & Reminders' },
     { id: 'notes', label: 'Notes' },

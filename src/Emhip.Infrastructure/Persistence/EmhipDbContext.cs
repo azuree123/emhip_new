@@ -35,6 +35,8 @@ public class EmhipDbContext(DbContextOptions<EmhipDbContext> options)
     public DbSet<CaseworkNote> CaseworkNotes => Set<CaseworkNote>();
     public DbSet<PathwayChange> PathwayChanges => Set<PathwayChange>();
     public DbSet<CaseloadAssignment> CaseloadAssignments => Set<CaseloadAssignment>();
+    public DbSet<CarePlan> CarePlans => Set<CarePlan>();
+    public DbSet<CarePlanGoal> CarePlanGoals => Set<CarePlanGoal>();
     public DbSet<AuditEvent> AuditEvents => Set<AuditEvent>();
     public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
 

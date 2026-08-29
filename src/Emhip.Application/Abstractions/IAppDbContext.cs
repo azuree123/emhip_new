@@ -35,6 +35,8 @@ public interface IAppDbContext
     DbSet<CaseworkNote> CaseworkNotes { get; }
     DbSet<PathwayChange> PathwayChanges { get; }
     DbSet<CaseloadAssignment> CaseloadAssignments { get; }
+    DbSet<CarePlan> CarePlans { get; }
+    DbSet<CarePlanGoal> CarePlanGoals { get; }
     DbSet<AuditEvent> AuditEvents { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);

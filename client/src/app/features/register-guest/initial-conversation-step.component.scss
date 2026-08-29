@@ -1,7 +1,8 @@
 // Step-specific styles for the Initial Conversation step (Desktop79); shared styles live in
 // _form-shared.scss.
 
-// The 550px-wide answer boxes ("what does the client report…", physical health conditions).
+// The narrower answer boxes ("what does the client report…", physical health conditions) —
+// two thirds of the field-row lane, as in the source.
 .field__textarea--narrow {
   max-width: 550px;
 }

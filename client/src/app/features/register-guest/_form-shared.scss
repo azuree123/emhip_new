@@ -4,8 +4,10 @@
 // as normal flow/grid CSS instead of the source's absolute-positioned divs.
 //
 // Source geometry: the page lays white r12 cards on a rgb(237,237,237) canvas; inside a card
-// field columns are 262px wide with a 26px gutter, large free-text answers are 550/607x99
-// boxes, and card titles are 20px/600.
+// field columns sit two-up with a 32px gutter, large free-text answers are ~99px tall boxes,
+// and card titles are 20px/600. The wizard is a full page (not the old 858px drawer), so the
+// two-up rows are fluid up to an 820px reading width instead of the source's fixed 262px
+// columns — wide enough to breathe, narrow enough that a name field is not a banner.
 
 .card {
   box-sizing: border-box;
@@ -96,12 +98,13 @@
 
 .field-row {
   display: grid;
-  grid-template-columns: 262px 262px;
-  column-gap: 26px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 32px;
   margin-bottom: 20px;
+  max-width: 820px;
 
   &--single {
-    grid-template-columns: 550px;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   &:last-child {
@@ -167,11 +170,12 @@
   }
 }
 
-// Long-answer boxes are 99px tall in the source (607x99 / 550x99), user-resizable here.
+// Long-answer boxes are 99px tall in the source (607x99 / 550x99), user-resizable here; the
+// width follows the field-row lane now that the wizard is full-page.
 .field__textarea {
   height: 99px;
   min-height: 99px;
-  max-width: 607px;
+  max-width: 820px;
   padding: 6px 16px;
   resize: vertical;
   line-height: 19px;

@@ -2,6 +2,7 @@ using Dapper;
 using Emhip.Application.Common;
 using Emhip.Application.Guests;
 using Emhip.Application.Guests.Actions;
+using Emhip.Application.Guests.CarePlans;
 using Emhip.Application.Guests.Caseload;
 using Emhip.Application.Guests.Casework;
 using Emhip.Application.Guests.Dialog;
@@ -353,6 +354,85 @@ public sealed class GuestReadService(ISqlConnectionFactory connectionFactory, Em
                         .Select(a => new CaseworkNoteActionDto(a.Id, a.Description, a.DueDate, a.IsCompleted, a.AssignedToName))
                         .ToList()))
             .ToList();
+    }
+
+    public async Task<GuestCarePlansDto> GetCarePlansAsync(Guid guestId, CancellationToken cancellationToken = default)
+    {
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+
+        var plans = await db.CarePlans.AsNoTracking()
+            .Where(p => p.GuestId == guestId)
+            .OrderByDescending(p => p.StartedOn).ThenByDescending(p => p.CreatedAt)
+            .Select(p => new
+            {
+                p.Id, p.GuestId, p.Status, p.Summary, p.GuestVoice, p.SupportArrangements,
+                p.StartedOn, p.ReviewDueOn, p.ClosedOn, p.UpdatedAt,
+                CreatedByName = db.Users.Where(u => u.Id == p.CreatedByStaffId).Select(u => u.DisplayName).FirstOrDefault() ?? "Unknown",
+            })
+            .ToListAsync(cancellationToken);
+
+        if (plans.Count == 0) return new GuestCarePlansDto(null, []);
+
+        var planIds = plans.Select(p => p.Id).ToList();
+        var goals = await db.CarePlanGoals.AsNoTracking()
+            .Where(g => planIds.Contains(g.CarePlanId))
+            .OrderBy(g => g.SortOrder)
+            .Select(g => new { g.CarePlanId, Dto = new CarePlanGoalDto(g.Id, g.Description, g.Status, g.TargetDate, g.ProgressNote, g.SortOrder) })
+            .ToListAsync(cancellationToken);
+
+        var mapped = plans
+            .Select(p => new CarePlanDto(
+                p.Id, p.GuestId, p.Status, p.Summary, p.GuestVoice, p.SupportArrangements,
+                p.StartedOn, p.ReviewDueOn, p.ClosedOn,
+                p.Status == CarePlanStatus.Active && p.ReviewDueOn is not null && p.ReviewDueOn < today,
+                p.CreatedByName, p.UpdatedAt,
+                goals.Where(g => g.CarePlanId == p.Id).Select(g => g.Dto).ToList()))
+            .ToList();
+        var current = mapped.FirstOrDefault(p => p.Status == CarePlanStatus.Active);
+
+        return new GuestCarePlansDto(current, mapped.Where(p => p.Status != CarePlanStatus.Active).ToList());
+    }
+
+    private sealed record ContactCursor(DateTimeOffset OccurredAt, Guid Id);
+
+    public async Task<KeysetPage<GuestContactSummaryDto>> GetContactHistoryAsync(
+        Guid guestId, string? cursor, int pageSize, CancellationToken cancellationToken = default)
+    {
+        var decoded = KeysetCursor.Decode<ContactCursor>(cursor);
+
+        var query = db.Contacts.AsNoTracking().Where(c => c.GuestId == guestId);
+        if (decoded is not null)
+        {
+            query = query.Where(c => c.OccurredAt < decoded.OccurredAt
+                || (c.OccurredAt == decoded.OccurredAt && c.Id.CompareTo(decoded.Id) < 0));
+        }
+
+        var rows = await query
+            .OrderByDescending(c => c.OccurredAt).ThenByDescending(c => c.Id)
+            .Take(pageSize + 1)
+            .Select(c => new
+            {
+                c.Id, c.OccurredAt,
+                Type = c.Type.ToString(),
+                Outcome = c.Outcome.ToString(),
+                CreatedByName = db.Users.Where(u => u.Id == c.CreatedByStaffId).Select(u => u.DisplayName).FirstOrDefault() ?? "Unknown",
+            })
+            .ToListAsync(cancellationToken);
+
+        var hasMore = rows.Count > pageSize;
+        var page = rows.Take(pageSize)
+            .Select(r => new GuestContactSummaryDto(r.Id, r.Type, r.Outcome, r.OccurredAt, r.CreatedByName))
+            .ToList();
+
+        return new KeysetPage<GuestContactSummaryDto>
+        {
+            Items = page,
+            NextCursor = hasMore ? KeysetCursor.Encode(new ContactCursor(page[^1].OccurredAt, page[^1].Id)) : null,
+            HasMore = hasMore,
+            TotalCount = decoded is null
+                ? await db.Contacts.AsNoTracking().CountAsync(c => c.GuestId == guestId, cancellationToken)
+                : null,
+        };
     }
 
     public async Task<IReadOnlyList<CaseloadAssignmentDto>> GetCaseloadHistoryAsync(Guid guestId, CancellationToken cancellationToken = default) =>

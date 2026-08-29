@@ -138,14 +138,6 @@ export class AppShellComponent implements OnInit {
       label: 'CASE MANGEMENT',
       items: [
         {
-          label: 'Follow-up Log',
-          route: '/followups',
-          iconViewBox: '0 0 16.25 16.25',
-          iconPath:
-            'M 14.995 2.506 L 14.999 2.607 L 15 2.708 L 15 11.958 C 15 13.638 13.638 15 11.958 15 L 2.708 15 C 2.64 15 2.573 14.998 2.506 14.994 C 2.986 15.749 3.83 16.25 4.792 16.25 L 11.958 16.25 C 14.329 16.25 16.25 14.329 16.25 11.958 L 16.25 4.792 C 16.25 3.831 15.749 2.986 14.995 2.506 Z M 2.708 0 C 1.213 0 0 1.213 0 2.708 L 0 11.458 C 0 12.954 1.213 14.167 2.708 14.167 L 11.458 14.167 C 12.954 14.167 14.167 12.954 14.167 11.458 L 14.167 2.708 C 14.167 1.213 12.954 0 11.458 0 L 2.708 0 Z',
-          permissions: [Permissions.FollowUps.View],
-        },
-        {
           label: 'Urgent Cases',
           route: '/urgent-cases',
           iconViewBox: '0 0 16.667 16.667',

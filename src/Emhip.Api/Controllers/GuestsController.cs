@@ -1,6 +1,7 @@
 using Emhip.Application.Abstractions;
 using Emhip.Application.Contacts;
 using Emhip.Application.Guests.Actions;
+using Emhip.Application.Guests.CarePlans;
 using Emhip.Application.Guests.Caseload;
 using Emhip.Application.Guests.Casework;
 using Emhip.Application.Guests.Clinical;
@@ -308,6 +309,40 @@ public sealed class GuestsController(IMediator mediator, ICurrentUser currentUse
         return NoContent();
     }
 
+    /// <summary>Care Plan tab — the active plan with its goals, plus closed plans as history.</summary>
+    [HttpGet("{guestId:guid}/care-plan")]
+    [Authorize(Policy = Permissions.Guests.View)]
+    public async Task<IActionResult> GetCarePlan(Guid guestId, CancellationToken cancellationToken) =>
+        Ok(await mediator.Send(new GetGuestCarePlansQuery(guestId), cancellationToken));
+
+    /// <summary>Creates the guest's care plan or updates the active one, replacing its goal list.</summary>
+    [HttpPut("{guestId:guid}/care-plan")]
+    [Authorize(Policy = Permissions.Guests.Edit)]
+    public async Task<IActionResult> SaveCarePlan(Guid guestId, [FromBody] SaveCarePlanRequest request, CancellationToken cancellationToken)
+    {
+        var id = await mediator.Send(
+            new SaveCarePlanCommand(guestId, request.Summary, request.GuestVoice, request.SupportArrangements,
+                request.ReviewDueOn, request.Goals ?? []),
+            cancellationToken);
+        return Ok(new { id });
+    }
+
+    /// <summary>Closes the active plan as completed or superseded; closed plans are read-only.</summary>
+    [HttpPost("{guestId:guid}/care-plan/close")]
+    [Authorize(Policy = Permissions.Guests.Edit)]
+    public async Task<IActionResult> CloseCarePlan(Guid guestId, [FromBody] CloseCarePlanRequest request, CancellationToken cancellationToken)
+    {
+        await mediator.Send(new CloseCarePlanCommand(guestId, request.Status), cancellationToken);
+        return NoContent();
+    }
+
+    /// <summary>Contact History tab — every recorded contact, newest first, keyset-paginated.</summary>
+    [HttpGet("{guestId:guid}/contacts")]
+    [Authorize(Policy = Permissions.Guests.View)]
+    public async Task<IActionResult> GetContactHistory(
+        Guid guestId, [FromQuery] string? cursor = null, [FromQuery] int pageSize = 25, CancellationToken cancellationToken = default) =>
+        Ok(await mediator.Send(new GetContactHistoryQuery(guestId, cursor, Math.Clamp(pageSize, 1, 100)), cancellationToken));
+
     /// <summary>Reassigns the guest's CMHW and logs it (spec §4.4).</summary>
     [HttpPost("{guestId:guid}/reassign")]
     [Authorize(Policy = Permissions.Guests.Edit)]
@@ -405,6 +440,12 @@ public sealed class GuestsController(IMediator mediator, ICurrentUser currentUse
     public sealed record SetNotePinnedRequest(bool IsPinned);
 
     public sealed record ReassignGuestRequest(Guid? AssignedCmhwId, string? Reason);
+
+    public sealed record SaveCarePlanRequest(
+        string? Summary, string? GuestVoice, string? SupportArrangements, DateOnly? ReviewDueOn,
+        IReadOnlyList<CarePlanGoalInput>? Goals);
+
+    public sealed record CloseCarePlanRequest(Domain.Enums.CarePlanStatus Status);
 
     public sealed record ChangePathwayRequest(
         GuestPathway Pathway, string? Reason, Guid? AssignedByStaffId, string? AssignedByName, DateOnly ChangedOn);

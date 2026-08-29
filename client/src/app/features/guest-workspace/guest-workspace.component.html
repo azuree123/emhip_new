@@ -118,7 +118,7 @@
         </svg>
         <span class="banner__text">
           {{ guest.openFollowUpCount }} open follow-up {{ guest.openFollowUpCount === 1 ? 'entry' : 'entries' }} —
-          check the Follow-up Log tab to keep the record current.
+          work them from the Follow-ups screen to keep the record current.
         </span>
       </div>
     }
@@ -127,7 +127,7 @@
     <section class="tab-body">
       @switch (activeTab()) {
         @case ('overview') {
-          <app-guest-overview-tab [overview]="guest" (viewFollowUps)="selectTab('followup')" />
+          <app-guest-overview-tab [overview]="guest" (viewContactHistory)="selectTab('contacts')" />
         }
         @case ('demographics') {
           <app-guest-demographics-tab [guestId]="guestId()" [overview]="guest" />
@@ -146,14 +146,17 @@
             (refresh)="reloadOverview()"
           />
         }
-        @case ('followup') {
-          <app-guest-followup-tab [guestId]="guestId()" (refresh)="reloadOverview()" />
-        }
         @case ('dialog') {
           <emhip-guest-dialog-tab [guestId]="guestId()" (refresh)="reloadOverview()" />
         }
         @case ('pathway') {
           <app-guest-pathway-tab [guestId]="guestId()" [overview]="guest" (refresh)="reloadOverview()" />
+        }
+        @case ('careplan') {
+          <emhip-guest-care-plan-tab [guestId]="guestId()" />
+        }
+        @case ('contacts') {
+          <emhip-guest-contact-history-tab [guestId]="guestId()" />
         }
         @case ('documents') {
           <emhip-guest-documents-tab [guestId]="guestId()" (refresh)="reloadOverview()" />

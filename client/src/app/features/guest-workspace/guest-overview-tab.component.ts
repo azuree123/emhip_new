@@ -26,7 +26,8 @@ import {
  * - "Sex" and "Next contact" have no field on any DTO — replaced with real fields (contact
  *   phone/email, AFA support) in the same slots. "Referral type" is real: referralSource.
  * - "Total follow-up entries" tile: the API only exposes openFollowUpCount — labelled
- *   "Open follow-up entries".
+ *   "Open follow-up entries". It is a count, not a link: per-guest follow-ups are worked from
+ *   the Follow-ups screen, which is why the workspace has no Follow-up Log tab.
  * - "DIALOG baseline score" tile is real: fetched via getDialog() (baseline.total / 77).
  * - Ethnicity / Housing / Economic activity come from getDemographics(); if that call fails
  *   (e.g. no permission) the fields render as "—".
@@ -49,8 +50,8 @@ export class GuestOverviewTabComponent {
 
   readonly overview = input.required<GuestOverviewDto>();
   /** "View all →" footer on the Recent activity history card — the workspace responds by
-   *  switching to the Follow-up Log tab. */
-  @Output() readonly viewFollowUps = new EventEmitter<void>();
+   *  switching to the Contact History tab, which pages the full contact log. */
+  @Output() readonly viewContactHistory = new EventEmitter<void>();
 
   /** Demographics slice for the Personal snapshot card; null while loading or when not viewable. */
   readonly demographics = signal<GuestDemographicsDto | null>(null);

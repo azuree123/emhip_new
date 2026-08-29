@@ -22,11 +22,13 @@ const STATUS_BY_VARIANT: Record<KpiPanelVariant, GuestStatus | null> = {
 /** Rows shown in every drill-down table. */
 const ROW_LIMIT = 5;
 
-/** Short pathway labels as shown in the drill-down tables ("Wellbeing", "Community", …). */
+/**
+ * Short labels for the drill-down tables' Pathway column. This column shows the guest's
+ * practical-support referral category (PathwayCategory), which is a different axis from the
+ * three clinical pathways on the Pathway distribution card — so only the referral categories
+ * are mapped here. Anything unknown falls back to the de-camel-cased key.
+ */
 const PATHWAY_SHORT: Record<string, string> = {
-  MentalWellbeing: 'Wellbeing',
-  ClinicalSupport: 'Clinical',
-  CommunityRecovery: 'Community',
   HousingAdvice: 'Housing Advice',
   EmploymentSupport: 'Employment Support',
   BenefitsFinancialSupport: 'Benefits & Financial',

@@ -1,0 +1,350 @@
+<div class="tab-panel">
+  @if (loading()) {
+    <div class="state-card">Loading care plan…</div>
+  } @else if (error()) {
+    <div class="state-card state-card--error">
+      {{ error() }}
+      <div class="state-card__actions">
+        <button type="button" class="btn-ghost" (click)="retry()">Try again</button>
+      </div>
+    </div>
+  } @else {
+    <!-- ── The active plan ─────────────────────────────────────────────── -->
+    @if (editing()) {
+      <section class="card">
+        <div class="card__header-row">
+          <h2 class="card__title">{{ current() ? 'Edit care plan' : 'Start care plan' }}</h2>
+        </div>
+
+        <div class="edit-form">
+          <div class="edit-form__grid">
+            <label class="edit-form__field edit-form__field--full">
+              <span>Plan summary</span>
+              <textarea
+                rows="3"
+                [(ngModel)]="form.summary"
+                placeholder="What this plan is for, in a sentence or two…"
+              ></textarea>
+            </label>
+            <label class="edit-form__field edit-form__field--full">
+              <span>The guest’s own words</span>
+              <textarea
+                rows="3"
+                [(ngModel)]="form.guestVoice"
+                placeholder="What the guest said they want out of this support…"
+              ></textarea>
+            </label>
+            <label class="edit-form__field edit-form__field--full">
+              <span>Agreed support arrangements</span>
+              <textarea
+                rows="3"
+                [(ngModel)]="form.supportArrangements"
+                placeholder="Who does what, how often, and with whom…"
+              ></textarea>
+            </label>
+            <label class="edit-form__field">
+              <span>Review due</span>
+              <input type="date" [(ngModel)]="form.reviewDueOn" />
+            </label>
+          </div>
+
+          <!-- Goals: the array order is the sort order the server stores. -->
+          <div class="goals-editor">
+            <div class="goals-editor__head">
+              <h3 class="subhead">Goals</h3>
+              <span class="hint">Goals removed here are deleted when the plan is saved.</span>
+            </div>
+
+            @for (goal of form.goals; track goal.key; let i = $index, count = $count) {
+              <div class="goal-row">
+                <div class="goal-row__head">
+                  <span class="goal-row__index">Goal {{ i + 1 }}</span>
+                  <div class="goal-row__controls">
+                    <button
+                      type="button"
+                      class="icon-btn"
+                      aria-label="Move goal up"
+                      [disabled]="i === 0"
+                      (click)="moveGoal(i, -1)"
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <path d="M12 19V5m0 0-6 6m6-6 6 6" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" />
+                      </svg>
+                    </button>
+                    <button
+                      type="button"
+                      class="icon-btn"
+                      aria-label="Move goal down"
+                      [disabled]="i === count - 1"
+                      (click)="moveGoal(i, 1)"
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <path d="M12 5v14m0 0 6-6m-6 6-6-6" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" />
+                      </svg>
+                    </button>
+                    <button
+                      type="button"
+                      class="icon-btn icon-btn--danger"
+                      aria-label="Remove goal"
+                      (click)="removeGoal(i)"
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <path d="M5 7h14M10 7V5h4v2m-7 0 .8 12h8.4L17 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+
+                <div class="goal-row__grid">
+                  <label class="edit-form__field edit-form__field--full">
+                    <span>Description</span>
+                    <input type="text" [(ngModel)]="goal.description" placeholder="What the guest is working towards…" />
+                  </label>
+                  <label class="edit-form__field">
+                    <span>Status</span>
+                    <select [(ngModel)]="goal.status">
+                      @for (status of goalStatuses; track status) {
+                        <option [value]="status">{{ goalChip(status).label }}</option>
+                      }
+                    </select>
+                  </label>
+                  <label class="edit-form__field">
+                    <span>Target date</span>
+                    <input type="date" [(ngModel)]="goal.targetDate" />
+                  </label>
+                  <label class="edit-form__field edit-form__field--full">
+                    <span>Progress note</span>
+                    <textarea rows="2" [(ngModel)]="goal.progressNote" placeholder="How this goal is going…"></textarea>
+                  </label>
+                </div>
+              </div>
+            } @empty {
+              <p class="empty-state">No goals yet — add the first one below.</p>
+            }
+
+            <button type="button" class="btn-ghost goals-editor__add" (click)="addGoal()">
+              <svg width="16" height="16" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                <path d="M10 4.25v11.5M4.25 10h11.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+              </svg>
+              Add goal
+            </button>
+          </div>
+
+          @if (saveError()) {
+            <p class="form-error">{{ saveError() }}</p>
+          }
+
+          <div class="edit-form__actions">
+            <button type="button" class="btn-ghost" [disabled]="saving()" (click)="cancelEdit()">Cancel</button>
+            <button type="button" class="btn-primary" [disabled]="saving()" (click)="save()">
+              {{ saving() ? 'Saving…' : 'Save care plan' }}
+            </button>
+          </div>
+        </div>
+      </section>
+    } @else if (current(); as plan) {
+      <section class="card">
+        <div class="card__header-row">
+          <div class="plan-heading">
+            <h2 class="card__title">Care Plan</h2>
+            <span class="chip" [style.background]="planChip(plan.status).bg" [style.color]="planChip(plan.status).fg">
+              {{ planChip(plan.status).label }}
+            </span>
+            @if (plan.isReviewOverdue) {
+              <span class="chip chip--overdue">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" />
+                  <path d="M12 7.5v5.25M12 16.25v.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                </svg>
+                Review overdue
+              </span>
+            }
+          </div>
+          @if (canEdit) {
+            <div class="plan-actions">
+              <button type="button" class="btn-ghost" (click)="openClose()">Close plan</button>
+              <button type="button" class="btn-primary" (click)="editPlan()">Edit plan</button>
+            </div>
+          }
+        </div>
+
+        @if (closingOpen()) {
+          <div class="close-strip">
+            <p class="close-strip__text">
+              Closing this plan moves it into history and makes it read-only. How did it end?
+            </p>
+            @if (closeError()) {
+              <p class="form-error">{{ closeError() }}</p>
+            }
+            <div class="close-strip__actions">
+              <button type="button" class="btn-ghost" [disabled]="closing()" (click)="cancelClose()">Cancel</button>
+              <button type="button" class="btn-ghost" [disabled]="closing()" (click)="closePlan('Superseded')">
+                Superseded
+              </button>
+              <button type="button" class="btn-primary" [disabled]="closing()" (click)="closePlan('Completed')">
+                {{ closing() ? 'Closing…' : 'Completed' }}
+              </button>
+            </div>
+          </div>
+        }
+
+        <div class="plan-dates">
+          <div class="field">
+            <span class="field__label">Started</span>
+            <span class="field__value">{{ formatDate(plan.startedOn) }}</span>
+          </div>
+          <div class="field">
+            <span class="field__label">Review due</span>
+            <span class="field__value" [class.field__value--overdue]="plan.isReviewOverdue">
+              {{ formatDate(plan.reviewDueOn) }}
+            </span>
+          </div>
+          <div class="field">
+            <span class="field__label">Created by</span>
+            <span class="field__value">{{ plan.createdByName || '—' }}</span>
+          </div>
+          <div class="field">
+            <span class="field__label">Last updated</span>
+            <span class="field__value">{{ formatDateTime(plan.updatedAt) }}</span>
+          </div>
+        </div>
+
+        <div class="plan-prose">
+          <div class="prose-block">
+            <span class="prose-block__label">Plan summary</span>
+            <p class="prose-block__body">{{ plan.summary || 'Not recorded yet.' }}</p>
+          </div>
+          <div class="prose-block prose-block--voice">
+            <span class="prose-block__label">The guest’s own words</span>
+            <p class="prose-block__body">{{ plan.guestVoice || 'Not recorded yet.' }}</p>
+          </div>
+          <div class="prose-block">
+            <span class="prose-block__label">Agreed support arrangements</span>
+            <p class="prose-block__body">{{ plan.supportArrangements || 'Not recorded yet.' }}</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card__header-row">
+          <h2 class="card__title">Goals</h2>
+          <span class="count-label">{{ plan.goals.length }} {{ plan.goals.length === 1 ? 'goal' : 'goals' }}</span>
+        </div>
+
+        @if (plan.goals.length) {
+          <ol class="goal-list">
+            @for (goal of orderedGoals(plan); track goal.id) {
+              <li class="goal">
+                <div class="goal__head">
+                  <span class="goal__description">{{ goal.description }}</span>
+                  <span
+                    class="chip"
+                    [style.background]="goalChip(goal.status).bg"
+                    [style.color]="goalChip(goal.status).fg"
+                  >
+                    {{ goalChip(goal.status).label }}
+                  </span>
+                </div>
+                <div class="goal__meta">
+                  <span>Target {{ formatDate(goal.targetDate) }}</span>
+                </div>
+                @if (goal.progressNote) {
+                  <p class="goal__note">{{ goal.progressNote }}</p>
+                }
+              </li>
+            }
+          </ol>
+        } @else {
+          <p class="empty-state">No goals have been agreed on this plan yet.</p>
+        }
+      </section>
+    } @else {
+      <section class="card">
+        <div class="empty-plan">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path
+              d="M7 3.75h10A1.25 1.25 0 0 1 18.25 5v14A1.25 1.25 0 0 1 17 20.25H7A1.25 1.25 0 0 1 5.75 19V5A1.25 1.25 0 0 1 7 3.75Z"
+              stroke="currentColor"
+              stroke-width="1.4"
+            />
+            <path d="M8.75 9h6.5M8.75 12.25h6.5M8.75 15.5h4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
+          </svg>
+          <p class="empty-plan__title">No care plan yet</p>
+          <p class="empty-plan__text">
+            A care plan records what the guest wants from their support, the arrangements agreed with them, and the
+            goals being worked towards.
+          </p>
+          @if (canEdit) {
+            <button type="button" class="btn-primary" (click)="startPlan()">Start care plan</button>
+          } @else {
+            <p class="empty-state">You do not have permission to start a care plan for this guest.</p>
+          }
+        </div>
+      </section>
+    }
+
+    <!-- ── Closed plans, read-only ─────────────────────────────────────── -->
+    @if (history().length) {
+      <section class="card">
+        <div class="card__header-row">
+          <h2 class="card__title">Previous care plans</h2>
+          <span class="count-label">{{ history().length }} closed</span>
+        </div>
+
+        <div class="history-list">
+          @for (plan of history(); track plan.id) {
+            <article class="history-plan">
+              <div class="history-plan__head">
+                <span class="history-plan__dates">
+                  {{ formatDate(plan.startedOn) }} — {{ formatDate(plan.closedOn) }}
+                </span>
+                <span
+                  class="chip"
+                  [style.background]="planChip(plan.status).bg"
+                  [style.color]="planChip(plan.status).fg"
+                >
+                  {{ planChip(plan.status).label }}
+                </span>
+              </div>
+
+              @if (plan.summary) {
+                <p class="history-plan__body">{{ plan.summary }}</p>
+              }
+              @if (plan.guestVoice) {
+                <div class="prose-block prose-block--voice">
+                  <span class="prose-block__label">The guest’s own words</span>
+                  <p class="prose-block__body">{{ plan.guestVoice }}</p>
+                </div>
+              }
+              @if (plan.supportArrangements) {
+                <div class="prose-block">
+                  <span class="prose-block__label">Agreed support arrangements</span>
+                  <p class="prose-block__body">{{ plan.supportArrangements }}</p>
+                </div>
+              }
+
+              @if (plan.goals.length) {
+                <ul class="history-goals">
+                  @for (goal of orderedGoals(plan); track goal.id) {
+                    <li class="history-goals__item">
+                      <span
+                        class="chip"
+                        [style.background]="goalChip(goal.status).bg"
+                        [style.color]="goalChip(goal.status).fg"
+                      >
+                        {{ goalChip(goal.status).label }}
+                      </span>
+                      <span class="history-goals__text">{{ goal.description }}</span>
+                    </li>
+                  }
+                </ul>
+              }
+
+              <span class="history-plan__meta">Created by {{ plan.createdByName || '—' }}</span>
+            </article>
+          }
+        </div>
+      </section>
+    }
+  }
+</div>

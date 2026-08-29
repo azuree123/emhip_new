@@ -360,6 +360,8 @@ export interface HubManagerDashboardDto {
   monthlyStats: MonthlyStatDto[];
   recentActivity: RecentActivityDto[];
   clinicalComplexity: ClinicalIndicatorDto[];
+  demographics: GuestDemographicsBreakdownDto;
+  dataQuality: DataQualityIssueTileDto[];
 }
 
 export interface PathwayCategoryTotalDto {
@@ -1040,3 +1042,78 @@ export const AGE_BANDS = [
 ] as const;
 
 export type AgeBandLabel = (typeof AGE_BANDS)[number]['label'];
+
+// ---- Care plan (guest workspace tab) ----
+
+export type CarePlanStatus = 'Active' | 'Completed' | 'Superseded';
+export type CarePlanGoalStatus = 'NotStarted' | 'InProgress' | 'Achieved' | 'Discontinued';
+
+export interface CarePlanGoalDto {
+  id: string;
+  description: string;
+  status: CarePlanGoalStatus;
+  targetDate: string | null;
+  progressNote: string | null;
+  sortOrder: number;
+}
+
+export interface CarePlanDto {
+  id: string;
+  guestId: string;
+  status: CarePlanStatus;
+  summary: string | null;
+  /** What the guest said they want out of the support. */
+  guestVoice: string | null;
+  supportArrangements: string | null;
+  startedOn: string;
+  reviewDueOn: string | null;
+  closedOn: string | null;
+  isReviewOverdue: boolean;
+  createdByName: string;
+  updatedAt: string;
+  goals: CarePlanGoalDto[];
+}
+
+/** The active plan plus closed ones as history; `current` is null before a plan exists. */
+export interface GuestCarePlansDto {
+  current: CarePlanDto | null;
+  history: CarePlanDto[];
+}
+
+/** Omit `id` for a new goal; goals left out of the list are removed. */
+export interface CarePlanGoalInput {
+  id?: string | null;
+  description: string;
+  status: CarePlanGoalStatus;
+  targetDate?: string | null;
+  progressNote?: string | null;
+}
+
+export interface SaveCarePlanRequest {
+  summary?: string | null;
+  guestVoice?: string | null;
+  supportArrangements?: string | null;
+  reviewDueOn?: string | null;
+  goals: CarePlanGoalInput[];
+}
+
+// ---- Dashboard demographics + data quality cards ----
+
+export interface DemographicSliceDto {
+  label: string;
+  count: number;
+  percentage: number;
+}
+
+export interface GuestDemographicsBreakdownDto {
+  ethnicity: DemographicSliceDto[];
+  ageGroups: DemographicSliceDto[];
+  gender: DemographicSliceDto[];
+  countryOfOrigin: DemographicSliceDto[];
+}
+
+export interface DataQualityIssueTileDto {
+  key: string;
+  label: string;
+  count: number;
+}

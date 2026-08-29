@@ -4,6 +4,9 @@ import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 import {
   AddContactRequest,
+  GuestCarePlansDto,
+  GuestContactSummaryDto,
+  SaveCarePlanRequest,
   CaseloadAssignmentDto,
   ReassignGuestRequest,
   GuestNoteDto,
@@ -184,6 +187,28 @@ export class GuestsApiService {
   /** Discards a draft; submitted notes are part of the clinical record and cannot be deleted. */
   deleteCaseworkNote(guestId: string, noteId: string): Observable<void> {
     return this.http.delete<void>(`${this.base}/${guestId}/casework-notes/${noteId}`);
+  }
+
+  /** Care Plan tab — the active plan with goals, plus closed plans as history. */
+  getCarePlan(guestId: string): Observable<GuestCarePlansDto> {
+    return this.http.get<GuestCarePlansDto>(`${this.base}/${guestId}/care-plan`);
+  }
+
+  /** Creates or updates the active plan; goals omitted from the list are removed. */
+  saveCarePlan(guestId: string, request: SaveCarePlanRequest): Observable<{ id: string }> {
+    return this.http.put<{ id: string }>(`${this.base}/${guestId}/care-plan`, request);
+  }
+
+  /** Closes the active plan; closed plans become read-only history. */
+  closeCarePlan(guestId: string, status: 'Completed' | 'Superseded'): Observable<void> {
+    return this.http.post<void>(`${this.base}/${guestId}/care-plan/close`, { status });
+  }
+
+  /** Contact History tab — every recorded contact, newest first. */
+  getContactHistory(guestId: string, cursor?: string, pageSize = 25): Observable<KeysetPage<GuestContactSummaryDto>> {
+    let params = new HttpParams().set('pageSize', pageSize);
+    if (cursor) params = params.set('cursor', cursor);
+    return this.http.get<KeysetPage<GuestContactSummaryDto>>(`${this.base}/${guestId}/contacts`, { params });
   }
 
   /** Reassigns the guest's CMHW and logs it (spec §4.4). */

@@ -1,7 +1,8 @@
 // Step-specific styles for the DIALOG scale step (Desktop80); shared styles live in
-// _form-shared.scss. The source table is 1136px wide inside a 1170px card — here it is
-// compressed into the 858px drawer with the same anatomy (Sr · Life area · 7 score circles ·
-// Score · Need help?), scrolling horizontally only when the viewport is truly too narrow.
+// _form-shared.scss. The source table is 1136px wide inside a 1170px card, which the full-page
+// content lane reproduces (Sr · Life area · 7 score circles · Score · Need help?); the life-area
+// column takes the slack and the table scrolls horizontally inside its own box — never the
+// page — only when the viewport is truly too narrow.
 
 .dialog-scroll {
   overflow-x: auto;

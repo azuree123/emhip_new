@@ -169,7 +169,7 @@
       <div class="panel-card__head">
         <div>
           <div class="panel-card__title pathway-card__title">Pathway distribution</div>
-          <div class="panel-card__subtitle">Active guest only</div>
+          <div class="panel-card__subtitle">Guests allocated to one of the three clinical pathways</div>
         </div>
       </div>
 
@@ -202,7 +202,7 @@
                   }
                 }
               </span>
-              <span class="pathway-row__label">{{ row.label }}</span>
+              <span class="pathway-row__label">{{ row.category }}</span>
               <span class="pathway-row__meta">
                 <span class="pathway-row__count">{{ row.count }}</span>
                 <span class="pathway-row__unit">GUEST</span>
@@ -215,12 +215,12 @@
             </div>
           </div>
         } @empty {
-          <div class="empty">No pathway referrals recorded yet.</div>
+          <div class="empty">No pathway allocations recorded yet.</div>
         }
       </div>
 
       <div class="pathway-card__footer">
-        <div class="pathway-card__total">Total Guest:<span> {{ d.totalGuestsAcrossHub }}</span></div>
+        <div class="pathway-card__total">Total Guest:<span> {{ d.totalGuestsAcrossHub }}</span> · allocated to a pathway:<span> {{ pathwayTotal() }}</span></div>
       </div>
     </div>
 
@@ -248,6 +248,55 @@
 
     <!-- Guest Seen (design y=655) — live Today/Week/Month breakdown. -->
     <app-guest-seen-card />
+
+    <!-- Guest demographics (design y=1296) — four inset breakdown panels, each a stack of
+         track bars in the Pathway distribution language. Ethnicity / Age groups / Gender share
+         the top row and Country of origin runs full width beneath, as in the design. Slices,
+         counts and percentages all come from the API; a breakdown with nothing recorded shows
+         a one-line note. -->
+    <div class="panel-card">
+      <div class="panel-card__head">
+        <div>
+          <div class="panel-card__title">Guest demographics</div>
+          <div class="panel-card__subtitle">All guests across the hub</div>
+        </div>
+      </div>
+
+      <div class="demo-grid">
+        @for (group of demographicGroups(); track group.key) {
+          <section class="demo-panel" [class.demo-panel--wide]="group.wide">
+            <h3 class="demo-panel__title">{{ group.title }}</h3>
+
+            <div class="demo-panel__rows">
+              @for (slice of group.slices; track slice.label) {
+                <div class="demo-row">
+                  <div class="demo-row__top">
+                    <span class="demo-row__label" [title]="slice.label">{{ slice.label }}</span>
+                    <span class="demo-row__meta">
+                      <span class="demo-row__count">{{ slice.count }}</span>
+                      <span class="demo-row__unit">GUEST</span>
+                      <span class="demo-row__dot"></span>
+                      <span class="demo-row__pct" [style.color]="group.color">{{ slice.percentage }}%</span>
+                    </span>
+                  </div>
+                  <div class="demo-row__track">
+                    <div class="demo-row__fill" [style.width.%]="slice.percentage" [style.background]="group.color"></div>
+                  </div>
+                </div>
+              } @empty {
+                <div class="demo-panel__empty">No data recorded yet.</div>
+              }
+            </div>
+
+            @if (group.largest; as largest) {
+              <div class="demo-panel__foot">Largest group:<span> {{ largest.label }} · {{ largest.count }} guests</span></div>
+            }
+          </section>
+        } @empty {
+          <div class="empty">No demographic data recorded yet.</div>
+        }
+      </div>
+    </div>
 
     <!-- Outstanding team actions (design y=2360) — hub-wide open follow-ups. -->
     @if (canViewFollowUps) {
@@ -308,6 +357,53 @@
           </div>
         } @empty {
           <div class="empty">No recent activity.</div>
+        }
+      </div>
+    </div>
+
+    <!-- Data quality issues (design y=3381) — 78px rows in the shared list-row chrome. The four
+         checks, their wording and their counts are all sent by the API. -->
+    <div class="panel-card quality-card">
+      <div class="panel-card__head">
+        <div>
+          <div class="panel-card__title">Data quality issues</div>
+          <div class="panel-card__subtitle">Records that need attention across the hub</div>
+        </div>
+      </div>
+
+      <div class="quality-card__list">
+        @for (issue of dataQualityRows(); track issue.key) {
+          <div class="list-row quality-row" [class.quality-row--clear]="issue.count === 0">
+            <span class="quality-row__icon" aria-hidden="true">
+              @if (issue.count === 0) {
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                  <path
+                    d="M 10 1.25 C 5.168 1.25 1.25 5.168 1.25 10 C 1.25 14.832 5.168 18.75 10 18.75 C 14.832 18.75 18.75 14.832 18.75 10 C 18.75 5.168 14.832 1.25 10 1.25 Z M 10 2.5 C 14.142 2.5 17.5 5.858 17.5 10 C 17.5 14.142 14.142 17.5 10 17.5 C 5.858 17.5 2.5 14.142 2.5 10 C 2.5 5.858 5.858 2.5 10 2.5 Z M 13.475 7.442 C 13.231 7.198 12.835 7.198 12.591 7.442 L 8.958 11.075 L 7.409 9.525 C 7.165 9.281 6.769 9.281 6.525 9.525 C 6.281 9.769 6.281 10.165 6.525 10.409 L 8.516 12.4 C 8.76 12.644 9.156 12.644 9.4 12.4 L 13.475 8.325 C 13.719 8.081 13.719 7.686 13.475 7.442 Z"
+                    fill="currentColor" />
+                </svg>
+              } @else {
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                  <path
+                    d="M 8.708 2.292 C 9.28 1.292 10.72 1.292 11.292 2.292 L 18.146 14.271 C 18.712 15.26 17.998 16.492 16.854 16.492 L 3.146 16.492 C 2.002 16.492 1.288 15.26 1.854 14.271 L 8.708 2.292 Z M 10.208 3.913 C 10.115 3.75 9.885 3.75 9.792 3.913 L 2.938 15.892 C 2.846 16.052 2.962 16.242 3.146 16.242 L 16.854 16.242 C 17.038 16.242 17.154 16.052 17.062 15.892 L 10.208 3.913 Z M 10 6.667 C 10.345 6.667 10.625 6.946 10.625 7.292 L 10.625 11.042 C 10.625 11.387 10.345 11.667 10 11.667 C 9.655 11.667 9.375 11.387 9.375 11.042 L 9.375 7.292 C 9.375 6.946 9.655 6.667 10 6.667 Z M 10 12.917 C 10.46 12.917 10.833 13.29 10.833 13.75 C 10.833 14.21 10.46 14.583 10 14.583 C 9.54 14.583 9.167 14.21 9.167 13.75 C 9.167 13.29 9.54 12.917 10 12.917 Z"
+                    fill="currentColor" />
+                </svg>
+              }
+            </span>
+
+            <div class="quality-row__text">
+              <div class="quality-row__label">{{ issue.label }}</div>
+              @if (issue.hint) {
+                <div class="quality-row__hint">{{ issue.hint }}</div>
+              }
+            </div>
+
+            <span class="quality-row__count">
+              <span class="quality-row__number">{{ issue.count }}</span>
+              <span class="quality-row__unit">{{ issue.count === 1 ? 'guest' : 'guests' }}</span>
+            </span>
+          </div>
+        } @empty {
+          <div class="empty">No data quality checks available.</div>
         }
       </div>
     </div>

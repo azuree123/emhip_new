@@ -3,7 +3,6 @@ import {
   Component,
   computed,
   DestroyRef,
-  DOCUMENT,
   ElementRef,
   inject,
   signal,
@@ -68,7 +67,7 @@ function pastDateValidator(): ValidatorFn {
  *   3. DIALOG                  (Desktop80 — 11 life areas scored 1-7)
  *   4. Pathway & allocation    (Desktop81 — pathway cards, AFA support, CMHW)
  *   5. REVIEW                  (Desktop87 — registration summary, Submit)
- * followed by the Desktop88 "Success!" overlay.
+ * followed by the Desktop88 "Success!" screen, which replaces the wizard on the page.
  *
  * Nothing is persisted until Submit on the REVIEW step; the sequence then runs
  *   POST /guests                            -> register()            (returns the guest id)
@@ -91,14 +90,15 @@ function pastDateValidator(): ValidatorFn {
  *
  * Step 1's referral card maps straight onto RegisterGuestRequest — referralSource plus the
  * spec §6.2 referralType and (for Secondary referrals) referralSubcategory. After completion
- * getOverview() supplies the "G-{guestNumber}" reference for the overlay.
+ * getOverview() supplies the "G-{guestNumber}" reference for the success screen.
  * Each call is tracked individually: on failure the wizard reports which call failed and
  * "Retry" resumes from that call without repeating the ones that already succeeded.
  *
- * Presentation: unchanged from before the redesign — an 858px right-anchored drawer overlay
- * on top of the Guest Data Sheet (child route rendering into the guest list's router-outlet).
- * The redesigned screens are full-page (1170px content lane on a rgb(237,237,237) canvas);
- * their cards are reflowed into the drawer body, which now uses the same gray canvas.
+ * Presentation: a full page, matching the redesigned screens — `/guests/new` is a top-level
+ * route, so the wizard renders into the shell's main content area on the rgb(237,237,237)
+ * canvas with a page header (back/Cancel to the guest list), the stepper card and the step
+ * cards in a centred ~1180px lane, and a sticky white controls bar. There is no overlay,
+ * backdrop or fixed panel: the page scrolls with the shell's content area.
  */
 @Component({
   selector: 'app-register-guest',
@@ -115,20 +115,16 @@ function pastDateValidator(): ValidatorFn {
   templateUrl: './register-guest.component.html',
   styleUrl: './register-guest.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  host: {
-    '(document:keydown.escape)': 'onEscape()',
-  },
 })
 export class RegisterGuestComponent {
   private readonly fb = inject(FormBuilder);
   private readonly guestsApi = inject(GuestsApiService);
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
-  private readonly document = inject(DOCUMENT);
   private readonly destroyRef = inject(DestroyRef);
 
-  /** Scrollable drawer body — step changes reset its scroll position (not the window's). */
-  private readonly panelBody = viewChild<ElementRef<HTMLElement>>('panelBody');
+  /** Top of the page — step changes scroll it back into view in whichever container scrolls. */
+  private readonly pageTop = viewChild<ElementRef<HTMLElement>>('pageTop');
 
   /**
    * Admin-defined extra Guest fields. They belong to the Demographics step visually, but the
@@ -150,7 +146,7 @@ export class RegisterGuestComponent {
   /** Set after POST /guests succeeds so a retry never registers the guest twice. */
   private readonly guestId = signal<string | null>(null);
 
-  /** "G-{guestNumber}" reference for the Success overlay, fetched via getOverview() on completion. */
+  /** "G-{guestNumber}" reference for the Success screen, fetched via getOverview() on completion. */
   protected readonly guestReference = signal<string | null>(null);
 
   private readonly callStates = signal<Record<SubmissionCall['key'], SubmissionCall['status']>>({
@@ -363,14 +359,6 @@ export class RegisterGuestComponent {
   });
 
   constructor() {
-    // Lock the page behind the drawer while it is open; restore on close/destroy.
-    const body = this.document.body;
-    const previousOverflow = body.style.overflow;
-    body.style.overflow = 'hidden';
-    this.destroyRef.onDestroy(() => {
-      body.style.overflow = previousOverflow;
-    });
-
     // "Escalation noted — crisis notes required" (Desktop79): the crisis-notes box becomes
     // mandatory whenever "Immediate escalation required?" is answered with a Yes option.
     const risk = this.conversationForm.controls.risk;
@@ -456,7 +444,9 @@ export class RegisterGuestComponent {
   }
 
   private scrollToTop(): void {
-    this.panelBody()?.nativeElement.scrollTo({ top: 0 });
+    // The page scrolls inside the shell's content area, so scroll the header back into view
+    // rather than assuming a particular scroll container.
+    this.pageTop()?.nativeElement.scrollIntoView({ block: 'start' });
   }
 
   protected saveDraft(): void {
@@ -466,14 +456,9 @@ export class RegisterGuestComponent {
     this.draftSavedAt.set(new Date());
   }
 
-  protected onEscape(): void {
-    if (this.submitting()) return;
-    this.cancel();
-  }
-
   protected cancel(): void {
-    // Close the drawer: back to the guest list underneath, keeping its query params
-    // (search/filter/pagination state) intact.
+    // Leave the page: back to the guest list, keeping its query params (search/filter/
+    // pagination state) intact.
     this.router.navigate(['/guests'], { queryParamsHandling: 'preserve' });
   }
 
@@ -599,8 +584,8 @@ export class RegisterGuestComponent {
         next: (id) => {
           this.submitting.set(false);
           this.submitted.set(true);
-          // Best effort: fetch the sequential guest number for the Success overlay's
-          // "G-{guestNumber}" reference; the overlay shows without it if this fails.
+          // Best effort: fetch the sequential guest number for the Success screen's
+          // "G-{guestNumber}" reference; the screen shows without it if this fails.
           this.guestsApi
             .getOverview(id)
             .pipe(
@@ -830,7 +815,7 @@ export class RegisterGuestComponent {
     };
   }
 
-  // ---- Success overlay (Desktop88) ----
+  // ---- Success screen (Desktop88) ----
 
   protected successMessage(): string {
     const firstName = this.demographicsForm.getRawValue().personal.firstName || 'The guest';

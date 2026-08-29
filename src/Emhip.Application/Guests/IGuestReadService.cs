@@ -31,6 +31,12 @@ public interface IGuestReadService
     Task<GuestInitialConversationDto?> GetInitialConversationAsync(Guid guestId, CancellationToken cancellationToken = default);
     Task<Dialog.GuestDialogDto?> GetDialogAsync(Guid guestId, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<Casework.CaseworkNoteDto>> GetCaseworkNotesAsync(Guid guestId, CancellationToken cancellationToken = default);
+    Task<CarePlans.GuestCarePlansDto> GetCarePlansAsync(Guid guestId, CancellationToken cancellationToken = default);
+
+    /// <summary>Full contact history for the guest, newest first — the workspace Contact History tab.</summary>
+    Task<Common.KeysetPage<Dtos.GuestContactSummaryDto>> GetContactHistoryAsync(
+        Guid guestId, string? cursor, int pageSize, CancellationToken cancellationToken = default);
+
     /// <summary>Append-only CMHW allocation history (spec §4.4).</summary>
     Task<IReadOnlyList<Caseload.CaseloadAssignmentDto>> GetCaseloadHistoryAsync(Guid guestId, CancellationToken cancellationToken = default);
     /// <summary>All quick notes for the guest, pinned first — the Notes tab's list.</summary>
