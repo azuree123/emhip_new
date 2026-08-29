@@ -25,6 +25,7 @@ public sealed class AuditSaveChangesInterceptor(ICurrentUser currentUser) : Save
         typeof(EmailTemplate), typeof(CustomFieldDefinition), typeof(CustomFieldValue),
         typeof(CaseworkNote), typeof(PathwayChange), typeof(CaseloadAssignment),
         typeof(CarePlan), typeof(CarePlanGoal),
+        typeof(CpnInitialAssessment), typeof(CpnRiskDomainRating),
     ];
 
     public override InterceptionResult<int> SavingChanges(DbContextEventData eventData, InterceptionResult<int> result)

@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="contact-popup/fig-assets.css">
+  <script src="contact-popup/Components.bundle.js?v=1"></script>
+  <style>
+    html, body { margin: 0; padding: 0; background: #ECECEC; }
+    a { color: #941C3C; } a:hover { color: #E12628; }
+  </style>
+</helmet>
+<div style="display: flex; flex-direction: column; height: 100vh; font-family: 'Plus Jakarta Sans', sans-serif;">
+  <div style="display: flex; align-items: center; gap: 16px; padding: 10px 20px; background: #2A2A2A; flex-shrink: 0;">
+    <div style="font-weight: 700; font-size: 14px; letter-spacing: 0.5px; white-space: nowrap; color: #FFFFFF;">Add Contact <span style="color: #8C8C8C; font-weight: 500;">popup</span></div>
+    <div style="display: flex; gap: 6px; overflow-x: auto;">
+      <sc-for list="{{ steps }}" as="st" hint-placeholder-count="4">
+        <button onClick="{{ st.select }}" style="border: 1px solid {{ st.borderColor }}; background: {{ st.bg }}; color: {{ st.color }}; border-radius: 999px; padding: 6px 14px; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap;">{{ st.label }}</button>
+      </sc-for>
+    </div>
+  </div>
+  <div ref="{{ stageRef }}" style="flex: 1; overflow: auto; display: flex; justify-content: center; align-items: flex-start; padding: 24px;">
+    <div style="background: #FFFFFF; box-shadow: 0 2px 16px rgba(0,0,0,0.14); border-radius: 8px; width: 1440px; flex-shrink: 0; zoom: {{ scale }};">
+      <x-import component-from-global-scope="{{ currentComponent }}" hint-size="1440px,900px"></x-import>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { step: 0, stageWidth: null };
+
+  static STEPS = [
+    { key: 'GuestOverviewTab', label: '1 · CPN contact (no session type)' },
+    { key: 'GuestOverviewTab3', label: '2 · CPN · Initial assessment' },
+    { key: 'GuestOverviewTab2', label: '3 · CPN · Follow-up session' },
+    { key: 'GuestOverviewTab4', label: '4 · Non-CPN · Select contact type' },
+  ];
+
+  componentDidMount() {
+    this._measure = () => {
+      const el = this._stageEl;
+      if (el && el.clientWidth !== this.state.stageWidth) this.setState({ stageWidth: el.clientWidth });
+    };
+    window.addEventListener('resize', this._measure);
+    this._measure();
+  }
+
+  componentWillUnmount() {
+    window.removeEventListener('resize', this._measure);
+  }
+
+  renderVals() {
+    const idx = Math.min(this.state.step, Component.STEPS.length - 1);
+    const steps = Component.STEPS.map((s, i) => {
+      const active = i === idx;
+      return {
+        label: s.label,
+        select: () => this.setState({ step: i }),
+        bg: active ? '#E12628' : 'transparent',
+        color: active ? '#FFFFFF' : '#C9C9C9',
+        borderColor: active ? '#E12628' : '#505050',
+      };
+    });
+    const w = this.state.stageWidth;
+    const stageRef = (el) => {
+      this._stageEl = el;
+      if (el && this._measure) this._measure();
+    };
+    return {
+      steps,
+      currentComponent: Component.STEPS[idx].key,
+      scale: w ? Math.min(1, (w - 48) / 1440) : 1,
+      stageRef,
+    };
+  }
+}
+</script>
+</body>
+</html>

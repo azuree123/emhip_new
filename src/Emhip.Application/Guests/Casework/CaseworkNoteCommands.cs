@@ -13,7 +13,7 @@ public sealed record CaseworkActionInput(string Description, DateOnly DueDate, G
 public sealed record CaseworkNoteDto(
     Guid Id,
     Guid GuestId,
-    CaseworkNoteCategory Category,
+    CaseworkNoteCategory? Category,
     CaseworkNoteStatus Status,
     ContactType ContactMethod,
     DateTimeOffset OccurredAt,
@@ -22,6 +22,10 @@ public sealed record CaseworkNoteDto(
     string? Assessment,
     string? Recommendation,
     CaseworkRiskLevel RiskLevel,
+    string? RiskNotes,
+    bool IsCpnContact,
+    CpnSessionType? CpnSessionType,
+    int? SessionNumber,
     string? GuestReportedChanges,
     string? ServiceInvolvementChanges,
     string? AdditionalNotes,
@@ -37,7 +41,7 @@ public sealed record CaseworkNoteActionDto(Guid Id, string Description, DateOnly
 
 /// <summary>The fields shared by "save draft" and "submit".</summary>
 public sealed record CaseworkNoteInput(
-    CaseworkNoteCategory Category,
+    CaseworkNoteCategory? Category,
     ContactType ContactMethod,
     DateTimeOffset OccurredAt,
     string? Situation,
@@ -45,6 +49,9 @@ public sealed record CaseworkNoteInput(
     string? Assessment,
     string? Recommendation,
     CaseworkRiskLevel RiskLevel,
+    string? RiskNotes,
+    bool IsCpnContact,
+    CpnSessionType? CpnSessionType,
     string? GuestReportedChanges,
     string? ServiceInvolvementChanges,
     string? AdditionalNotes,
@@ -67,6 +74,16 @@ public sealed class SaveCaseworkNoteCommandValidator : AbstractValidator<SaveCas
         RuleFor(x => x.Input.GuestReportedChanges).MaximumLength(2000);
         RuleFor(x => x.Input.ServiceInvolvementChanges).MaximumLength(2000);
         RuleFor(x => x.Input.AdditionalNotes).MaximumLength(4000);
+        RuleFor(x => x.Input.RiskNotes).MaximumLength(2000);
+
+        // The design gates the contact-type chips behind "Is this a CPN contact? = No", so a
+        // non-CPN note must carry one and a CPN note must not.
+        RuleFor(x => x.Input.Category).NotNull()
+            .When(x => x.Submit && !x.Input.IsCpnContact)
+            .WithMessage("Select a contact type.");
+        RuleFor(x => x.Input.CpnSessionType).NotNull()
+            .When(x => x.Submit && x.Input.IsCpnContact)
+            .WithMessage("Select a CPN session type.");
 
         // Drafts are deliberately unvalidated beyond lengths — the point of a draft is that it
         // can be incomplete. The assessment requirement is enforced on submit by the aggregate.
@@ -109,10 +126,22 @@ public sealed class SaveCaseworkNoteCommandHandler(IAppDbContext db, ICurrentUse
             input.Category, input.ContactMethod, input.OccurredAt,
             input.Situation, input.Background, input.Assessment, input.Recommendation,
             input.RiskLevel, input.GuestReportedChanges, input.ServiceInvolvementChanges,
-            input.AdditionalNotes, input.NextContactDate, input.MdtDiscussionRequested, input.CpnReferralRequested);
+            input.AdditionalNotes, input.NextContactDate, input.MdtDiscussionRequested, input.CpnReferralRequested,
+            input.IsCpnContact, input.CpnSessionType, input.RiskNotes);
 
         if (request.Submit)
         {
+            // "Follow-up session N" counts the CPN notes already on the record, so the number the
+            // reader sees in the history is the one stamped here.
+            if (input.IsCpnContact)
+            {
+                var priorSessions = await db.CaseworkNotes.AsNoTracking().CountAsync(
+                    n => n.GuestId == request.GuestId && n.IsCpnContact
+                         && n.Status == CaseworkNoteStatus.Submitted && n.Id != note.Id,
+                    cancellationToken);
+                note.SetSessionNumber(priorSessions + 1);
+            }
+
             var contact = new Contact(
                 request.GuestId, input.ContactMethod, ContactOutcome.Successful, input.OccurredAt,
                 currentUser.StaffId, BuildContactSummary(input));
@@ -141,7 +170,10 @@ public sealed class SaveCaseworkNoteCommandHandler(IAppDbContext db, ICurrentUse
     /// <summary>The contact's note field carries a readable digest of the SBAR record.</summary>
     private static string BuildContactSummary(CaseworkNoteInput input)
     {
-        var parts = new List<string> { $"{input.Category} note" };
+        var parts = new List<string>
+        {
+            input.IsCpnContact ? "CPN follow-up session" : $"{input.Category} note",
+        };
         if (!string.IsNullOrWhiteSpace(input.Assessment)) parts.Add($"Assessment: {input.Assessment}");
         if (!string.IsNullOrWhiteSpace(input.Recommendation)) parts.Add($"Recommendation: {input.Recommendation}");
         if (input.RiskLevel != CaseworkRiskLevel.NoRiskDetected) parts.Add($"Risk: {input.RiskLevel}");

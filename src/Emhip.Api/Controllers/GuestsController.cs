@@ -4,6 +4,7 @@ using Emhip.Application.Guests.Actions;
 using Emhip.Application.Guests.CarePlans;
 using Emhip.Application.Guests.Caseload;
 using Emhip.Application.Guests.Casework;
+using Emhip.Application.Guests.Cpn;
 using Emhip.Application.Guests.Clinical;
 using Emhip.Application.Guests.Commands;
 using Emhip.Application.Guests.Dialog;
@@ -307,6 +308,29 @@ public sealed class GuestsController(IMediator mediator, ICurrentUser currentUse
     {
         await mediator.Send(new DeleteCaseworkNoteCommand(guestId, noteId), cancellationToken);
         return NoContent();
+    }
+
+    /// <summary>
+    /// Part 1 of the CPN record — the initial clinical assessment, plus whether a new one may be
+    /// started. There is at most one per guest.
+    /// </summary>
+    [HttpGet("{guestId:guid}/cpn-assessment")]
+    [Authorize(Policy = Permissions.Guests.NotesView)]
+    public async Task<IActionResult> GetCpnAssessment(Guid guestId, CancellationToken cancellationToken) =>
+        Ok(await mediator.Send(new GetCpnAssessmentQuery(guestId), cancellationToken));
+
+    /// <summary>
+    /// Saves Part 1. `submit=false` keeps it as a resumable draft; submitting finalises it, writes
+    /// the linked Contact and schedules the next appointment. A guest whose Part 1 is already
+    /// submitted is rejected rather than given a second baseline.
+    /// </summary>
+    [HttpPut("{guestId:guid}/cpn-assessment")]
+    [Authorize(Policy = Permissions.Guests.NotesAdd)]
+    public async Task<IActionResult> SaveCpnAssessment(
+        Guid guestId, [FromBody] CpnAssessmentInput input, [FromQuery] bool submit = false, CancellationToken cancellationToken = default)
+    {
+        var id = await mediator.Send(new SaveCpnAssessmentCommand(guestId, input, submit), cancellationToken);
+        return Ok(new { id });
     }
 
     /// <summary>Care Plan tab — the active plan with its goals, plus closed plans as history.</summary>

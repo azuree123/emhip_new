@@ -33,6 +33,8 @@ public class EmhipDbContext(DbContextOptions<EmhipDbContext> options)
     public DbSet<CustomFieldDefinition> CustomFieldDefinitions => Set<CustomFieldDefinition>();
     public DbSet<CustomFieldValue> CustomFieldValues => Set<CustomFieldValue>();
     public DbSet<CaseworkNote> CaseworkNotes => Set<CaseworkNote>();
+    public DbSet<CpnInitialAssessment> CpnInitialAssessments => Set<CpnInitialAssessment>();
+    public DbSet<CpnRiskDomainRating> CpnRiskDomainRatings => Set<CpnRiskDomainRating>();
     public DbSet<PathwayChange> PathwayChanges => Set<PathwayChange>();
     public DbSet<CaseloadAssignment> CaseloadAssignments => Set<CaseloadAssignment>();
     public DbSet<CarePlan> CarePlans => Set<CarePlan>();

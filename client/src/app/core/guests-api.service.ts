@@ -12,6 +12,8 @@ import {
   GuestNoteDto,
   ChangePathwayRequest,
   CaseworkNoteInput,
+  CpnAssessmentInput,
+  GuestCpnAssessmentDto,
   CaseworkNoteDto,
   AddNoteRequest,
   AllocateGuestRequest,
@@ -163,6 +165,23 @@ export class GuestsApiService {
   /** Pinned notes surface on the guest overview. */
   setNotePinned(guestId: string, noteId: string, isPinned: boolean): Observable<void> {
     return this.http.put<void>(`${this.base}/${guestId}/notes/${noteId}/pin`, { isPinned });
+  }
+
+  /**
+   * Part 1 of the CPN record, plus whether a new one may be started. `canCreate` is false once a
+   * Part 1 has been submitted — the design allows exactly one per guest.
+   */
+  getCpnAssessment(guestId: string): Observable<GuestCpnAssessmentDto> {
+    return this.http.get<GuestCpnAssessmentDto>(`${this.base}/${guestId}/cpn-assessment`);
+  }
+
+  /**
+   * Saves Part 1. `submit: false` keeps it as a resumable draft; submitting finalises it, writes
+   * the linked contact and schedules the next appointment.
+   */
+  saveCpnAssessment(guestId: string, input: CpnAssessmentInput, submit: boolean): Observable<{ id: string }> {
+    const params = new HttpParams().set('submit', submit);
+    return this.http.put<{ id: string }>(`${this.base}/${guestId}/cpn-assessment`, input, { params });
   }
 
   /** Casework notes (SBAR clinical records), newest first. */

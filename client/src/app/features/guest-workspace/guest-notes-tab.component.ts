@@ -110,7 +110,12 @@ export class GuestNotesTabComponent {
     });
   }
 
-  categoryChip(category: CaseworkNoteCategory): StatusChip {
+  /**
+   * A CPN session carries no contact-type chip — the Add Contact popup only offers those when the
+   * CPN toggle is off — so the note is labelled by the session it belongs to instead.
+   */
+  categoryChip(category: CaseworkNoteCategory | null): StatusChip {
+    if (category === null) return { label: 'CPN SESSION', bg: '#fde8e6', fg: '#a8271c' };
     return CATEGORY_CHIPS[category] ?? { label: humanize(category), bg: '#f0f0f0', fg: '#646464' };
   }
 

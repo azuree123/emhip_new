@@ -177,11 +177,98 @@ export interface ChangePathwayRequest {
   changedOn: string;
 }
 
+// ---- CPN initial assessment (Part 1 of the Add Contact popup) ----
+
+export type CpnAssessmentStatus = 'Draft' | 'Submitted';
+export type RiskRating = 'NotApplicable' | 'Low' | 'Medium' | 'High';
+export type CapacityToConsent = 'HasCapacity' | 'LacksCapacity' | 'Uncertain';
+export type YesNoUnknown = 'No' | 'Yes' | 'Unknown';
+
+/** The nine risk domains rated in Part 1, in the order the design lists them. */
+export type CpnRiskDomain =
+  | 'SelfHarmShortTerm'
+  | 'SelfHarmLongTerm'
+  | 'SuicideShortTerm'
+  | 'SuicideLongTerm'
+  | 'HarmToOthers'
+  | 'HarmFromOthers'
+  | 'RiskToChildren'
+  | 'RefusingServices'
+  | 'SelfNeglect';
+
+export interface CpnRiskDomainDto {
+  domain: CpnRiskDomain;
+  rating: RiskRating;
+  notes?: string | null;
+}
+
+/** The Part 1 field set — shared by the save payload and the read model. */
+export interface CpnAssessmentInput {
+  contactMethod: ContactType;
+  occurredAt: string;
+  /** Lookup codes from the Cpn* lookup categories. */
+  methodOfAssessment?: string | null;
+  othersPresent?: string | null;
+  reasonForReferral?: string | null;
+  referredBy?: string | null;
+  currentDiagnosis?: string | null;
+  diagnosisDetail?: string | null;
+  currentMedication?: string | null;
+  previousPresentations?: string | null;
+  previousInpatientAdmission: YesNoUnknown;
+  previousMhaSection: YesNoUnknown;
+  talkingTherapies?: string | null;
+  personalHistory?: string | null;
+  familyMentalIllness?: string | null;
+  appearanceAndBehaviour?: string | null;
+  /** The design labels this "Speed"; its placeholder is the MSE speech domain. */
+  speech?: string | null;
+  moodSubjective?: string | null;
+  moodObjective?: string | null;
+  affect?: string | null;
+  thoughtsFormAndContent?: string | null;
+  perceptions?: string | null;
+  cognition?: string | null;
+  insight?: string | null;
+  energyAndSleep?: string | null;
+  appetite?: string | null;
+  socialIsolation?: string | null;
+  substanceUse?: string | null;
+  socialCircumstances?: string | null;
+  capacityToConsent: CapacityToConsent;
+  capacityNotes?: string | null;
+  overallRiskRating: RiskRating;
+  riskDomains: CpnRiskDomainDto[];
+  clinicalFormulation?: string | null;
+  recommendedPlan?: string | null;
+  safetyPlan?: string | null;
+  followUpFrequency?: string | null;
+  nextAppointmentDate?: string | null;
+}
+
+export interface CpnInitialAssessmentDto extends CpnAssessmentInput {
+  id: string;
+  guestId: string;
+  status: CpnAssessmentStatus;
+  authorName: string;
+  createdAt: string;
+  submittedAt: string | null;
+}
+
+export interface GuestCpnAssessmentDto {
+  assessment: CpnInitialAssessmentDto | null;
+  /** False once Part 1 has been submitted — the design allows only one per guest. */
+  canCreate: boolean;
+}
+
 // ---- Casework notes (the SBAR clinical note behind "Add contact") ----
 
 export type CaseworkNoteCategory = 'Casework' | 'Activity' | 'Meeting' | 'DailyLog' | 'Hospitality' | 'Afa';
 export type CaseworkNoteStatus = 'Draft' | 'Submitted';
 export type CaseworkRiskLevel = 'NoRiskDetected' | 'Low' | 'Medium' | 'High';
+
+/** Which of the two CPN forms a contact uses — the design's "CPN session type" cards. */
+export type CpnSessionType = 'InitialAssessment' | 'FollowUpSession';
 
 /** An action the worker adds while writing the note ("Actions arising from this note"). */
 export interface CaseworkActionInput {
@@ -199,7 +286,8 @@ export interface CaseworkNoteActionDto {
 }
 
 export interface CaseworkNoteInput {
-  category: CaseworkNoteCategory;
+  /** Null for a CPN session: the contact-type chips only appear when the CPN toggle is off. */
+  category: CaseworkNoteCategory | null;
   contactMethod: ContactType;
   occurredAt: string;
   situation?: string | null;
@@ -208,6 +296,9 @@ export interface CaseworkNoteInput {
   assessment?: string | null;
   recommendation?: string | null;
   riskLevel: CaseworkRiskLevel;
+  riskNotes?: string | null;
+  isCpnContact: boolean;
+  cpnSessionType?: CpnSessionType | null;
   guestReportedChanges?: string | null;
   serviceInvolvementChanges?: string | null;
   additionalNotes?: string | null;
@@ -220,7 +311,7 @@ export interface CaseworkNoteInput {
 export interface CaseworkNoteDto {
   id: string;
   guestId: string;
-  category: CaseworkNoteCategory;
+  category: CaseworkNoteCategory | null;
   status: CaseworkNoteStatus;
   contactMethod: ContactType;
   occurredAt: string;
@@ -229,6 +320,11 @@ export interface CaseworkNoteDto {
   assessment: string | null;
   recommendation: string | null;
   riskLevel: CaseworkRiskLevel;
+  riskNotes: string | null;
+  isCpnContact: boolean;
+  cpnSessionType: CpnSessionType | null;
+  /** "Follow-up session N" — the note's position in the guest's CPN series. */
+  sessionNumber: number | null;
   guestReportedChanges: string | null;
   serviceInvolvementChanges: string | null;
   additionalNotes: string | null;

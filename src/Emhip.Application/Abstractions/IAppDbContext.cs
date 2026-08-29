@@ -33,6 +33,8 @@ public interface IAppDbContext
     DbSet<CustomFieldDefinition> CustomFieldDefinitions { get; }
     DbSet<CustomFieldValue> CustomFieldValues { get; }
     DbSet<CaseworkNote> CaseworkNotes { get; }
+    DbSet<CpnInitialAssessment> CpnInitialAssessments { get; }
+    DbSet<CpnRiskDomainRating> CpnRiskDomainRatings { get; }
     DbSet<PathwayChange> PathwayChanges { get; }
     DbSet<CaseloadAssignment> CaseloadAssignments { get; }
     DbSet<CarePlan> CarePlans { get; }

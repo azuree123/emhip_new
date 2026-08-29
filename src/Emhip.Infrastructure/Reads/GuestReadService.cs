@@ -5,6 +5,7 @@ using Emhip.Application.Guests.Actions;
 using Emhip.Application.Guests.CarePlans;
 using Emhip.Application.Guests.Caseload;
 using Emhip.Application.Guests.Casework;
+using Emhip.Application.Guests.Cpn;
 using Emhip.Application.Guests.Dialog;
 using Emhip.Application.Guests.Dtos;
 using Emhip.Application.Guests.Pathways;
@@ -320,6 +321,7 @@ public sealed class GuestReadService(ISqlConnectionFactory connectionFactory, Em
             {
                 n.Id, n.GuestId, n.Category, n.Status, n.ContactMethod, n.OccurredAt,
                 n.Situation, n.Background, n.Assessment, n.Recommendation, n.RiskLevel,
+                n.RiskNotes, n.IsCpnContact, n.CpnSessionType, n.SessionNumber,
                 n.GuestReportedChanges, n.ServiceInvolvementChanges, n.AdditionalNotes,
                 n.NextContactDate, n.MdtDiscussionRequested, n.CpnReferralRequested,
                 AuthorName = db.Users.Where(u => u.Id == n.AuthorStaffId).Select(u => u.DisplayName).FirstOrDefault() ?? "Unknown",
@@ -344,6 +346,7 @@ public sealed class GuestReadService(ISqlConnectionFactory connectionFactory, Em
             .Select(n => new CaseworkNoteDto(
                 n.Id, n.GuestId, n.Category, n.Status, n.ContactMethod, n.OccurredAt,
                 n.Situation, n.Background, n.Assessment, n.Recommendation, n.RiskLevel,
+                n.RiskNotes, n.IsCpnContact, n.CpnSessionType, n.SessionNumber,
                 n.GuestReportedChanges, n.ServiceInvolvementChanges, n.AdditionalNotes,
                 n.NextContactDate, n.MdtDiscussionRequested, n.CpnReferralRequested,
                 n.AuthorName, n.CreatedAt, n.SubmittedAt,
@@ -391,6 +394,58 @@ public sealed class GuestReadService(ISqlConnectionFactory connectionFactory, Em
         var current = mapped.FirstOrDefault(p => p.Status == CarePlanStatus.Active);
 
         return new GuestCarePlansDto(current, mapped.Where(p => p.Status != CarePlanStatus.Active).ToList());
+    }
+
+    public async Task<GuestCpnAssessmentDto> GetCpnAssessmentAsync(Guid guestId, CancellationToken cancellationToken = default)
+    {
+        var assessment = await db.CpnInitialAssessments.AsNoTracking()
+            .Where(a => a.GuestId == guestId)
+            .Select(a => new
+            {
+                a.Id, a.GuestId, a.Status, a.ContactMethod, a.OccurredAt,
+                a.MethodOfAssessment, a.OthersPresent,
+                a.ReasonForReferral, a.ReferredBy, a.CurrentDiagnosis, a.DiagnosisDetail, a.CurrentMedication,
+                a.PreviousPresentations, a.PreviousInpatientAdmission, a.PreviousMhaSection, a.TalkingTherapies,
+                a.PersonalHistory, a.FamilyMentalIllness,
+                a.AppearanceAndBehaviour, a.Speech, a.MoodSubjective, a.MoodObjective, a.Affect,
+                a.ThoughtsFormAndContent, a.Perceptions, a.Cognition, a.Insight,
+                a.EnergyAndSleep, a.Appetite, a.SocialIsolation,
+                a.SubstanceUse, a.SocialCircumstances,
+                a.CapacityToConsent, a.CapacityNotes, a.OverallRiskRating,
+                a.ClinicalFormulation, a.RecommendedPlan, a.SafetyPlan,
+                a.FollowUpFrequency, a.NextAppointmentDate,
+                AuthorName = db.Users.Where(u => u.Id == a.AuthorStaffId).Select(u => u.DisplayName).FirstOrDefault() ?? "Unknown",
+                a.CreatedAt, a.SubmittedAt,
+            })
+            .FirstOrDefaultAsync(cancellationToken);
+
+        // No assessment yet: the guest is free to start Part 1.
+        if (assessment is null) return new GuestCpnAssessmentDto(null, true);
+
+        var domains = await db.CpnRiskDomainRatings.AsNoTracking()
+            .Where(d => d.AssessmentId == assessment.Id)
+            .OrderBy(d => d.Domain)
+            .Select(d => new CpnRiskDomainDto(d.Domain, d.Rating, d.Notes))
+            .ToListAsync(cancellationToken);
+
+        var dto = new CpnInitialAssessmentDto(
+            assessment.Id, assessment.GuestId, assessment.Status, assessment.ContactMethod, assessment.OccurredAt,
+            assessment.MethodOfAssessment, assessment.OthersPresent,
+            assessment.ReasonForReferral, assessment.ReferredBy, assessment.CurrentDiagnosis,
+            assessment.DiagnosisDetail, assessment.CurrentMedication,
+            assessment.PreviousPresentations, assessment.PreviousInpatientAdmission, assessment.PreviousMhaSection,
+            assessment.TalkingTherapies, assessment.PersonalHistory, assessment.FamilyMentalIllness,
+            assessment.AppearanceAndBehaviour, assessment.Speech, assessment.MoodSubjective, assessment.MoodObjective,
+            assessment.Affect, assessment.ThoughtsFormAndContent, assessment.Perceptions, assessment.Cognition,
+            assessment.Insight, assessment.EnergyAndSleep, assessment.Appetite, assessment.SocialIsolation,
+            assessment.SubstanceUse, assessment.SocialCircumstances,
+            assessment.CapacityToConsent, assessment.CapacityNotes, assessment.OverallRiskRating, domains,
+            assessment.ClinicalFormulation, assessment.RecommendedPlan, assessment.SafetyPlan,
+            assessment.FollowUpFrequency, assessment.NextAppointmentDate,
+            assessment.AuthorName, assessment.CreatedAt, assessment.SubmittedAt);
+
+        // A draft is resumable; a submitted Part 1 closes the door on a second one.
+        return new GuestCpnAssessmentDto(dto, assessment.Status != CpnAssessmentStatus.Submitted);
     }
 
     private sealed record ContactCursor(DateTimeOffset OccurredAt, Guid Id);

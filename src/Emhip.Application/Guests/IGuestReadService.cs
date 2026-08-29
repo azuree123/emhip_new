@@ -33,6 +33,9 @@ public interface IGuestReadService
     Task<IReadOnlyList<Casework.CaseworkNoteDto>> GetCaseworkNotesAsync(Guid guestId, CancellationToken cancellationToken = default);
     Task<CarePlans.GuestCarePlansDto> GetCarePlansAsync(Guid guestId, CancellationToken cancellationToken = default);
 
+    /// <summary>Part 1 of the CPN record, plus whether a new one may be started.</summary>
+    Task<Cpn.GuestCpnAssessmentDto> GetCpnAssessmentAsync(Guid guestId, CancellationToken cancellationToken = default);
+
     /// <summary>Full contact history for the guest, newest first — the workspace Contact History tab.</summary>
     Task<Common.KeysetPage<Dtos.GuestContactSummaryDto>> GetContactHistoryAsync(
         Guid guestId, string? cursor, int pageSize, CancellationToken cancellationToken = default);

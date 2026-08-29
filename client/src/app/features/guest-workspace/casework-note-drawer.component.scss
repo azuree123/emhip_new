@@ -494,3 +494,201 @@
     flex: 1 1 auto;
   }
 }
+
+// ---- CPN session type cards ----
+// The design's pair of 288x76 cards; the chosen one carries the brand red border and tint.
+
+.session-cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.session-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-start;
+  width: 288px;
+  max-width: 100%;
+  min-height: 76px;
+  padding: 14px 16px;
+  border-radius: 8px;
+  border: 1px solid t.$color-border;
+  background: #fff;
+  cursor: pointer;
+  text-align: left;
+  box-sizing: border-box;
+
+  &--on {
+    border-color: rgba(235, 60, 44, 0.27);
+    background: rgba(235, 60, 44, 0.04);
+  }
+
+  // Part 1 already exists for this guest: the card stays visible so the reason can be read.
+  &--locked {
+    cursor: not-allowed;
+    opacity: 0.55;
+  }
+
+  &__title {
+    font-family: t.$font-primary;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 20px;
+    color: t.$color-text-primary;
+  }
+
+  &__hint {
+    font-family: t.$font-primary;
+    font-weight: 500;
+    font-size: 12px;
+    line-height: 16px;
+    color: t.$color-text-meta;
+  }
+}
+
+// ---- Part 1 / Part 2 explanatory banner ----
+// rgb(157,133,45) on a soft amber ground, matching the design's strip.
+
+.banner {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  background: rgba(157, 133, 45, 0.08);
+  border: 1px solid rgba(157, 133, 45, 0.24);
+
+  &__text {
+    margin: 0;
+    font-family: t.$font-primary;
+    font-weight: 400;
+    font-size: 13px;
+    line-height: 20px;
+    color: t.$color-text-primary;
+  }
+
+  &__caption {
+    font-family: t.$font-primary;
+    font-weight: 500;
+    font-size: 12px;
+    line-height: 16px;
+    color: #9d852d;
+  }
+}
+
+.session-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  &__title {
+    margin: 0;
+    font-family: t.$font-primary;
+    font-weight: 600;
+    font-size: 20px;
+    line-height: 24px;
+    color: t.$color-text-primary;
+  }
+
+  &__badge {
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: #f1f1f1;
+    font-family: t.$font-primary;
+    font-weight: 500;
+    font-size: 12px;
+    line-height: 18px;
+    color: t.$color-text-primary;
+  }
+}
+
+// A submitted Part 1 is read-only; the fieldset carries the whole section at once.
+.part {
+  display: contents;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+
+// ---- Mental state examination ----
+// The design lays the twelve MSE fields out two to a row.
+
+.mse-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+
+  @media (max-width: 720px) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+// ---- Risk assessment domains ----
+
+.risk-rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+
+  &__row {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px 14px;
+    border-radius: 8px;
+    border: 1px solid t.$color-divider;
+    background: #fff;
+  }
+
+  &__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  &__label {
+    font-family: t.$font-primary;
+    font-weight: 600;
+    font-size: 14px;
+    line-height: 22px;
+    color: t.$color-text-primary;
+  }
+
+  &__rating {
+    flex: 0 0 auto;
+    width: 180px;
+    height: 34px;
+    padding: 0 12px;
+    border-radius: 8px;
+    border: 1px solid t.$color-divider;
+    background: #fff;
+    font-family: t.$font-primary;
+    font-size: 13px;
+    color: t.$color-text-body;
+  }
+
+  textarea {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 10px 14px;
+    border-radius: 8px;
+    border: 1px solid t.$color-divider;
+    font-family: t.$font-primary;
+    font-size: 13px;
+    line-height: 20px;
+    color: t.$color-text-body;
+    resize: vertical;
+  }
+}
+
+// The lead toggle sits directly under its own label, so it drops the row's top margin.
+.toggle-row--lead {
+  margin-top: 0;
+}

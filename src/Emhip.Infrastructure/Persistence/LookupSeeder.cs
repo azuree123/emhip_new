@@ -29,6 +29,16 @@ public static class LookupSeeder
         public const string SecondaryReferralSubcategory = "SecondaryReferralSubcategory";
         public const string Gender = "Gender";
         public const string CountryOfOrigin = "CountryOfOrigin";
+
+        // --- CPN initial assessment (Part 1) ---
+        // The design renders each of these as a single sample value; the option lists behind them
+        // are lookups so a superadmin can adjust the clinical vocabulary without a release. The
+        // design's own sample is seeded first so the form's default matches it.
+        public const string CpnAssessmentMethod = "CpnAssessmentMethod";
+        public const string CpnOthersPresent = "CpnOthersPresent";
+        public const string CpnReferralSource = "CpnReferralSource";
+        public const string CpnDiagnosisStatus = "CpnDiagnosisStatus";
+        public const string CpnFollowUpFrequency = "CpnFollowUpFrequency";
     }
 
     private static readonly (string Category, string[] Labels)[] Seed =
@@ -88,6 +98,17 @@ public static class LookupSeeder
             "India", "Pakistan", "Bangladesh", "Sri Lanka", "Poland", "Romania", "Portugal", "Italy",
             "Turkey", "Iran", "Iraq", "Afghanistan", "Syria", "Albania", "Brazil", "Colombia", "Other",
         ]),
+        (Categories.CpnAssessmentMethod, ["Face to face", "Telephone", "Video call", "Home visit"]),
+        (Categories.CpnOthersPresent, [
+            "Guest alone", "Family member", "Carer", "Interpreter", "Advocate", "Support worker", "Other",
+        ]),
+        (Categories.CpnReferralSource, [
+            "CMHW following MDT", "CMHW direct", "Hub manager", "Self-referral", "GP", "Other",
+        ]),
+        (Categories.CpnDiagnosisStatus, [
+            "None known", "Diagnosis known", "Suspected — awaiting confirmation",
+        ]),
+        (Categories.CpnFollowUpFrequency, ["Weekly", "Fortnightly", "Monthly", "As required"]),
         (Categories.SecondaryReferralSubcategory, [
             "Community mental health team", "Crisis team", "Inpatient discharge", "Talking therapies",
             "Substance misuse service", "Social services", "Housing service", "Voluntary sector partner",

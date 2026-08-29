@@ -6,7 +6,7 @@
     aria-labelledby="casework-note-title"
     (click)="$event.stopPropagation()"
   >
-    <!-- Header band — rgb(240,240,240) with 12px top corners; title over the guest's name. -->
+    <!-- Header band — title over the guest's name, close control on the right. -->
     <div class="drawer__header">
       <div class="drawer__heading">
         <h2 class="drawer__title" id="casework-note-title">{{ title() }}</h2>
@@ -24,29 +24,62 @@
     </div>
 
     <form class="drawer__form" (ngSubmit)="submitNote()">
-      <!-- "Mark as:" — the six spec §4.6 categories as radio chips. -->
+      <!-- The first branch: a CPN contact uses the two clinical forms, anything else the chips. -->
       <div class="field field--full">
-        <span class="field__label">Mark as:</span>
-        <div class="choice-row">
-          @for (option of categories; track option.value) {
-            <button
-              type="button"
-              class="choice"
-              [class.choice--on]="form.category === option.value"
-              [attr.aria-pressed]="form.category === option.value"
-              (click)="setCategory(option.value)"
-            >
-              <span class="choice__radio" aria-hidden="true"></span>
-              <span class="choice__label">{{ option.label }}</span>
-            </button>
+        <span class="field__label">Is this a CPN contact?&nbsp;*</span>
+        <div class="toggle-row toggle-row--lead">
+          <span class="toggle-row__label">CPN contact</span>
+          <button
+            type="button"
+            class="switch"
+            role="switch"
+            [class.switch--on]="header.isCpnContact"
+            [attr.aria-checked]="header.isCpnContact"
+            (click)="setCpnContact(!header.isCpnContact)"
+          >
+            <span class="switch__knob"></span>
+          </button>
+        </div>
+        <span class="field__hint">
+          @if (header.isCpnContact) {
+            CPN contact — select session type below
+          } @else {
+            Toggle on if this contact is being logged by the CPN
+          }
+        </span>
+      </div>
+
+      @if (!header.isCpnContact) {
+        <div class="field field--full">
+          <span class="field__label">Select contact type&nbsp;*</span>
+          <div class="choice-row">
+            @for (option of categories; track option.value) {
+              <button
+                type="button"
+                class="choice"
+                [class.choice--on]="header.category === option.value"
+                [attr.aria-pressed]="header.category === option.value"
+                (click)="setCategory(option.value)"
+              >
+                <span class="choice__radio" aria-hidden="true"></span>
+                <span class="choice__label">{{ option.label }}</span>
+              </button>
+            }
+          </div>
+          @if (categoryOutsideChoices) {
+            <span class="field__hint">
+              This note is filed as
+              {{ header.category === 'Meeting' ? 'a meeting' : 'a daily log' }}, a type this form no
+              longer offers. Choosing above will reclassify it.
+            </span>
           }
         </div>
-      </div>
+      }
 
       <div class="drawer__grid">
         <label class="field">
           <span class="field__label">Contact method&nbsp;*</span>
-          <select name="contactMethod" [(ngModel)]="form.contactMethod" required>
+          <select name="contactMethod" [(ngModel)]="header.contactMethod" required>
             <option value="" disabled>Select....</option>
             @for (type of contactTypes; track type) {
               <option [value]="type">{{ humanize(type) }}</option>
@@ -56,245 +89,616 @@
 
         <label class="field">
           <span class="field__label">Date&nbsp;*</span>
-          <input type="date" name="occurredOn" [(ngModel)]="form.occurredOn" required />
+          <input type="date" name="occurredOn" [(ngModel)]="header.occurredOn" required />
         </label>
 
         <label class="field">
-          <span class="field__label">Logged by</span>
+          <span class="field__label">Logged by&nbsp;*</span>
           <input type="text" name="loggedBy" [value]="loggedBy" disabled />
           <span class="field__hint">Pre-filled from login</span>
         </label>
       </div>
 
-      <p class="sbar-intro">
-        Use the SBAR framework below — each section guides your clinical note. Situation and
-        Assessment are mandatory. Background sub-fields are optional but encouraged.
-      </p>
-
-      <!-- Situation -->
-      <section class="sbar">
-        <div class="sbar__head">
-          <h3 class="sbar__title">Situation&nbsp;*</h3>
-          <span class="sbar__hint">What is happening right now</span>
-        </div>
-        <label class="field field--full">
-          <span class="field__label">Current presenting concerns&nbsp;*</span>
-          <textarea
-            name="situation"
-            rows="3"
-            [(ngModel)]="form.situation"
-            placeholder="How is the guest presenting today? What are they describing as the main issue right now? Use their own words where possible..."
-          ></textarea>
-        </label>
-      </section>
-
-      <!-- Background -->
-      <section class="sbar">
-        <div class="sbar__head">
-          <h3 class="sbar__title">Background</h3>
-          <span class="sbar__hint">Context to understand the situation</span>
-        </div>
-        <label class="field field--full">
-          <span class="field__label">Relevant history from previous contacts</span>
-          <textarea
-            name="background"
-            rows="3"
-            [(ngModel)]="form.background"
-            placeholder="What came up in the last session that is relevant to today?"
-          ></textarea>
-        </label>
-        <label class="field field--full">
-          <span class="field__label">
-            Changes in medication, physical health, or social circumstances since last contact
-          </span>
-          <textarea
-            name="guestReportedChanges"
-            rows="2"
-            [(ngModel)]="form.guestReportedChanges"
-            placeholder="Any changes the guest mentioned since you last spoke?"
-          ></textarea>
-        </label>
-        <label class="field field--full">
-          <span class="field__label">Other services involvement — any changes?</span>
-          <textarea
-            name="serviceInvolvementChanges"
-            rows="2"
-            [(ngModel)]="form.serviceInvolvementChanges"
-            placeholder="Has anything changed with GP, CMHT, social services, or other support?"
-          ></textarea>
-        </label>
-      </section>
-
-      <!-- Assessment -->
-      <section class="sbar">
-        <div class="sbar__head">
-          <h3 class="sbar__title">Assessment&nbsp;*</h3>
-          <span class="sbar__hint">Your clinical judgement</span>
-        </div>
-
+      @if (header.isCpnContact) {
+        <!-- The second branch: Part 1 is written once, Part 2 at every follow-up. -->
         <div class="field field--full">
-          <span class="field__label">Risk check&nbsp;*</span>
-          <div class="choice-row choice-row--risk">
-            @for (option of riskChoices; track option.value) {
-              <button
-                type="button"
-                class="choice choice--wide"
-                [class.choice--on]="form.riskLevel === option.value"
-                [class.choice--danger]="option.value === 'High'"
-                [attr.aria-pressed]="form.riskLevel === option.value"
-                (click)="setRisk(option.value)"
-              >
-                <span class="choice__radio" aria-hidden="true"></span>
-                <span class="choice__label">{{ option.label }}</span>
-              </button>
-            }
+          <span class="field__label">CPN session type&nbsp;*</span>
+          <div class="session-cards">
+            <button
+              type="button"
+              class="session-card"
+              [class.session-card--on]="header.sessionType === 'InitialAssessment'"
+              [class.session-card--locked]="!canCreateAssessment() && !assessmentReadOnly"
+              [disabled]="!canCreateAssessment() && !assessmentReadOnly"
+              [attr.aria-pressed]="header.sessionType === 'InitialAssessment'"
+              (click)="setSessionType('InitialAssessment')"
+            >
+              <span class="session-card__title">Initial assessment</span>
+              <span class="session-card__hint">
+                @if (canCreateAssessment() || assessmentReadOnly) {
+                  Completed at first CPN contact only
+                } @else {
+                  Already completed for this guest
+                }
+              </span>
+            </button>
+            <button
+              type="button"
+              class="session-card"
+              [class.session-card--on]="header.sessionType === 'FollowUpSession'"
+              [attr.aria-pressed]="header.sessionType === 'FollowUpSession'"
+              (click)="setSessionType('FollowUpSession')"
+            >
+              <span class="session-card__title">Follow-up session</span>
+              <span class="session-card__hint">SBAR — each follow-up contact</span>
+            </button>
           </div>
-          @if (riskOutsideChoices) {
-            <span class="field__hint">
-              This note already records a {{ form.riskLevel === 'Low' ? 'low' : 'medium' }} risk
-              level. Choosing above will replace it.
-            </span>
-          }
+        </div>
+      }
+
+      @if (loading()) {
+        <p class="empty-state">Loading this guest's CPN record…</p>
+      }
+
+      <!-- ============================ Part 1 — initial assessment ============================ -->
+      @if (body === 'assessment') {
+        <div class="banner">
+          <p class="banner__text">
+            Part 1 — Initial clinical assessment. This form is completed once at the first CPN
+            contact. A new entry cannot be created if Part 1 already exists for this guest.
+          </p>
         </div>
 
-        <label class="field field--full">
-          <span class="field__label">Your assessment of what is going on&nbsp;*</span>
-          <textarea
-            name="assessment"
-            rows="4"
-            [(ngModel)]="form.assessment"
-            placeholder="In your clinical judgement — what do you think is driving the guest's current difficulties? How are they coping? Any concerns?"
-          ></textarea>
-        </label>
-      </section>
-
-      <!-- Recommendation -->
-      <section class="sbar">
-        <div class="sbar__head">
-          <h3 class="sbar__title">Recommendation</h3>
-          <span class="sbar__hint">What was agreed and next steps</span>
-        </div>
-        <label class="field field--full">
-          <span class="field__label">Interventions discussed and what was agreed</span>
-          <textarea
-            name="recommendation"
-            rows="3"
-            [(ngModel)]="form.recommendation"
-            placeholder="What techniques, resources, or approaches were discussed? What did the guest agree to try before next contact?"
-          ></textarea>
-        </label>
-      </section>
-
-      <!-- Actions arising from this note -->
-      <section class="sbar">
-        <div class="sbar__head sbar__head--row">
-          <h3 class="sbar__title">Actions arising from this note</h3>
-          <button type="button" class="btn-add-action" (click)="addActionRow()">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-              <path
-                d="M 8 3 L 8 13 M 3 8 L 13 8"
-                stroke="currentColor"
-                stroke-width="1.5"
-                stroke-linecap="round"
-              />
-            </svg>
-            Add new action from this session
-          </button>
-        </div>
-
-        @if (actions.length) {
-          <ul class="action-rows">
-            @for (row of actions; track row.key) {
-              <li class="action-rows__row">
-                <label class="field">
-                  <span class="field__label">Description</span>
-                  <input
-                    type="text"
-                    name="action-description-{{ row.key }}"
-                    [(ngModel)]="row.description"
-                    placeholder="e.g. GP referral for sleep difficulties"
-                  />
-                </label>
-                <label class="field">
-                  <span class="field__label">Due date</span>
-                  <input type="date" name="action-due-{{ row.key }}" [(ngModel)]="row.dueDate" />
-                </label>
-                <div class="field">
-                  <span class="field__label">Assigned to</span>
-                  <emhip-staff-picker
-                    name="action-assignee-{{ row.key }}"
-                    [(ngModel)]="row.assignedToStaffId"
-                    placeholder="Unassigned"
-                  />
-                </div>
-                <button
-                  type="button"
-                  class="action-rows__remove"
-                  aria-label="Remove this action"
-                  (click)="removeActionRow(row.key)"
-                >
-                  Remove
-                </button>
-              </li>
-            }
-          </ul>
-        } @else {
+        @if (submittedAssessment(); as done) {
           <p class="empty-state">
-            No actions yet. Anything agreed in this session can be added here — each one becomes a
-            guest action when the note is submitted.
+            Part 1 was submitted by {{ done.authorName }} and is part of the clinical record, so it
+            is shown here read-only. Record a follow-up session instead.
           </p>
         }
-      </section>
 
-      <label class="field field--full">
-        <span class="field__label">Additional notes <span class="field__optional">(optional)</span></span>
-        <textarea
-          name="additionalNotes"
-          rows="3"
-          [(ngModel)]="form.additionalNotes"
-          placeholder="Please specify the details of the other practical advice given..."
-        ></textarea>
-      </label>
+        <fieldset class="part" [disabled]="assessmentReadOnly">
+          <section class="sbar">
+            <div class="sbar__head"><h3 class="sbar__title">1. Method of assessment</h3></div>
+            <div class="drawer__grid">
+              <label class="field">
+                <span class="field__label">Method of assessment&nbsp;*</span>
+                <select name="methodOfAssessment" [(ngModel)]="assessment.methodOfAssessment">
+                  <option value="" disabled>Select....</option>
+                  @for (item of options('CpnAssessmentMethod'); track item.id) {
+                    <option [value]="item.code">{{ item.label }}</option>
+                  }
+                </select>
+              </label>
+              <label class="field">
+                <span class="field__label">Others present</span>
+                <select name="othersPresent" [(ngModel)]="assessment.othersPresent">
+                  <option value="" disabled>Select....</option>
+                  @for (item of options('CpnOthersPresent'); track item.id) {
+                    <option [value]="item.code">{{ item.label }}</option>
+                  }
+                </select>
+              </label>
+            </div>
+          </section>
 
-      <label class="field field--narrow">
-        <span class="field__label">Next contact date</span>
-        <input type="date" name="nextContactDate" [(ngModel)]="form.nextContactDate" />
-        <span class="field__hint">Scheduled as a follow-up when the note is submitted.</span>
-      </label>
+          <section class="sbar">
+            <div class="sbar__head"><h3 class="sbar__title">2. Diagnosis and medication</h3></div>
+            <label class="field field--full">
+              <span class="field__label">Reason for referral to CPN&nbsp;*</span>
+              <textarea
+                name="reasonForReferral"
+                rows="3"
+                [(ngModel)]="assessment.reasonForReferral"
+                placeholder="Brief summary - what did the CMHW/MDT flag?"
+              ></textarea>
+            </label>
+            <div class="drawer__grid">
+              <label class="field">
+                <span class="field__label">Referred by&nbsp;*</span>
+                <select name="referredBy" [(ngModel)]="assessment.referredBy">
+                  <option value="" disabled>Select....</option>
+                  @for (item of options('CpnReferralSource'); track item.id) {
+                    <option [value]="item.code">{{ item.label }}</option>
+                  }
+                </select>
+              </label>
+              <label class="field">
+                <span class="field__label">Current diagnosis (if known)</span>
+                <select name="currentDiagnosis" [(ngModel)]="assessment.currentDiagnosis">
+                  <option value="" disabled>Select....</option>
+                  @for (item of options('CpnDiagnosisStatus'); track item.id) {
+                    <option [value]="item.code">{{ item.label }}</option>
+                  }
+                </select>
+              </label>
+            </div>
+            <label class="field field--full">
+              <span class="field__label">Diagnosis detail</span>
+              <textarea
+                name="diagnosisDetail"
+                rows="2"
+                [(ngModel)]="assessment.diagnosisDetail"
+                placeholder="Specify diagnosis...."
+              ></textarea>
+            </label>
+            <label class="field field--full">
+              <span class="field__label">Current medication and treatment</span>
+              <textarea
+                name="currentMedication"
+                rows="3"
+                [(ngModel)]="assessment.currentMedication"
+                placeholder="Name, dose, frequency, prescriber...."
+              ></textarea>
+            </label>
+          </section>
 
-      <!-- MDT / CPN toggles — 612px rgb(241,241,241) rows with a pill switch on the right. -->
-      <div class="toggle-row">
-        <span class="toggle-row__label">Add this guest for MDT discussion</span>
-        <button
-          type="button"
-          class="switch"
-          role="switch"
-          [class.switch--on]="form.mdtDiscussionRequested"
-          [attr.aria-checked]="form.mdtDiscussionRequested"
-          (click)="toggleMdt()"
-        >
-          <span class="switch__knob"></span>
-        </button>
-      </div>
-      <div class="toggle-row">
-        <span class="toggle-row__label">Refer this guest to the CPN</span>
-        <button
-          type="button"
-          class="switch"
-          role="switch"
-          [class.switch--on]="form.cpnReferralRequested"
-          [attr.aria-checked]="form.cpnReferralRequested"
-          (click)="toggleCpn()"
-        >
-          <span class="switch__knob"></span>
-        </button>
-      </div>
+          <section class="sbar">
+            <div class="sbar__head"><h3 class="sbar__title">3. Past psychiatric history</h3></div>
+            <label class="field field--full">
+              <span class="field__label">Previous mental health presentations and treatment</span>
+              <textarea
+                name="previousPresentations"
+                rows="3"
+                [(ngModel)]="assessment.previousPresentations"
+                placeholder="Diagnosis and medication"
+              ></textarea>
+            </label>
+            <div class="drawer__grid">
+              <label class="field">
+                <span class="field__label">Previous inpatient admission?</span>
+                <select name="previousInpatientAdmission" [(ngModel)]="assessment.previousInpatientAdmission">
+                  @for (option of yesNoUnknown; track option.value) {
+                    <option [value]="option.value">{{ option.label }}</option>
+                  }
+                </select>
+              </label>
+              <label class="field">
+                <span class="field__label">Previous MH section under MHA?</span>
+                <select name="previousMhaSection" [(ngModel)]="assessment.previousMhaSection">
+                  @for (option of yesNoUnknown; track option.value) {
+                    <option [value]="option.value">{{ option.label }}</option>
+                  }
+                </select>
+              </label>
+            </div>
+            <label class="field field--full">
+              <span class="field__label">Current and previous talking therapies</span>
+              <textarea
+                name="talkingTherapies"
+                rows="3"
+                [(ngModel)]="assessment.talkingTherapies"
+                placeholder="Date, provider, type, outcomes...."
+              ></textarea>
+            </label>
+          </section>
+
+          <section class="sbar">
+            <div class="sbar__head"><h3 class="sbar__title">4. Personal and family history</h3></div>
+            <label class="field field--full">
+              <span class="field__label">Personal history</span>
+              <textarea
+                name="personalHistory"
+                rows="3"
+                [(ngModel)]="assessment.personalHistory"
+                placeholder="Developmental history, childhood, education, employment, relationships, trauma, migration...."
+              ></textarea>
+            </label>
+            <label class="field field--full">
+              <span class="field__label">Mental illness in family</span>
+              <textarea
+                name="familyMentalIllness"
+                rows="3"
+                [(ngModel)]="assessment.familyMentalIllness"
+                placeholder="Include relationship to guest, diagnosis if known..."
+              ></textarea>
+            </label>
+          </section>
+
+          <section class="sbar">
+            <div class="sbar__head"><h3 class="sbar__title">5. Mental state examination&nbsp;*</h3></div>
+            <div class="mse-grid">
+              @for (field of mseFields; track field.key) {
+                <label class="field">
+                  <span class="field__label">
+                    {{ field.label }}@if (field.required) {&nbsp;*}
+                  </span>
+                  <textarea
+                    rows="2"
+                    name="mse-{{ field.key }}"
+                    [ngModel]="mseValue(field.key)"
+                    (ngModelChange)="setMseValue(field.key, $event)"
+                    [placeholder]="field.placeholder"
+                  ></textarea>
+                </label>
+              }
+            </div>
+          </section>
+
+          <section class="sbar">
+            <div class="sbar__head"><h3 class="sbar__title">6. Substance use</h3></div>
+            <label class="field field--full">
+              <span class="field__label">Details and impact on mental health / daily functioning</span>
+              <textarea
+                name="substanceUse"
+                rows="3"
+                [(ngModel)]="assessment.substanceUse"
+                placeholder="Type, frequency, quantity, impact...."
+              ></textarea>
+            </label>
+          </section>
+
+          <section class="sbar">
+            <div class="sbar__head"><h3 class="sbar__title">7. Social circumstances</h3></div>
+            <label class="field field--full">
+              <span class="field__label">Current social situation</span>
+              <textarea
+                name="socialCircumstances"
+                rows="3"
+                [(ngModel)]="assessment.socialCircumstances"
+                placeholder="Housing, finances, relationships, support network, employment, immigration status...."
+              ></textarea>
+            </label>
+          </section>
+
+          <section class="sbar">
+            <div class="sbar__head"><h3 class="sbar__title">8. Mental capacity&nbsp;*</h3></div>
+            <label class="field field--narrow">
+              <span class="field__label">Capacity to consent?&nbsp;*</span>
+              <select name="capacityToConsent" [(ngModel)]="assessment.capacityToConsent">
+                @for (option of capacityChoices; track option.value) {
+                  <option [value]="option.value">{{ option.label }}</option>
+                }
+              </select>
+            </label>
+            <label class="field field--full">
+              <span class="field__label">Capacity notes</span>
+              <textarea
+                name="capacityNotes"
+                rows="3"
+                [(ngModel)]="assessment.capacityNotes"
+                placeholder="If lacking or uncertain, record basis for assessment and actions taken..."
+              ></textarea>
+            </label>
+          </section>
+
+          <section class="sbar">
+            <div class="sbar__head">
+              <h3 class="sbar__title">9. Risk assessment&nbsp;*</h3>
+              <span class="sbar__hint">Rate each domain and add rationale where relevant.</span>
+            </div>
+            <ul class="risk-rows">
+              @for (row of riskDomains; track row.domain) {
+                <li class="risk-rows__row">
+                  <div class="risk-rows__head">
+                    <span class="risk-rows__label">{{ row.label }}</span>
+                    <select
+                      class="risk-rows__rating"
+                      name="risk-rating-{{ row.domain }}"
+                      [(ngModel)]="row.rating"
+                    >
+                      @for (option of riskRatings; track option.value) {
+                        <option [value]="option.value">{{ option.label }}</option>
+                      }
+                    </select>
+                  </div>
+                  <textarea
+                    rows="2"
+                    name="risk-notes-{{ row.domain }}"
+                    [(ngModel)]="row.notes"
+                    placeholder="Rationale/notes...."
+                  ></textarea>
+                </li>
+              }
+            </ul>
+            <label class="field field--narrow">
+              <span class="field__label">Overall risk rating&nbsp;*</span>
+              <select name="overallRiskRating" [(ngModel)]="assessment.overallRiskRating">
+                @for (option of riskRatings; track option.value) {
+                  <option [value]="option.value">{{ option.label }}</option>
+                }
+              </select>
+            </label>
+          </section>
+
+          <section class="sbar">
+            <div class="sbar__head"><h3 class="sbar__title">10. Clinical impression and plan&nbsp;*</h3></div>
+            <label class="field field--full">
+              <span class="field__label">Clinical formulation / impression&nbsp;*</span>
+              <textarea
+                name="clinicalFormulation"
+                rows="4"
+                [(ngModel)]="assessment.clinicalFormulation"
+                placeholder="Integrate history, MSE, risk, and social context into a brief clinical narrative..."
+              ></textarea>
+            </label>
+            <label class="field field--full">
+              <span class="field__label">Recommended clinical plan&nbsp;*</span>
+              <textarea
+                name="recommendedPlan"
+                rows="4"
+                [(ngModel)]="assessment.recommendedPlan"
+                placeholder="Frequency of CPN contact, referrals, medication review, liaison with CMHW or MDT, safety planning..."
+              ></textarea>
+            </label>
+            <label class="field field--full">
+              <span class="field__label">Safety plan (if indicated)</span>
+              <textarea
+                name="safetyPlan"
+                rows="3"
+                [(ngModel)]="assessment.safetyPlan"
+                placeholder="Agreed actions if risk escalates — include who the guest will contact..."
+              ></textarea>
+            </label>
+            <div class="drawer__grid">
+              <label class="field">
+                <span class="field__label">Follow-up frequency&nbsp;*</span>
+                <select name="followUpFrequency" [(ngModel)]="assessment.followUpFrequency">
+                  <option value="" disabled>Select....</option>
+                  @for (item of options('CpnFollowUpFrequency'); track item.id) {
+                    <option [value]="item.code">{{ item.label }}</option>
+                  }
+                </select>
+              </label>
+              <label class="field">
+                <span class="field__label">Next appointment date&nbsp;*</span>
+                <input type="date" name="nextAppointmentDate" [(ngModel)]="assessment.nextAppointmentDate" />
+              </label>
+            </div>
+          </section>
+        </fieldset>
+      }
+
+      <!-- ====================== Part 2 — follow-up session, and non-CPN ====================== -->
+      @if (body === 'followUp') {
+        <div class="banner">
+          <p class="banner__text">
+            Part 2 — each follow-up contact creates a new SBAR block. Refer back to Part 1 for
+            baseline information — only record what is new or has changed.
+          </p>
+          <span class="banner__caption">must be completed at every follow-up</span>
+        </div>
+
+        <div class="session-head">
+          <h3 class="session-head__title">{{ sessionHeading() }}</h3>
+          <span class="session-head__badge">{{ entryBadge() }}</span>
+        </div>
+      }
+
+      @if (body === 'followUp' || body === 'contactType') {
+        <section class="sbar">
+          <div class="sbar__head">
+            <h3 class="sbar__title">Situation</h3>
+            <span class="sbar__hint">What is happening right now?</span>
+          </div>
+          <label class="field field--full">
+            <textarea
+              name="situation"
+              rows="3"
+              [(ngModel)]="followUp.situation"
+              placeholder="Guest's current situation and presenting concern. What has changed since the last session?"
+            ></textarea>
+          </label>
+        </section>
+
+        <section class="sbar">
+          <div class="sbar__head">
+            <h3 class="sbar__title">Background</h3>
+            <span class="sbar__hint">Relevant clinical context — what is new or has changed?</span>
+          </div>
+          <label class="field field--full">
+            <textarea
+              name="background"
+              rows="3"
+              [(ngModel)]="followUp.background"
+              placeholder="Relevant history, diagnosis, medication, previous risk. Only include what is new or has changed — refer to Part 1 for baseline."
+            ></textarea>
+          </label>
+          <label class="field field--full">
+            <span class="field__label">
+              Changes in medication, physical health, or social circumstances since last contact
+            </span>
+            <textarea
+              name="guestReportedChanges"
+              rows="2"
+              [(ngModel)]="followUp.guestReportedChanges"
+              placeholder="Any changes the guest mentioned since you last spoke?"
+            ></textarea>
+          </label>
+          <label class="field field--full">
+            <span class="field__label">Other services involvement — any changes?</span>
+            <textarea
+              name="serviceInvolvementChanges"
+              rows="2"
+              [(ngModel)]="followUp.serviceInvolvementChanges"
+              placeholder="Has anything changed with GP, CMHT, social services, or other support?"
+            ></textarea>
+          </label>
+        </section>
+
+        <section class="sbar">
+          <div class="sbar__head">
+            <h3 class="sbar__title">Assessment&nbsp;*</h3>
+            <span class="sbar__hint">Your clinical assessment of current presentation</span>
+          </div>
+          <label class="field field--full">
+            <textarea
+              name="assessment"
+              rows="4"
+              [(ngModel)]="followUp.assessment"
+              placeholder="Clinical judgement of the guest's current presentation and mental state. Include MSE observations where relevant."
+            ></textarea>
+          </label>
+        </section>
+
+        <section class="sbar">
+          <div class="sbar__head">
+            <h3 class="sbar__title">Recommendation&nbsp;*</h3>
+            <span class="sbar__hint">What needs to happen next?</span>
+          </div>
+          <label class="field field--full">
+            <textarea
+              name="recommendation"
+              rows="3"
+              [(ngModel)]="followUp.recommendation"
+              placeholder="Agreed actions, changes to care plan, referrals, liaison with CMHW or MDT, next appointment."
+            ></textarea>
+          </label>
+        </section>
+
+        <section class="sbar">
+          <div class="sbar__head"><h3 class="sbar__title">Risk update&nbsp;*</h3></div>
+          <div class="field field--full">
+            <div class="choice-row choice-row--risk">
+              @for (option of riskChoices; track option.value) {
+                <button
+                  type="button"
+                  class="choice choice--wide"
+                  [class.choice--on]="followUp.riskLevel === option.value"
+                  [class.choice--danger]="option.value === 'High'"
+                  [attr.aria-pressed]="followUp.riskLevel === option.value"
+                  (click)="setRisk(option.value)"
+                >
+                  <span class="choice__radio" aria-hidden="true"></span>
+                  <span class="choice__label">{{ option.label }}</span>
+                </button>
+              }
+            </div>
+            @if (riskOutsideChoices) {
+              <span class="field__hint">
+                This note already records a {{ followUp.riskLevel === 'Low' ? 'low' : 'medium' }}
+                risk level. Choosing above will replace it.
+              </span>
+            }
+          </div>
+          <label class="field field--full">
+            <span class="field__label">Risk notes</span>
+            <textarea
+              name="riskNotes"
+              rows="3"
+              [(ngModel)]="followUp.riskNotes"
+              placeholder="Any specific risk factors to note this session"
+            ></textarea>
+          </label>
+        </section>
+
+        <section class="sbar">
+          <div class="sbar__head sbar__head--row">
+            <h3 class="sbar__title">Actions arising from this note</h3>
+            <button type="button" class="btn-add-action" (click)="addActionRow()">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                <path d="M 8 3 L 8 13 M 3 8 L 13 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+              </svg>
+              Add new action from this session
+            </button>
+          </div>
+
+          @if (actions.length) {
+            <ul class="action-rows">
+              @for (row of actions; track row.key) {
+                <li class="action-rows__row">
+                  <label class="field">
+                    <span class="field__label">Description</span>
+                    <input
+                      type="text"
+                      name="action-description-{{ row.key }}"
+                      [(ngModel)]="row.description"
+                      placeholder="e.g. GP referral for sleep difficulties"
+                    />
+                  </label>
+                  <label class="field">
+                    <span class="field__label">Due date</span>
+                    <input type="date" name="action-due-{{ row.key }}" [(ngModel)]="row.dueDate" />
+                  </label>
+                  <div class="field">
+                    <span class="field__label">Assigned to</span>
+                    <emhip-staff-picker
+                      name="action-assignee-{{ row.key }}"
+                      [(ngModel)]="row.assignedToStaffId"
+                      placeholder="Unassigned"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    class="action-rows__remove"
+                    aria-label="Remove this action"
+                    (click)="removeActionRow(row.key)"
+                  >
+                    Remove
+                  </button>
+                </li>
+              }
+            </ul>
+          } @else {
+            <p class="empty-state">
+              No actions yet. Anything agreed in this session can be added here — each one becomes a
+              guest action when the note is submitted.
+            </p>
+          }
+        </section>
+
+        <label class="field field--full">
+          <span class="field__label">Additional notes <span class="field__optional">(optional)</span></span>
+          <textarea
+            name="additionalNotes"
+            rows="3"
+            [(ngModel)]="followUp.additionalNotes"
+            placeholder="Please specify the details of the other practical advice given..."
+          ></textarea>
+        </label>
+
+        <label class="field field--narrow">
+          <span class="field__label">Next contact date</span>
+          <input type="date" name="nextContactDate" [(ngModel)]="followUp.nextContactDate" />
+          <span class="field__hint">Scheduled as a follow-up when the note is submitted.</span>
+        </label>
+
+        <div class="toggle-row">
+          <span class="toggle-row__label">Add this guest for MDT discussion</span>
+          <button
+            type="button"
+            class="switch"
+            role="switch"
+            [class.switch--on]="followUp.mdtDiscussionRequested"
+            [attr.aria-checked]="followUp.mdtDiscussionRequested"
+            (click)="toggleMdt()"
+          >
+            <span class="switch__knob"></span>
+          </button>
+        </div>
+        <div class="toggle-row">
+          <span class="toggle-row__label">Refer this guest to the CPN</span>
+          <button
+            type="button"
+            class="switch"
+            role="switch"
+            [class.switch--on]="followUp.cpnReferralRequested"
+            [attr.aria-checked]="followUp.cpnReferralRequested"
+            (click)="toggleCpnReferral()"
+          >
+            <span class="switch__knob"></span>
+          </button>
+        </div>
+      }
+
+      @if (body === 'sessionChoice') {
+        <p class="empty-state">
+          Choose a session type above. The initial assessment is written once at the first CPN
+          contact; every contact after that is a follow-up session.
+        </p>
+      }
 
       <!-- Submitting is not just a save: spell out the records it creates. -->
       <p class="submit-note">
-        Submitting files this note on the clinical record and logs the matching contact. Any actions
-        listed above become guest actions, and a next contact date is scheduled as a follow-up.
-        Drafts can be reopened and re-saved from the Notes tab until they are submitted.
+        @if (body === 'assessment') {
+          Submitting files Part 1 on the clinical record and logs the matching contact. The next
+          appointment date is scheduled as a follow-up. It can be saved as a draft and resumed until
+          it is submitted — after that it cannot be created again for this guest.
+        } @else {
+          Submitting files this note on the clinical record and logs the matching contact. Any
+          actions listed above become guest actions, and a next contact date is scheduled as a
+          follow-up. Drafts can be reopened and re-saved from the Notes tab until they are
+          submitted.
+        }
       </p>
 
       @if (saveError()) {
@@ -305,11 +709,20 @@
         @if (draftSavedAt(); as at) {
           <span class="drawer__draft-note">Draft saved at {{ at }}</span>
         }
-        <button type="button" class="btn-draft" [disabled]="saving() !== null" (click)="saveDraft()">
+        <button
+          type="button"
+          class="btn-draft"
+          [disabled]="saving() !== null || (assessmentReadOnly && body === 'assessment')"
+          (click)="saveDraft()"
+        >
           {{ saving() === 'draft' ? 'Saving…' : 'Save as draft' }}
         </button>
-        <button type="submit" class="btn-submit" [disabled]="saving() !== null">
-          {{ saving() === 'submit' ? 'Submitting…' : 'Submit casework note' }}
+        <button
+          type="submit"
+          class="btn-submit"
+          [disabled]="saving() !== null || (assessmentReadOnly && body === 'assessment')"
+        >
+          {{ saving() === 'submit' ? 'Submitting…' : 'Submit contact note' }}
         </button>
       </div>
     </form>
