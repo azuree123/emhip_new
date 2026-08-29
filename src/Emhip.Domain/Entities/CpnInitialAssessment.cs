@@ -19,8 +19,6 @@ namespace Emhip.Domain.Entities;
 /// </summary>
 public class CpnInitialAssessment : AggregateRoot
 {
-    private readonly List<CpnRiskDomainRating> _riskDomains = [];
-
     public Guid GuestId { get; private set; }
     public CpnAssessmentStatus Status { get; private set; }
 
@@ -81,7 +79,10 @@ public class CpnInitialAssessment : AggregateRoot
     public string? CapacityNotes { get; private set; }
 
     // --- 9. Risk assessment ---
-    public IReadOnlyCollection<CpnRiskDomainRating> RiskDomains => _riskDomains;
+    // The nine per-domain ratings live in their own table and are reconciled by the command
+    // handler through the DbSet, the way care plan goals are. Attaching freshly constructed
+    // children to a tracked navigation does not work here: Entity assigns its own Id, so EF reads
+    // the set key as "already exists" and issues an UPDATE that matches no row.
     public RiskRating OverallRiskRating { get; private set; }
 
     // --- 10. Clinical impression and plan ---
@@ -170,23 +171,6 @@ public class CpnInitialAssessment : AggregateRoot
         SafetyPlan = fields.SafetyPlan;
         FollowUpFrequency = fields.FollowUpFrequency;
         NextAppointmentDate = fields.NextAppointmentDate;
-
-        UpdatedAt = DateTimeOffset.UtcNow;
-    }
-
-    /// <summary>Replaces the rated risk domains. Domains the caller omits are cleared.</summary>
-    public void SetRiskDomains(IEnumerable<(CpnRiskDomain Domain, RiskRating Rating, string? Notes)> domains)
-    {
-        if (IsSubmitted)
-        {
-            throw new InvalidOperationException("A submitted CPN initial assessment cannot be edited.");
-        }
-
-        _riskDomains.Clear();
-        foreach (var (domain, rating, notes) in domains)
-        {
-            _riskDomains.Add(new CpnRiskDomainRating(Id, domain, rating, notes));
-        }
 
         UpdatedAt = DateTimeOffset.UtcNow;
     }
@@ -292,6 +276,12 @@ public class CpnRiskDomainRating : Entity
     {
         AssessmentId = assessmentId;
         Domain = domain;
+        Rating = rating;
+        Notes = notes;
+    }
+
+    public void Update(RiskRating rating, string? notes)
+    {
         Rating = rating;
         Notes = notes;
     }

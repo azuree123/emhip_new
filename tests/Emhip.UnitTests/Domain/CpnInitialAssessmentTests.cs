@@ -91,7 +91,6 @@ public class CpnInitialAssessmentTests
         assessment.Submit();
 
         Assert.Throws<InvalidOperationException>(() => assessment.Update(CompleteFields()));
-        Assert.Throws<InvalidOperationException>(() => assessment.SetRiskDomains([]));
     }
 
     [Fact]
@@ -102,22 +101,5 @@ public class CpnInitialAssessmentTests
         assessment.Submit();
 
         Assert.Throws<InvalidOperationException>(assessment.Submit);
-    }
-
-    [Fact]
-    public void Setting_risk_domains_replaces_the_previous_set()
-    {
-        var assessment = NewAssessment();
-
-        assessment.SetRiskDomains(
-        [
-            (CpnRiskDomain.SelfHarmShortTerm, RiskRating.High, "Disclosed ideation last week."),
-            (CpnRiskDomain.SelfNeglect, RiskRating.Medium, null),
-        ]);
-        assessment.SetRiskDomains([(CpnRiskDomain.SelfNeglect, RiskRating.Low, null)]);
-
-        var domain = Assert.Single(assessment.RiskDomains);
-        Assert.Equal(CpnRiskDomain.SelfNeglect, domain.Domain);
-        Assert.Equal(RiskRating.Low, domain.Rating);
     }
 }

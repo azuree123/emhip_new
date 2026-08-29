@@ -57,14 +57,6 @@ public class CpnInitialAssessmentConfiguration : IEntityTypeConfiguration<CpnIni
             builder.Property(shorter).HasMaxLength(2000);
         }
 
-        builder.HasMany(a => a.RiskDomains)
-            .WithOne()
-            .HasForeignKey(d => d.AssessmentId)
-            .OnDelete(DeleteBehavior.Cascade);
-
-        builder.Metadata.FindNavigation(nameof(CpnInitialAssessment.RiskDomains))!
-            .SetPropertyAccessMode(PropertyAccessMode.Field);
-
         builder.Property(a => a.RowVersion).IsRowVersion();
     }
 }
@@ -79,5 +71,12 @@ public class CpnRiskDomainRatingConfiguration : IEntityTypeConfiguration<CpnRisk
         builder.Property(d => d.Domain).HasConversion<string>().HasMaxLength(40);
         builder.Property(d => d.Rating).HasConversion<string>().HasMaxLength(20);
         builder.Property(d => d.Notes).HasMaxLength(2000);
+
+        // The ratings are reconciled through the DbSet rather than a navigation collection, but
+        // the cascade still belongs in the database so a deleted assessment takes them with it.
+        builder.HasOne<CpnInitialAssessment>()
+            .WithMany()
+            .HasForeignKey(d => d.AssessmentId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

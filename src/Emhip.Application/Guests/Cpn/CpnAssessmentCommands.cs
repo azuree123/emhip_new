@@ -154,7 +154,6 @@ public sealed class SaveCpnAssessmentCommandHandler(IAppDbContext db, ICurrentUs
         var input = request.Input;
 
         var assessment = await db.CpnInitialAssessments
-            .Include(a => a.RiskDomains)
             .FirstOrDefaultAsync(a => a.GuestId == request.GuestId, cancellationToken);
 
         if (assessment is null)
@@ -183,7 +182,7 @@ public sealed class SaveCpnAssessmentCommandHandler(IAppDbContext db, ICurrentUs
             input.ClinicalFormulation, input.RecommendedPlan, input.SafetyPlan,
             input.FollowUpFrequency, input.NextAppointmentDate));
 
-        assessment.SetRiskDomains(input.RiskDomains.Select(d => (d.Domain, d.Rating, d.Notes)));
+        await ReconcileRiskDomainsAsync(assessment.Id, input.RiskDomains, cancellationToken);
 
         if (request.Submit)
         {
@@ -205,6 +204,36 @@ public sealed class SaveCpnAssessmentCommandHandler(IAppDbContext db, ICurrentUs
 
         await db.SaveChangesAsync(cancellationToken);
         return assessment.Id;
+    }
+
+    /// <summary>
+    /// Brings the stored ratings in line with the submitted set: a domain the worker cleared is
+    /// removed, one they changed is updated in place, one they added is inserted. Handled through
+    /// the DbSet rather than a navigation collection — a freshly constructed child already carries
+    /// an Id, which EF reads as "already exists" and turns into an UPDATE that matches no row.
+    /// </summary>
+    private async Task ReconcileRiskDomainsAsync(
+        Guid assessmentId, IReadOnlyList<CpnRiskDomainDto> submitted, CancellationToken cancellationToken)
+    {
+        var existing = await db.CpnRiskDomainRatings
+            .Where(d => d.AssessmentId == assessmentId)
+            .ToListAsync(cancellationToken);
+
+        var keptDomains = submitted.Select(d => d.Domain).ToHashSet();
+        db.CpnRiskDomainRatings.RemoveRange(existing.Where(d => !keptDomains.Contains(d.Domain)));
+
+        foreach (var input in submitted)
+        {
+            var row = existing.FirstOrDefault(d => d.Domain == input.Domain);
+            if (row is null)
+            {
+                db.CpnRiskDomainRatings.Add(new CpnRiskDomainRating(assessmentId, input.Domain, input.Rating, input.Notes));
+            }
+            else
+            {
+                row.Update(input.Rating, input.Notes);
+            }
+        }
     }
 
     private static string BuildContactSummary(CpnAssessmentInput input)
