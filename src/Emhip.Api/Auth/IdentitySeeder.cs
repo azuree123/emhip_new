@@ -79,7 +79,7 @@ public static class IdentitySeeder
     private static readonly string[] HubManagerPermissions =
     [
         .. CmhwPermissions,
-        Permissions.Dashboard.ViewHubManager, Permissions.Reports.Export,
+        Permissions.Dashboard.ViewHubManager, Permissions.Mdt.Manage, Permissions.Reports.Export,
         Permissions.Documents.Delete, Permissions.Documents.Restore,
         Permissions.Settings.View,
     ];

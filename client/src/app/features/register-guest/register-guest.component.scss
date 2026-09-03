@@ -493,3 +493,52 @@ $lane: 1180px;
     width: 100%;
   }
 }
+
+// "Registration progress" — the scheduled-for-later path's per-call checklist, shown on step 1.
+.call-card {
+  background: rgb(255, 255, 255);
+  border-radius: 12px;
+  padding: 20px 24px;
+  margin-top: 16px;
+
+  .card__title {
+    margin: 0 0 12px;
+    font-weight: 600;
+    font-size: 16px;
+    color: rgb(42, 42, 42);
+  }
+}
+
+.call-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  &__item {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    font-size: 13px;
+    color: rgb(42, 42, 42);
+
+    &--done .call-list__status {
+      color: rgb(20, 113, 41);
+    }
+
+    &--failed .call-list__status {
+      color: rgb(225, 38, 40);
+    }
+
+    &--running .call-list__status {
+      color: rgb(157, 133, 45);
+    }
+  }
+
+  &__status {
+    font-weight: 600;
+    color: rgb(140, 140, 140);
+  }
+}

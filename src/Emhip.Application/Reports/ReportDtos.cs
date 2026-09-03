@@ -1,3 +1,4 @@
+using Emhip.Domain.Enums;
 namespace Emhip.Application.Reports;
 
 public sealed record PathwayReportDto(
@@ -84,3 +85,35 @@ public sealed record ReportExportRowDto(
     string Category,
     string Status,
     DateTimeOffset ReferredAt);
+
+/// <summary>"CPN Activity" reports tab (design Desktop 86): the CPN referral pipeline and the guests on the CPN caseload.</summary>
+public sealed record CpnActivityReportDto(
+    DateOnly From,
+    DateOnly To,
+    /// <summary>Distinct guests with a submitted CPN contact in the range.</summary>
+    int GuestsSeenByCpn,
+    /// <summary>Guests with a confirmed CPN referral (or flagged CPN-involved on their clinical profile) right now.</summary>
+    int ActiveCpnCaseload,
+    /// <summary>CPN referrals requested in the range.</summary>
+    int NewCpnReferrals,
+    int ReferralsConfirmedAtMdt,
+    int ReferralsDeclinedAtMdt,
+    int ReferralsPendingReview,
+    /// <summary>Average days from the referral being confirmed to the first CPN contact, over referrals with both.</summary>
+    double? AvgDaysReferralToContact,
+    int CpnContactsInRange,
+    IReadOnlyList<CpnCaseloadRowDto> Caseload);
+
+public sealed record CpnCaseloadRowDto(
+    Guid GuestId,
+    int GuestNumber,
+    string GuestName,
+    string GuestStatus,
+    GuestPathway? Pathway,
+    string? AssignedCmhwName,
+    string? CpnName,
+    DateTimeOffset? DateOfReferral,
+    DateTimeOffset? ConfirmedAt,
+    int CpnSessions,
+    DateTimeOffset? LastCpnContactAt,
+    DateOnly? NextContactDue);

@@ -668,6 +668,34 @@
             <span class="switch__knob"></span>
           </button>
         </div>
+        @if (followUp.mdtDiscussionRequested) {
+          <!-- "Add this guest for MDT discussion" (design): a discussion request on the manager's queue. -->
+          <div class="request-box">
+            <p class="request-box__note">
+              This creates a discussion request in the MDT queue. It does not trigger a CPN referral. The Hub
+              Manager will mark it as discussed after the team reviews.
+            </p>
+            <label class="field field--full">
+              <span class="field__label">Reason for requesting MDT discussion&nbsp;*</span>
+              <input
+                type="text"
+                name="mdtDiscussionReason"
+                [(ngModel)]="followUp.mdtDiscussionReason"
+                placeholder="What would you like the team to consider?"
+              />
+            </label>
+            <label class="field field--full">
+              <span class="field__label">Detail <span class="field__optional">(optional)</span></span>
+              <textarea
+                name="mdtDiscussionDetails"
+                rows="3"
+                [(ngModel)]="followUp.mdtDiscussionDetails"
+                placeholder="What have you observed and what input you are seeking from MDT..."
+              ></textarea>
+              <span class="field__hint">This becomes part of the permanent MDT record for this guest.</span>
+            </label>
+          </div>
+        }
         <div class="toggle-row">
           <span class="toggle-row__label">Refer this guest to the CPN</span>
           <button
@@ -681,6 +709,51 @@
             <span class="switch__knob"></span>
           </button>
         </div>
+        @if (followUp.cpnReferralRequested) {
+          <!-- "Refer this guest to the CPN" (design): reason, urgency and rationale — reviewed at MDT. -->
+          <div class="request-box">
+            <p class="request-box__note">
+              This referral will be sent to the Hub Manager for MDT review. It does not bypass the MDT process.
+              The CPN will only be allocated after the Hub Manager confirms.
+            </p>
+            <label class="field field--full">
+              <span class="field__label">Primary reason for CPN referral&nbsp;*</span>
+              <select name="cpnReferralReason" [(ngModel)]="followUp.cpnReferralReason">
+                <option value="" disabled>Select reason....</option>
+                @for (item of options('CpnReferralReason'); track item.id) {
+                  <option [value]="item.label">{{ item.label }}</option>
+                }
+              </select>
+            </label>
+            <div class="field field--full">
+              <span class="field__label">Urgency&nbsp;*</span>
+              <div class="choice-row">
+                @for (u of urgencyChoices; track u.value) {
+                  <button
+                    type="button"
+                    class="choice"
+                    [class.choice--on]="followUp.cpnReferralUrgency === u.value"
+                    [attr.aria-pressed]="followUp.cpnReferralUrgency === u.value"
+                    (click)="setUrgency(u.value)"
+                  >
+                    <span class="choice__radio" aria-hidden="true"></span>
+                    <span class="choice__label">{{ u.label }} <span class="choice__hint">— {{ u.hint }}</span></span>
+                  </button>
+                }
+              </div>
+            </div>
+            <label class="field field--full">
+              <span class="field__label">Brief rationale for the referral</span>
+              <textarea
+                name="cpnReferralRationale"
+                rows="3"
+                [(ngModel)]="followUp.cpnReferralRationale"
+                placeholder="What have you observed that leads you to CPN? Be specific..."
+              ></textarea>
+              <span class="field__hint">3–4 sentences is enough. This becomes the permanent referral record.</span>
+            </label>
+          </div>
+        }
       }
 
       @if (body === 'sessionChoice') {

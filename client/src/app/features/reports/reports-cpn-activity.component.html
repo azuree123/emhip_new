@@ -1,15 +1,31 @@
 <div class="cpn">
   @if (error()) {
-    <div class="error-banner">Couldn't load contact activity — {{ error() }}</div>
+    <div class="error-banner">Couldn't load CPN activity — {{ error() }}</div>
   }
 
-  <!-- The source's KPI row is CPN-pipeline data with no backend; the one real
-       headline figure (total contacts in range) is drawn in its tile style. -->
+  @let d = data();
+
+  <!-- KPI row (Desktop 86). -->
   <section class="stat-row cpn__stats">
     <div class="stat-card">
-      <span class="stat-card__label">Total contacts recorded</span>
-      <span class="stat-card__value">{{ loading() ? '—' : (totalContacts() ?? '—') }}</span>
-      <span class="stat-card__caption">{{ rangeLabel() }} · all recorded contacts</span>
+      <span class="stat-card__label">Guests seen by CPN</span>
+      <span class="stat-card__value">{{ loading() || !d ? '—' : d.guestsSeenByCpn }}</span>
+      <span class="stat-card__caption">{{ rangeLabel() }} · {{ d ? d.cpnContactsInRange + ' CPN contacts' : 'CPN contacts' }}</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-card__label">Active CPN caseload</span>
+      <span class="stat-card__value">{{ loading() || !d ? '—' : d.activeCpnCaseload }}</span>
+      <span class="stat-card__caption">Currently allocated</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-card__label">New CPN referrals</span>
+      <span class="stat-card__value">{{ loading() || !d ? '—' : d.newCpnReferrals }}</span>
+      <span class="stat-card__caption">Requested {{ rangeLabel() }}</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-card__label">Referrals confirmed at MDT</span>
+      <span class="stat-card__value">{{ loading() || !d ? '—' : d.referralsConfirmedAtMdt }}</span>
+      <span class="stat-card__caption stat-card__caption--maroon">{{ d && d.referralsPendingReview > 0 ? d.referralsPendingReview + ' pending review' : 'None pending review' }}</span>
     </div>
   </section>
 
@@ -17,27 +33,33 @@
     <section class="report-card">
       <div class="report-card__head">
         <div>
-          <h2 class="report-card__title">Contacts by type</h2>
-          <p class="report-card__subtitle">All recorded contacts — CPN-specific tracking is not yet captured</p>
+          <h2 class="report-card__title">CPN referral pipeline</h2>
+          <p class="report-card__subtitle">
+            These are internal referrals and are not counted in the external referrals column of the referral report.
+          </p>
         </div>
         <span class="report-card__corner">{{ rangeLabel() }}</span>
       </div>
 
-      @if (loading()) {
-        <div class="report-card__state">Loading contact breakdown…</div>
-      } @else if (typeRows().length === 0) {
-        <div class="report-card__state">No contacts recorded for this period.</div>
+      @if (loading() && !d) {
+        <div class="report-card__state">Loading pipeline…</div>
+      } @else if (!d) {
+        <div class="report-card__state">No CPN activity for this period.</div>
       } @else {
         <div class="cpn__rows">
-          @for (row of typeRows(); track row.label) {
+          @for (stage of pipeline(); track stage.key) {
             <div class="breakdown-row">
-              <span class="breakdown-row__label">{{ row.prettyLabel }}</span>
+              <span class="breakdown-row__label">{{ stage.label }}</span>
               <div class="breakdown-row__track">
-                <div class="breakdown-row__fill" [style.width.%]="row.barPct"></div>
+                <div class="breakdown-row__fill" [class]="'breakdown-row__fill breakdown-row__fill--' + stage.tone" [style.width.%]="stage.pct"></div>
               </div>
-              <span class="breakdown-row__value">{{ row.count }}</span>
+              <span class="breakdown-row__value">{{ stage.count }}</span>
             </div>
           }
+        </div>
+        <div class="pipeline-foot">
+          <span class="pipeline-foot__label">Avg days referral → CPN contact</span>
+          <span class="pipeline-foot__value">{{ avgDaysLabel() }}</span>
         </div>
       }
     </section>
@@ -45,29 +67,87 @@
     <section class="report-card">
       <div class="report-card__head">
         <div>
-          <h2 class="report-card__title">Contacts by outcome</h2>
-          <p class="report-card__subtitle">All recorded contacts</p>
+          <h2 class="report-card__title">CPN sessions</h2>
+          <p class="report-card__subtitle">Contacts logged with the CPN toggle on</p>
         </div>
         <span class="report-card__corner">{{ rangeLabel() }}</span>
       </div>
-
-      @if (loading()) {
-        <div class="report-card__state">Loading contact breakdown…</div>
-      } @else if (outcomeRows().length === 0) {
-        <div class="report-card__state">No contacts recorded for this period.</div>
+      @if (loading() && !d) {
+        <div class="report-card__state">Loading…</div>
+      } @else if (!d) {
+        <div class="report-card__state">No CPN sessions for this period.</div>
       } @else {
-        <div class="cpn__rows">
-          @for (row of outcomeRows(); track row.label) {
-            <div class="breakdown-row">
-              <span class="breakdown-row__label">{{ row.prettyLabel }}</span>
-              <div class="breakdown-row__track">
-                <div class="breakdown-row__fill" [style.width.%]="row.barPct"></div>
-              </div>
-              <span class="breakdown-row__value">{{ row.count }}</span>
-            </div>
-          }
+        <div class="session-stats">
+          <div class="session-stat">
+            <span class="session-stat__value">{{ d.cpnContactsInRange }}</span>
+            <span class="session-stat__label">CPN contacts in range</span>
+          </div>
+          <div class="session-stat">
+            <span class="session-stat__value">{{ d.guestsSeenByCpn }}</span>
+            <span class="session-stat__label">distinct guests seen</span>
+          </div>
+          <div class="session-stat">
+            <span class="session-stat__value">{{ d.referralsDeclinedAtMdt }}</span>
+            <span class="session-stat__label">referrals declined at MDT</span>
+          </div>
         </div>
       }
     </section>
   </div>
+
+  <section class="report-card">
+    <div class="report-card__head">
+      <div>
+        <h2 class="report-card__title">Guests currently on CPN caseload</h2>
+        <p class="report-card__subtitle">{{ caseload().length }} active · confirmed at MDT or flagged CPN-involved on the clinical profile</p>
+      </div>
+    </div>
+
+    @if (loading() && !d) {
+      <div class="report-card__state">Loading caseload…</div>
+    } @else if (caseload().length === 0) {
+      <div class="report-card__state">No guests on the CPN caseload yet.</div>
+    } @else {
+      <div class="table-scroll">
+        <table class="rpt-table cpn-table">
+          <thead>
+            <tr>
+              <th>Guest Name</th>
+              <th>Pathway</th>
+              <th>Date of Referral</th>
+              <th>CPN</th>
+              <th class="cpn-table__num">CPN Contacts</th>
+              <th>Last CPN contact</th>
+              <th>Next Contact</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of caseload(); track row.guestId) {
+              <tr>
+                <td>
+                  <span class="guest-cell">
+                    <span class="guest-cell__avatar" aria-hidden="true">{{ initials(row) }}</span>
+                    <span class="guest-cell__text">
+                      <span class="guest-cell__name">{{ row.guestName }}</span>
+                      <span class="guest-cell__sub">ID: G-{{ row.guestNumber }} · CMHW: {{ row.assignedCmhwName ?? 'Unassigned' }}</span>
+                    </span>
+                  </span>
+                </td>
+                <td>{{ pathwayLabel(row) }}</td>
+                <td>{{ day(row.dateOfReferral) }}</td>
+                <td>{{ row.cpnName ?? '—' }}</td>
+                <td class="cpn-table__num">{{ row.cpnSessions }}</td>
+                <td>{{ day(row.lastCpnContactAt) }}</td>
+                <td>{{ day(row.nextContactDue) }}</td>
+                <td>
+                  <a class="btn btn--secondary cpn-table__open" [routerLink]="['/guests', row.guestId]" [queryParams]="{ tab: 'cpn' }">Open</a>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </section>
 </div>

@@ -1,5 +1,5 @@
-// CPN Activity tab — Desktop86 (project/screens/Components.bundle.js):
-// breakdown cards in the design's thin-bar row style.
+// CPN Activity tab — Desktop 86: KPI tiles, the referral pipeline bars and the caseload table,
+// all in the Reports suite's shared chrome.
 @import 'reports-shared';
 
 :host {
@@ -10,31 +10,176 @@
 .cpn {
   display: flex;
   flex-direction: column;
-  gap: 23px;
-
-  // Single real KPI tile — keep the design's 4-up sizing for the one tile.
-  &__stats {
-    grid-template-columns: minmax(0, 1fr) 2fr;
-  }
+  gap: 24px;
 
   &__grid {
     display: grid;
-    grid-template-columns: minmax(0, 687fr) minmax(0, 466fr);
-    gap: 23px;
-    align-items: start;
+    grid-template-columns: 3fr 2fr;
+    gap: 24px;
   }
 
   &__rows {
-    margin-top: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    margin-top: 24px;
+  }
+}
+
+.breakdown-row {
+  display: grid;
+  grid-template-columns: 200px 1fr 48px;
+  align-items: center;
+  gap: 14px;
+
+  &__label {
+    font-weight: 500;
+    font-size: 13px;
+    color: $ink;
+  }
+
+  &__track {
+    height: 8px;
+    border-radius: 444px;
+    background: rgb(237, 237, 237);
+    overflow: hidden;
+  }
+
+  &__fill {
+    height: 100%;
+    border-radius: 444px;
+    background: $maroon;
+    min-width: 2px;
+
+    &--green {
+      background: $green;
+    }
+
+    &--red {
+      background: $red;
+    }
+
+    &--gold {
+      background: $gold;
+    }
+  }
+
+  &__value {
+    font-weight: 600;
+    font-size: 13px;
+    text-align: right;
+    color: $ink;
+  }
+}
+
+.pipeline-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid $line;
+
+  &__label {
+    font-weight: 500;
+    font-size: 13px;
+    color: $ink-muted;
+  }
+
+  &__value {
+    font-weight: 600;
+    font-size: 20px;
+    color: $ink;
+  }
+}
+
+.session-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  margin-top: 24px;
+}
+
+.session-stat {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+
+  &__value {
+    font-weight: 600;
+    font-size: 28px;
+    line-height: 32px;
+    color: $ink;
+    min-width: 56px;
+  }
+
+  &__label {
+    font-weight: 500;
+    font-size: 13px;
+    color: $ink-muted;
+  }
+}
+
+.cpn-table {
+  td {
+    padding-top: 14px;
+    padding-bottom: 14px;
+  }
+
+  &__num {
+    text-align: right;
+  }
+
+  &__open {
+    height: 36px;
+    padding: 0 16px;
+    text-decoration: none;
+  }
+}
+
+.guest-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+
+  &__avatar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 24px;
+    background: rgb(240, 240, 240);
+    font-weight: 600;
+    font-size: 15px;
+    color: rgb(148, 148, 148);
+    flex-shrink: 0;
+  }
+
+  &__text {
+    display: flex;
+    flex-direction: column;
+  }
+
+  &__name {
+    font-weight: 600;
+    font-size: 12px;
+    line-height: 20px;
+    color: $ink;
+    white-space: nowrap;
+  }
+
+  &__sub {
+    font-weight: 500;
+    font-size: 10px;
+    line-height: 16px;
+    color: rgb(143, 143, 143);
+    white-space: nowrap;
   }
 }
 
 @media (max-width: 1100px) {
   .cpn__grid {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .cpn__stats {
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: 1fr;
   }
 }

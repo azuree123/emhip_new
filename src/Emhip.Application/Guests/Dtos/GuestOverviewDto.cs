@@ -11,6 +11,8 @@ public sealed record GuestOverviewDto(
     GuestStatus Status,
     string? ContactPhone,
     string? ContactEmail,
+    string? AddressLine1,
+    string? PostCode,
     string? AssignedCmhwName,
     DateTimeOffset RegisteredAt,
     bool HasActiveRiskFlags,

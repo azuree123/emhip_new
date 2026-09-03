@@ -92,6 +92,9 @@ export interface GuestOverviewDto {
   status: GuestStatus;
   contactPhone: string | null;
   contactEmail: string | null;
+  /** Captured at registration — shown read-only in the Demographics tab's "Personal details". */
+  addressLine1: string | null;
+  postCode: string | null;
   assignedCmhwName: string | null;
   registeredAt: string;
   hasActiveRiskFlags: boolean;
@@ -306,6 +309,13 @@ export interface CaseworkNoteInput {
   mdtDiscussionRequested: boolean;
   cpnReferralRequested: boolean;
   actions: CaseworkActionInput[];
+  /** "Refer this guest to the CPN" — primary reason (lookup label), urgency and rationale. */
+  cpnReferralReason?: string | null;
+  cpnReferralUrgency?: string | null;
+  cpnReferralRationale?: string | null;
+  /** "Add this guest for MDT discussion" — reason and what the team should consider. */
+  mdtDiscussionReason?: string | null;
+  mdtDiscussionDetails?: string | null;
 }
 
 export interface CaseworkNoteDto {
@@ -1253,4 +1263,115 @@ export interface ContactHistoryRowDto {
   createdByStaffId: string;
   createdByName: string;
   assignedCmhwName: string | null;
+}
+
+/** One row of the Contact History screen (Desktop 89): a guest and their contact counts by type. */
+export interface ContactsByGuestRowDto {
+  guestId: string;
+  guestNumber: number;
+  guestName: string;
+  guestStatus: GuestStatus;
+  pathway: GuestPathway | null;
+  assignedCmhwName: string | null;
+  totalContacts: number;
+  caseworkCount: number;
+  activityCount: number;
+  hospitalityCount: number;
+  afaCount: number;
+  cpnSessionCount: number;
+  lastContactAt: string | null;
+}
+
+/** The Contact History screen's stat tiles, over the same caseload scope as the list. */
+export interface ContactHistorySummaryDto {
+  totalContacts: number;
+  casework: number;
+  activity: number;
+  afaAndHospitality: number;
+  cpnSessions: number;
+  guestsWithContacts: number;
+}
+
+// ---- MDT queue (Hub Manager) and CPN record ----
+
+export type MdtQueueKind = 'CpnReferral' | 'InitialReview' | 'DiscussionRequest';
+export type MdtQueueStatus = 'Pending' | 'Confirmed' | 'Declined' | 'Discussed';
+
+export interface MdtQueueItemDto {
+  id: string;
+  guestId: string;
+  guestNumber: number;
+  guestName: string;
+  guestStatus: GuestStatus;
+  pathway: GuestPathway | null;
+  assignedCmhwName: string | null;
+  kind: MdtQueueKind;
+  status: MdtQueueStatus;
+  reason: string;
+  details: string | null;
+  urgency: string | null;
+  requestedByName: string;
+  requestedAt: string;
+  reviewedByName: string | null;
+  reviewedAt: string | null;
+  reviewNote: string | null;
+  assignedCpnName: string | null;
+  declineReason: string | null;
+}
+
+export interface MdtQueueDto {
+  pending: MdtQueueItemDto[];
+  reviewed: MdtQueueItemDto[];
+}
+
+export interface CpnSessionSummaryDto {
+  noteId: string;
+  occurredAt: string;
+  contactMethod: string;
+  sessionType: CpnSessionType | null;
+  sessionNumber: number | null;
+  authorName: string;
+  riskLevel: string;
+  assessment: string | null;
+}
+
+/** GET /guests/{id}/cpn-record — the workspace "CPN Record" tab. */
+export interface GuestCpnRecordDto {
+  referral: MdtQueueItemDto | null;
+  cpnInvolved: boolean;
+  assignedCpnName: string | null;
+  hasInitialAssessment: boolean;
+  firstCpnContactAt: string | null;
+  sessions: CpnSessionSummaryDto[];
+}
+
+// ---- "CPN Activity" report ----
+
+export interface CpnCaseloadRowDto {
+  guestId: string;
+  guestNumber: number;
+  guestName: string;
+  guestStatus: GuestStatus;
+  pathway: GuestPathway | null;
+  assignedCmhwName: string | null;
+  cpnName: string | null;
+  dateOfReferral: string | null;
+  confirmedAt: string | null;
+  cpnSessions: number;
+  lastCpnContactAt: string | null;
+  nextContactDue: string | null;
+}
+
+export interface CpnActivityReportDto {
+  from: string;
+  to: string;
+  guestsSeenByCpn: number;
+  activeCpnCaseload: number;
+  newCpnReferrals: number;
+  referralsConfirmedAtMdt: number;
+  referralsDeclinedAtMdt: number;
+  referralsPendingReview: number;
+  avgDaysReferralToContact: number | null;
+  cpnContactsInRange: number;
+  caseload: CpnCaseloadRowDto[];
 }

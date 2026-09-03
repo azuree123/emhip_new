@@ -6,6 +6,7 @@ import { GuestStatus, GuestSuggestionDto } from '../core/api-models';
 import { AuthService } from '../core/auth.service';
 import { GuestsApiService } from '../core/guests-api.service';
 import { Permissions } from '../core/permissions';
+import { MdtApiService } from '../core/mdt-api.service';
 import { UrgentCasesApiService } from '../core/urgent-cases-api.service';
 import { UrgentCasesHubService } from '../core/urgent-cases-hub.service';
 
@@ -47,9 +48,13 @@ export class AppShellComponent implements OnInit {
   private readonly urgentCasesApi = inject(UrgentCasesApiService);
   private readonly urgentCasesHub = inject(UrgentCasesHubService);
   private readonly guestsApi = inject(GuestsApiService);
+  private readonly mdtApi = inject(MdtApiService);
 
   readonly currentUser = this.auth.current;
   readonly urgentCaseCount = signal<number | null>(null);
+  /** Pending MDT queue items — the badge on the Hub Manager's "MDT Queue" nav item. */
+  readonly mdtPendingCount = signal<number | null>(null);
+  readonly canManageMdt = this.auth.hasPermission(Permissions.Mdt.Manage);
   // Design meta line reads "Tuesday 13 May 2025" (no comma) — built manually because
   // en-GB toLocaleDateString inserts a comma after the weekday.
   readonly today = (() => {
@@ -147,6 +152,16 @@ export class AppShellComponent implements OnInit {
           permissions: [Permissions.UrgentCases.View],
         },
         {
+          // Three-person group glyph — the multidisciplinary team. Filled outer shapes only.
+          label: 'MDT Queue',
+          route: '/mdt-queue',
+          iconViewBox: '0 0 16 16',
+          iconPath:
+            'M 8 2 A 2.2 2.2 0 1 1 7.99 2 Z M 3.2 4.2 A 1.7 1.7 0 1 1 3.19 4.2 Z M 12.8 4.2 A 1.7 1.7 0 1 1 12.79 4.2 Z M 8 7.2 C 10.3 7.2 12 8.6 12 10.4 L 12 13 L 4 13 L 4 10.4 C 4 8.6 5.7 7.2 8 7.2 Z M 3.2 8.4 C 3.6 8.4 4 8.5 4.3 8.6 C 3.5 9.3 3 10.2 3 11.2 L 3 12.4 L 0.4 12.4 L 0.4 10.6 C 0.4 9.4 1.6 8.4 3.2 8.4 Z M 12.8 8.4 C 14.4 8.4 15.6 9.4 15.6 10.6 L 15.6 12.4 L 13 12.4 L 13 11.2 C 13 10.2 12.5 9.3 11.7 8.6 C 12 8.5 12.4 8.4 12.8 8.4 Z',
+          badge: () => this.mdtPendingCount(),
+          permissions: [Permissions.Mdt.Manage],
+        },
+        {
           // Speech bubble drawn as a filled outer shape with an opposite-wound inner subpath,
           // matching the other nav glyphs. Hub-wide log of every contact recorded on a guest.
           label: 'Contact History',
@@ -213,6 +228,12 @@ export class AppShellComponent implements OnInit {
     if (this.canViewUrgentCases) {
       this.urgentCasesApi.getActive().subscribe((cases) => this.urgentCaseCount.set(cases.length));
       this.urgentCasesHub.connect();
+    }
+    if (this.canManageMdt) {
+      this.mdtApi.getQueue().subscribe({
+        next: (queue) => this.mdtPendingCount.set(queue.pending.length || null),
+        error: () => this.mdtPendingCount.set(null),
+      });
     }
   }
 

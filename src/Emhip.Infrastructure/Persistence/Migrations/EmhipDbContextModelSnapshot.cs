@@ -1514,6 +1514,81 @@ namespace Emhip.Infrastructure.Persistence.Migrations
                     b.ToTable("LookupItems", (string)null);
                 });
 
+            modelBuilder.Entity("Emhip.Domain.Entities.MdtQueueItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("AssignedCpnStaffId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("DeclineReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Details")
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<Guid>("GuestId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTimeOffset>("RequestedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<Guid>("RequestedByStaffId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ReviewNote")
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<DateTimeOffset?>("ReviewedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<Guid?>("ReviewedByStaffId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<Guid?>("SourceNoteId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("Urgency")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Status", "RequestedAt")
+                        .HasDatabaseName("IX_MdtQueueItems_Status_RequestedAt");
+
+                    b.HasIndex("GuestId", "Kind", "Status")
+                        .HasDatabaseName("IX_MdtQueueItems_Guest_Kind_Status");
+
+                    b.ToTable("MdtQueueItems", (string)null);
+                });
+
             modelBuilder.Entity("Emhip.Domain.Entities.Note", b =>
                 {
                     b.Property<Guid>("Id")
@@ -2122,7 +2197,7 @@ namespace Emhip.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("Emhip.Domain.Entities.CpnRiskDomainRating", b =>
                 {
                     b.HasOne("Emhip.Domain.Entities.CpnInitialAssessment", null)
-                        .WithMany("RiskDomains")
+                        .WithMany()
                         .HasForeignKey("AssessmentId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -2177,11 +2252,6 @@ namespace Emhip.Infrastructure.Persistence.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-                });
-
-            modelBuilder.Entity("Emhip.Domain.Entities.CpnInitialAssessment", b =>
-                {
-                    b.Navigation("RiskDomains");
                 });
 #pragma warning restore 612, 618
         }

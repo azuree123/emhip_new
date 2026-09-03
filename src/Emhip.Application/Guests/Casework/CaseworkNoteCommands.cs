@@ -58,7 +58,14 @@ public sealed record CaseworkNoteInput(
     DateOnly? NextContactDate,
     bool MdtDiscussionRequested,
     bool CpnReferralRequested,
-    IReadOnlyList<CaseworkActionInput> Actions);
+    IReadOnlyList<CaseworkActionInput> Actions,
+    // "Refer this guest to the CPN" (design): primary reason, urgency and a brief rationale that
+    // becomes the permanent referral record. "Add this guest for MDT discussion": reason + detail.
+    string? CpnReferralReason = null,
+    string? CpnReferralUrgency = null,
+    string? CpnReferralRationale = null,
+    string? MdtDiscussionReason = null,
+    string? MdtDiscussionDetails = null);
 
 public sealed record SaveCaseworkNoteCommand(Guid GuestId, Guid? NoteId, CaseworkNoteInput Input, bool Submit) : IRequest<Guid>;
 
@@ -67,6 +74,14 @@ public sealed class SaveCaseworkNoteCommandValidator : AbstractValidator<SaveCas
     public SaveCaseworkNoteCommandValidator()
     {
         RuleFor(x => x.GuestId).NotEmpty();
+        RuleFor(x => x.Input.CpnReferralReason).NotEmpty()
+            .When(x => x.Submit && x.Input.CpnReferralRequested)
+            .WithMessage("Select the primary reason for the CPN referral.");
+        RuleFor(x => x.Input.MdtDiscussionReason).NotEmpty()
+            .When(x => x.Submit && x.Input.MdtDiscussionRequested)
+            .WithMessage("Give the reason for requesting MDT discussion.");
+        RuleFor(x => x.Input.CpnReferralRationale).MaximumLength(4000);
+        RuleFor(x => x.Input.MdtDiscussionDetails).MaximumLength(4000);
         RuleFor(x => x.Input.Situation).MaximumLength(4000);
         RuleFor(x => x.Input.Background).MaximumLength(4000);
         RuleFor(x => x.Input.Assessment).MaximumLength(4000);
@@ -160,6 +175,23 @@ public sealed class SaveCaseworkNoteCommandHandler(IAppDbContext db, ICurrentUse
                 db.FollowUps.Add(new FollowUp(
                     request.GuestId, input.NextContactDate.Value, currentUser.StaffId,
                     $"Next contact agreed in casework note of {input.OccurredAt:dd MMM yyyy}."));
+            }
+
+            // The two toggles land on the Hub Manager's MDT queue. A CPN referral does not bypass
+            // the MDT: the CPN is only allocated once the manager confirms it there.
+            if (input.CpnReferralRequested)
+            {
+                await Mdt.MdtQueueRaiser.RaiseAsync(
+                    db, request.GuestId, MdtQueueKind.CpnReferral, currentUser.StaffId,
+                    input.CpnReferralReason ?? "CPN referral requested from casework note",
+                    input.CpnReferralRationale, input.CpnReferralUrgency, note.Id, cancellationToken);
+            }
+            if (input.MdtDiscussionRequested)
+            {
+                await Mdt.MdtQueueRaiser.RaiseAsync(
+                    db, request.GuestId, MdtQueueKind.DiscussionRequest, currentUser.StaffId,
+                    input.MdtDiscussionReason ?? "MDT discussion requested from casework note",
+                    input.MdtDiscussionDetails, null, note.Id, cancellationToken);
             }
         }
 

@@ -50,6 +50,12 @@ public static class Permissions
         public const string View = "urgentcases.view";
     }
 
+    public static class Mdt
+    {
+        /// <summary>The Hub Manager's MDT queue: confirm CPN referrals, decline with reason, mark discussions as done.</summary>
+        public const string Manage = "mdt.manage";
+    }
+
     public static class Reports
     {
         public const string View = "reports.view";
@@ -89,6 +95,7 @@ public static class Permissions
         Guests.NotesView, Guests.NotesAdd, Guests.ContactsAdd, Guests.CpnContactsLog,
         FollowUps.View, FollowUps.Manage,
         UrgentCases.View,
+        Mdt.Manage,
         Reports.View, Reports.Export,
         Documents.View, Documents.Upload, Documents.Edit, Documents.Delete, Documents.Restore, Documents.Purge,
         Settings.View, Settings.Manage, Settings.ManageLookups,
@@ -107,6 +114,7 @@ public static class Permissions
         ],
         ["Follow-ups"] = [FollowUps.View, FollowUps.Manage],
         ["Urgent Cases"] = [UrgentCases.View],
+        ["MDT"] = [Mdt.Manage],
         ["Reports"] = [Reports.View, Reports.Export],
         ["Documents"] = [Documents.View, Documents.Upload, Documents.Edit, Documents.Delete, Documents.Restore, Documents.Purge],
         ["Settings"] = [Settings.View, Settings.Manage, Settings.ManageLookups],

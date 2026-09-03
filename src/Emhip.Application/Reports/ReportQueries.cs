@@ -65,3 +65,10 @@ public sealed class RecordExportCommandHandler(IAppDbContext db, ICurrentUser cu
         await db.SaveChangesAsync(cancellationToken);
     }
 }
+
+public sealed record GetCpnActivityQuery(Guid HubId, DateOnly From, DateOnly To) : IRequest<CpnActivityReportDto>;
+public sealed class GetCpnActivityQueryHandler(IReportReadService reads) : IRequestHandler<GetCpnActivityQuery, CpnActivityReportDto>
+{
+    public Task<CpnActivityReportDto> Handle(GetCpnActivityQuery request, CancellationToken cancellationToken) =>
+        reads.GetCpnActivityAsync(request.HubId, request.From, request.To, cancellationToken);
+}

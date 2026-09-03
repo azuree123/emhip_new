@@ -205,7 +205,8 @@ public sealed class GuestReadService(ISqlConnectionFactory connectionFactory, Em
             .Where(g => g.Id == guestId)
             .Select(g => new
             {
-                g.Id, g.GuestNumber, g.FirstName, g.LastName, g.DateOfBirth, g.Status, g.IsUrgent, g.ContactPhone, g.ContactEmail, g.RegisteredAt,
+                g.Id, g.GuestNumber, g.FirstName, g.LastName, g.DateOfBirth, g.Status, g.IsUrgent, g.ContactPhone, g.ContactEmail,
+                g.AddressLine1, g.PostCode, g.RegisteredAt,
                 g.Pathway, g.AfaSupportNeeded, g.ReferralSource,
                 AssignedCmhwName = db.Users.Where(s => s.Id == g.AssignedCmhwId).Select(s => s.DisplayName).FirstOrDefault(),
             })
@@ -240,7 +241,7 @@ public sealed class GuestReadService(ISqlConnectionFactory connectionFactory, Em
 
         return new GuestOverviewDto(
             guest.Id, guest.GuestNumber, guest.FirstName, guest.LastName, guest.DateOfBirth, guest.Status,
-            guest.ContactPhone, guest.ContactEmail, guest.AssignedCmhwName, guest.RegisteredAt,
+            guest.ContactPhone, guest.ContactEmail, guest.AddressLine1, guest.PostCode, guest.AssignedCmhwName, guest.RegisteredAt,
             hasRiskFlags, openFollowUps, guest.Pathway, guest.AfaSupportNeeded, guest.ReferralSource, pinnedNotes, recentContacts);
     }
 

@@ -1,0 +1,249 @@
+<div class="page">
+  <header class="page-header">
+    <div class="page-header__text">
+      <h1 class="page-header__title">MDT queue</h1>
+      <p class="page-header__subtitle">
+        CPN referrals are internal — not external referrals. Review each request below. Confirming allocates the CPN
+        and begins tracking CPN activity separately in reports. Declining returns the guest to CMHW-only support with
+        a documented reason.
+      </p>
+    </div>
+    <div class="page-header__summary">
+      <span class="summary-pill">{{ counts().all }} awaiting MDT review</span>
+    </div>
+  </header>
+
+  <section class="card">
+    <div class="chip-row" role="tablist" aria-label="Filter the queue by badge">
+      <button type="button" class="status-chip" [class.status-chip--active]="filter() === 'all'" (click)="setFilter('all')">All ({{ counts().all }})</button>
+      <button type="button" class="status-chip" [class.status-chip--active]="filter() === 'CpnReferral'" (click)="setFilter('CpnReferral')">CPN referrals ({{ counts().CpnReferral }})</button>
+      <button type="button" class="status-chip" [class.status-chip--active]="filter() === 'InitialReview'" (click)="setFilter('InitialReview')">Initial review ({{ counts().InitialReview }})</button>
+      <button type="button" class="status-chip" [class.status-chip--active]="filter() === 'DiscussionRequest'" (click)="setFilter('DiscussionRequest')">Discussion ({{ counts().DiscussionRequest }})</button>
+    </div>
+
+    @if (error()) {
+      <div class="state-banner state-banner--error">{{ error() }}</div>
+    } @else if (loading() && !queue()) {
+      <div class="state-banner">Loading the MDT queue…</div>
+    } @else if (visiblePending().length === 0) {
+      <div class="state-banner">Nothing awaiting MDT review{{ filter() === 'all' ? '' : ' for this badge' }}.</div>
+    } @else {
+      <div class="rows">
+        @for (item of visiblePending(); track item.id) {
+          <article class="row" [class.row--urgent]="isUrgent(item)">
+            <div class="row__main">
+              <span class="avatar">{{ initials(item.guestName) }}</span>
+              <div class="row__text">
+                <div class="row__title">
+                  <span class="row__name">{{ item.guestName }}</span>
+                  <span class="badge" [class]="'badge ' + badgeClass(item.kind)">{{ kindLabel(item.kind) }}</span>
+                  @if (isUrgent(item)) {
+                    <span class="badge badge--urgent">Urgent</span>
+                  }
+                  @if (statusChip(item.guestStatus); as chip) {
+                    <span class="badge" [style.background]="chip.bg" [style.color]="chip.fg">{{ chip.label }}</span>
+                  }
+                </div>
+                <div class="row__sub">
+                  G-{{ item.guestNumber }} · {{ pathwayLabel(item) }} · CMHW: {{ item.assignedCmhwName ?? 'Unassigned' }}
+                </div>
+                <div class="row__reason">{{ item.reason }}</div>
+                @if (item.details) {
+                  <p class="row__details">{{ item.details }}</p>
+                }
+                <div class="row__meta">
+                  Referred by {{ item.requestedByName }} · {{ formatDateTime(item.requestedAt) }}
+                  @if (item.urgency) {
+                    · {{ item.urgency }}
+                  }
+                </div>
+              </div>
+            </div>
+
+            <div class="row__actions">
+              <button type="button" class="btn btn--outline" (click)="openGuest(item)">Open Guest</button>
+              @if (item.kind === 'CpnReferral') {
+                <button type="button" class="btn btn--primary" (click)="openConfirm(item)">Confirm assign CPN</button>
+                <button type="button" class="btn btn--outline btn--danger" (click)="openDecline(item)">Decline with reason</button>
+              } @else {
+                <button type="button" class="btn btn--maroon" (click)="openDiscussed(item)">Mark as discussed</button>
+                <button type="button" class="btn btn--outline btn--danger" (click)="openDecline(item)">Decline with reason</button>
+              }
+            </div>
+          </article>
+        }
+      </div>
+    }
+  </section>
+
+  <!-- Reviewed items — the permanent MDT record. -->
+  <section class="card card--reviewed">
+    <div class="card__head">
+      <div>
+        <h2 class="card__title">Reviewed</h2>
+        <p class="card__subtitle">Confirmed, declined and discussed — most recent first</p>
+      </div>
+      <button type="button" class="btn btn--outline" (click)="showReviewed.set(!showReviewed())">
+        {{ showReviewed() ? 'Hide' : 'Show' }} ({{ visibleReviewed().length }})
+      </button>
+    </div>
+    @if (showReviewed()) {
+      @if (visibleReviewed().length === 0) {
+        <div class="state-banner">No reviewed items yet.</div>
+      } @else {
+        <div class="rows">
+          @for (item of visibleReviewed(); track item.id) {
+            <article class="row row--reviewed">
+              <div class="row__main">
+                <span class="avatar">{{ initials(item.guestName) }}</span>
+                <div class="row__text">
+                  <div class="row__title">
+                    <span class="row__name">{{ item.guestName }}</span>
+                    <span class="badge" [class]="'badge ' + badgeClass(item.kind)">{{ kindLabel(item.kind) }}</span>
+                    <span class="badge" [class.badge--confirmed]="item.status === 'Confirmed'" [class.badge--declined]="item.status === 'Declined'" [class.badge--discussed]="item.status === 'Discussed'">
+                      {{ item.status }}
+                    </span>
+                  </div>
+                  <div class="row__sub">G-{{ item.guestNumber }} · {{ item.reason }}</div>
+                  <div class="row__reason">{{ outcome(item) }}</div>
+                  @if (item.reviewNote) {
+                    <p class="row__details">{{ item.reviewNote }}</p>
+                  }
+                  <div class="row__meta">
+                    {{ item.reviewedByName ?? 'Hub Manager' }} · {{ formatDateTime(item.reviewedAt) }} · referred by {{ item.requestedByName }} on {{ formatDate(item.requestedAt) }}
+                  </div>
+                </div>
+              </div>
+              <div class="row__actions">
+                <button type="button" class="btn btn--outline" (click)="openGuest(item)">Open Guest</button>
+              </div>
+            </article>
+          }
+        </div>
+      }
+    }
+  </section>
+</div>
+
+@if (dialog(); as d) {
+  <div class="modal-overlay" (click)="closeDialog()">
+    <div class="modal" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
+      @switch (d.kind) {
+        @case ('confirm') {
+          <div class="modal__header">
+            <h2>Confirm CPN assignment</h2>
+            <button type="button" class="modal__close" aria-label="Close" (click)="closeDialog()">×</button>
+          </div>
+          <div class="modal__body">
+            <div class="field field--readonly">
+              <span>Guest</span>
+              <strong>{{ d.item.guestName }} · G-{{ d.item.guestNumber }}</strong>
+            </div>
+            <div class="field field--readonly">
+              <span>Referral</span>
+              <strong>{{ d.item.reason }}</strong>
+              @if (d.item.details) {
+                <p class="field__detail">{{ d.item.details }}</p>
+              }
+            </div>
+            <div class="field">
+              <span>Assigned CPN&nbsp;*</span>
+              <emhip-staff-picker
+                name="cpnStaffId"
+                placeholder="Select the CPN"
+                searchPlaceholder="Search staff…"
+                [allowClear]="true"
+                [(ngModel)]="confirmForm.cpnStaffId"
+              />
+            </div>
+            <label class="field">
+              <span>Confirmation note <em>(optional)</em></span>
+              <textarea rows="3" [(ngModel)]="confirmForm.note" name="note" placeholder="Add any notes for the CPN handover..."></textarea>
+            </label>
+            <p class="modal__hint">Confirming allocates the CPN and begins tracking CPN activity separately in reports.</p>
+            @if (dialogError()) {
+              <div class="banner banner--error">{{ dialogError() }}</div>
+            }
+          </div>
+          <div class="modal__footer">
+            <button type="button" class="btn btn--outline" [disabled]="saving()" (click)="closeDialog()">Cancel</button>
+            <button type="button" class="btn btn--primary" [disabled]="saving()" (click)="submitConfirm()">
+              {{ saving() ? 'Confirming…' : 'Confirm CPN assignment' }}
+            </button>
+          </div>
+        }
+        @case ('decline') {
+          <div class="modal__header">
+            <h2>Decline {{ d.item.kind === 'CpnReferral' ? 'CPN referral' : 'request' }}</h2>
+            <button type="button" class="modal__close" aria-label="Close" (click)="closeDialog()">×</button>
+          </div>
+          <div class="modal__body">
+            <div class="field field--readonly">
+              <span>Guest</span>
+              <strong>{{ d.item.guestName }} · G-{{ d.item.guestNumber }}</strong>
+            </div>
+            <label class="field">
+              <span>Reason for declining&nbsp;*</span>
+              <select [(ngModel)]="declineForm.reason" name="reason">
+                <option value="" disabled>Select reason....</option>
+                @for (r of declineReasons(); track r.id) {
+                  <option [value]="r.label">{{ r.label }}</option>
+                }
+                @if (declineReasons().length === 0) {
+                  <option value="Insufficient clinical evidence">Insufficient clinical evidence</option>
+                  <option value="Manageable within CMHW support">Manageable within CMHW support</option>
+                  <option value="Other">Other</option>
+                }
+              </select>
+            </label>
+            <label class="field">
+              <span>Additional context <em>(optional)</em></span>
+              <textarea rows="3" [(ngModel)]="declineForm.context" name="context" placeholder="Provide context for the CMHW..."></textarea>
+            </label>
+            @if (dialogError()) {
+              <div class="banner banner--error">{{ dialogError() }}</div>
+            }
+          </div>
+          <div class="modal__footer">
+            <button type="button" class="btn btn--outline" [disabled]="saving()" (click)="closeDialog()">Cancel</button>
+            <button type="button" class="btn btn--danger-solid" [disabled]="saving()" (click)="submitDecline()">
+              {{ saving() ? 'Declining…' : 'Decline referral' }}
+            </button>
+          </div>
+        }
+        @case ('discussed') {
+          <div class="modal__header">
+            <h2>Mark as discussed</h2>
+            <button type="button" class="modal__close" aria-label="Close" (click)="closeDialog()">×</button>
+          </div>
+          <div class="modal__body">
+            <div class="field field--readonly">
+              <span>Guest</span>
+              <strong>{{ d.item.guestName }} · G-{{ d.item.guestNumber }}</strong>
+            </div>
+            <div class="field field--readonly">
+              <span>{{ kindLabel(d.item.kind) }}</span>
+              <strong>{{ d.item.reason }}</strong>
+              @if (d.item.details) {
+                <p class="field__detail">{{ d.item.details }}</p>
+              }
+            </div>
+            <label class="field">
+              <span>MDT note&nbsp;*</span>
+              <textarea rows="4" [(ngModel)]="discussedForm.note" name="mdtNote" placeholder="What did the team agree? This becomes part of the permanent MDT record for this guest."></textarea>
+            </label>
+            @if (dialogError()) {
+              <div class="banner banner--error">{{ dialogError() }}</div>
+            }
+          </div>
+          <div class="modal__footer">
+            <button type="button" class="btn btn--outline" [disabled]="saving()" (click)="closeDialog()">Cancel</button>
+            <button type="button" class="btn btn--maroon" [disabled]="saving()" (click)="submitDiscussed()">
+              {{ saving() ? 'Saving…' : 'Mark as discussed' }}
+            </button>
+          </div>
+        }
+      }
+    </div>
+  </div>
+}

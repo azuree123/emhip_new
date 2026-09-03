@@ -126,6 +126,29 @@
         <emhip-custom-fields entityType="Guest" [entityId]="null" [showSaveButton]="false" [heading]="null" />
       </section>
 
+      @if (scheduledForLater() && showCallStatuses() && step() === 1) {
+        <section class="card call-card">
+          <div class="card__header">
+            <h3 class="card__title">Registration progress</h3>
+          </div>
+          <ul class="call-list">
+            @for (call of submissionCalls(); track call.key) {
+              <li class="call-list__item" [class]="'call-list__item--' + call.status">
+                <span class="call-list__label">{{ call.label }}</span>
+                <span class="call-list__status">
+                  @switch (call.status) {
+                    @case ('done') { Saved }
+                    @case ('running') { Saving… }
+                    @case ('failed') { Failed }
+                    @default { Waiting }
+                  }
+                </span>
+              </li>
+            }
+          </ul>
+        </section>
+      }
+
       @if (errorMessage()) {
         <p class="submit-error">{{ errorMessage() }}</p>
       }
@@ -145,6 +168,13 @@
         </button>
 
         <div class="wizard-bar__right">
+          @if (step() === 1) {
+            <!-- Registers the guest as New without the initial conversation (design: the
+                 Initial Conversation (Not Completed) tab's "Schedule for Later" flow). -->
+            <button type="button" class="btn btn--ghost" [disabled]="submitting()" (click)="registerAndScheduleLater()">
+              {{ submitting() && scheduledForLater() ? 'Registering…' : hasFailedCall() && scheduledForLater() ? 'Retry registration' : 'Register & schedule for later' }}
+            </button>
+          }
           <button type="button" class="btn btn--ghost" (click)="saveDraft()">
             <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
               <path
@@ -155,7 +185,7 @@
             Save Draft
           </button>
 
-          <button type="button" class="btn btn--primary" [disabled]="submitting()" (click)="primaryAction()">
+          <button type="button" class="btn btn--primary" [disabled]="primaryDisabled()" (click)="primaryAction()">
             {{ primaryLabel() }}
             <svg width="12" height="12" viewBox="0 0 10.664 12" fill="none" style="transform: rotate(-90deg)">
               <path

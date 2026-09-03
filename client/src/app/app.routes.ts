@@ -56,6 +56,12 @@ export const routes: Routes = [
         canActivate: [permissionGuard],
       },
       {
+        path: 'mdt-queue',
+        loadComponent: () => import('./features/mdt-queue/mdt-queue.component').then((m) => m.MdtQueueComponent),
+        data: { permission: Permissions.Mdt.Manage },
+        canActivate: [permissionGuard],
+      },
+      {
         path: 'contact-history',
         loadComponent: () => import('./features/contact-history/contact-history.component').then((m) => m.ContactHistoryComponent),
         data: { permission: Permissions.Guests.View },

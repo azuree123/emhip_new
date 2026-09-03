@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./flow-spec/support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <meta name="design_doc_mode" content="canvas">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="flow-spec/fig-tokens.css">
+  <link rel="stylesheet" href="flow-spec/fig-assets.css">
+  <script src="flow-spec/Components.bundle.js"></script>
+  <style>
+    html, body { margin: 0; padding: 0; background: #ECECEC; }
+    a { color: #941C3C; } a:hover { color: #E12628; }
+  </style>
+</helmet>
+<div style="width: 2200px; padding: 48px 56px 72px; box-sizing: border-box; background: #ECECEC; font-family: 'Plus Jakarta Sans', sans-serif; color: #2A2A2A;">
+
+  <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 40px; padding-bottom: 20px; border-bottom: 2px solid #2A2A2A;">
+    <div style="display: flex; flex-direction: column; gap: 8px;">
+      <div style="font-size: 11px; font-weight: 700; letter-spacing: 1.6px; text-transform: uppercase; color: #941C3C;">EMHIP · Additional changes · Build reference</div>
+      <div style="font-family: 'Wix Madefor Display', sans-serif; font-size: 40px; font-weight: 600; line-height: 1.05;">Contact &amp; Workspace flow spec</div>
+      <div style="font-size: 14px; color: #6B6B6B; max-width: 760px; text-wrap: pretty;">Every screen, branch and designer note from the Figma file, arranged in build order. Notes are transcribed verbatim from the stickies — nothing here is invented.</div>
+    </div>
+    <div style="display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end;">
+      <div style="display: flex; align-items: center; gap: 8px; background: #FFFFFF; border: 1px solid #E0E0E0; border-radius: 8px; padding: 8px 12px;">
+        <div style="width: 12px; height: 12px; border-radius: 3px; background: #FFE45C;"></div>
+        <div style="font-size: 12px; font-weight: 600;">Spec detail</div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 8px; background: #FFFFFF; border: 1px solid #E0E0E0; border-radius: 8px; padding: 8px 12px;">
+        <div style="width: 12px; height: 12px; border-radius: 3px; background: #C6B4F5;"></div>
+        <div style="font-size: 12px; font-weight: 600;">Logic / rule</div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 8px; background: #FFFFFF; border: 1px solid #E0E0E0; border-radius: 8px; padding: 8px 12px;">
+        <div style="width: 12px; height: 12px; border-radius: 3px; background: #FFB877;"></div>
+        <div style="font-size: 12px; font-weight: 600;">Open question</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 44px; padding-top: 40px;">
+    <sc-for list="{{ lanes }}" as="lane" hint-placeholder-count="4">
+      <div style="display: flex; flex-direction: column; gap: 18px;">
+        <div style="display: flex; align-items: baseline; gap: 14px;">
+          <div style="width: 34px; height: 34px; border-radius: 8px; background: {{ lane.accent }}; color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; flex-shrink: 0;">{{ lane.num }}</div>
+          <div style="font-family: 'Wix Madefor Display', sans-serif; font-size: 24px; font-weight: 600;">{{ lane.title }}</div>
+          <div style="font-size: 13px; color: #6B6B6B;">{{ lane.subtitle }}</div>
+        </div>
+        <div style="display: flex; align-items: stretch; gap: 0; flex-wrap: wrap;">
+          <sc-for list="{{ lane.nodes }}" as="node" hint-placeholder-count="5">
+            <div style="display: flex; align-items: stretch;">
+              <div style="width: 268px; background: #FFFFFF; border: 1px solid #E0E0E0; border-top: 3px solid {{ node.topColor }}; border-radius: 10px; padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.06);">
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                  <div style="font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: {{ node.topColor }};">{{ node.kind }}</div>
+                  <div style="font-size: 10px; font-weight: 600; color: #A0A0A0; font-family: 'Inter', sans-serif;">{{ node.ref }}</div>
+                </div>
+                <div style="font-size: 15px; font-weight: 600; line-height: 1.3; text-wrap: pretty;">{{ node.name }}</div>
+                <div style="font-size: 12px; line-height: 1.5; color: #5A5A5A; text-wrap: pretty;">{{ node.meta }}</div>
+                <sc-if value="{{ node.hasNotes }}" hint-placeholder-val="{{ true }}">
+                  <div style="display: flex; flex-direction: column; gap: 8px; padding-top: 2px;">
+                    <sc-for list="{{ node.notes }}" as="note" hint-placeholder-count="1">
+                      <div style="background: {{ note.bg }}; border-left: 3px solid {{ note.bar }}; border-radius: 4px; padding: 8px 10px; font-size: 11px; line-height: 1.45; color: #2A2A2A; text-wrap: pretty;">{{ note.text }}</div>
+                    </sc-for>
+                  </div>
+                </sc-if>
+              </div>
+              <div style="width: 34px; display: flex; align-items: center; justify-content: center; color: #B0B0B0; font-size: 18px;">{{ node.connector }}</div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 28px; padding-top: 56px;">
+    <div style="display: flex; align-items: baseline; gap: 14px; padding-bottom: 16px; border-bottom: 2px solid #2A2A2A;">
+      <div style="font-family: 'Wix Madefor Display', sans-serif; font-size: 28px; font-weight: 600;">Screen reference</div>
+      <div style="font-size: 13px; color: #6B6B6B;">Live renders from the Figma file at 1440px — lane and node refs match the diagram above. Tokens in flow-spec/fig-tokens.css.</div>
+    </div>
+    <sc-for list="{{ shots }}" as="s" hint-placeholder-count="6">
+      <div style="display: grid; grid-template-columns: 300px 1fr; gap: 28px; align-items: start;">
+        <div style="display: flex; flex-direction: column; gap: 10px; position: sticky; top: 24px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <div style="padding: 3px 8px; border-radius: 4px; background: {{ s.accent }}; color: #FFFFFF; font-size: 10px; font-weight: 700; letter-spacing: 0.8px;">{{ s.lane }}</div>
+            <div style="font-size: 10px; font-weight: 600; color: #A0A0A0; font-family: 'Inter', sans-serif;">{{ s.ref }}</div>
+          </div>
+          <div style="font-size: 18px; font-weight: 600; line-height: 1.3;">{{ s.name }}</div>
+          <div style="font-size: 12px; line-height: 1.55; color: #5A5A5A; text-wrap: pretty;">{{ s.meta }}</div>
+          <div style="font-size: 10px; font-family: 'Inter', sans-serif; color: #8C8C8C; background: #F4F4F4; border-radius: 4px; padding: 6px 8px;">window.{{ s.component }}</div>
+        </div>
+        <div style="width: 1440px; background: #FFFFFF; border: 1px solid #D9D9D9; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 12px rgba(0,0,0,0.08); zoom: 0.55;">
+          <x-import component-from-global-scope="{{ s.component }}" hint-size="1440px,900px"></x-import>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; padding-top: 48px;">
+    <div style="background: #2A2A2A; border-radius: 12px; padding: 26px 28px; display: flex; flex-direction: column; gap: 16px;">
+      <div style="font-family: 'Wix Madefor Display', sans-serif; font-size: 20px; font-weight: 600; color: #FFFFFF;">Contact record — shape for the API</div>
+      <div style="font-size: 12px; color: #A8A8A8; line-height: 1.5;">Derived from the four Add Contact variants. One record per saved contact; the branch fields below are conditional on <span style="color: #FFC629; font-weight: 600;">contactType</span>.</div>
+      <div style="display: flex; flex-direction: column; gap: 1px; background: #3A3A3A; border-radius: 8px; overflow: hidden; font-family: 'Inter', sans-serif; font-size: 12px;">
+        <sc-for list="{{ fields }}" as="f" hint-placeholder-count="10">
+          <div style="display: grid; grid-template-columns: 200px 1fr; gap: 14px; background: #2F2F2F; padding: 9px 14px; align-items: baseline;">
+            <div style="color: #FFFFFF; font-weight: 600;">{{ f.name }}</div>
+            <div style="color: #9E9E9E; line-height: 1.45;">{{ f.desc }}</div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 24px;">
+      <div style="background: #FFFFFF; border: 1px solid #E0E0E0; border-radius: 12px; padding: 26px 28px; display: flex; flex-direction: column; gap: 14px;">
+        <div style="font-family: 'Wix Madefor Display', sans-serif; font-size: 20px; font-weight: 600;">Open questions for the team</div>
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          <sc-for list="{{ questions }}" as="q" hint-placeholder-count="5">
+            <div style="display: flex; gap: 12px; align-items: flex-start; background: #FFF6EC; border: 1px solid #FFD9AF; border-radius: 8px; padding: 12px 14px;">
+              <div style="width: 20px; height: 20px; border-radius: 50%; background: #FFB877; color: #6B3E10; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">?</div>
+              <div style="display: flex; flex-direction: column; gap: 3px;">
+                <div style="font-size: 13px; font-weight: 600; line-height: 1.35; text-wrap: pretty;">{{ q.text }}</div>
+                <div style="font-size: 11px; color: #8C6A44; font-weight: 600;">{{ q.where }}</div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="background: #FFFFFF; border: 1px solid #E0E0E0; border-radius: 12px; padding: 26px 28px; display: flex; flex-direction: column; gap: 14px;">
+        <div style="font-family: 'Wix Madefor Display', sans-serif; font-size: 20px; font-weight: 600;">Source material referenced in the notes</div>
+        <div style="font-size: 13px; line-height: 1.6; color: #4A4A4A; text-wrap: pretty;">Field content for the Clinical Details tabs comes from <strong>FORM 2</strong> and <strong>FORM 3</strong> supplied by Ruvimbo — <a href="https://drive.google.com/drive/folders/1M6F6-bC5XRzaUQ1XUM61IEWaJCfbHRkv" target="_blank" rel="noopener">shared Drive folder</a>. Build those two tabs from the forms rather than from the Figma placeholders.</div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  static TONE = {
+    spec: { bg: '#FFF9E4', bar: '#FFE45C' },
+    logic: { bg: '#F3EEFE', bar: '#C6B4F5' },
+    question: { bg: '#FFF3E6', bar: '#FFB877' },
+  };
+
+  static LANES = [
+    {
+      num: '1',
+      title: 'Add Contact',
+      subtitle: 'Guest Workspace → Overview → contact type branch → record written',
+      accent: '#E12628',
+      nodes: [
+        { kind: 'Entry', ref: '1:354', name: 'Guest — Overview tab', meta: 'Contact panel opens with no session type chosen.', notes: [
+          { tone: 'logic', text: 'Worker will not see any input field before selecting any of contact type.' },
+        ]},
+        { kind: 'Decision', ref: 'Select contact type *', name: 'Select contact type', meta: 'Required. Branches the whole form: Casework · Hospitality · AFA · CPN.', notes: [
+          { tone: 'spec', text: 'Contact method, Activity, Occasion and Casework/Hospitality/AFA type are all separate selects.' },
+        ]},
+        { kind: 'Branch A', ref: '1:912', name: 'CPN — Initial assessment', meta: 'Full casework note: relevant history, session notes, risk assessment, actions.', notes: [
+          { tone: 'spec', text: 'Here we use risk assessment form same as casework notes detail page.' },
+          { tone: 'logic', text: 'You can select only one option from risk assessment section.' },
+        ]},
+        { kind: 'Branch B', ref: '1:672', name: 'CPN — Follow-up session', meta: 'Same shape as initial assessment, prefilled from the last session.', notes: [
+          { tone: 'spec', text: 'Please double check all the input fields from all contact types including logics that i created.' },
+        ]},
+        { kind: 'Branch C', ref: '1:1130', name: 'Non-CPN — AFA / Hospitality', meta: 'AFA records that practical advice or signposting was given. No session notes required — just confirm the contact and complete the risk check.', notes: [
+          { tone: 'logic', text: 'AFA is optional. Worker can select it from separate AFA type or he/she can select from casework type.' },
+        ]},
+        { kind: 'Toggle', ref: 'MDT', name: 'Add this guest for MDT discussion', meta: 'Toggle sits at the top of the form; independent of contact type.', notes: [
+          { tone: 'spec', text: 'MDT toggle option will be on top. Showing flow right corner of this canvas — Mark as:' },
+        ]},
+        { kind: 'Toggle', ref: 'CPN', name: 'Refer this guest to the CPN', meta: 'Captures reason for CPN referral, or a reason for declining.', notes: [
+          { tone: 'logic', text: 'Refer this guest to CPN — logic for flow. Decline with reason.' },
+        ]},
+        { kind: 'Commit', ref: 'Submit', name: 'Submit casework note', meta: 'Writes the contact record and fans out to the four destinations below.', notes: [], last: true },
+      ],
+    },
+    {
+      num: '2',
+      title: 'After submit — where the record lands',
+      subtitle: 'One save, four surfaces',
+      accent: '#941C3C',
+      nodes: [
+        { kind: 'Destination', ref: '1:1421', name: 'CPN Record', meta: 'Separate tab inside Guest Workspace.', notes: [
+          { tone: 'question', text: 'Need your input here, either we have to add this tab or we can simply remove for now.' },
+        ]},
+        { kind: 'Destination', ref: '1:1562', name: 'CPN Activity — Reports tab', meta: 'Feeds the reports surface.', notes: [
+          { tone: 'spec', text: 'Please double check this from your side, it includes all reports related to CPN activity.' },
+        ]},
+        { kind: 'Destination', ref: '1:1834', name: 'MDT Queue (Managers)', meta: 'Manager-facing queue built from the MDT toggle.', notes: [
+          { tone: 'logic', text: 'Different badges assign (MDT + CPN): based on every requirement/functionality, different badges will be assigned and Manager will perform action depending upon each badge.' },
+        ]},
+        { kind: 'Destination', ref: '1:5007', name: 'Contact History', meta: 'Chronological list of every contact, chipped by type ("1 Casework").', notes: [], last: true },
+      ],
+    },
+    {
+      num: '3',
+      title: 'Guest Workspace tabs',
+      subtitle: 'Tab availability is conditional — not every guest sees every tab',
+      accent: '#2A2A2A',
+      nodes: [
+        { kind: 'Tab', ref: '1:6605', name: 'Overview', meta: 'Status, wellbeing pathway, last activity, recent casework.', notes: [] },
+        { kind: 'Tab', ref: '1:6784', name: 'Demographics', meta: 'Completed / Pending state per section.', notes: [] },
+        { kind: 'Tab', ref: '1:7000', name: 'Initial Conversation', meta: 'Completed state.', notes: [] },
+        { kind: 'Conditional', ref: '1:7180', name: 'Initial Conversation (Not completed)', meta: 'Alternate state of the same tab.', notes: [
+          { tone: 'logic', text: 'If worker schedule it for later during registering Guest, then he/she will see this tab inside each Guest Workspace.' },
+        ]},
+        { kind: 'Tab', ref: '1:7294', name: 'Clinical Details', meta: 'Six variants in the file — form, locked list, and grouped question states.', notes: [
+          { tone: 'spec', text: 'We can add drop down functionality on each question to reduce cognitive scrolling.' },
+          { tone: 'logic', text: 'These caseworks are locked and can’t be changed.' },
+          { tone: 'spec', text: 'Input fields come from FORM 2 and FORM 3 (Ruvimbo, shared Drive).' },
+        ]},
+        { kind: 'Tab', ref: '1:7436', name: 'DIALOG', meta: 'Standard DIALOG instrument.', notes: [] },
+        { kind: 'Tab', ref: '1:7604', name: 'Follow Up', meta: 'Due and completed follow-up contacts.', notes: [] },
+        { kind: 'Tab', ref: '1:7748', name: 'Pathway', meta: 'Pathway history for the guest.', notes: [
+          { tone: 'question', text: 'Is there any need to add CTA button for creating new pathway history?' },
+        ]},
+        { kind: 'Tab', ref: '1:8029', name: 'Action', meta: 'Actions raised from sessions, with due dates.', notes: [
+          { tone: 'spec', text: 'Add new action from this session: type of advice given, description, due date (dd/mm/yyyy).' },
+        ], last: true },
+      ],
+    },
+    {
+      num: '4',
+      title: 'Workspace quick actions',
+      subtitle: 'Buttons on the workspace header — each opens its own modal',
+      accent: '#9D852D',
+      nodes: [
+        { kind: 'Action', ref: 'Sticky', name: 'Raise Urgent Flag', meta: 'Pushes the guest into the Urgent Cases surface.', notes: [] },
+        { kind: 'Action', ref: 'Sticky', name: 'New Casework Note', meta: 'Same form as the Add Contact casework branch.', notes: [] },
+        { kind: 'Action', ref: 'Sticky', name: 'Risk Assessment', meta: 'Shared component with the casework note detail page.', notes: [] },
+        { kind: 'Action', ref: '1:2053', name: 'Add New Action', meta: 'Dropdown for advice type, free-text description, calendar for due date.', notes: [
+          { tone: 'spec', text: 'Drop down functionality · Calendar · Drop down functionality.' },
+        ], last: true },
+      ],
+    },
+    {
+      num: '5',
+      title: 'Urgent Cases',
+      subtitle: 'Flagged guests, resolution state and export',
+      accent: '#DC2626',
+      nodes: [
+        { kind: 'Screen', ref: '1:5686', name: 'Urgent Cases list', meta: 'Urgent chip, clinical / wellbeing category, Resolved state, export.', notes: [
+          { tone: 'question', text: 'Separate Tab? Is it necessary to add separate tab for urgent cases. Kindly view this whole flow.' },
+        ]},
+        { kind: 'Screen', ref: '1:6024', name: 'Urgent case detail', meta: 'Case timeline with Clinical tags and resolution.', notes: [], last: true },
+      ],
+    },
+  ];
+
+  static FIELDS = [
+    { name: 'contactType', desc: 'Casework | Hospitality | AFA | CPN — required, gates every field below' },
+    { name: 'contactMethod', desc: 'How the contact happened' },
+    { name: 'occasion', desc: 'Occasion select' },
+    { name: 'activityType', desc: 'Activity select (CPN branch)' },
+    { name: 'hospitalityType', desc: 'Only when contactType = Hospitality' },
+    { name: 'afaType', desc: 'Only when contactType = AFA; also selectable from casework type' },
+    { name: 'caseworkType', desc: 'Only when contactType = Casework / CPN' },
+    { name: 'sessionNotes', desc: 'Relevant history + session notes — omitted for AFA' },
+    { name: 'riskAssessment', desc: 'Single-select. Same component as casework note detail page' },
+    { name: 'actions[]', desc: 'adviceType, description, dueDate' },
+    { name: 'mdtFlag', desc: 'Boolean toggle — drives the MDT queue and MDT badge' },
+    { name: 'cpnReferral', desc: '{ referred, reasonForReferral } or { declined, reasonForDeclining }' },
+    { name: 'badges[]', desc: 'Derived server-side; manager actions differ per badge' },
+  ];
+
+  static QUESTIONS = [
+    { text: 'Is it necessary to add a separate tab for urgent cases?', where: 'Urgent Cases · 1:5686' },
+    { text: 'Keep or drop the CPN Record tab for now?', where: 'Add Contact · Guest — Action tab · 1:1421' },
+    { text: 'Do we need a CTA for creating new pathway history?', where: 'Guest Workspace · Pathway · 1:7748' },
+    { text: 'Confirm the CPN activity reports list is complete from your side.', where: 'Add Contact · Reports · 1:1562' },
+    { text: 'Re-check every input field and its logic across all contact types.', where: 'Add Contact · Overview · 1:354' },
+  ];
+
+  static SHOTS = [
+    { lane: '1 · ADD CONTACT', accent: '#E12628', ref: '1:354', component: 'GuestOverviewTab', name: 'Overview — no contact type selected', meta: 'Entry state. Contact panel visible, no inputs until a type is chosen. MDT toggle and "Refer to CPN" sit at the top.' },
+    { lane: '1 · ADD CONTACT', accent: '#E12628', ref: '1:912', component: 'GuestOverviewTab2', name: 'CPN — Initial assessment', meta: 'Full casework note with risk assessment (single-select) and actions.' },
+    { lane: '1 · ADD CONTACT', accent: '#E12628', ref: '1:672', component: 'GuestOverviewTab3', name: 'CPN — Follow-up session', meta: 'Same shape as initial assessment, prefilled from last session.' },
+    { lane: '1 · ADD CONTACT', accent: '#E12628', ref: '1:1130', component: 'GuestOverviewTab4', name: 'Non-CPN — AFA / Hospitality', meta: 'Short form: confirm contact + risk check only. "Save AFA contact".' },
+    { lane: '2 · DESTINATIONS', accent: '#941C3C', ref: '1:1421', component: 'GuestActionTab', name: 'CPN Record tab', meta: 'Separate tab in Guest Workspace. Open question: keep or remove for now.' },
+    { lane: '2 · DESTINATIONS', accent: '#941C3C', ref: '1:1562', component: 'Desktop86', name: 'CPN Activity — Reports', meta: 'All CPN-activity reports.' },
+    { lane: '2 · DESTINATIONS', accent: '#941C3C', ref: '1:1834', component: 'Frame54', name: 'MDT Queue (Managers)', meta: 'Manager queue with MDT + CPN badges; actions vary per badge.' },
+    { lane: '2 · DESTINATIONS', accent: '#941C3C', ref: '1:5279', component: 'Desktop90', name: 'Contact History', meta: 'Chronological contacts, chipped by type.' },
+    { lane: '3 · WORKSPACE', accent: '#2A2A2A', ref: '1:7180', component: 'GuestInitialConversationNotCompleted', name: 'Initial Conversation (Not completed)', meta: 'Shown only when the worker scheduled it for later during registration.' },
+    { lane: '3 · WORKSPACE', accent: '#2A2A2A', ref: '1:8411', component: 'GuestClinicalDetailsTab', name: 'Clinical Details — locked caseworks', meta: 'Saved caseworks are locked and cannot be changed.' },
+    { lane: '3 · WORKSPACE', accent: '#2A2A2A', ref: '1:8598', component: 'GuestClinicalDetailsTab2', name: 'Clinical Details — form', meta: 'Dropdown per question to reduce scrolling. Fields from FORM 2 / FORM 3.' },
+    { lane: '3 · WORKSPACE', accent: '#2A2A2A', ref: '1:7748', component: 'GuestPathwayTab', name: 'Pathway', meta: 'Pathway history. Open question: CTA for new pathway history.' },
+    { lane: '3 · WORKSPACE', accent: '#2A2A2A', ref: '1:8029', component: 'GuestActionTab2', name: 'Action', meta: 'Actions with advice type, description, due date.' },
+    { lane: '5 · URGENT CASES', accent: '#DC2626', ref: '1:6024', component: 'Desktop57', name: 'Urgent case detail', meta: 'Urgent chip, Clinical tags, Resolved state, export.' },
+  ];
+
+  renderVals() {
+    const lanes = Component.LANES.map((lane) => ({
+      ...lane,
+      nodes: lane.nodes.map((n) => ({
+        kind: n.kind,
+        ref: n.ref,
+        name: n.name,
+        meta: n.meta,
+        topColor: lane.accent,
+        connector: n.last ? '' : '→',
+        hasNotes: n.notes.length > 0,
+        notes: n.notes.map((note) => ({ text: note.text, ...Component.TONE[note.tone] })),
+      })),
+    }));
+    return { lanes, fields: Component.FIELDS, questions: Component.QUESTIONS, shots: Component.SHOTS };
+  }
+}
+</script>
+</body>
+</html>

@@ -44,6 +44,13 @@ public class GuestClinicalProfile : Entity
         UpdatedAt = DateTimeOffset.UtcNow;
     }
 
+    /// <summary>Set when the Hub Manager confirms a CPN referral at MDT — the "CPN involved" indicator.</summary>
+    public void SetCpnInvolved(bool cpnInvolved)
+    {
+        CpnInvolved = cpnInvolved;
+        UpdatedAt = DateTimeOffset.UtcNow;
+    }
+
     public void Update(
         bool previousMhDiagnosis, string? diagnosisGroups, string? presentingProblem,
         string? pastMhDifficulties, string? familyMhHistory,

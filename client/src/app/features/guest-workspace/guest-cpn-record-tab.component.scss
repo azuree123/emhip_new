@@ -1,0 +1,110 @@
+@use './guest-tab-shared';
+@use './guest-workspace.tokens' as t;
+
+.cpn-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 806fr) minmax(0, 348fr);
+  gap: 23px;
+  align-items: start;
+
+  &__main,
+  &__side {
+    display: flex;
+    flex-direction: column;
+    gap: 23px;
+  }
+}
+
+.section-hint {
+  font-family: t.$font-primary;
+  font-weight: 500;
+  font-size: 12px;
+  color: t.$color-text-meta;
+}
+
+.rationale {
+  margin-top: 16px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: t.$color-segment-bg;
+
+  &__text {
+    margin: 4px 0 0;
+    font-family: t.$font-primary;
+    font-size: 14px;
+    line-height: 22px;
+    color: t.$color-text-body;
+    white-space: pre-wrap;
+  }
+
+  &--declined {
+    background: t.$color-chip-red-bg;
+  }
+}
+
+.chip--green {
+  background: t.$color-success-bg;
+  color: t.$color-success-text;
+}
+
+.chip--gold {
+  background: t.$color-gold-bg;
+  color: t.$color-gold-text;
+}
+
+.chip--red {
+  background: t.$color-chip-red-bg;
+  color: t.$color-brand-red;
+}
+
+.chip--grey {
+  background: t.$color-neutral-bg;
+  color: t.$color-neutral-text;
+}
+
+.stat-list {
+  margin: 16px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+  &__row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    font-family: t.$font-primary;
+    font-size: 13px;
+
+    dt {
+      color: t.$color-text-meta;
+      font-weight: 500;
+    }
+
+    dd {
+      margin: 0;
+      font-weight: 600;
+      color: t.$color-text-primary;
+      text-align: right;
+    }
+  }
+}
+
+.side-cta {
+  width: 100%;
+  margin-top: 20px;
+}
+
+.side-note {
+  margin: 10px 0 0;
+  font-family: t.$font-primary;
+  font-size: 12px;
+  line-height: 18px;
+  color: t.$color-text-meta;
+}
+
+@media (max-width: 960px) {
+  .cpn-layout {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+}

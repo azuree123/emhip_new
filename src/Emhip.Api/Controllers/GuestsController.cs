@@ -340,6 +340,12 @@ public sealed class GuestsController(IMediator mediator, ICurrentUser currentUse
         return Ok(new { id });
     }
 
+    /// <summary>CPN Record tab — the guest's CPN referral, allocation and every CPN contact logged since.</summary>
+    [HttpGet("{guestId:guid}/cpn-record")]
+    [Authorize(Policy = Permissions.Guests.NotesView)]
+    public async Task<IActionResult> GetCpnRecord(Guid guestId, CancellationToken cancellationToken) =>
+        Ok(await mediator.Send(new Emhip.Application.Mdt.GetGuestCpnRecordQuery(guestId), cancellationToken));
+
     /// <summary>Care Plan tab — the active plan with its goals, plus closed plans as history.</summary>
     [HttpGet("{guestId:guid}/care-plan")]
     [Authorize(Policy = Permissions.Guests.View)]

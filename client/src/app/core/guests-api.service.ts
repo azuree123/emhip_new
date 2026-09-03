@@ -14,6 +14,7 @@ import {
   CaseworkNoteInput,
   CpnAssessmentInput,
   GuestCpnAssessmentDto,
+  GuestCpnRecordDto,
   CaseworkNoteDto,
   AddNoteRequest,
   AllocateGuestRequest,
@@ -171,6 +172,11 @@ export class GuestsApiService {
    * Part 1 of the CPN record, plus whether a new one may be started. `canCreate` is false once a
    * Part 1 has been submitted — the design allows exactly one per guest.
    */
+  /** CPN Record tab — referral, allocation and every CPN contact logged since. */
+  getCpnRecord(guestId: string): Observable<GuestCpnRecordDto> {
+    return this.http.get<GuestCpnRecordDto>(`${this.base}/${guestId}/cpn-record`);
+  }
+
   getCpnAssessment(guestId: string): Observable<GuestCpnAssessmentDto> {
     return this.http.get<GuestCpnAssessmentDto>(`${this.base}/${guestId}/cpn-assessment`);
   }

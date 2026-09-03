@@ -692,3 +692,29 @@
 .toggle-row--lead {
   margin-top: 0;
 }
+
+// ---- Refer-to-CPN / MDT discussion detail boxes (revealed by their toggles) ----
+.request-box {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin: 4px 0 8px;
+  padding: 14px 16px 16px;
+  border-radius: 8px;
+  background: rgb(250, 250, 250);
+  box-shadow: inset 0 0 0 1px rgb(229, 229, 229);
+
+  &__note {
+    margin: 0;
+    font-size: 12px;
+    line-height: 18px;
+    color: rgb(114, 114, 114);
+  }
+}
+
+.choice__hint {
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: normal;
+  color: rgb(140, 140, 140);
+}

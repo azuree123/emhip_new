@@ -39,6 +39,12 @@ public static class LookupSeeder
         public const string CpnReferralSource = "CpnReferralSource";
         public const string CpnDiagnosisStatus = "CpnDiagnosisStatus";
         public const string CpnFollowUpFrequency = "CpnFollowUpFrequency";
+
+        // --- MDT queue ---
+        /// <summary>"Primary reason for CPN referral" on the casework note's Refer-to-CPN toggle.</summary>
+        public const string CpnReferralReason = "CpnReferralReason";
+        /// <summary>"Reason for declining" on the MDT queue's Decline dialog.</summary>
+        public const string MdtDeclineReason = "MdtDeclineReason";
     }
 
     private static readonly (string Category, string[] Labels)[] Seed =
@@ -109,6 +115,15 @@ public static class LookupSeeder
             "None known", "Diagnosis known", "Suspected — awaiting confirmation",
         ]),
         (Categories.CpnFollowUpFrequency, ["Weekly", "Fortnightly", "Monthly", "As required"]),
+        (Categories.CpnReferralReason, [
+            "High clinical complexity beyond CMHW scope", "Possible psychosis — not under NHS MH team",
+            "Medication review or adherence concern", "Escalating risk needing clinical input",
+            "Structured therapy input alongside CMHW support", "Other",
+        ]),
+        (Categories.MdtDeclineReason, [
+            "Insufficient clinical evidence", "Manageable within CMHW support", "Already under NHS mental health team",
+            "Guest declined CPN involvement", "Other",
+        ]),
         (Categories.SecondaryReferralSubcategory, [
             "Community mental health team", "Crisis team", "Inpatient discharge", "Talking therapies",
             "Substance misuse service", "Social services", "Housing service", "Voluntary sector partner",

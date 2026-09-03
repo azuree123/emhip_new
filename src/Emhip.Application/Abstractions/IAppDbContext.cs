@@ -39,6 +39,7 @@ public interface IAppDbContext
     DbSet<CaseloadAssignment> CaseloadAssignments { get; }
     DbSet<CarePlan> CarePlans { get; }
     DbSet<CarePlanGoal> CarePlanGoals { get; }
+    DbSet<MdtQueueItem> MdtQueueItems { get; }
     DbSet<AuditEvent> AuditEvents { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);

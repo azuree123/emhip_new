@@ -58,6 +58,13 @@ interface FollowUpForm {
   nextContactDate: string;
   mdtDiscussionRequested: boolean;
   cpnReferralRequested: boolean;
+  /** "Refer this guest to the CPN" — sent to the Hub Manager's MDT queue for confirmation. */
+  cpnReferralReason: string;
+  cpnReferralUrgency: string;
+  cpnReferralRationale: string;
+  /** "Add this guest for MDT discussion" — a discussion request on the MDT queue. */
+  mdtDiscussionReason: string;
+  mdtDiscussionDetails: string;
 }
 
 /** Part 1 — the initial clinical assessment, one per guest. */
@@ -222,6 +229,12 @@ export class CaseworkNoteDrawerComponent implements OnInit {
 
   readonly contactTypes: ContactType[] = ['PhoneCall', 'InPerson', 'VideoCall', 'TextMessage', 'Email'];
 
+  /** "Urgency" on the CPN referral (design): routine goes to the next MDT, urgent to the Hub Manager today. */
+  readonly urgencyChoices: { value: string; label: string; hint: string }[] = [
+    { value: 'Routine — discuss at next MDT', label: 'Routine', hint: 'discuss at next MDT' },
+    { value: 'Urgent — Hub Manager today', label: 'Urgent', hint: 'Hub Manager today' },
+  ];
+
   readonly yesNoUnknown: { value: YesNoUnknown; label: string }[] = [
     { value: 'No', label: 'No' },
     { value: 'Yes', label: 'Yes' },
@@ -335,6 +348,7 @@ export class CaseworkNoteDrawerComponent implements OnInit {
       'CpnReferralSource',
       'CpnDiagnosisStatus',
       'CpnFollowUpFrequency',
+      'CpnReferralReason',
     ];
 
     forkJoin({
@@ -395,6 +409,11 @@ export class CaseworkNoteDrawerComponent implements OnInit {
       nextContactDate: '',
       mdtDiscussionRequested: false,
       cpnReferralRequested: false,
+      cpnReferralReason: '',
+      cpnReferralUrgency: this.urgencyChoices[0].value,
+      cpnReferralRationale: '',
+      mdtDiscussionReason: '',
+      mdtDiscussionDetails: '',
     };
   }
 
@@ -478,6 +497,13 @@ export class CaseworkNoteDrawerComponent implements OnInit {
       nextContactDate: toDateInput(dto.nextContactDate),
       mdtDiscussionRequested: dto.mdtDiscussionRequested,
       cpnReferralRequested: dto.cpnReferralRequested,
+      // The referral / discussion detail is not stored on the note itself (it becomes the MDT
+      // queue record on submit), so a resumed draft starts those fields empty.
+      cpnReferralReason: '',
+      cpnReferralUrgency: this.urgencyChoices[0].value,
+      cpnReferralRationale: '',
+      mdtDiscussionReason: '',
+      mdtDiscussionDetails: '',
     };
   }
 
@@ -575,6 +601,10 @@ export class CaseworkNoteDrawerComponent implements OnInit {
 
   toggleCpnReferral(): void {
     this.followUp.cpnReferralRequested = !this.followUp.cpnReferralRequested;
+  }
+
+  setUrgency(value: string): void {
+    this.followUp.cpnReferralUrgency = value;
   }
 
   addActionRow(): void {
@@ -692,6 +722,12 @@ export class CaseworkNoteDrawerComponent implements OnInit {
     if (submit && this.body === 'contactType' && !this.followUp.assessment.trim()) {
       return 'Your assessment of what is going on is required to submit a contact note.';
     }
+    if (submit && this.followUp.cpnReferralRequested && !this.followUp.cpnReferralReason) {
+      return 'Select the primary reason for the CPN referral.';
+    }
+    if (submit && this.followUp.mdtDiscussionRequested && !this.followUp.mdtDiscussionReason.trim()) {
+      return 'Give the reason for requesting MDT discussion.';
+    }
 
     return null;
   }
@@ -745,6 +781,11 @@ export class CaseworkNoteDrawerComponent implements OnInit {
       mdtDiscussionRequested: this.followUp.mdtDiscussionRequested,
       cpnReferralRequested: this.followUp.cpnReferralRequested,
       actions,
+      cpnReferralReason: this.followUp.cpnReferralRequested ? this.followUp.cpnReferralReason || null : null,
+      cpnReferralUrgency: this.followUp.cpnReferralRequested ? this.followUp.cpnReferralUrgency || null : null,
+      cpnReferralRationale: this.followUp.cpnReferralRequested ? this.trimmed(this.followUp.cpnReferralRationale) : null,
+      mdtDiscussionReason: this.followUp.mdtDiscussionRequested ? this.trimmed(this.followUp.mdtDiscussionReason) : null,
+      mdtDiscussionDetails: this.followUp.mdtDiscussionRequested ? this.trimmed(this.followUp.mdtDiscussionDetails) : null,
     };
   }
 

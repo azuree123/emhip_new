@@ -1,0 +1,117 @@
+<div class="tab-panel">
+  @if (loading()) {
+    <div class="state-card">Loading CPN record…</div>
+  } @else if (error()) {
+    <div class="state-card state-card--error">{{ error() }}</div>
+  } @else if (record(); as r) {
+    @if (!hasAnyCpn()) {
+      <section class="card">
+        <div class="card__header-row">
+          <h2 class="card__title">CPN Record</h2>
+        </div>
+        <p class="empty-state">
+          No CPN involvement recorded for this guest. A CMHW can refer them to the CPN from the Add Contact popup
+          ("Refer this guest to the CPN"); the referral is confirmed by the Hub Manager at MDT, and CPN contacts are
+          logged here from then on.
+        </p>
+      </section>
+    } @else {
+      <div class="cpn-layout">
+        <div class="cpn-layout__main">
+          <!-- CPN referral record -->
+          <section class="card">
+            <div class="card__header-row">
+              <h2 class="card__title">CPN referral record</h2>
+              @if (referralStatus(); as st) {
+                <span class="chip" [class]="'chip chip--' + st.tone">{{ st.label }}</span>
+              }
+            </div>
+            @if (referral(); as ref) {
+              <div class="field-grid">
+                <div class="field"><span class="field__label">Referred by</span><span class="field__value">{{ ref.requestedByName }} (CMHW)</span></div>
+                <div class="field"><span class="field__label">Date of referral</span><span class="field__value">{{ formatDate(ref.requestedAt) }}</span></div>
+                <div class="field"><span class="field__label">Primary reason</span><span class="field__value">{{ ref.reason }}</span></div>
+                <div class="field"><span class="field__label">Urgency</span><span class="field__value">{{ ref.urgency || '—' }}</span></div>
+                <div class="field"><span class="field__label">Confirmed by</span><span class="field__value">{{ ref.status === 'Confirmed' && ref.reviewedByName ? ref.reviewedByName + ' (Hub Manager) · MDT ' + formatDate(ref.reviewedAt) : '—' }}</span></div>
+                <div class="field"><span class="field__label">CPN allocated</span><span class="field__value">{{ ref.assignedCpnName || (ref.status === 'Pending' ? 'Awaiting confirmation' : '—') }}</span></div>
+                <div class="field"><span class="field__label">First CPN contact date</span><span class="field__value">{{ formatDate(r.firstCpnContactAt) }}</span></div>
+                <div class="field"><span class="field__label">Initial assessment (Part 1)</span><span class="field__value">{{ r.hasInitialAssessment ? 'Completed' : 'Not yet completed' }}</span></div>
+              </div>
+              @if (ref.details) {
+                <div class="rationale">
+                  <span class="field__label">CMHW referral rationale</span>
+                  <p class="rationale__text">{{ ref.details }}</p>
+                </div>
+              }
+              @if (ref.status === 'Declined') {
+                <div class="rationale rationale--declined">
+                  <span class="field__label">Declined at MDT</span>
+                  <p class="rationale__text">{{ ref.declineReason }}{{ ref.reviewNote ? ' — ' + ref.reviewNote : '' }}</p>
+                </div>
+              } @else if (ref.status === 'Confirmed' && ref.reviewNote) {
+                <div class="rationale">
+                  <span class="field__label">Handover note from MDT</span>
+                  <p class="rationale__text">{{ ref.reviewNote }}</p>
+                </div>
+              }
+            } @else {
+              <div class="field-grid">
+                <div class="field"><span class="field__label">CPN involved</span><span class="field__value">{{ r.cpnInvolved ? 'Yes — recorded on the clinical profile' : 'No' }}</span></div>
+                <div class="field"><span class="field__label">First CPN contact date</span><span class="field__value">{{ formatDate(r.firstCpnContactAt) }}</span></div>
+                <div class="field"><span class="field__label">Initial assessment (Part 1)</span><span class="field__value">{{ r.hasInitialAssessment ? 'Completed' : 'Not yet completed' }}</span></div>
+              </div>
+              <p class="empty-state">No formal CPN referral has gone through the MDT queue for this guest.</p>
+            }
+          </section>
+
+          <!-- CPN contacts logged -->
+          <section class="card">
+            <div class="card__header-row">
+              <h2 class="card__title">CPN contacts logged ({{ sessions().length }})</h2>
+              @if (referral()?.status === 'Confirmed' && referral()?.reviewedAt) {
+                <span class="section-hint">Since referral confirmed {{ formatDate(referral()!.reviewedAt) }}</span>
+              }
+            </div>
+            @if (sessions().length === 0) {
+              <p class="empty-state">No CPN contacts logged yet. Add one from the workspace header with the CPN toggle on.</p>
+            } @else {
+              <ul class="entry-list">
+                @for (s of sessions(); track s.noteId) {
+                  <li class="entry">
+                    <div class="entry__head">
+                      <span class="entry__title">{{ sessionTitle(s) }}</span>
+                      <span class="entry__meta">{{ formatDateTime(s.occurredAt) }} · {{ humanize(s.contactMethod) }} · {{ s.authorName }}</span>
+                    </div>
+                    @if (s.assessment) {
+                      <p class="entry__body">{{ s.assessment }}</p>
+                    }
+                    <div class="entry__flags">
+                      <span class="chip" [class.chip--red]="s.riskLevel === 'High'" [class.chip--gold]="s.riskLevel === 'Medium' || s.riskLevel === 'Low'" [class.chip--grey]="s.riskLevel === 'NoRiskDetected'">
+                        {{ riskLabel(s.riskLevel) }}
+                      </span>
+                    </div>
+                  </li>
+                }
+              </ul>
+            }
+          </section>
+        </div>
+
+        <aside class="cpn-layout__side">
+          <section class="card">
+            <h2 class="card__title">CPN activity</h2>
+            <dl class="stat-list">
+              <div class="stat-list__row"><dt>Status</dt><dd>{{ referralStatus()?.label ?? (r.cpnInvolved ? 'CPN involved' : '—') }}</dd></div>
+              <div class="stat-list__row"><dt>CPN</dt><dd>{{ r.assignedCpnName || '—' }}</dd></div>
+              <div class="stat-list__row"><dt>Sessions logged</dt><dd>{{ sessions().length }}</dd></div>
+              <div class="stat-list__row"><dt>First contact</dt><dd>{{ formatDate(r.firstCpnContactAt) }}</dd></div>
+              <div class="stat-list__row"><dt>Latest contact</dt><dd>{{ sessions().length ? formatDate(sessions()[0].occurredAt) : '—' }}</dd></div>
+            </dl>
+            <button type="button" class="btn-primary side-cta" (click)="addContact.emit()">Add CPN contact</button>
+            <p class="side-note">Opens the Add Contact popup — switch "Is this a CPN contact?" on to log a CPN session.</p>
+          </section>
+        </aside>
+      </div>
+    }
+  }
+</div>

@@ -52,6 +52,12 @@ public sealed class ReportsController(
         Ok(await mediator.Send(new GetDataQualityReportQuery(currentUser.HubId), cancellationToken));
 
     /// <summary>"CPN Activity" — contacts by type and outcome within the range.</summary>
+    /// <summary>"CPN Activity" tab — the CPN referral pipeline and the guests on the CPN caseload.</summary>
+    [HttpGet("cpn-activity")]
+    [Authorize(Policy = Permissions.Reports.View)]
+    public async Task<IActionResult> GetCpnActivity([FromQuery] DateOnly from, [FromQuery] DateOnly to, CancellationToken cancellationToken) =>
+        Ok(await mediator.Send(new GetCpnActivityQuery(currentUser.HubId, from, to), cancellationToken));
+
     [HttpGet("contacts-breakdown")]
     [Authorize(Policy = Permissions.Reports.View)]
     public async Task<IActionResult> GetContactsBreakdown([FromQuery] DateOnly from, [FromQuery] DateOnly to, CancellationToken cancellationToken) =>

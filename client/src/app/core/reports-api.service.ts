@@ -6,6 +6,7 @@ import {
   BreakdownSliceDto,
   CaseloadReportRowDto,
   ContactsBreakdownReportDto,
+  CpnActivityReportDto,
   DataQualityReportDto,
   DialogOutcomesReportDto,
   DialogTrendPointDto,
@@ -45,7 +46,13 @@ export class ReportsApiService {
     return this.http.get<DataQualityReportDto>(`${this.base}/data-quality`);
   }
 
-  /** "CPN Activity" — contacts by type and outcome within the range (yyyy-MM-dd). */
+  /** "CPN Activity" tab — the CPN referral pipeline and the guests on the CPN caseload (yyyy-MM-dd). */
+  getCpnActivity(from: string, to: string): Observable<CpnActivityReportDto> {
+    const params = new HttpParams().set('from', from).set('to', to);
+    return this.http.get<CpnActivityReportDto>(`${this.base}/cpn-activity`, { params });
+  }
+
+  /** Contacts by type and outcome within the range (yyyy-MM-dd). */
   getContactsBreakdown(from: string, to: string): Observable<ContactsBreakdownReportDto> {
     const params = new HttpParams().set('from', from).set('to', to);
     return this.http.get<ContactsBreakdownReportDto>(`${this.base}/contacts-breakdown`, { params });

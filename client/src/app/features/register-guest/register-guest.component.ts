@@ -142,6 +142,13 @@ export class RegisterGuestComponent {
   protected readonly step = signal<1 | 2 | 3 | 4 | 5>(1);
   protected readonly submitting = signal(false);
   protected readonly submitted = signal(false);
+  /**
+   * "Register & schedule for later" (design: Guest - Initial Conversation (Not Completed) tab —
+   * "If worker schedule it for later during registering Guest, then he/she will see this tab
+   * inside each Guest Workspace"): the guest is registered as New from step 1 alone, and the
+   * initial conversation, DIALOG and allocation are started later from the workspace.
+   */
+  protected readonly scheduledForLater = signal(false);
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly draftSavedAt = signal<Date | null>(null);
 
@@ -477,8 +484,12 @@ export class RegisterGuestComponent {
     const keys: SubmissionCall['key'][] = ['register'];
     // Straight after the guest exists, before anything else is written against it.
     if (this.hasCustomFields()) keys.push('customFields');
-    keys.push('conversation', 'dialog', 'demographics');
-    if (this.riskAssessmentNeeded()) keys.push('risk');
+    if (this.scheduledForLater()) {
+      keys.push('demographics');
+    } else {
+      keys.push('conversation', 'dialog', 'demographics');
+      if (this.riskAssessmentNeeded()) keys.push('risk');
+    }
     return keys.map((key) => ({ key, label: RegisterGuestComponent.CALL_LABELS[key], status: states[key] }));
   });
 
@@ -527,6 +538,26 @@ export class RegisterGuestComponent {
       return;
     }
 
+    this.runSubmission();
+  }
+
+  /**
+   * Step 1's "Register & schedule for later": registers the guest (plus the extra fields and
+   * ethnicity) without an initial conversation. They land in the workspace as New, where the
+   * Initial Conversation tab offers "Start Initial Conversation".
+   */
+  protected registerAndScheduleLater(): void {
+    if (this.step() !== 1 || this.submitting() || this.submitted()) return;
+    this.demographicsForm.markAllAsTouched();
+    if (this.demographicsForm.invalid || !this.customFieldsValid()) {
+      this.errorMessage.set('Complete the required fields before registering the guest.');
+      return;
+    }
+    this.scheduledForLater.set(true);
+    this.runSubmission();
+  }
+
+  private runSubmission(): void {
     this.errorMessage.set(null);
     this.submitting.set(true);
 
@@ -604,6 +635,12 @@ export class RegisterGuestComponent {
         key: 'customFields',
         call: defer(() => this.customFields()?.saveFor(id) ?? of(void 0)),
       });
+    }
+    // Scheduled for later: only the registration-time demographics (ethnicity) are written;
+    // the conversation, DIALOG and any risk assessment happen in the workspace.
+    if (this.scheduledForLater()) {
+      plan.push({ key: 'demographics', call: defer(() => this.guestsApi.updateDemographics(id, this.buildDemographicsRequest())) });
+      return plan.filter(({ key }) => states[key] !== 'done');
     }
     // The initial conversation is the gate to Active: this single call also allocates the
     // pathway/CMHW, raises the urgent flag when immediate risk was recorded, schedules the
@@ -812,6 +849,14 @@ export class RegisterGuestComponent {
 
   protected successMessage(): string {
     const firstName = this.demographicsForm.getRawValue().personal.firstName || 'The guest';
+    if (this.scheduledForLater()) {
+      return `${firstName} is registered as a NEW guest in the EMHIP system. Their initial conversation is scheduled for later — start it from the Initial Conversation tab in the guest workspace, where the remaining demographic sections can also be completed.`;
+    }
     return `${firstName} is now successfully registered as an ACTIVE guest in the EMHIP system. Complete the remaining demographic details on the Demographics tab of the guest workspace when you have time with them.`;
+  }
+
+  /** Retry keeps whichever path was taken: a scheduled-for-later registration stays that way. */
+  protected primaryDisabled(): boolean {
+    return this.submitting() || (this.scheduledForLater() && this.step() === 1);
   }
 }

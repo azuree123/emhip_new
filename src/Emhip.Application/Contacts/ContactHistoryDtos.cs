@@ -31,3 +31,49 @@ public sealed record ContactHistoryFilter(
     ContactOutcome? Outcome,
     DateOnly? From,
     DateOnly? To);
+
+/// <summary>
+/// One row of the Contact History screen (design Desktop 89): a guest with the number of
+/// submitted casework notes per contact type, their CPN sessions, and their last contact.
+/// </summary>
+public sealed record ContactsByGuestRowDto(
+    Guid GuestId,
+    int GuestNumber,
+    string GuestName,
+    string GuestStatus,
+    GuestPathway? Pathway,
+    string? AssignedCmhwName,
+    int TotalContacts,
+    int CaseworkCount,
+    int ActivityCount,
+    int HospitalityCount,
+    int AfaCount,
+    int CpnSessionCount,
+    DateTimeOffset? LastContactAt);
+
+/// <summary>Filters for the per-guest view. <paramref name="Category"/> keeps guests with at least one note of that type.</summary>
+public sealed record ContactsByGuestFilter(
+    string? SearchText,
+    Guid? AssignedCmhwId,
+    ContactHistoryCategory? Category,
+    DateOnly? From,
+    DateOnly? To);
+
+/// <summary>The "All contacts" dropdown on the Contact History screen.</summary>
+public enum ContactHistoryCategory
+{
+    Casework = 0,
+    Activity = 1,
+    Hospitality = 2,
+    Afa = 3,
+    Cpn = 4,
+}
+
+/// <summary>The screen's stat tiles — computed over the same caseload scope as the list.</summary>
+public sealed record ContactHistorySummaryDto(
+    int TotalContacts,
+    int Casework,
+    int Activity,
+    int AfaAndHospitality,
+    int CpnSessions,
+    int GuestsWithContacts);

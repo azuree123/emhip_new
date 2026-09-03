@@ -29,6 +29,10 @@ export const Permissions = {
   UrgentCases: {
     View: 'urgentcases.view',
   },
+  Mdt: {
+    /** The Hub Manager's MDT queue: confirm CPN referrals, decline, mark discussed. */
+    Manage: 'mdt.manage',
+  },
   Reports: {
     View: 'reports.view',
     Export: 'reports.export',

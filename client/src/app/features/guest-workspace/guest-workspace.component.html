@@ -163,6 +163,9 @@
         @case ('contacts') {
           <emhip-guest-contact-history-tab [guestId]="guestId()" />
         }
+        @case ('cpn') {
+          <emhip-guest-cpn-record-tab [guestId]="guestId()" (addContact)="openNoteDrawer()" />
+        }
         @case ('documents') {
           <emhip-guest-documents-tab [guestId]="guestId()" (refresh)="reloadOverview()" />
         }

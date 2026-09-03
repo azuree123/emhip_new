@@ -2,41 +2,35 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { Subject, of } from 'rxjs';
+import { Subject, firstValueFrom, of } from 'rxjs';
 import { catchError, debounceTime } from 'rxjs/operators';
-import { ContactHistoryRowDto, ContactOutcome, ContactType, GuestStatus } from '../../core/api-models';
+import { ContactHistorySummaryDto, ContactsByGuestRowDto, GuestStatus } from '../../core/api-models';
 import { AuthService } from '../../core/auth.service';
-import { ContactsApiService } from '../../core/contacts-api.service';
+import { ContactHistoryCategory, ContactsApiService, ContactsByGuestOptions } from '../../core/contacts-api.service';
 import { Permissions } from '../../core/permissions';
 import { StaffPickerComponent } from '../../shared/staff-picker.component';
-import { formatDateTime, humanize, outcomeChip, statusChip } from '../guest-workspace/guest-workspace.util';
+import { formatDate, guestPathwayLabel } from '../guest-workspace/guest-workspace.util';
 
 /** Days back from today, or 'all'. */
-type PeriodFilter = 'all' | '1' | '7' | '30' | '90';
+type PeriodFilter = 'all' | '7' | '30' | '90';
 
-const PAGE_SIZE = 50;
+/** Design Desktop 89 paginates in tens ("Showing 1 to 10 of 11 entries"). */
+const PAGE_SIZE = 10;
+/** Page size used while walking the keyset pages for the CSV export, and its row cap. */
+const EXPORT_PAGE_SIZE = 200;
+const EXPORT_ROW_CAP = 2000;
 
-const TYPE_OPTIONS: { value: '' | ContactType; label: string }[] = [
-  { value: '', label: 'Contact type' },
-  { value: 'PhoneCall', label: 'Phone call' },
-  { value: 'InPerson', label: 'In person' },
-  { value: 'VideoCall', label: 'Video call' },
-  { value: 'TextMessage', label: 'Text message' },
-  { value: 'Email', label: 'Email' },
-];
-
-const OUTCOME_OPTIONS: { value: '' | ContactOutcome; label: string }[] = [
-  { value: '', label: 'Outcome' },
-  { value: 'Successful', label: 'Successful' },
-  { value: 'NoAnswer', label: 'No answer' },
-  { value: 'LeftMessage', label: 'Left message' },
-  { value: 'Declined', label: 'Declined' },
-  { value: 'Rescheduled', label: 'Rescheduled' },
+const CATEGORY_OPTIONS: { value: '' | ContactHistoryCategory; label: string }[] = [
+  { value: '', label: 'All contacts' },
+  { value: 'Casework', label: 'Casework' },
+  { value: 'Activity', label: 'Activity' },
+  { value: 'Hospitality', label: 'Hospitality' },
+  { value: 'Afa', label: 'AFA' },
+  { value: 'Cpn', label: 'CPN sessions' },
 ];
 
 const PERIOD_OPTIONS: { value: PeriodFilter; label: string }[] = [
   { value: 'all', label: 'All dates' },
-  { value: '1', label: 'Today' },
   { value: '7', label: 'Last 7 days' },
   { value: '30', label: 'Last 30 days' },
   { value: '90', label: 'Last 90 days' },
@@ -49,15 +43,24 @@ function isoDay(date: Date): string {
   return `${date.getFullYear()}-${m}-${d}`;
 }
 
+/** The per-type count chips on a row, in the design's order ("1 Casework · 2 Activity · 2 AFA · 2 Hospitality"). */
+interface CountChip {
+  key: ContactHistoryCategory;
+  label: string;
+  count: number;
+}
+
 /**
- * "Contact History" nav screen — every contact logged against a guest in the hub, newest
- * first, backed by the keyset-paged GET /contacts endpoint. Every filter (search, type,
- * outcome, logged-by, assigned CMHW, period, "my contacts") is applied server-side; changing
- * one resets the list to its first page.
+ * "Contact history" nav screen — design Desktop 89/90 ("EMHIP - Additional Changes"): all guest
+ * contacts across your caseload, filtered and searchable. One row per guest showing how many
+ * contacts of each type have been logged (Casework / Activity / AFA / Hospitality, plus CPN
+ * sessions), the last contact date, and "View Note" / "Open" actions; four stat tiles above;
+ * search, the "All contacts" type dropdown, a CMHW filter and a date range; Export; and the
+ * design's Prev / Next pager ("Showing 1 to 10 of 11 entries").
  *
- * Hub Managers open on the whole hub. Everyone else opens on "My contacts" (the contacts they
- * logged themselves) and can widen to the hub with the chip — the same scoping the Guest Seen
- * card uses on the two dashboards.
+ * Backed by GET /contacts/by-guest (chronological — most recent contact first — and keyset-paged,
+ * so Prev is a cursor stack, not page numbers) and GET /contacts/summary for the tiles. Hub Managers open on the whole hub;
+ * everyone else opens on "My caseload" (guests assigned to them) and can widen it with the chip.
  */
 @Component({
   selector: 'app-contact-history',
@@ -72,43 +75,41 @@ export class ContactHistoryComponent {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
 
-  protected readonly rows = signal<ContactHistoryRowDto[]>([]);
+  protected readonly rows = signal<ContactsByGuestRowDto[]>([]);
   protected readonly loading = signal(false);
-  protected readonly loadingMore = signal(false);
-  protected readonly hasMore = signal(false);
-  protected readonly totalCount = signal<number | null>(null);
   protected readonly error = signal<string | null>(null);
+  protected readonly hasMore = signal(false);
+  protected readonly pageIndex = signal(0);
+  /** Server-side total for the applied filters; only the first page carries it. */
+  protected readonly totalCount = signal<number | null>(null);
 
-  protected readonly typeOptions = TYPE_OPTIONS;
-  protected readonly outcomeOptions = OUTCOME_OPTIONS;
+  protected readonly summary = signal<ContactHistorySummaryDto | null>(null);
+
+  protected readonly exporting = signal(false);
+  protected readonly exportError = signal<string | null>(null);
+
+  protected readonly categoryOptions = CATEGORY_OPTIONS;
   protected readonly periodOptions = PERIOD_OPTIONS;
 
   protected readonly isHubManager = this.auth.hasPermission(Permissions.Dashboard.ViewHubManager);
-  /** "My contacts" chip — on by default for workers, off for managers. */
-  protected readonly mineOnly = signal(!this.isHubManager);
+  /** "My caseload" chip — on by default for workers, off for managers. */
+  protected readonly myCaseload = signal(!this.isHubManager);
 
   protected searchTerm = '';
-  protected readonly typeFilter = signal<'' | ContactType>('');
-  protected readonly outcomeFilter = signal<'' | ContactOutcome>('');
+  protected readonly category = signal<'' | ContactHistoryCategory>('');
   protected readonly period = signal<PeriodFilter>('all');
-  /** Worker who logged the contact — a staff id, or null for anyone. Ignored while "My contacts" is on. */
-  protected readonly loggedByFilter = signal<string | null>(null);
-  /** The guest's assigned CMHW — a staff id, or null for all. */
+  /** Assigned CMHW — a staff id, or null for all. Ignored while "My caseload" is on. */
   protected readonly cmhwFilter = signal<string | null>(null);
 
-  protected readonly showingLabel = computed(() => {
-    const shown = this.rows().length;
-    const total = this.totalCount();
-    if (total !== null) return `Showing 1 to ${shown} of ${total} contacts`;
-    return `Showing ${shown}${this.hasMore() ? '+' : ''} contacts`;
-  });
+  /** "Showing X to Y of Z entries" (design) — 1-based, over the applied filters. */
+  protected readonly rangeStart = computed(() => (this.rows().length === 0 ? 0 : this.pageIndex() * PAGE_SIZE + 1));
+  protected readonly rangeEnd = computed(() => this.pageIndex() * PAGE_SIZE + this.rows().length);
 
-  protected readonly humanize = humanize;
-  protected readonly formatDateTime = formatDateTime;
-  protected readonly outcomeChip = outcomeChip;
-  protected readonly statusChip = statusChip;
+  protected readonly formatDate = formatDate;
 
   private nextCursor: string | null = null;
+  private currentCursor: string | undefined;
+  private prevCursors: (string | undefined)[] = [];
   private fetchToken = 0;
   private readonly searchInput$ = new Subject<string>();
 
@@ -119,125 +120,210 @@ export class ContactHistoryComponent {
       this.resetAndLoad();
     });
     this.resetAndLoad();
+    this.loadSummary();
   }
+
+  // ---- Filters ----------------------------------------------------------------------------
 
   protected onSearchInput(value: string): void {
     this.searchInput$.next(value.trim());
   }
 
-  protected onTypeChange(value: string): void {
-    this.typeFilter.set(value as '' | ContactType);
-    this.resetAndLoad();
-  }
-
-  protected onOutcomeChange(value: string): void {
-    this.outcomeFilter.set(value as '' | ContactOutcome);
+  protected onCategoryChange(value: string): void {
+    this.category.set(value as '' | ContactHistoryCategory);
     this.resetAndLoad();
   }
 
   protected onPeriodChange(value: string): void {
     this.period.set(value as PeriodFilter);
     this.resetAndLoad();
-  }
-
-  protected onLoggedByChange(value: string | null): void {
-    this.loggedByFilter.set(value);
-    this.resetAndLoad();
+    this.loadSummary();
   }
 
   protected onCmhwChange(value: string | null): void {
     this.cmhwFilter.set(value);
     this.resetAndLoad();
+    this.loadSummary();
   }
 
-  protected toggleMine(): void {
-    this.mineOnly.set(!this.mineOnly());
+  protected toggleMyCaseload(): void {
+    this.myCaseload.set(!this.myCaseload());
     this.resetAndLoad();
+    this.loadSummary();
   }
 
   protected clearFilters(): void {
     this.searchTerm = '';
-    this.typeFilter.set('');
-    this.outcomeFilter.set('');
+    this.category.set('');
     this.period.set('all');
-    this.loggedByFilter.set(null);
     this.cmhwFilter.set(null);
-    this.mineOnly.set(!this.isHubManager);
+    this.myCaseload.set(!this.isHubManager);
     this.resetAndLoad();
+    this.loadSummary();
   }
 
-  protected resetAndLoad(): void {
-    this.rows.set([]);
-    this.nextCursor = null;
-    this.hasMore.set(false);
-    this.totalCount.set(null);
-    this.error.set(null);
-    this.fetchPage(false);
-  }
-
-  protected loadMore(): void {
-    if (this.loading() || this.loadingMore() || !this.hasMore()) return;
-    this.fetchPage(true);
-  }
-
-  private filters(): { from?: string; loggedBy?: string } & Record<string, string | undefined> {
+  /** The caseload scope shared by the list and the tiles. */
+  private scope(): { cmhw?: string; from?: string } {
     const period = this.period();
-    const from = period === 'all' ? undefined : isoDay(new Date(Date.now() - (Number(period) - 1) * 86_400_000));
     return {
-      q: this.searchTerm || undefined,
-      type: this.typeFilter() || undefined,
-      outcome: this.outcomeFilter() || undefined,
-      from,
-      loggedBy: this.mineOnly() ? this.auth.current().staffId : (this.loggedByFilter() ?? undefined),
-      cmhw: this.cmhwFilter() ?? undefined,
+      cmhw: this.myCaseload() ? this.auth.current().staffId : (this.cmhwFilter() ?? undefined),
+      from: period === 'all' ? undefined : isoDay(new Date(Date.now() - (Number(period) - 1) * 86_400_000)),
     };
   }
 
-  private fetchPage(append: boolean): void {
-    const token = ++this.fetchToken;
-    if (append) this.loadingMore.set(true);
-    else this.loading.set(true);
+  private listOptions(): ContactsByGuestOptions {
+    return {
+      ...this.scope(),
+      q: this.searchTerm || undefined,
+      category: this.category() || undefined,
+    };
+  }
 
-    const f = this.filters();
+  // ---- Paging (keyset: Prev is a cursor stack) ----------------------------------------------
+
+  protected resetAndLoad(): void {
+    this.prevCursors = [];
+    this.currentCursor = undefined;
+    this.pageIndex.set(0);
+    this.totalCount.set(null);
+    this.load();
+  }
+
+  protected nextPage(): void {
+    if (!this.hasMore() || this.nextCursor === null || this.loading()) return;
+    this.prevCursors.push(this.currentCursor);
+    this.currentCursor = this.nextCursor;
+    this.pageIndex.set(this.pageIndex() + 1);
+    this.load();
+  }
+
+  protected prevPage(): void {
+    if (this.prevCursors.length === 0 || this.loading()) return;
+    this.currentCursor = this.prevCursors.pop();
+    this.pageIndex.set(this.pageIndex() - 1);
+    this.load();
+  }
+
+  private load(): void {
+    const token = ++this.fetchToken;
+    this.loading.set(true);
+    this.error.set(null);
     this.contactsApi
-      .getHistory({
-        q: f['q'],
-        type: f['type'] as ContactType | undefined,
-        outcome: f['outcome'] as ContactOutcome | undefined,
-        from: f.from,
-        loggedBy: f.loggedBy,
-        cmhw: f['cmhw'],
-        cursor: append ? (this.nextCursor ?? undefined) : undefined,
-        pageSize: PAGE_SIZE,
-      })
+      .getByGuest({ ...this.listOptions(), cursor: this.currentCursor, pageSize: PAGE_SIZE })
       .pipe(
         catchError(() => {
-          this.error.set('Unable to load contacts right now. Please try again.');
+          this.error.set('Unable to load the contact history right now. Please try again.');
           return of(null);
         }),
       )
       .subscribe((page) => {
         if (token !== this.fetchToken) return;
         this.loading.set(false);
-        this.loadingMore.set(false);
-        if (!page) return;
-        this.rows.update((current) => (append ? [...current, ...page.items] : page.items));
+        if (!page) {
+          this.rows.set([]);
+          this.hasMore.set(false);
+          return;
+        }
+        this.rows.set(page.items);
         this.nextCursor = page.nextCursor;
-        this.hasMore.set(page.hasMore);
+        this.hasMore.set(page.hasMore && page.nextCursor !== null);
         if (page.totalCount !== null) this.totalCount.set(page.totalCount);
       });
   }
 
-  protected initials(row: ContactHistoryRowDto): string {
+  private loadSummary(): void {
+    this.contactsApi
+      .getSummary(this.scope())
+      .pipe(catchError(() => of(null)))
+      .subscribe((summary) => this.summary.set(summary));
+  }
+
+  // ---- Rows ------------------------------------------------------------------------------
+
+  protected initials(row: ContactsByGuestRowDto): string {
     const parts = row.guestName.trim().split(/\s+/);
     return ((parts[0]?.[0] ?? '') + (parts[1]?.[0] ?? '')).toUpperCase();
+  }
+
+  /** "G-1042 · Mental wellbeing · CMHW: Amara Asante" — the design's row sub-line. */
+  protected subline(row: ContactsByGuestRowDto): string {
+    const parts = [`G-${row.guestNumber}`];
+    const pathway = guestPathwayLabel(row.pathway);
+    if (pathway) parts.push(pathway);
+    parts.push(row.assignedCmhwName ? `CMHW: ${row.assignedCmhwName}` : 'Unassigned');
+    return parts.join(' · ');
+  }
+
+  protected countChips(row: ContactsByGuestRowDto): CountChip[] {
+    return [
+      { key: 'Casework' as const, label: 'Casework', count: row.caseworkCount },
+      { key: 'Activity' as const, label: 'Activity', count: row.activityCount },
+      { key: 'Afa' as const, label: 'AFA', count: row.afaCount },
+      { key: 'Hospitality' as const, label: 'Hospitality', count: row.hospitalityCount },
+      { key: 'Cpn' as const, label: 'CPN', count: row.cpnSessionCount },
+    ].filter((chip) => chip.count > 0);
   }
 
   protected statusLabel(status: GuestStatus): string {
     return status === 'OnHold' ? 'On hold' : status;
   }
 
-  protected openGuest(guestId: string): void {
-    this.router.navigate(['/guests', guestId], { queryParams: { tab: 'contacts' } });
+  /** "View Note" — the guest's casework notes (the design's Desktop 90 note view). */
+  protected viewNotes(row: ContactsByGuestRowDto): void {
+    this.router.navigate(['/guests', row.guestId], { queryParams: { tab: 'notes' } });
+  }
+
+  protected openGuest(row: ContactsByGuestRowDto): void {
+    this.router.navigate(['/guests', row.guestId], { queryParams: { tab: 'contacts' } });
+  }
+
+  // ---- Export ----------------------------------------------------------------------------
+
+  /** "Export" — walks the current filter's pages (capped) and downloads a CSV. */
+  protected async exportCsv(): Promise<void> {
+    if (this.exporting()) return;
+    this.exporting.set(true);
+    this.exportError.set(null);
+    const rows: ContactsByGuestRowDto[] = [];
+    let cursor: string | undefined;
+    try {
+      for (;;) {
+        const page = await firstValueFrom(
+          this.contactsApi.getByGuest({ ...this.listOptions(), cursor, pageSize: EXPORT_PAGE_SIZE }),
+        );
+        rows.push(...page.items);
+        if (rows.length >= EXPORT_ROW_CAP || !page.hasMore || !page.nextCursor) break;
+        cursor = page.nextCursor;
+      }
+    } catch {
+      if (rows.length === 0) {
+        this.exportError.set('Export failed. Please try again.');
+        this.exporting.set(false);
+        return;
+      }
+    }
+    const header = ['Guest ID', 'Guest', 'Status', 'Pathway', 'Assigned CMHW', 'Total contacts', 'Casework', 'Activity', 'AFA', 'Hospitality', 'CPN sessions', 'Last contact'];
+    const escape = (value: string | number | null): string => {
+      const s = value === null ? '' : String(value);
+      return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const lines = [header.join(',')];
+    for (const r of rows.slice(0, EXPORT_ROW_CAP)) {
+      lines.push(
+        [
+          `G-${r.guestNumber}`, r.guestName, this.statusLabel(r.guestStatus), guestPathwayLabel(r.pathway) ?? '',
+          r.assignedCmhwName ?? '', r.totalContacts, r.caseworkCount, r.activityCount, r.afaCount, r.hospitalityCount,
+          r.cpnSessionCount, r.lastContactAt ?? '',
+        ].map(escape).join(','),
+      );
+    }
+    const blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `contact-history-${isoDay(new Date())}.csv`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+    this.exporting.set(false);
   }
 }

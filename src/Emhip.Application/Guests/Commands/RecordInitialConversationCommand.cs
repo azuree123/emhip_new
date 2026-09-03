@@ -90,6 +90,19 @@ public sealed class RecordInitialConversationCommandHandler(IAppDbContext db, IC
 
         // Immediate Risk = Yes raises the urgent flag automatically (§4.5). The risk assessment
         // it writes is what the escalation worker consumes to build the urgent queue.
+        // "Initial review" badge on the MDT queue: an intake with immediate risk, or one allocated to
+        // the clinical pathway, is put in front of the team rather than waiting for a worker to ask.
+        if (request.ImmediateRisk || request.Pathway == GuestPathway.ClinicalSupport)
+        {
+            var presenting = request.PresentingIssues is { Length: > 0 } issues
+                ? (issues.Length > 1000 ? issues[..1000] + "…" : issues)
+                : null;
+            await Mdt.MdtQueueRaiser.RaiseAsync(
+                db, request.GuestId, MdtQueueKind.InitialReview, currentUser.StaffId,
+                request.ImmediateRisk ? "Immediate risk identified at initial conversation" : "Allocated to the Additional / Clinical Support pathway at intake",
+                presenting, request.ImmediateRisk ? "Urgent — Hub Manager today" : "Routine — discuss at next MDT", null, cancellationToken);
+        }
+
         if (request.ImmediateRisk)
         {
             var nextVersion = await db.RiskAssessments

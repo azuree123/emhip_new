@@ -52,7 +52,7 @@ const RISK_FLAGS: RiskFlagDef[] = [
  *
  * Every active case carries the same three actions: "Open Guest" (the workspace), "Add
  * contact" (the shared Add Contact popup — CaseworkNoteDrawerComponent, the same record the
- * workspace header writes) and "View Crisis Episode" (the Desktop58 details drawer). The
+ * workspace header writes) and "Open Crisis Episode" (the Desktop46/58 details drawer). The
  * drawer's own action row offers the same "Add contact"; the separate "Log follow-up"
  * scheduling modal and the bare contact-row modal are gone — a contact is always recorded
  * through the one popup, so the CPN toggle and the SBAR record are never bypassed.

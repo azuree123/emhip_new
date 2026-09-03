@@ -1,10 +1,49 @@
 <div class="page">
   <header class="page-header">
     <div class="page-header__text">
-      <h1 class="page-header__title">Contact History</h1>
-      <p class="page-header__subtitle">Every contact logged against a guest in the hub, most recent first.</p>
+      <h1 class="page-header__title">Contact history</h1>
+      <p class="page-header__subtitle">All guest contacts across your caseload — filtered and searchable</p>
+    </div>
+    <div class="page-header__actions">
+      @if (exportError()) {
+        <span class="export-error" role="alert">{{ exportError() }}</span>
+      }
+      <button type="button" class="btn btn--secondary" (click)="exportCsv()" [disabled]="exporting()">
+        <svg width="13" height="15" viewBox="0 0 12.375 14.625" fill="none" aria-hidden="true">
+          <path
+            d="M 12.375 6.75 L 12.375 13.5 C 12.375 13.799 12.256 14.085 12.045 14.296 C 11.835 14.507 11.548 14.625 11.25 14.625 L 1.125 14.625 C 0.827 14.625 0.54 14.507 0.33 14.296 C 0.119 14.085 0 13.799 0 13.5 L 0 6.75 C 0 6.452 0.119 6.166 0.33 5.955 C 0.54 5.744 0.827 5.625 1.125 5.625 L 2.813 5.625 C 2.962 5.625 3.105 5.685 3.21 5.79 C 3.316 5.896 3.375 6.039 3.375 6.188 C 3.375 6.337 3.316 6.48 3.21 6.586 C 3.105 6.691 2.962 6.75 2.813 6.75 L 1.125 6.75 L 1.125 13.5 L 11.25 13.5 L 11.25 6.75 L 9.563 6.75 C 9.413 6.75 9.27 6.691 9.165 6.586 C 9.059 6.48 9 6.337 9 6.188 C 9 6.039 9.059 5.896 9.165 5.79 C 9.27 5.685 9.413 5.625 9.563 5.625 L 11.25 5.625 C 11.548 5.625 11.835 5.744 12.045 5.955 C 12.256 6.166 12.375 6.452 12.375 6.75 Z M 3.773 3.773 L 5.625 1.921 L 5.625 8.438 C 5.625 8.587 5.684 8.73 5.79 8.836 C 5.895 8.941 6.038 9 6.188 9 C 6.337 9 6.48 8.941 6.585 8.836 C 6.691 8.73 6.75 8.587 6.75 8.438 L 6.75 1.921 L 8.602 3.773 C 8.708 3.879 8.851 3.938 9 3.938 C 9.149 3.938 9.292 3.879 9.398 3.773 C 9.504 3.668 9.563 3.525 9.563 3.375 C 9.563 3.226 9.504 3.083 9.398 2.977 L 6.585 0.165 C 6.533 0.113 6.471 0.071 6.403 0.043 C 6.335 0.015 6.261 0 6.188 0 C 6.114 0 6.04 0.015 5.972 0.043 C 5.904 0.071 5.842 0.113 5.79 0.165 L 2.977 2.977 C 2.871 3.083 2.812 3.226 2.812 3.375 C 2.812 3.525 2.871 3.668 2.977 3.773 C 3.083 3.879 3.226 3.938 3.375 3.938 C 3.524 3.938 3.667 3.879 3.773 3.773 Z"
+            fill="currentColor"
+          />
+        </svg>
+        {{ exporting() ? 'Exporting…' : 'Export' }}
+      </button>
     </div>
   </header>
+
+  <!-- Stat tiles (design: Total contacts / Casework / Activity / AFA & Hospitality). -->
+  <section class="stat-row">
+    @let s = summary();
+    <div class="stat-card">
+      <span class="stat-card__label">Total contacts</span>
+      <span class="stat-card__value">{{ s ? s.totalContacts : '—' }}</span>
+      <span class="stat-card__caption">{{ s ? s.guestsWithContacts + ' guest' + (s.guestsWithContacts === 1 ? '' : 's') + ' contacted' : 'Loading…' }}</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-card__label">Casework</span>
+      <span class="stat-card__value">{{ s ? s.casework : '—' }}</span>
+      <span class="stat-card__caption">SBAR casework notes</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-card__label">Activity</span>
+      <span class="stat-card__value">{{ s ? s.activity : '—' }}</span>
+      <span class="stat-card__caption">Hub activity contacts</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-card__label">AFA &amp; Hospitality</span>
+      <span class="stat-card__value">{{ s ? s.afaAndHospitality : '—' }}</span>
+      <span class="stat-card__caption">{{ s ? s.cpnSessions + ' CPN session' + (s.cpnSessions === 1 ? '' : 's') : 'Advice & hospitality' }}</span>
+    </div>
+  </section>
 
   <section class="card">
     <div class="toolbar">
@@ -18,7 +57,7 @@
         <input
           type="text"
           class="search-box__input"
-          placeholder="Search by guest name, ID or note…"
+          placeholder="Search guest, notes….."
           [value]="searchTerm"
           (input)="onSearchInput($any($event.target).value)"
         />
@@ -35,53 +74,36 @@
           <span class="visually-hidden">Reset filters</span>
         </button>
 
+        <div class="filter">
+          <select class="filter__select" aria-label="Filter by contact type" [value]="category()" (change)="onCategoryChange($any($event.target).value)">
+            @for (option of categoryOptions; track option.value) {
+              <option [value]="option.value">{{ option.label }}</option>
+            }
+          </select>
+        </div>
+
         <button
           type="button"
           class="filter-chip"
-          [class.filter-chip--on]="mineOnly()"
-          [attr.aria-pressed]="mineOnly()"
-          title="Only contacts you logged yourself"
-          (click)="toggleMine()"
+          [class.filter-chip--on]="myCaseload()"
+          [attr.aria-pressed]="myCaseload()"
+          title="Only guests assigned to you"
+          (click)="toggleMyCaseload()"
         >
           <span class="filter-chip__dot" aria-hidden="true"></span>
-          My contacts
+          My caseload
         </button>
 
-        <div class="filter">
-          <select class="filter__select" aria-label="Filter by contact type" [value]="typeFilter()" (change)="onTypeChange($any($event.target).value)">
-            @for (option of typeOptions; track option.value) {
-              <option [value]="option.value">{{ option.label }}</option>
-            }
-          </select>
-        </div>
-
-        <div class="filter">
-          <select class="filter__select" aria-label="Filter by outcome" [value]="outcomeFilter()" (change)="onOutcomeChange($any($event.target).value)">
-            @for (option of outcomeOptions; track option.value) {
-              <option [value]="option.value">{{ option.label }}</option>
-            }
-          </select>
-        </div>
-
-        @if (!mineOnly()) {
+        @if (!myCaseload()) {
           <emhip-staff-picker
             class="filter-picker"
-            placeholder="Logged by"
-            searchPlaceholder="Search staff…"
+            placeholder="All CMHW"
+            searchPlaceholder="Search CMHW…"
             [allowClear]="true"
-            [ngModel]="loggedByFilter()"
-            (ngModelChange)="onLoggedByChange($event)"
+            [ngModel]="cmhwFilter()"
+            (ngModelChange)="onCmhwChange($event)"
           />
         }
-
-        <emhip-staff-picker
-          class="filter-picker"
-          placeholder="Assigned CMHW"
-          searchPlaceholder="Search CMHW…"
-          [allowClear]="true"
-          [ngModel]="cmhwFilter()"
-          (ngModelChange)="onCmhwChange($event)"
-        />
 
         <div class="filter">
           <select class="filter__select" aria-label="Filter by period" [value]="period()" (change)="onPeriodChange($any($event.target).value)">
@@ -93,52 +115,43 @@
       </div>
     </div>
 
-    <div class="table-head">
-      <span class="col">Guest</span>
-      <span class="col">Date &amp; time</span>
-      <span class="col">Type</span>
-      <span class="col">Outcome</span>
-      <span class="col">Logged by</span>
-      <span class="col">Assigned CMHW</span>
-      <span class="col">Notes</span>
-      <span class="col">Actions</span>
-    </div>
-
     @if (error()) {
       <div class="state-banner state-banner--error">
         <span>{{ error() }}</span>
         <button type="button" class="retry-btn" (click)="resetAndLoad()">Retry</button>
       </div>
-    } @else if (loading()) {
-      <div class="state-banner">Loading contacts…</div>
+    } @else if (loading() && rows().length === 0) {
+      <div class="state-banner">Loading contact history…</div>
     } @else if (rows().length === 0) {
       <div class="state-banner">No contacts match these filters.</div>
     } @else {
-      <div class="rows">
-        @for (row of rows(); track row.id) {
-          <div class="row" (click)="openGuest(row.guestId)">
-            <span class="col name-cell">
-              <span class="avatar">{{ initials(row) }}</span>
-              <span class="name-block">
-                <span class="name-block__name">{{ row.guestName }}</span>
-                <span class="name-block__id">
-                  ID: G-{{ row.guestNumber }}
-                  <span class="badge" [attr.data-status]="row.guestStatus">{{ statusLabel(row.guestStatus) }}</span>
-                </span>
+      <div class="rows" [class.rows--busy]="loading()">
+        @for (row of rows(); track row.guestId) {
+          <div class="row" (click)="openGuest(row)">
+            <span class="avatar">{{ initials(row) }}</span>
+            <span class="row__text">
+              <span class="row__name">
+                {{ row.guestName }}
+                <span class="badge" [attr.data-status]="row.guestStatus">{{ statusLabel(row.guestStatus) }}</span>
               </span>
+              <span class="row__sub">{{ subline(row) }}</span>
             </span>
-            <span class="col">{{ formatDateTime(row.occurredAt) }}</span>
-            <span class="col">{{ humanize(row.type) }}</span>
-            <span class="col">
-              @if (outcomeChip(row.outcome); as chip) {
-                <span class="pill" [style.background]="chip.bg" [style.color]="chip.fg">{{ chip.label }}</span>
+
+            <span class="row__counts">
+              @for (chip of countChips(row); track chip.key) {
+                <span class="count-chip" [attr.data-kind]="chip.key">
+                  <span class="count-chip__n">{{ chip.count }}</span> {{ chip.label }}
+                </span>
+              } @empty {
+                <span class="count-chip count-chip--muted">{{ row.totalContacts }} contact{{ row.totalContacts === 1 ? '' : 's' }}</span>
               }
             </span>
-            <span class="col">{{ row.createdByName }}</span>
-            <span class="col">{{ row.assignedCmhwName ?? '—' }}</span>
-            <span class="col col--notes" [title]="row.notes ?? ''">{{ row.notes || '—' }}</span>
-            <span class="col">
-              <button type="button" class="open-btn" (click)="$event.stopPropagation(); openGuest(row.guestId)">
+
+            <span class="row__last">Last: {{ formatDate(row.lastContactAt) }}</span>
+
+            <span class="row__actions">
+              <button type="button" class="open-btn" (click)="$event.stopPropagation(); viewNotes(row)">View Note</button>
+              <button type="button" class="open-btn open-btn--primary" (click)="$event.stopPropagation(); openGuest(row)">
                 Open
                 <svg width="14" height="14" viewBox="0 0 13.5 13.5" fill="none" aria-hidden="true">
                   <path
@@ -153,16 +166,17 @@
       </div>
 
       <div class="load-footer">
-        <span class="load-footer__showing">{{ showingLabel() }}</span>
-        <span class="load-footer__controls">
-          @if (loadingMore()) {
-            <span class="load-footer__note">Loading more contacts…</span>
-          } @else if (hasMore()) {
-            <button type="button" class="load-more-btn" (click)="loadMore()">Load more</button>
+        <span class="load-footer__showing">
+          @if (totalCount() !== null) {
+            Showing {{ rangeStart() }} to {{ rangeEnd() }} of {{ totalCount() }} entries
           } @else {
-            <span class="load-footer__note">You've reached the end.</span>
+            Showing {{ rows().length }} guest{{ rows().length === 1 ? '' : 's' }} — page {{ pageIndex() + 1 }}
           }
         </span>
+        <div class="pager">
+          <button type="button" class="pager__btn" [disabled]="pageIndex() === 0 || loading()" (click)="prevPage()">Prev</button>
+          <button type="button" class="pager__btn" [disabled]="!hasMore() || loading()" (click)="nextPage()">Next</button>
+        </div>
       </div>
     }
   </section>

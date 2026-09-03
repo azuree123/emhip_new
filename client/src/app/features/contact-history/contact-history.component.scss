@@ -202,34 +202,115 @@ $pager-font-stack: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
   width: 163px;
 }
 
-// Columns: Guest | Date & time | Type | Outcome | Logged by | Assigned CMHW | Notes | Actions
-$table-columns: minmax(200px, 1.4fr) 150px 110px 120px 140px 140px minmax(120px, 1fr) 100px;
+// ---- Stat tiles (design: 277x114 r12 white, 10/600 uppercase label, 32/600 value) ----
 
-.table-head {
+.stat-row {
   display: grid;
-  grid-template-columns: $table-columns;
-  align-items: center;
-  height: 41px;
-  padding: 0 23px;
-  border-radius: 3px 3px 0 0;
-  background: rgb(241, 241, 241);
-  flex-shrink: 0;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 23px;
+  margin: -12px 0 -12px;
+}
 
-  .col {
+.stat-card {
+  display: flex;
+  flex-direction: column;
+  min-height: 114px;
+  padding: 8px 18px 13px 19px;
+  border-radius: 12px;
+  background: rgb(255, 255, 255);
+  box-sizing: border-box;
+
+  &__label {
+    font-family: 'Wix Madefor Display', sans-serif;
+    font-weight: 600;
+    font-size: 10px;
+    line-height: 24px;
+    letter-spacing: -0.005em;
+    text-transform: uppercase;
+    color: rgb(42, 42, 42);
+  }
+
+  &__value {
+    margin-top: 4px;
+    font-weight: 600;
+    font-size: 32px;
+    line-height: 32px;
+    color: rgb(42, 42, 42);
+  }
+
+  &__caption {
+    margin-top: 8px;
+    font-family: 'Wix Madefor Display', sans-serif;
     font-weight: 600;
     font-size: 12px;
     line-height: 24px;
-    letter-spacing: 0.01em;
+    color: rgb(140, 140, 140);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+.page-header__actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.export-error {
+  font-weight: 500;
+  font-size: 12px;
+  color: rgb(225, 38, 40);
+  white-space: nowrap;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  border-radius: 4px;
+  border: none;
+  font-family: $font-stack;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 24px;
+  letter-spacing: -0.005em;
+  cursor: pointer;
+  white-space: nowrap;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+
+  &--secondary {
+    padding: 0 18px 0 12px;
+    background: rgb(255, 255, 255);
     color: rgb(42, 42, 42);
+    box-shadow: inset 0 0 0 1px rgb(217, 217, 217);
+
+    &:hover:not(:disabled) {
+      background: rgb(250, 250, 250);
+    }
+  }
+}
+
+// ---- Guest rows (design: avatar, name + "G-1042 · Mental wellbeing · CMHW: …", count chips,
+// "Last: 08 May 2025", View Note) ----
+
+.rows {
+  &--busy {
+    opacity: 0.6;
   }
 }
 
 .row {
-  display: grid;
-  grid-template-columns: $table-columns;
+  display: flex;
   align-items: center;
-  min-height: 72px;
-  padding: 8px 23px;
+  gap: 14px;
+  min-height: 78px;
+  padding: 12px 23px;
   box-sizing: border-box;
   border-bottom: 1px solid rgb(232, 232, 232);
   cursor: pointer;
@@ -238,34 +319,65 @@ $table-columns: minmax(200px, 1.4fr) 150px 110px 120px 140px 140px minmax(120px,
     background: rgb(250, 250, 250);
   }
 
-  .col {
-    font-weight: 500;
+  &__text {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    flex: 1 1 260px;
+  }
+
+  &__name {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
     font-size: 14px;
     line-height: 24px;
-    letter-spacing: -0.005em;
     color: rgb(42, 42, 42);
+    white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    white-space: nowrap;
-    padding-right: 8px;
   }
 
-  .col--notes {
+  &__sub {
+    font-weight: 500;
     font-size: 12px;
-    color: rgb(114, 114, 114);
+    line-height: 18px;
+    color: rgb(140, 140, 140);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
-}
 
-.name-cell {
-  display: flex;
-  align-items: center;
-  gap: 6px;
+  &__counts {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    flex: 1 1 320px;
+  }
+
+  &__last {
+    flex: 0 0 150px;
+    font-weight: 500;
+    font-size: 12px;
+    line-height: 18px;
+    color: rgb(42, 42, 42);
+    white-space: nowrap;
+  }
+
+  &__actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
 }
 
 .avatar {
   flex-shrink: 0;
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   border-radius: 24px;
   background: rgb(240, 240, 240);
   display: flex;
@@ -276,40 +388,14 @@ $table-columns: minmax(200px, 1.4fr) 150px 110px 120px 140px 140px minmax(120px,
   color: rgb(148, 148, 148);
 }
 
-.name-block {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-
-  &__name {
-    font-weight: 600;
-    font-size: 12px;
-    line-height: 20px;
-    color: rgb(42, 42, 42);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  &__id {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    font-weight: 600;
-    font-size: 10px;
-    line-height: 18px;
-    color: rgb(140, 140, 140);
-  }
-}
-
 .badge {
   display: inline-flex;
   align-items: center;
-  padding: 1px 6px;
+  padding: 2px 8px;
   border-radius: 200px;
   font-weight: 500;
-  font-size: 10px;
-  line-height: 14px;
+  font-size: 11px;
+  line-height: 16px;
 
   &[data-status='Active'] {
     background: rgb(234, 253, 238);
@@ -327,15 +413,53 @@ $table-columns: minmax(200px, 1.4fr) 150px 110px 120px 140px 140px minmax(120px,
   }
 }
 
-.pill {
+// "1 Casework" / "2 Activity" / "2 AFA" / "2 Hospitality" — one tint per contact type.
+.count-chip {
   display: inline-flex;
   align-items: center;
-  padding: 4px 8px;
+  gap: 4px;
+  height: 26px;
+  padding: 0 10px;
   border-radius: 200px;
   font-weight: 500;
   font-size: 12px;
   line-height: 16px;
   white-space: nowrap;
+  background: rgb(240, 240, 240);
+  color: rgb(100, 100, 100);
+
+  &__n {
+    font-weight: 700;
+  }
+
+  &[data-kind='Casework'] {
+    background: rgb(231, 238, 255);
+    color: rgb(52, 91, 177);
+  }
+
+  &[data-kind='Activity'] {
+    background: rgb(234, 253, 238);
+    color: rgb(20, 113, 41);
+  }
+
+  &[data-kind='Afa'] {
+    background: rgb(255, 249, 228);
+    color: rgb(157, 133, 45);
+  }
+
+  &[data-kind='Hospitality'] {
+    background: rgb(255, 237, 213);
+    color: rgb(194, 65, 12);
+  }
+
+  &[data-kind='Cpn'] {
+    background: rgb(255, 240, 241);
+    color: rgb(148, 28, 60);
+  }
+
+  &--muted {
+    color: rgb(140, 140, 140);
+  }
 }
 
 .open-btn {
@@ -355,9 +479,50 @@ $table-columns: minmax(200px, 1.4fr) 150px 110px 120px 140px 140px minmax(120px,
   letter-spacing: -0.005em;
   color: rgb(42, 42, 42);
   cursor: pointer;
+  white-space: nowrap;
 
   &:hover {
     background: rgb(250, 250, 250);
+  }
+
+  &--primary {
+    background: rgb(235, 60, 44);
+    color: rgb(255, 255, 255);
+    box-shadow: none;
+
+    &:hover {
+      background: rgb(215, 48, 33);
+    }
+  }
+}
+
+.pager {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  &__btn {
+    height: 38px;
+    padding: 0 16px;
+    border: 1px solid rgb(229, 229, 229);
+    border-radius: 8px;
+    background: rgb(255, 255, 255);
+    font-family: $pager-font-stack;
+    font-weight: 600;
+    font-size: 14px;
+    line-height: 24px;
+    letter-spacing: 0.005em;
+    color: rgb(51, 65, 85);
+    cursor: pointer;
+
+    &:hover:not(:disabled) {
+      background: rgb(246, 246, 246);
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: default;
+    }
   }
 }
 
@@ -408,32 +573,18 @@ $table-columns: minmax(200px, 1.4fr) 150px 110px 120px 140px 140px minmax(120px,
   }
 }
 
-.load-more-btn {
-  height: 38px;
-  padding: 0 16px;
-  border-radius: 8px;
-  border: 1px solid rgb(229, 229, 229);
-  background: rgb(246, 246, 246);
-  font-family: $pager-font-stack;
-  font-weight: 600;
-  font-size: 14px;
-  line-height: 24px;
-  color: rgb(50, 50, 50);
-  cursor: pointer;
-
-  &:hover {
-    background: rgb(238, 238, 238);
-  }
-}
-
 @media (max-width: 1279px) {
-  .card {
-    overflow-x: auto;
+  .stat-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
   }
 
-  .table-head,
   .row {
-    min-width: 1180px;
+    flex-wrap: wrap;
+
+    &__last {
+      flex-basis: auto;
+    }
   }
 }
 
@@ -450,5 +601,9 @@ $table-columns: minmax(200px, 1.4fr) 150px 110px 120px 140px 140px minmax(120px,
 
   .filter-cluster {
     margin-left: 0;
+  }
+
+  .stat-row {
+    grid-template-columns: 1fr;
   }
 }

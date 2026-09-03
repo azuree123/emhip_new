@@ -17,6 +17,7 @@ import { GuestPathwayTabComponent } from './guest-pathway-tab.component';
 import { GuestDocumentsTabComponent } from './guest-documents-tab.component';
 import { GuestCarePlanTabComponent } from './guest-care-plan-tab.component';
 import { GuestContactHistoryTabComponent } from './guest-contact-history-tab.component';
+import { GuestCpnRecordTabComponent } from './guest-cpn-record-tab.component';
 import { GuestActionTabComponent } from './guest-action-tab.component';
 import { GuestNotesTabComponent } from './guest-notes-tab.component';
 import { CaseworkNoteDrawerComponent } from './casework-note-drawer.component';
@@ -31,6 +32,7 @@ type TabId =
   | 'pathway'
   | 'careplan'
   | 'contacts'
+  | 'cpn'
   | 'documents'
   | 'action'
   | 'notes';
@@ -76,6 +78,7 @@ interface TabDef {
     GuestDocumentsTabComponent,
     GuestCarePlanTabComponent,
     GuestContactHistoryTabComponent,
+    GuestCpnRecordTabComponent,
     GuestActionTabComponent,
     GuestNotesTabComponent,
     CaseworkNoteDrawerComponent,
@@ -104,6 +107,7 @@ export class GuestWorkspaceComponent {
     { id: 'pathway', label: 'Pathway History' },
     { id: 'careplan', label: 'Care Plan' },
     { id: 'contacts', label: 'Contact History' },
+    { id: 'cpn', label: 'CPN Record' },
     { id: 'documents', label: 'Documents' },
     { id: 'action', label: 'Actions & Reminders' },
     { id: 'notes', label: 'Notes' },
@@ -185,7 +189,7 @@ export class GuestWorkspaceComponent {
   }
 
   /** The Demographics tab's "Continue to …" hand-off into the next section of the flow. */
-  continueFromDemographics(step: 'initial' | 'dialog'): void {
+  continueFromDemographics(step: 'initial' | 'dialog' | 'clinical'): void {
     this.openDemographicsEditor.set(false);
     this.selectTab(step);
   }

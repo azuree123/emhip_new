@@ -246,6 +246,69 @@ public sealed class ReportReadService(EmhipDbContext db) : IReportReadService
         return new DataQualityReportDto(total, issues);
     }
 
+    public async Task<CpnActivityReportDto> GetCpnActivityAsync(Guid hubId, DateOnly from, DateOnly to, CancellationToken cancellationToken = default)
+    {
+        var fromTs = new DateTimeOffset(from.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
+        var toTs = new DateTimeOffset(to.ToDateTime(TimeOnly.MaxValue), TimeSpan.Zero);
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+
+        var hubGuests = db.Guests.AsNoTracking().Where(g => g.HubId == hubId && !g.IsDeleted);
+
+        var cpnNotes = db.CaseworkNotes.AsNoTracking()
+            .Where(n => n.IsCpnContact && n.Status == Domain.Enums.CaseworkNoteStatus.Submitted && hubGuests.Any(g => g.Id == n.GuestId));
+        var notesInRange = cpnNotes.Where(n => n.OccurredAt >= fromTs && n.OccurredAt <= toTs);
+
+        var referrals = db.MdtQueueItems.AsNoTracking()
+            .Where(i => i.Kind == Domain.Enums.MdtQueueKind.CpnReferral && hubGuests.Any(g => g.Id == i.GuestId));
+        var referralsInRange = referrals.Where(i => i.RequestedAt >= fromTs && i.RequestedAt <= toTs);
+
+        var guestsSeen = await notesInRange.Select(n => n.GuestId).Distinct().CountAsync(cancellationToken);
+        var contactsInRange = await notesInRange.CountAsync(cancellationToken);
+        var newReferrals = await referralsInRange.CountAsync(cancellationToken);
+        var confirmed = await referralsInRange.CountAsync(i => i.Status == Domain.Enums.MdtQueueStatus.Confirmed, cancellationToken);
+        var declined = await referralsInRange.CountAsync(i => i.Status == Domain.Enums.MdtQueueStatus.Declined, cancellationToken);
+        var pending = await referrals.CountAsync(i => i.Status == Domain.Enums.MdtQueueStatus.Pending, cancellationToken);
+
+        // Guests currently on the CPN caseload: a confirmed referral, or the clinical profile's CPN flag.
+        var caseload = await hubGuests
+            .Where(g => db.GuestClinicalProfiles.Any(p => p.GuestId == g.Id && p.CpnInvolved)
+                || referrals.Any(i => i.GuestId == g.Id && i.Status == Domain.Enums.MdtQueueStatus.Confirmed))
+            .Select(g => new CpnCaseloadRowDto(
+                g.Id, g.GuestNumber, g.FirstName + " " + g.LastName, g.Status.ToString(), g.Pathway,
+                db.Users.Where(u => u.Id == g.AssignedCmhwId).Select(u => u.DisplayName).FirstOrDefault(),
+                referrals.Where(i => i.GuestId == g.Id && i.Status == Domain.Enums.MdtQueueStatus.Confirmed)
+                    .OrderByDescending(i => i.ReviewedAt)
+                    .Select(i => db.Users.Where(u => u.Id == i.AssignedCpnStaffId).Select(u => u.DisplayName).FirstOrDefault())
+                    .FirstOrDefault(),
+                referrals.Where(i => i.GuestId == g.Id).OrderByDescending(i => i.RequestedAt).Select(i => (DateTimeOffset?)i.RequestedAt).FirstOrDefault(),
+                referrals.Where(i => i.GuestId == g.Id && i.Status == Domain.Enums.MdtQueueStatus.Confirmed)
+                    .OrderByDescending(i => i.ReviewedAt).Select(i => i.ReviewedAt).FirstOrDefault(),
+                cpnNotes.Count(n => n.GuestId == g.Id),
+                cpnNotes.Where(n => n.GuestId == g.Id).Max(n => (DateTimeOffset?)n.OccurredAt),
+                db.FollowUps.Where(f => f.GuestId == g.Id && f.Status == Domain.Enums.FollowUpStatus.Scheduled && f.DueDate >= today)
+                    .OrderBy(f => f.DueDate).Select(f => (DateOnly?)f.DueDate).FirstOrDefault()))
+            .ToListAsync(cancellationToken);
+
+        // Referral → first CPN contact lead time, over confirmed referrals that have had a contact since.
+        var confirmedRows = await referrals
+            .Where(i => i.Status == Domain.Enums.MdtQueueStatus.Confirmed && i.ReviewedAt != null)
+            .Select(i => new
+            {
+                i.ReviewedAt,
+                FirstContact = cpnNotes.Where(n => n.GuestId == i.GuestId && n.OccurredAt >= i.ReviewedAt)
+                    .Min(n => (DateTimeOffset?)n.OccurredAt),
+            })
+            .ToListAsync(cancellationToken);
+        var leadTimes = confirmedRows.Where(r => r.FirstContact is not null)
+            .Select(r => (r.FirstContact!.Value - r.ReviewedAt!.Value).TotalDays).ToList();
+
+        return new CpnActivityReportDto(
+            from, to, guestsSeen, caseload.Count, newReferrals, confirmed, declined, pending,
+            leadTimes.Count == 0 ? null : Math.Round(leadTimes.Average(), 1),
+            contactsInRange,
+            caseload.OrderByDescending(r => r.LastCpnContactAt ?? DateTimeOffset.MinValue).ThenBy(r => r.GuestName).ToList());
+    }
+
     public async Task<ContactsBreakdownReportDto> GetContactsBreakdownAsync(Guid hubId, DateOnly from, DateOnly to, CancellationToken cancellationToken = default)
     {
         var fromTs = new DateTimeOffset(from.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);

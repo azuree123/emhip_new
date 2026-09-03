@@ -6,6 +6,7 @@
   } @else if (demographics(); as d) {
     <div class="demographics">
       <div class="demographics__main">
+        <!-- Personal details — captured at registration (read-only here). -->
         <section class="card">
           <div class="card__header-row">
             <div class="section-title">
@@ -21,6 +22,9 @@
               <div class="field"><span class="field__label">Date of birth</span><span class="field__value">{{ formatDate(o.dateOfBirth) }}</span></div>
               <div class="field"><span class="field__label">Phone number</span><span class="field__value">{{ o.contactPhone || '—' }}</span></div>
               <div class="field"><span class="field__label">Contact email</span><span class="field__value">{{ o.contactEmail || '—' }}</span></div>
+              <div class="field"><span class="field__label">Address</span><span class="field__value">{{ o.addressLine1 || '—' }}</span></div>
+              <div class="field"><span class="field__label">Postcode</span><span class="field__value">{{ o.postCode || '—' }}</span></div>
+              <div class="field"><span class="field__label">Referral</span><span class="field__value">{{ o.referralSource || 'Not recorded at registration' }}</span></div>
               <div class="field"><span class="field__label">Ethnicity</span><span class="field__value">{{ d.ethnicity || '—' }}</span></div>
             </div>
           } @else {
@@ -30,72 +34,93 @@
           }
         </section>
 
-        @if (!editing()) {
-          <section class="card">
-            <div class="card__header-row">
-              <h2 class="card__title">Identity &amp; language</h2>
-              <span class="chip" [class.chip--complete]="sections()[0].complete" [class.chip--pending]="!sections()[0].complete">
-                {{ sections()[0].complete ? 'Completed' : 'Pending' }}
+        <!-- Phase 2 · Contact & housing -->
+        <section class="card">
+          <div class="card__header-row">
+            <h2 class="card__title">Contact &amp; housing</h2>
+            <span class="card__tools">
+              @if (lastSaved()?.key === 'contact') {
+                <span class="saved-hint">Saved</span>
+              }
+              <span class="chip" [class.chip--complete]="sectionComplete('contact')" [class.chip--pending]="!sectionComplete('contact')">
+                {{ sectionComplete('contact') ? 'Completed' : 'Pending' }}
               </span>
-            </div>
+              @if (canEdit && !isEditing('contact')) {
+                <button type="button" class="btn-link" (click)="startEdit('contact')">Edit</button>
+              }
+            </span>
+          </div>
+          @if (!isEditing('contact')) {
             <div class="field-grid">
-              <div class="field"><span class="field__label">Nationality</span><span class="field__value">{{ d.nationality || '—' }}</span></div>
-              <div class="field"><span class="field__label">Country of origin</span><span class="field__value">{{ d.countryOfOrigin || '—' }}</span></div>
+              <div class="field"><span class="field__label">Housing status</span><span class="field__value">{{ d.housingStatus || '—' }}</span></div>
+              <div class="field"><span class="field__label">Living situation</span><span class="field__value">{{ d.livingGroup || '—' }}</span></div>
+              <div class="field"><span class="field__label">Occupational status</span><span class="field__value">{{ d.employmentStatus || '—' }}</span></div>
+            </div>
+          } @else {
+            <form class="edit-form" (ngSubmit)="save()">
+              <div class="edit-form__grid">
+                <label class="edit-form__field">
+                  <span>Housing status</span>
+                  <select name="housingStatus" [(ngModel)]="form.housingStatus">
+                    <option [ngValue]="null">Not recorded</option>
+                    @for (option of housingChoices(); track option) {
+                      <option [ngValue]="option">{{ option }}</option>
+                    }
+                  </select>
+                </label>
+                <label class="edit-form__field">
+                  <!-- Spec §6.1 — options from the "LivingGroup" lookup category. -->
+                  <span>Living situation</span>
+                  <select name="livingGroup" [(ngModel)]="form.livingGroup">
+                    <option [ngValue]="null">Not recorded</option>
+                    @for (option of livingGroupChoices(); track option) {
+                      <option [ngValue]="option">{{ option }}</option>
+                    }
+                  </select>
+                  @if (livingGroupChoices().length === 0) {
+                    <span class="edit-form__hint">No living group options are configured in Settings &rarr; Lookups yet.</span>
+                  }
+                </label>
+                <label class="edit-form__field">
+                  <span>Occupational status</span>
+                  <select name="employmentStatus" [(ngModel)]="form.employmentStatus">
+                    <option [ngValue]="null">Not recorded</option>
+                    @for (option of employmentChoices(); track option) {
+                      <option [ngValue]="option">{{ option }}</option>
+                    }
+                  </select>
+                </label>
+              </div>
+              <ng-container *ngTemplateOutlet="formFooter"></ng-container>
+            </form>
+          }
+        </section>
+
+        <!-- Phase 2 · Identity, language & interpreter -->
+        <section class="card">
+          <div class="card__header-row">
+            <h2 class="card__title">Identity, language &amp; interpreter</h2>
+            <span class="card__tools">
+              @if (lastSaved()?.key === 'identity') {
+                <span class="saved-hint">Saved</span>
+              }
+              <span class="chip" [class.chip--complete]="sectionComplete('identity')" [class.chip--pending]="!sectionComplete('identity')">
+                {{ sectionComplete('identity') ? 'Completed' : 'Pending' }}
+              </span>
+              @if (canEdit && !isEditing('identity')) {
+                <button type="button" class="btn-link" (click)="startEdit('identity')">Edit</button>
+              }
+            </span>
+          </div>
+          @if (!isEditing('identity')) {
+            <div class="field-grid">
+              <div class="field"><span class="field__label">Ethnicity</span><span class="field__value">{{ d.ethnicity || '—' }}</span></div>
+              <div class="field"><span class="field__label">Marital status</span><span class="field__value">{{ d.maritalStatus || '—' }}</span></div>
               <div class="field"><span class="field__label">Preferred language</span><span class="field__value">{{ d.preferredLanguage || '—' }}</span></div>
               <div class="field"><span class="field__label">Interpreter needed</span><span class="field__value">{{ d.interpreterNeeded ? 'Yes' : 'No' }}</span></div>
             </div>
-          </section>
-
-          <section class="card">
-            <div class="card__header-row">
-              <h2 class="card__title">Household, housing &amp; employment</h2>
-              <span class="chip" [class.chip--complete]="sections()[1].complete" [class.chip--pending]="!sections()[1].complete">
-                {{ sections()[1].complete ? 'Completed' : 'Pending' }}
-              </span>
-            </div>
-            <div class="field-grid">
-              <div class="field"><span class="field__label">Marital status</span><span class="field__value">{{ d.maritalStatus || '—' }}</span></div>
-              <div class="field"><span class="field__label">Living group</span><span class="field__value">{{ d.livingGroup || '—' }}</span></div>
-              <div class="field"><span class="field__label">Housing status</span><span class="field__value">{{ d.housingStatus || '—' }}</span></div>
-              <div class="field"><span class="field__label">Economic activity</span><span class="field__value">{{ d.employmentStatus || '—' }}</span></div>
-            </div>
-          </section>
-
-          <section class="card">
-            <div class="card__header-row">
-              <h2 class="card__title">Emergency contact</h2>
-              <span class="chip" [class.chip--complete]="sections()[2].complete" [class.chip--pending]="!sections()[2].complete">
-                {{ sections()[2].complete ? 'Completed' : 'Pending' }}
-              </span>
-            </div>
-            <div class="field-grid">
-              <div class="field"><span class="field__label">Name</span><span class="field__value">{{ d.emergencyContactName || '—' }}</span></div>
-              <div class="field"><span class="field__label">Phone</span><span class="field__value">{{ d.emergencyContactPhone || '—' }}</span></div>
-              <div class="field"><span class="field__label">Relationship</span><span class="field__value">{{ d.emergencyContactRelationship || '—' }}</span></div>
-            </div>
-          </section>
-
-          <section class="card">
-            <div class="card__header-row">
-              <h2 class="card__title">GP &amp; NHS details</h2>
-              <span class="chip" [class.chip--complete]="sections()[3].complete" [class.chip--pending]="!sections()[3].complete">
-                {{ sections()[3].complete ? 'Completed' : 'Pending' }}
-              </span>
-            </div>
-            <div class="field-grid">
-              <div class="field"><span class="field__label">GP name</span><span class="field__value">{{ d.gpName || '—' }}</span></div>
-              <div class="field"><span class="field__label">GP practice</span><span class="field__value">{{ d.gpPractice || '—' }}</span></div>
-              <div class="field"><span class="field__label">NHS number</span><span class="field__value">{{ d.nhsNumber || '—' }}</span></div>
-            </div>
-          </section>
-        } @else {
-          <section class="card">
-            <div class="card__header-row">
-              <h2 class="card__title">Complete demographics</h2>
-              <span class="section-title__hint">Fill in what you can now — every field can be updated later.</span>
-            </div>
+          } @else {
             <form class="edit-form" (ngSubmit)="save()">
-              <h3 class="edit-form__section">Identity &amp; language</h3>
               <div class="edit-form__grid">
                 <label class="edit-form__field">
                   <span>Ethnicity</span>
@@ -106,6 +131,58 @@
                     }
                   </select>
                 </label>
+                <label class="edit-form__field">
+                  <!-- Spec §6.1 — options from the "MaritalStatus" lookup category. -->
+                  <span>Marital status</span>
+                  <select name="maritalStatus" [(ngModel)]="form.maritalStatus">
+                    <option [ngValue]="null">Not recorded</option>
+                    @for (option of maritalStatusChoices(); track option) {
+                      <option [ngValue]="option">{{ option }}</option>
+                    }
+                  </select>
+                  @if (maritalStatusChoices().length === 0) {
+                    <span class="edit-form__hint">No marital status options are configured in Settings &rarr; Lookups yet.</span>
+                  }
+                </label>
+                <label class="edit-form__field">
+                  <span>Preferred language</span>
+                  <input type="text" name="preferredLanguage" [(ngModel)]="form.preferredLanguage" placeholder="English" />
+                </label>
+                <label class="edit-form__field edit-form__field--checkbox">
+                  <input type="checkbox" name="interpreterNeeded" [(ngModel)]="form.interpreterNeeded" />
+                  <span>Interpreter needed</span>
+                </label>
+              </div>
+              <ng-container *ngTemplateOutlet="formFooter"></ng-container>
+            </form>
+          }
+        </section>
+
+        <!-- Phase 2 · Migration & background -->
+        <section class="card">
+          <div class="card__header-row">
+            <h2 class="card__title">Migration &amp; background</h2>
+            <span class="card__tools">
+              @if (lastSaved()?.key === 'migration') {
+                <span class="saved-hint">Saved</span>
+              }
+              <span class="chip" [class.chip--complete]="sectionComplete('migration')" [class.chip--pending]="!sectionComplete('migration')">
+                {{ sectionComplete('migration') ? 'Completed' : 'Pending' }}
+              </span>
+              @if (canEdit && !isEditing('migration')) {
+                <button type="button" class="btn-link" (click)="startEdit('migration')">Edit</button>
+              }
+            </span>
+          </div>
+          @if (!isEditing('migration')) {
+            <div class="field-grid">
+              <div class="field"><span class="field__label">Nationality</span><span class="field__value">{{ d.nationality || '—' }}</span></div>
+              <div class="field"><span class="field__label">Country of origin</span><span class="field__value">{{ d.countryOfOrigin || '—' }}</span></div>
+            </div>
+            <p class="card__note">Migration information is never shared with third parties (e.g. the Home Office) without the guest's consent.</p>
+          } @else {
+            <form class="edit-form" (ngSubmit)="save()">
+              <div class="edit-form__grid">
                 <label class="edit-form__field">
                   <span>Nationality</span>
                   <input type="text" name="nationality" [(ngModel)]="form.nationality" placeholder="British" />
@@ -123,88 +200,43 @@
                     <span class="edit-form__hint">No country of origin options are configured in Settings &rarr; Lookups yet.</span>
                   }
                 </label>
-                <label class="edit-form__field">
-                  <span>Preferred language</span>
-                  <input type="text" name="preferredLanguage" [(ngModel)]="form.preferredLanguage" placeholder="English" />
-                </label>
-                <label class="edit-form__field edit-form__field--checkbox">
-                  <input type="checkbox" name="interpreterNeeded" [(ngModel)]="form.interpreterNeeded" />
-                  <span>Interpreter needed</span>
-                </label>
               </div>
+              <ng-container *ngTemplateOutlet="formFooter"></ng-container>
+            </form>
+          }
+        </section>
 
-              <h3 class="edit-form__section">Household, housing &amp; employment</h3>
-              <div class="edit-form__grid">
-                <label class="edit-form__field">
-                  <!-- Spec §6.1 — options from the "MaritalStatus" lookup category. -->
-                  <span>Marital status</span>
-                  <select name="maritalStatus" [(ngModel)]="form.maritalStatus">
-                    <option [ngValue]="null">Not recorded</option>
-                    @for (option of maritalStatusChoices(); track option) {
-                      <option [ngValue]="option">{{ option }}</option>
-                    }
-                  </select>
-                  @if (maritalStatusChoices().length === 0) {
-                    <span class="edit-form__hint">No marital status options are configured in Settings &rarr; Lookups yet.</span>
-                  }
-                </label>
-                <label class="edit-form__field">
-                  <!-- Spec §6.1 — options from the "LivingGroup" lookup category. -->
-                  <span>Living group</span>
-                  <select name="livingGroup" [(ngModel)]="form.livingGroup">
-                    <option [ngValue]="null">Not recorded</option>
-                    @for (option of livingGroupChoices(); track option) {
-                      <option [ngValue]="option">{{ option }}</option>
-                    }
-                  </select>
-                  @if (livingGroupChoices().length === 0) {
-                    <span class="edit-form__hint">No living group options are configured in Settings &rarr; Lookups yet.</span>
-                  }
-                </label>
-                <label class="edit-form__field">
-                  <span>Housing status</span>
-                  <select name="housingStatus" [(ngModel)]="form.housingStatus">
-                    <option [ngValue]="null">Not recorded</option>
-                    @for (option of housingChoices(); track option) {
-                      <option [ngValue]="option">{{ option }}</option>
-                    }
-                  </select>
-                </label>
-                <label class="edit-form__field">
-                  <span>Economic activity</span>
-                  <select name="employmentStatus" [(ngModel)]="form.employmentStatus">
-                    <option [ngValue]="null">Not recorded</option>
-                    @for (option of employmentChoices(); track option) {
-                      <option [ngValue]="option">{{ option }}</option>
-                    }
-                  </select>
-                </label>
-              </div>
-
-              <h3 class="edit-form__section">Emergency contact</h3>
-              <div class="edit-form__grid">
-                <label class="edit-form__field">
-                  <span>Emergency contact name</span>
-                  <input type="text" name="emergencyContactName" [(ngModel)]="form.emergencyContactName" placeholder="Contact name" />
-                </label>
-                <label class="edit-form__field">
-                  <span>Emergency contact phone</span>
-                  <input type="text" name="emergencyContactPhone" [(ngModel)]="form.emergencyContactPhone" placeholder="077 1734 6784" />
-                </label>
-                <label class="edit-form__field">
-                  <span>Relationship</span>
-                  <input type="text" name="emergencyContactRelationship" [(ngModel)]="form.emergencyContactRelationship" placeholder="e.g. Sister" />
-                </label>
-              </div>
-
-              <h3 class="edit-form__section">GP &amp; NHS details</h3>
+        <!-- Phase 2 · GP, NHS & PCN details -->
+        <section class="card">
+          <div class="card__header-row">
+            <h2 class="card__title">GP, NHS &amp; PCN details</h2>
+            <span class="card__tools">
+              @if (lastSaved()?.key === 'gp') {
+                <span class="saved-hint">Saved</span>
+              }
+              <span class="chip" [class.chip--complete]="sectionComplete('gp')" [class.chip--pending]="!sectionComplete('gp')">
+                {{ sectionComplete('gp') ? 'Completed' : 'Pending' }}
+              </span>
+              @if (canEdit && !isEditing('gp')) {
+                <button type="button" class="btn-link" (click)="startEdit('gp')">Edit</button>
+              }
+            </span>
+          </div>
+          @if (!isEditing('gp')) {
+            <div class="field-grid">
+              <div class="field"><span class="field__label">GP name</span><span class="field__value">{{ d.gpName || '—' }}</span></div>
+              <div class="field"><span class="field__label">GP practice / PCN</span><span class="field__value">{{ d.gpPractice || '—' }}</span></div>
+              <div class="field"><span class="field__label">NHS number</span><span class="field__value">{{ d.nhsNumber || '—' }}</span></div>
+            </div>
+          } @else {
+            <form class="edit-form" (ngSubmit)="save()">
               <div class="edit-form__grid">
                 <label class="edit-form__field">
                   <span>GP name</span>
                   <input type="text" name="gpName" [(ngModel)]="form.gpName" placeholder="Dr. Smith" />
                 </label>
                 <label class="edit-form__field">
-                  <span>GP practice</span>
+                  <span>GP practice / PCN</span>
                   <input type="text" name="gpPractice" [(ngModel)]="form.gpPractice" placeholder="Riverside Practice" />
                 </label>
                 <label class="edit-form__field">
@@ -212,65 +244,125 @@
                   <input type="text" name="nhsNumber" [(ngModel)]="form.nhsNumber" placeholder="000 000 0000" />
                 </label>
               </div>
-
-              @if (saveError()) {
-                <p class="form-error">{{ saveError() }}</p>
-              }
-              <div class="edit-form__actions">
-                <button type="button" class="btn-ghost" (click)="cancelEdit()">Cancel</button>
-                <button type="submit" class="btn-ghost" [disabled]="saving()">{{ saving() ? 'Saving…' : 'Save changes' }}</button>
-                <button type="button" class="btn-primary" [disabled]="saving()" (click)="save(true)">
-                  {{ saving() ? 'Saving…' : 'Save & continue to Initial conversation' }}
-                </button>
-              </div>
+              <ng-container *ngTemplateOutlet="formFooter"></ng-container>
             </form>
-          </section>
-        }
+          }
+        </section>
+
+        <!-- Phase 2 · Emergency / additional contact -->
+        <section class="card">
+          <div class="card__header-row">
+            <h2 class="card__title">Emergency / additional contact</h2>
+            <span class="card__tools">
+              @if (lastSaved()?.key === 'emergency') {
+                <span class="saved-hint">Saved</span>
+              }
+              <span class="chip" [class.chip--complete]="sectionComplete('emergency')" [class.chip--pending]="!sectionComplete('emergency')">
+                {{ sectionComplete('emergency') ? 'Completed' : 'Pending' }}
+              </span>
+              @if (canEdit && !isEditing('emergency')) {
+                <button type="button" class="btn-link" (click)="startEdit('emergency')">Edit</button>
+              }
+            </span>
+          </div>
+          @if (!isEditing('emergency')) {
+            <div class="field-grid">
+              <div class="field"><span class="field__label">Name</span><span class="field__value">{{ d.emergencyContactName || '—' }}</span></div>
+              <div class="field"><span class="field__label">Phone</span><span class="field__value">{{ d.emergencyContactPhone || '—' }}</span></div>
+              <div class="field"><span class="field__label">Relationship</span><span class="field__value">{{ d.emergencyContactRelationship || '—' }}</span></div>
+            </div>
+          } @else {
+            <form class="edit-form" (ngSubmit)="save()">
+              <div class="edit-form__grid">
+                <label class="edit-form__field">
+                  <span>Contact name</span>
+                  <input type="text" name="emergencyContactName" [(ngModel)]="form.emergencyContactName" placeholder="Contact name" />
+                </label>
+                <label class="edit-form__field">
+                  <span>Contact phone</span>
+                  <input type="text" name="emergencyContactPhone" [(ngModel)]="form.emergencyContactPhone" placeholder="077 1734 6784" />
+                </label>
+                <label class="edit-form__field">
+                  <span>Relationship</span>
+                  <input type="text" name="emergencyContactRelationship" [(ngModel)]="form.emergencyContactRelationship" placeholder="e.g. Sister" />
+                </label>
+              </div>
+              <ng-container *ngTemplateOutlet="formFooter"></ng-container>
+            </form>
+          }
+        </section>
+
+        <!-- Relationship to other services — lives on the clinical profile; linked, not duplicated. -->
+        <section class="card">
+          <div class="card__header-row">
+            <h2 class="card__title">Relationship to other services</h2>
+            <span class="card__tools">
+              <span class="chip" [class.chip--complete]="otherServicesRecorded()" [class.chip--pending]="!otherServicesRecorded()">
+                {{ otherServicesRecorded() ? 'Recorded' : 'Pending' }}
+              </span>
+              <button type="button" class="btn-link" (click)="goTo('clinical')">Edit in Clinical Details</button>
+            </span>
+          </div>
+          @if (clinical(); as c) {
+            <div class="field-grid">
+              <div class="field"><span class="field__label">MH team / clinician</span><span class="field__value">{{ c.mhTeamClinician || '—' }}</span></div>
+              <div class="field"><span class="field__label">Social services coordinator</span><span class="field__value">{{ c.socialServicesCoordinator || '—' }}</span></div>
+              <div class="field"><span class="field__label">CPN involved</span><span class="field__value">{{ c.cpnInvolved ? 'Yes' : 'No' }}</span></div>
+              <div class="field"><span class="field__label">Trust involvement</span><span class="field__value">{{ c.trustInvolvement ? 'Yes' : 'No' }}</span></div>
+            </div>
+          } @else {
+            <p class="empty-state">No service involvement recorded yet — it is captured on the Clinical Details tab.</p>
+          }
+        </section>
       </div>
 
       <aside class="demographics__side">
         <section class="card">
           <div class="card__header-row">
             <h2 class="card__title">Profile completion</h2>
-            @if (!editing()) {
-              <button type="button" class="btn-link" (click)="startEdit()">{{ allComplete() ? 'Edit' : 'Complete now' }}</button>
-            }
           </div>
           <div class="completion">
             <span class="completion__percent">{{ completionPercent() }}%</span>
             <p class="completion__summary">
-              {{ completedSectionCount() }} of {{ sections().length }} sections complete ·
-              {{ sections().length - completedSectionCount() }} remaining
+              {{ completedSectionCount() }} of {{ sections().length }} Phase 2 sections complete ·
+              {{ remainingSectionCount() }} section{{ remainingSectionCount() === 1 ? '' : 's' }} remaining
             </p>
             <ul class="completion__list">
-              @for (section of sections(); track section.label) {
+              <li class="completion__item">
+                <svg class="completion__tick" width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path transform="translate(3.25,6.25)" d="M 1.28 6.72 C 0.987 6.427 0.513 6.427 0.22 6.72 C -0.073 7.013 -0.073 7.487 0.22 7.78 L 4.72 12.28 C 5.013 12.573 5.487 12.573 5.78 12.28 L 16.78 1.28 C 17.073 0.987 17.073 0.513 16.78 0.22 C 16.487 -0.073 16.013 -0.073 15.72 0.22 L 5.25 10.689 L 1.28 6.72 Z" fill="currentColor" />
+                </svg>
+                <span class="completion__label">Registration details</span>
+                <span class="chip chip--complete">Completed</span>
+              </li>
+              @for (section of sections(); track section.key) {
                 <li class="completion__item">
                   @if (section.complete) {
                     <svg class="completion__tick" width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                      <path
-                        transform="translate(3.25,6.25)"
-                        d="M 1.28 6.72 C 0.987 6.427 0.513 6.427 0.22 6.72 C -0.073 7.013 -0.073 7.487 0.22 7.78 L 4.72 12.28 C 5.013 12.573 5.487 12.573 5.78 12.28 L 16.78 1.28 C 17.073 0.987 17.073 0.513 16.78 0.22 C 16.487 -0.073 16.013 -0.073 15.72 0.22 L 5.25 10.689 L 1.28 6.72 Z"
-                        fill="currentColor"
-                      />
+                      <path transform="translate(3.25,6.25)" d="M 1.28 6.72 C 0.987 6.427 0.513 6.427 0.22 6.72 C -0.073 7.013 -0.073 7.487 0.22 7.78 L 4.72 12.28 C 5.013 12.573 5.487 12.573 5.78 12.28 L 16.78 1.28 C 17.073 0.987 17.073 0.513 16.78 0.22 C 16.487 -0.073 16.013 -0.073 15.72 0.22 L 5.25 10.689 L 1.28 6.72 Z" fill="currentColor" />
                     </svg>
                   } @else {
                     <span class="completion__dot"></span>
                   }
                   <span class="completion__label">{{ section.label }}</span>
-                  <span class="chip" [class.chip--complete]="section.complete" [class.chip--pending]="!section.complete">
-                    {{ section.complete ? 'Completed' : 'Pending' }}
-                  </span>
+                  @if (canEdit && !section.complete && !isEditing(section.key)) {
+                    <button type="button" class="btn-link completion__edit" (click)="startEdit(section.key)">Complete</button>
+                  } @else {
+                    <span class="chip" [class.chip--complete]="section.complete" [class.chip--pending]="!section.complete">
+                      {{ section.complete ? 'Completed' : 'Pending' }}
+                    </span>
+                  }
                 </li>
               }
             </ul>
-            @if (savedAt(); as saved) {
-              <p class="completion__saved">Saved at {{ saved.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }}</p>
-            }
             <p class="completion__note">
-              Registration only captures the guest's identity and ethnicity — complete these sections when you have
-              time with the guest. They are not required to start the initial conversation but are important for
-              accurate commissioner reporting and clinical planning.
+              Complete these sections when you have time with the guest — they are not required to start the
+              initial conversation but are important for accurate commissioner reporting and clinical planning.
+              Each section saves independently.
             </p>
+            @if (!canEdit) {
+              <p class="completion__note completion__note--lock">Only managers can edit guest profiles to protect data integrity.</p>
+            }
           </div>
         </section>
 
@@ -309,3 +401,14 @@
     </div>
   }
 </div>
+
+<!-- Shared Save / Cancel footer for every section editor. -->
+<ng-template #formFooter>
+  @if (saveError()) {
+    <p class="form-error">{{ saveError() }}</p>
+  }
+  <div class="edit-form__actions">
+    <button type="button" class="btn-ghost" (click)="cancelEdit()">Cancel</button>
+    <button type="submit" class="btn-primary" [disabled]="saving()">{{ saving() ? 'Saving…' : 'Save section' }}</button>
+  </div>
+</ng-template>

@@ -1,83 +1,99 @@
 import { Component, computed, effect, inject, input, output, signal, WritableSignal } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { GuestDemographicsDto, GuestOverviewDto, LookupItemDto, UpdateDemographicsRequest } from '../../core/api-models';
+import { catchError, of } from 'rxjs';
+import {
+  ClinicalProfileDto,
+  GuestDemographicsDto,
+  GuestOverviewDto,
+  LookupItemDto,
+  UpdateDemographicsRequest,
+} from '../../core/api-models';
+import { AuthService } from '../../core/auth.service';
 import { EMPLOYMENT_STATUS_OPTIONS, ETHNICITY_OPTIONS, HOUSING_STATUS_OPTIONS } from '../../core/demographic-options';
 import { GuestsApiService } from '../../core/guests-api.service';
+import { Permissions } from '../../core/permissions';
 import { LookupCategories, SettingsApiService } from '../../core/settings-api.service';
 import { formatDate } from './guest-workspace.util';
 
-/** One row in the "Profile completion" side card — a demographics section and whether every
- *  one of its (text) fields has been recorded. */
+/** The five Phase 2 sections of the design's Demographics tab, each saved independently. */
+export type DemographicsSectionKey = 'contact' | 'identity' | 'migration' | 'gp' | 'emergency';
+
+/** One row in the "Profile completion" side card. */
 interface CompletionSection {
+  key: DemographicsSectionKey;
   label: string;
   complete: boolean;
 }
 
-/** The workspace tabs this tab can hand off to once the demographics are done. */
-export type DemographicsNextStep = 'initial' | 'dialog';
+/** The workspace tabs this tab can hand off to. */
+export type DemographicsNextStep = 'initial' | 'dialog' | 'clinical';
 
 /**
- * Demographics tab — layout from GuestDemographicsTab (project/screens/Components.bundle.js,
- * lines 15849-18990): a wide column of section cards ("Personal details — captured at
- * registration", then the phase-2 sections) beside a "Profile completion" summary card with
- * Completed/Pending chips per section.
+ * Demographics tab — design "Guest - Demographics Tab" (EMHIP - Additional Changes): a wide
+ * column of section cards beside a "Profile completion" summary card.
  *
- * This is where the demographic record is actually completed. Registration (the reception /
- * check-in step) only captures the identity fields plus ethnicity, so every other section here
- * — identity & language, household (marital status, living group, housing, employment),
- * emergency contact, GP & NHS — starts Pending and is filled in by the worker when they have
- * time with the guest. The side card carries the flow on: "Continue to Initial conversation"
- * hands off to the next workspace section (then DIALOG scores), which is where the clinical
- * record starts.
+ * "Personal details — captured at registration" is read-only (the reception / check-in step
+ * only captures identity, contact details, ethnicity and the referral). The remaining record
+ * is the design's five Phase 2 sections, each with its own Completed / Pending chip and its
+ * own Edit → Save, so "each section saves independently":
  *
- * Honest-data notes: the bundle's "Address", "Postcode" and "Sex" fields live on the Guest
- * record itself (captured at registration) and "Referral type" on the overview, so they are
- * not repeated here. The completion percentage is computed from the 14 real text fields of
- * GuestDemographicsDto (interpreterNeeded is a boolean and always "recorded", so it is
- * excluded from the count).
+ *   Contact & housing · Identity, language & interpreter · Migration & background ·
+ *   GP, NHS & PCN details · Emergency / additional contact
  *
- * Ethnicity, country of origin, marital status and living group are lookup-backed
- * (Settings → Lookups); ethnicity falls back to the built-in list when no lookup is configured.
+ * plus "Relationship to other services", which reads the clinical profile's service
+ * involvement (MH team / clinician, social services coordinator, CPN, Trust) — those fields
+ * belong to the Clinical Details tab, so this card links there instead of duplicating them.
+ *
+ * The API stores the whole demographics record in one PUT, so a section save sends the
+ * current record with only that section's fields changed. Editing follows the
+ * guests.demographics.edit permission (the design's "Only managers can edit guest profiles"
+ * note, made role-configurable); without it every section is read-only.
+ *
+ * The side card carries the flow on: "Continue to Initial conversation" hands off to the
+ * next workspace section (then DIALOG scores), where the clinical record starts.
  */
 @Component({
   selector: 'app-guest-demographics-tab',
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule, NgTemplateOutlet],
   templateUrl: './guest-demographics-tab.component.html',
   styleUrl: './guest-demographics-tab.component.scss',
 })
 export class GuestDemographicsTabComponent {
   private readonly guestsApi = inject(GuestsApiService);
   private readonly settingsApi = inject(SettingsApiService);
+  private readonly auth = inject(AuthService);
 
   readonly guestId = input.required<string>();
-  /** Registration-time identity fields (name, DOB, phone, email) shown in "Personal details".
-   *  Optional so the tab still renders standalone without the workspace shell. */
+  /** Registration-time identity fields shown in "Personal details". Optional so the tab still
+   *  renders standalone without the workspace shell. */
   readonly overview = input<GuestOverviewDto | null>(null);
-  /** Open straight into the editor (e.g. arriving from the registration success screen). */
+  /** Open the first pending section's editor straight away (arriving from registration). */
   readonly startEditing = input(false);
 
-  /** "Continue to Initial conversation" / "DIALOG scores" — the workspace switches tab. */
+  /** "Continue to …" — the workspace switches tab. */
   readonly continueTo = output<DemographicsNextStep>();
 
+  readonly canEdit = this.auth.hasPermission(Permissions.Guests.DemographicsEdit);
+
   readonly demographics = signal<GuestDemographicsDto | null>(null);
+  readonly clinical = signal<ClinicalProfileDto | null>(null);
   readonly loading = signal(true);
   readonly error = signal<string | null>(null);
 
-  readonly editing = signal(false);
+  /** Which section's editor is open — at most one at a time. */
+  readonly editingSection = signal<DemographicsSectionKey | null>(null);
   readonly saving = signal(false);
   readonly saveError = signal<string | null>(null);
-  /** Set after a successful save so the side card can confirm it. */
-  readonly savedAt = signal<Date | null>(null);
+  /** Which section was last saved, for its "Saved" confirmation. */
+  readonly lastSaved = signal<{ key: DemographicsSectionKey; at: Date } | null>(null);
 
   /** Admin-maintained option lists; a failed load just leaves the dropdown on its fallback. */
   readonly ethnicityLookup = signal<LookupItemDto[]>([]);
   readonly countryOfOriginOptions = signal<LookupItemDto[]>([]);
   readonly maritalStatusOptions = signal<LookupItemDto[]>([]);
   readonly livingGroupOptions = signal<LookupItemDto[]>([]);
-
-  readonly housingStatusOptions = HOUSING_STATUS_OPTIONS;
-  readonly employmentStatusOptions = EMPLOYMENT_STATUS_OPTIONS;
 
   /** The dropdown's choices: the active lookup labels (or the built-in list), plus any value
    *  already stored on the guest that is no longer offered, so opening the editor never
@@ -104,50 +120,45 @@ export class GuestDemographicsTabComponent {
 
   readonly formatDate = formatDate;
 
-  /** Sections mirrored from the design's completion list, backed by real fields only. */
+  /** The five Phase 2 sections, in the design's order, with their completion. */
   readonly sections = computed<CompletionSection[]>(() => {
     const d = this.demographics();
     const filled = (...values: (string | null | undefined)[]) => values.every((v) => !!v && v.trim() !== '');
     return [
+      { key: 'contact', label: 'Contact & housing', complete: !!d && filled(d.housingStatus, d.livingGroup, d.employmentStatus) },
       {
-        label: 'Identity & language',
-        complete: !!d && filled(d.ethnicity, d.nationality, d.countryOfOrigin, d.preferredLanguage),
+        key: 'identity',
+        label: 'Identity, language & interpreter',
+        complete: !!d && filled(d.ethnicity, d.preferredLanguage, d.maritalStatus),
       },
+      { key: 'migration', label: 'Migration & background', complete: !!d && filled(d.nationality, d.countryOfOrigin) },
+      { key: 'gp', label: 'GP, NHS & PCN details', complete: !!d && filled(d.gpName, d.gpPractice, d.nhsNumber) },
       {
-        label: 'Household, housing & employment',
-        complete: !!d && filled(d.maritalStatus, d.livingGroup, d.housingStatus, d.employmentStatus),
+        key: 'emergency',
+        label: 'Emergency / additional contact',
+        complete: !!d && filled(d.emergencyContactName, d.emergencyContactPhone, d.emergencyContactRelationship),
       },
-      {
-        label: 'Emergency contact',
-        complete:
-          !!d && filled(d.emergencyContactName, d.emergencyContactPhone, d.emergencyContactRelationship),
-      },
-      { label: 'GP & NHS details', complete: !!d && filled(d.gpName, d.gpPractice, d.nhsNumber) },
     ];
   });
 
   readonly completedSectionCount = computed(() => this.sections().filter((s) => s.complete).length);
-  readonly allComplete = computed(() => this.sections().length > 0 && this.completedSectionCount() === this.sections().length);
+  readonly remainingSectionCount = computed(() => this.sections().length - this.completedSectionCount());
+  readonly allComplete = computed(() => this.remainingSectionCount() === 0);
+
+  /** "Relationship to other services" — recorded on the clinical profile, shown here read-only. */
+  readonly otherServicesRecorded = computed(() => {
+    const c = this.clinical();
+    return !!c && (!!c.mhTeamClinician || !!c.socialServicesCoordinator || c.cpnInvolved || c.trustInvolvement);
+  });
 
   /** Percent of the 14 recordable text fields that are filled in. */
   readonly completionPercent = computed(() => {
     const d = this.demographics();
     if (!d) return 0;
     const fields: (string | null | undefined)[] = [
-      d.ethnicity,
-      d.nationality,
-      d.countryOfOrigin,
-      d.preferredLanguage,
-      d.maritalStatus,
-      d.livingGroup,
-      d.housingStatus,
-      d.employmentStatus,
-      d.emergencyContactName,
-      d.emergencyContactPhone,
-      d.emergencyContactRelationship,
-      d.gpName,
-      d.gpPractice,
-      d.nhsNumber,
+      d.ethnicity, d.nationality, d.countryOfOrigin, d.preferredLanguage, d.maritalStatus, d.livingGroup,
+      d.housingStatus, d.employmentStatus, d.emergencyContactName, d.emergencyContactPhone,
+      d.emergencyContactRelationship, d.gpName, d.gpPractice, d.nhsNumber,
     ];
     const filled = fields.filter((v) => !!v && v.trim() !== '').length;
     return Math.round((filled / fields.length) * 100);
@@ -179,21 +190,10 @@ export class GuestDemographicsTabComponent {
 
   private emptyForm(): UpdateDemographicsRequest {
     return {
-      ethnicity: null,
-      nationality: null,
-      countryOfOrigin: null,
-      preferredLanguage: null,
-      interpreterNeeded: false,
-      housingStatus: null,
-      employmentStatus: null,
-      maritalStatus: null,
-      livingGroup: null,
-      emergencyContactName: null,
-      emergencyContactPhone: null,
-      emergencyContactRelationship: null,
-      gpName: null,
-      gpPractice: null,
-      nhsNumber: null,
+      ethnicity: null, nationality: null, countryOfOrigin: null, preferredLanguage: null, interpreterNeeded: false,
+      housingStatus: null, employmentStatus: null, maritalStatus: null, livingGroup: null,
+      emergencyContactName: null, emergencyContactPhone: null, emergencyContactRelationship: null,
+      gpName: null, gpPractice: null, nhsNumber: null,
     };
   }
 
@@ -205,7 +205,10 @@ export class GuestDemographicsTabComponent {
         if (isCancelled()) return;
         this.demographics.set(dto);
         this.loading.set(false);
-        if (openEditor) this.startEdit();
+        if (openEditor && this.canEdit) {
+          const firstPending = this.sections().find((s) => !s.complete);
+          if (firstPending) this.startEdit(firstPending.key);
+        }
       },
       error: () => {
         if (isCancelled()) return;
@@ -213,52 +216,63 @@ export class GuestDemographicsTabComponent {
         this.loading.set(false);
       },
     });
+    // The other-services card is a courtesy view; a 403/404 simply leaves it empty.
+    this.guestsApi
+      .getClinicalProfile(guestId)
+      .pipe(catchError(() => of(null)))
+      .subscribe((profile) => {
+        if (!isCancelled()) this.clinical.set(profile);
+      });
   }
 
-  startEdit(): void {
+  isEditing(key: DemographicsSectionKey): boolean {
+    return this.editingSection() === key;
+  }
+
+  sectionComplete(key: DemographicsSectionKey): boolean {
+    return this.sections().find((s) => s.key === key)?.complete ?? false;
+  }
+
+  /** Opens one section's editor, seeded from the whole record (so the PUT carries every field). */
+  startEdit(key: DemographicsSectionKey): void {
+    if (!this.canEdit) return;
     const d = this.demographics();
     this.form = d
       ? {
-          ethnicity: d.ethnicity,
-          nationality: d.nationality,
-          countryOfOrigin: d.countryOfOrigin ?? null,
-          preferredLanguage: d.preferredLanguage,
-          interpreterNeeded: d.interpreterNeeded,
-          housingStatus: d.housingStatus,
-          employmentStatus: d.employmentStatus,
-          maritalStatus: d.maritalStatus ?? null,
-          livingGroup: d.livingGroup ?? null,
-          emergencyContactName: d.emergencyContactName,
-          emergencyContactPhone: d.emergencyContactPhone,
+          ethnicity: d.ethnicity, nationality: d.nationality, countryOfOrigin: d.countryOfOrigin ?? null,
+          preferredLanguage: d.preferredLanguage, interpreterNeeded: d.interpreterNeeded,
+          housingStatus: d.housingStatus, employmentStatus: d.employmentStatus,
+          maritalStatus: d.maritalStatus ?? null, livingGroup: d.livingGroup ?? null,
+          emergencyContactName: d.emergencyContactName, emergencyContactPhone: d.emergencyContactPhone,
           emergencyContactRelationship: d.emergencyContactRelationship,
-          gpName: d.gpName,
-          gpPractice: d.gpPractice,
-          nhsNumber: d.nhsNumber,
+          gpName: d.gpName, gpPractice: d.gpPractice, nhsNumber: d.nhsNumber,
         }
       : this.emptyForm();
     this.saveError.set(null);
-    this.editing.set(true);
+    this.editingSection.set(key);
   }
 
   cancelEdit(): void {
-    this.editing.set(false);
+    this.editingSection.set(null);
+    this.saveError.set(null);
   }
 
-  /** Save; when `andContinue` is set the workspace moves on to the initial conversation. */
-  save(andContinue = false): void {
+  /** Saves the open section (the whole record, with that section's edits). */
+  save(): void {
+    const key = this.editingSection();
+    if (!key) return;
     this.saving.set(true);
     this.saveError.set(null);
     this.guestsApi.updateDemographics(this.guestId(), this.form).subscribe({
       next: () => {
         this.saving.set(false);
-        this.editing.set(false);
-        this.savedAt.set(new Date());
+        this.editingSection.set(null);
+        this.lastSaved.set({ key, at: new Date() });
         this.load(this.guestId(), () => false);
-        if (andContinue) this.continueTo.emit('initial');
       },
       error: () => {
         this.saving.set(false);
-        this.saveError.set('Could not save these changes. You may not have permission to edit guest profiles.');
+        this.saveError.set('Could not save this section. You may not have permission to edit guest profiles.');
       },
     });
   }

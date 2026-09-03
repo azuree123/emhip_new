@@ -143,4 +143,8 @@ export const LookupCategories = {
   SecondaryReferralSubcategory: 'SecondaryReferralSubcategory',
   Gender: 'Gender',
   CountryOfOrigin: 'CountryOfOrigin',
+  /** "Primary reason for CPN referral" on the casework note's Refer-to-CPN toggle. */
+  CpnReferralReason: 'CpnReferralReason',
+  /** "Reason for declining" on the MDT queue. */
+  MdtDeclineReason: 'MdtDeclineReason',
 } as const;
