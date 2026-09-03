@@ -1,0 +1,169 @@
+<div class="page">
+  <header class="page-header">
+    <div class="page-header__text">
+      <h1 class="page-header__title">Contact History</h1>
+      <p class="page-header__subtitle">Every contact logged against a guest in the hub, most recent first.</p>
+    </div>
+  </header>
+
+  <section class="card">
+    <div class="toolbar">
+      <div class="search-box">
+        <svg width="15" height="15" viewBox="0 0 15.001 15.001" fill="none" class="search-box__icon" aria-hidden="true">
+          <path
+            d="M 14.506 15.496 C 14.779 15.769 15.222 15.769 15.496 15.496 C 15.769 15.222 15.769 14.779 15.496 14.506 L 15.001 15.001 L 14.506 15.496 Z M 15.001 15.001 L 15.496 14.506 L 11.165 10.175 L 10.67 10.67 L 10.175 11.165 L 14.506 15.496 L 15.001 15.001 Z M 10.67 10.67 L 11.165 11.165 C 12.468 9.861 13.2 8.094 13.2 6.25 L 12.5 6.25 L 11.8 6.25 C 11.8 7.722 11.216 9.134 10.175 10.175 L 10.67 10.67 Z M 12.5 6.25 L 13.2 6.25 C 13.2 4.407 12.468 2.639 11.165 1.336 L 10.67 1.831 L 10.175 2.326 C 11.216 3.366 11.8 4.778 11.8 6.25 L 12.5 6.25 Z M 10.67 1.831 L 11.165 1.336 C 9.861 0.032 8.094 -0.7 6.25 -0.7 L 6.25 0 L 6.25 0.7 C 7.722 0.7 9.134 1.285 10.175 2.326 L 10.67 1.831 Z M 6.25 0 L 6.25 -0.7 C 4.407 -0.7 2.639 0.032 1.336 1.336 L 1.831 1.831 L 2.326 2.326 C 3.366 1.285 4.778 0.7 6.25 0.7 L 6.25 0 Z M 1.831 1.831 L 1.336 1.336 C 0.032 2.639 -0.7 4.407 -0.7 6.25 L 0 6.25 L 0.7 6.25 C 0.7 4.778 1.285 3.366 2.326 2.326 L 1.831 1.831 Z M 0 6.25 L -0.7 6.25 C -0.7 8.094 0.032 9.861 1.336 11.165 L 1.831 10.67 L 2.326 10.175 C 1.285 9.134 0.7 7.722 0.7 6.25 L 0 6.25 Z M 1.831 10.67 L 1.336 11.165 C 2.639 12.468 4.407 13.2 6.25 13.2 L 6.25 12.5 L 6.25 11.8 C 4.778 11.8 3.366 11.216 2.326 10.175 L 1.831 10.67 Z M 6.25 12.5 L 6.25 13.2 C 8.094 13.2 9.861 12.468 11.165 11.165 L 10.67 10.67 L 10.175 10.175 C 9.134 11.216 7.722 11.8 6.25 11.8 L 6.25 12.5 Z"
+            fill="currentColor"
+          />
+        </svg>
+        <input
+          type="text"
+          class="search-box__input"
+          placeholder="Search by guest name, ID or note…"
+          [value]="searchTerm"
+          (input)="onSearchInput($any($event.target).value)"
+        />
+      </div>
+
+      <div class="filter-cluster">
+        <button type="button" class="filter-reset" title="Reset filters" (click)="clearFilters()">
+          <svg width="17" height="12" viewBox="0 0 16.5 11.5" fill="none" aria-hidden="true">
+            <path
+              d="M 9.75 10 C 10.164 10 10.5 10.336 10.5 10.75 C 10.5 11.164 10.164 11.5 9.75 11.5 L 6.75 11.5 C 6.336 11.5 6 11.164 6 10.75 C 6 10.336 6.336 10 6.75 10 L 9.75 10 Z M 12.75 5 C 13.164 5 13.5 5.336 13.5 5.75 C 13.5 6.164 13.164 6.5 12.75 6.5 L 3.75 6.5 C 3.336 6.5 3 6.164 3 5.75 C 3 5.336 3.336 5 3.75 5 L 12.75 5 Z M 15.75 0 C 16.164 0 16.5 0.336 16.5 0.75 C 16.5 1.164 16.164 1.5 15.75 1.5 L 0.75 1.5 C 0.336 1.5 0 1.164 0 0.75 C 0 0.336 0.336 0 0.75 0 L 15.75 0 Z"
+              fill="currentColor"
+            />
+          </svg>
+          <span class="visually-hidden">Reset filters</span>
+        </button>
+
+        <button
+          type="button"
+          class="filter-chip"
+          [class.filter-chip--on]="mineOnly()"
+          [attr.aria-pressed]="mineOnly()"
+          title="Only contacts you logged yourself"
+          (click)="toggleMine()"
+        >
+          <span class="filter-chip__dot" aria-hidden="true"></span>
+          My contacts
+        </button>
+
+        <div class="filter">
+          <select class="filter__select" aria-label="Filter by contact type" [value]="typeFilter()" (change)="onTypeChange($any($event.target).value)">
+            @for (option of typeOptions; track option.value) {
+              <option [value]="option.value">{{ option.label }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="filter">
+          <select class="filter__select" aria-label="Filter by outcome" [value]="outcomeFilter()" (change)="onOutcomeChange($any($event.target).value)">
+            @for (option of outcomeOptions; track option.value) {
+              <option [value]="option.value">{{ option.label }}</option>
+            }
+          </select>
+        </div>
+
+        @if (!mineOnly()) {
+          <emhip-staff-picker
+            class="filter-picker"
+            placeholder="Logged by"
+            searchPlaceholder="Search staff…"
+            [allowClear]="true"
+            [ngModel]="loggedByFilter()"
+            (ngModelChange)="onLoggedByChange($event)"
+          />
+        }
+
+        <emhip-staff-picker
+          class="filter-picker"
+          placeholder="Assigned CMHW"
+          searchPlaceholder="Search CMHW…"
+          [allowClear]="true"
+          [ngModel]="cmhwFilter()"
+          (ngModelChange)="onCmhwChange($event)"
+        />
+
+        <div class="filter">
+          <select class="filter__select" aria-label="Filter by period" [value]="period()" (change)="onPeriodChange($any($event.target).value)">
+            @for (option of periodOptions; track option.value) {
+              <option [value]="option.value">{{ option.label }}</option>
+            }
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="table-head">
+      <span class="col">Guest</span>
+      <span class="col">Date &amp; time</span>
+      <span class="col">Type</span>
+      <span class="col">Outcome</span>
+      <span class="col">Logged by</span>
+      <span class="col">Assigned CMHW</span>
+      <span class="col">Notes</span>
+      <span class="col">Actions</span>
+    </div>
+
+    @if (error()) {
+      <div class="state-banner state-banner--error">
+        <span>{{ error() }}</span>
+        <button type="button" class="retry-btn" (click)="resetAndLoad()">Retry</button>
+      </div>
+    } @else if (loading()) {
+      <div class="state-banner">Loading contacts…</div>
+    } @else if (rows().length === 0) {
+      <div class="state-banner">No contacts match these filters.</div>
+    } @else {
+      <div class="rows">
+        @for (row of rows(); track row.id) {
+          <div class="row" (click)="openGuest(row.guestId)">
+            <span class="col name-cell">
+              <span class="avatar">{{ initials(row) }}</span>
+              <span class="name-block">
+                <span class="name-block__name">{{ row.guestName }}</span>
+                <span class="name-block__id">
+                  ID: G-{{ row.guestNumber }}
+                  <span class="badge" [attr.data-status]="row.guestStatus">{{ statusLabel(row.guestStatus) }}</span>
+                </span>
+              </span>
+            </span>
+            <span class="col">{{ formatDateTime(row.occurredAt) }}</span>
+            <span class="col">{{ humanize(row.type) }}</span>
+            <span class="col">
+              @if (outcomeChip(row.outcome); as chip) {
+                <span class="pill" [style.background]="chip.bg" [style.color]="chip.fg">{{ chip.label }}</span>
+              }
+            </span>
+            <span class="col">{{ row.createdByName }}</span>
+            <span class="col">{{ row.assignedCmhwName ?? '—' }}</span>
+            <span class="col col--notes" [title]="row.notes ?? ''">{{ row.notes || '—' }}</span>
+            <span class="col">
+              <button type="button" class="open-btn" (click)="$event.stopPropagation(); openGuest(row.guestId)">
+                Open
+                <svg width="14" height="14" viewBox="0 0 13.5 13.5" fill="none" aria-hidden="true">
+                  <path
+                    d="M 2.437 1.125 C 1.713 1.125 1.125 1.713 1.125 2.438 L 1.125 11.063 C 1.125 11.787 1.713 12.375 2.437 12.375 L 11.062 12.375 C 11.787 12.375 12.375 11.787 12.375 11.063 L 12.375 8.063 C 12.375 7.752 12.627 7.5 12.937 7.5 C 13.248 7.5 13.5 7.752 13.5 8.063 L 13.5 11.063 C 13.5 12.409 12.408 13.5 11.062 13.5 L 2.437 13.5 C 1.091 13.5 0 12.409 0 11.063 L 0 2.438 C 0 1.091 1.091 0 2.437 0 L 5.437 0 C 5.748 0 6 0.252 6 0.563 C 6 0.873 5.748 1.125 5.437 1.125 L 2.437 1.125 Z M 7.5 0.563 C 7.5 0.252 7.752 0 8.062 0 L 12.938 0 C 13.248 0 13.5 0.252 13.5 0.563 L 13.5 5.438 C 13.5 5.748 13.248 6 12.938 6 C 12.627 6 12.375 5.748 12.375 5.438 L 12.375 1.921 L 8.46 5.835 C 8.24 6.055 7.884 6.055 7.665 5.835 C 7.445 5.616 7.445 5.259 7.665 5.04 L 11.58 1.125 L 8.062 1.125 C 7.752 1.125 7.5 0.873 7.5 0.563 Z"
+                    fill="currentColor"
+                  />
+                </svg>
+              </button>
+            </span>
+          </div>
+        }
+      </div>
+
+      <div class="load-footer">
+        <span class="load-footer__showing">{{ showingLabel() }}</span>
+        <span class="load-footer__controls">
+          @if (loadingMore()) {
+            <span class="load-footer__note">Loading more contacts…</span>
+          } @else if (hasMore()) {
+            <button type="button" class="load-more-btn" (click)="loadMore()">Load more</button>
+          } @else {
+            <span class="load-footer__note">You've reached the end.</span>
+          }
+        </span>
+      </div>
+    }
+  </section>
+</div>

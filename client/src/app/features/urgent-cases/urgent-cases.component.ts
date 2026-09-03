@@ -1,26 +1,22 @@
 import { CommonModule, formatDate } from '@angular/common';
-import { Component, OnDestroy, OnInit, computed, effect, inject, signal, viewChild } from '@angular/core';
+import { Component, OnDestroy, OnInit, computed, effect, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { AuthService } from '../../core/auth.service';
 import {
-  AddContactRequest,
   AddNoteRequest,
-  ContactOutcome,
-  ContactType,
   EscalateToCmhtRequest,
   GuestContactSummaryDto,
   GuestOverviewDto,
   ResolveUrgentCaseRequest,
-  ScheduleFollowUpRequest,
   UrgentCaseDto,
   UrgentEpisodeDto,
 } from '../../core/api-models';
 import { GuestsApiService } from '../../core/guests-api.service';
+import { Permissions } from '../../core/permissions';
 import { UrgentCasesApiService } from '../../core/urgent-cases-api.service';
 import { UrgentCasesHubService } from '../../core/urgent-cases-hub.service';
-import { CustomFieldsComponent } from '../../shared/custom-fields.component';
-import { StaffPickerComponent } from '../../shared/staff-picker.component';
+import { CaseworkNoteDrawerComponent } from '../guest-workspace/casework-note-drawer.component';
 
 const WINDOW_HOURS = 72;
 
@@ -52,16 +48,25 @@ const RISK_FLAGS: RiskFlagDef[] = [
  * live via UrgentCasesHubService (SignalR) per the README's "near-real-time (polling or SignalR)"
  * requirement — the same hub connection the shell already opens for the sidebar badge count.
  * Risk-level / CMHW / overdue filters are applied client-side (the endpoint returns the full
- * active set). The drawer is backed by the guest overview (pinned notes + recent contacts) plus
- * the open urgent episode (CMHT escalation state). "Escalate to CMHT" (Desktop65 modal),
- * "Mark episode as resolved" and the resolved "Urgent Episode Record" history (Desktop57) are
- * backed by UrgentCasesApiService.escalateToCmht/resolve/getResolved; resolutions arrive live
- * over SignalR ("urgentCaseResolved") and drop the case from the list.
+ * active set).
+ *
+ * Every active case carries the same three actions: "Open Guest" (the workspace), "Add
+ * contact" (the shared Add Contact popup — CaseworkNoteDrawerComponent, the same record the
+ * workspace header writes) and "View Crisis Episode" (the Desktop58 details drawer). The
+ * drawer's own action row offers the same "Add contact"; the separate "Log follow-up"
+ * scheduling modal and the bare contact-row modal are gone — a contact is always recorded
+ * through the one popup, so the CPN toggle and the SBAR record are never bypassed.
+ *
+ * The drawer is backed by the guest overview (pinned notes + recent contacts) plus the open
+ * urgent episode (CMHT escalation state). "Escalate to CMHT" (Desktop65 modal), "Mark episode
+ * as resolved" and the resolved "Urgent Episode Record" history (Desktop57) are backed by
+ * UrgentCasesApiService.escalateToCmht/resolve/getResolved; resolutions arrive live over
+ * SignalR ("urgentCaseResolved") and drop the case from the list.
  */
 @Component({
   selector: 'app-urgent-cases',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, StaffPickerComponent, CustomFieldsComponent],
+  imports: [CommonModule, FormsModule, RouterLink, CaseworkNoteDrawerComponent],
   templateUrl: './urgent-cases.component.html',
   styleUrl: './urgent-cases.component.scss',
 })
@@ -108,14 +113,12 @@ export class UrgentCasesComponent implements OnInit, OnDestroy {
     });
   });
 
-  readonly modalOpen = signal(false);
-  readonly modalGuestId = signal('');
-  readonly modalGuestName = signal('');
-  readonly saving = signal(false);
-  readonly saveError = signal<string | null>(null);
   readonly exporting = signal(false);
 
-  scheduleForm = { dueDate: '', assigneeStaffId: this.auth.current().staffId, notes: '' };
+  /** "Add contact" writes a casework note (the shared popup), so it follows the notes-add claim. */
+  readonly canAddContact = this.auth.hasPermission(Permissions.Guests.NotesAdd);
+  /** The guest the Add Contact popup is open for; null when closed. */
+  readonly contactDrawerGuest = signal<{ id: string; name: string } | null>(null);
 
   // ---- Resolved episodes (Desktop57) ----
   readonly resolvedEpisodes = signal<UrgentEpisodeDto[]>([]);
@@ -159,14 +162,6 @@ export class UrgentCasesComponent implements OnInit, OnDestroy {
   readonly noteError = signal<string | null>(null);
   noteBody = '';
 
-  // "Log urgent follow-up note" modal — records a contact via GuestsApiService.addContact.
-  readonly contactTypes: ContactType[] = ['PhoneCall', 'InPerson', 'VideoCall', 'TextMessage', 'Email'];
-  readonly contactOutcomes: ContactOutcome[] = ['Successful', 'NoAnswer', 'LeftMessage', 'Declined', 'Rescheduled'];
-  readonly contactModalOpen = signal(false);
-  readonly savingContact = signal(false);
-  readonly contactError = signal<string | null>(null);
-  contactForm = { type: 'PhoneCall' as ContactType, outcome: 'Successful' as ContactOutcome, occurredAt: this.nowLocal(), notes: '' };
-
   // "Escalate to CMHT" modal (Desktop65). Reason options are the design's fixed list; the
   // request carries them as plain text.
   readonly escalationReasons = [
@@ -188,26 +183,9 @@ export class UrgentCasesComponent implements OnInit, OnDestroy {
   readonly resolveError = signal<string | null>(null);
   resolveNote = '';
 
-  // ---- Admin-defined extra fields ----------------------------------------
-
-  private readonly followUpFields = viewChild<CustomFieldsComponent>('followUpFields');
-  private readonly contactFields = viewChild<CustomFieldsComponent>('contactFields');
-  /** Mirror the panels' own hasFields(), so an unconfigured modal looks exactly as it did before. */
-  readonly hasFollowUpFields = signal(false);
-  readonly hasContactFields = signal(false);
-  /**
-   * Set when the follow-up / contact was created but its extra answers were rejected — Save then
-   * retries only the answers, so a second press can never create a duplicate record.
-   */
-  private pendingFollowUpExtras: (() => void) | null = null;
-  private pendingContactExtras: (() => void) | null = null;
-
   private tickHandle?: ReturnType<typeof setInterval>;
 
   constructor() {
-    effect(() => this.hasFollowUpFields.set(this.followUpFields()?.hasFields() ?? false));
-    effect(() => this.hasContactFields.set(this.contactFields()?.hasFields() ?? false));
-
     // Live escalations pushed over SignalR: prepend new guests, update in place if we already
     // have a row for that guest (e.g. its risk flags changed).
     effect(() => {
@@ -343,79 +321,29 @@ export class UrgentCasesComponent implements OnInit, OnDestroy {
     }
   }
 
-  openLogFollowUp(c: UrgentCaseDto): void {
-    this.modalGuestId.set(c.guestId);
-    this.modalGuestName.set(c.guestName);
-    this.scheduleForm = { dueDate: '', assigneeStaffId: this.auth.current().staffId, notes: '' };
-    this.saveError.set(null);
-    this.pendingFollowUpExtras = null;
-    this.modalOpen.set(true);
+  // ---- "Add contact" — the shared Add Contact popup (casework note) ----
+
+  /** Row button or drawer button: open the popup for that guest. */
+  openAddContact(c: UrgentCaseDto, event?: Event): void {
+    event?.stopPropagation();
+    if (!this.canAddContact) return;
+    this.contactDrawerGuest.set({ id: c.guestId, name: c.guestName });
   }
 
-  closeModal(): void {
-    this.pendingFollowUpExtras = null;
-    this.modalOpen.set(false);
-  }
-
-  submitModal(): void {
-    // Retry path: the follow-up exists, only its extra answers still have to land.
-    const retry = this.pendingFollowUpExtras;
-    if (retry) {
-      this.saving.set(true);
-      this.saveError.set(null);
-      retry();
-      return;
-    }
-
-    if (!this.scheduleForm.dueDate || !this.scheduleForm.assigneeStaffId) {
-      this.saveError.set('Due date and assignee are required.');
-      return;
-    }
-    const panel = this.followUpFields();
-    if (panel?.hasFields() && !panel.isValid()) {
-      panel.showErrors.set(true);
-      this.saveError.set('Complete the required additional fields.');
-      return;
-    }
-    this.saving.set(true);
-    this.saveError.set(null);
-    const req: ScheduleFollowUpRequest = {
-      dueDate: new Date(this.scheduleForm.dueDate).toISOString(),
-      assigneeStaffId: this.scheduleForm.assigneeStaffId,
-      notes: this.scheduleForm.notes || null,
-    };
-    this.guestsApi.scheduleFollowUp(this.modalGuestId(), req).subscribe({
-      next: ({ id }) => this.saveFollowUpExtras(panel, id),
-      error: () => {
-        this.saving.set(false);
-        this.saveError.set('Could not schedule the follow-up.');
-      },
-    });
+  closeAddContact(): void {
+    this.contactDrawerGuest.set(null);
   }
 
   /**
-   * Second leg of "Log follow-up": the follow-up already exists, so a rejection here is reported
-   * as "scheduled, extras not saved" and the modal stays open to retry just the answers.
+   * `submitted` is false for a draft save — the popup stays open. A submitted note also wrote a
+   * Contact row, so the open details drawer (if it is this guest's) is refreshed to show it in
+   * the episode timeline.
    */
-  private saveFollowUpExtras(panel: CustomFieldsComponent | undefined, followUpId: string): void {
-    if (!panel?.hasFields()) {
-      this.pendingFollowUpExtras = null;
-      this.saving.set(false);
-      this.modalOpen.set(false);
-      return;
-    }
-    panel.saveFor(followUpId).subscribe({
-      next: () => {
-        this.pendingFollowUpExtras = null;
-        this.saving.set(false);
-        this.modalOpen.set(false);
-      },
-      error: () => {
-        this.pendingFollowUpExtras = () => this.saveFollowUpExtras(panel, followUpId);
-        this.saving.set(false);
-        this.saveError.set('The follow-up was scheduled, but its additional information could not be saved. Save again to retry.');
-      },
-    });
+  contactSaved(submitted: boolean): void {
+    if (!submitted) return;
+    const guest = this.contactDrawerGuest();
+    this.contactDrawerGuest.set(null);
+    if (guest && this.detailsGuestId() === guest.id) this.fetchDetails(guest.id);
   }
 
   // ---- "Urgent Case Details" drawer (Desktop58) ----
@@ -526,88 +454,6 @@ export class UrgentCasesComponent implements OnInit, OnDestroy {
     });
   }
 
-  // ---- "Log urgent follow-up note" (records a contact) ----
-
-  openLogContact(): void {
-    this.contactForm = { type: 'PhoneCall', outcome: 'Successful', occurredAt: this.nowLocal(), notes: '' };
-    this.contactError.set(null);
-    this.pendingContactExtras = null;
-    this.contactModalOpen.set(true);
-  }
-
-  closeContactModal(): void {
-    this.pendingContactExtras = null;
-    this.contactModalOpen.set(false);
-  }
-
-  submitContact(): void {
-    // Retry path: the contact exists, only its extra answers still have to land.
-    const retry = this.pendingContactExtras;
-    if (retry) {
-      this.savingContact.set(true);
-      this.contactError.set(null);
-      retry();
-      return;
-    }
-
-    const guestId = this.detailsGuestId();
-    if (!guestId) return;
-    if (!this.contactForm.occurredAt) {
-      this.contactError.set('Date/time of contact is required.');
-      return;
-    }
-    const panel = this.contactFields();
-    if (panel?.hasFields() && !panel.isValid()) {
-      panel.showErrors.set(true);
-      this.contactError.set('Complete the required additional fields.');
-      return;
-    }
-    this.savingContact.set(true);
-    this.contactError.set(null);
-    const req: AddContactRequest = {
-      type: this.contactForm.type,
-      outcome: this.contactForm.outcome,
-      occurredAt: new Date(this.contactForm.occurredAt).toISOString(),
-      notes: this.contactForm.notes || null,
-    };
-    this.guestsApi.addContact(guestId, req).subscribe({
-      next: ({ id }) => this.saveContactExtras(panel, id, guestId),
-      error: () => {
-        this.savingContact.set(false);
-        this.contactError.set('Could not log the follow-up note.');
-      },
-    });
-  }
-
-  /**
-   * Second leg of "Log urgent follow-up note": the contact is already on the guest's record, so a
-   * rejection here is reported as "recorded, extras not saved" — the drawer is refreshed either
-   * way and the modal stays open to retry just the answers.
-   */
-  private saveContactExtras(panel: CustomFieldsComponent | undefined, contactId: string, guestId: string): void {
-    if (!panel?.hasFields()) {
-      this.pendingContactExtras = null;
-      this.savingContact.set(false);
-      this.contactModalOpen.set(false);
-      this.fetchDetails(guestId);
-      return;
-    }
-    panel.saveFor(contactId).subscribe({
-      next: () => {
-        this.pendingContactExtras = null;
-        this.savingContact.set(false);
-        this.contactModalOpen.set(false);
-        this.fetchDetails(guestId);
-      },
-      error: () => {
-        this.pendingContactExtras = () => this.saveContactExtras(panel, contactId, guestId);
-        this.savingContact.set(false);
-        this.contactError.set('The contact was recorded, but its additional information could not be saved. Save again to retry.');
-        this.fetchDetails(guestId);
-      },
-    });
-  }
-
   // ---- "Escalate to CMHT" (Desktop65 modal) ----
 
   openEscalate(): void {
@@ -713,9 +559,4 @@ export class UrgentCasesComponent implements OnInit, OnDestroy {
       : `No — ${UrgentCasesComponent.formatHm(-diffH)} past deadline`;
   }
 
-  private nowLocal(): string {
-    const d = new Date();
-    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-    return d.toISOString().slice(0, 16);
-  }
 }

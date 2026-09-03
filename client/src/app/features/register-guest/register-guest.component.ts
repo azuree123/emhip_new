@@ -77,7 +77,9 @@ function pastDateValidator(): ValidatorFn {
  *                                              until the guest exists)
  *   POST /guests/{id}/initial-conversation  -> recordInitialConversation()
  *   POST /guests/{id}/dialog-assessments    -> recordDialogAssessment()
- *   PUT  /guests/{id}/demographics          -> updateDemographics()
+ *   PUT  /guests/{id}/demographics          -> updateDemographics() (ethnicity only — the rest of
+ *                                              the demographic record is completed on the
+ *                                              workspace Demographics tab)
  * plus, only when the risk screening flagged anything,
  *   POST /guests/{id}/risk-assessments      -> recordRiskAssessment()  (Urgent Cases escalation)
  *
@@ -164,7 +166,7 @@ export class RegisterGuestComponent {
     // One call, four effects: allocation, urgent flag, next-contact follow-up and actions.
     conversation: 'Initial conversation (allocation, follow-up & actions)',
     dialog: 'DIALOG assessment',
-    demographics: 'Demographics',
+    demographics: 'Demographics (ethnicity)',
     risk: 'Risk assessment (Urgent Cases escalation)',
   };
 
@@ -205,7 +207,10 @@ export class RegisterGuestComponent {
     return new Date().toISOString().slice(0, 10);
   }
 
-  // ---- Step 1 · Demographics (Desktop83) ----
+  // ---- Step 1 · Demographics (Desktop83) — reception-level fields only ----
+  // The remaining demographic record (housing, employment, nationality, country of origin,
+  // language, emergency contact, GP/NHS, marital status, living group) is completed on the
+  // workspace Demographics tab, not here — see DemographicsStepComponent.
   protected readonly demographicsForm = this.fb.group({
     personal: this.fb.nonNullable.group({
       firstName: ['', Validators.required],
@@ -214,29 +219,11 @@ export class RegisterGuestComponent {
       phoneNumber: ['', Validators.required],
       ethnicity: ['', Validators.required],
       gender: [''],
-      // Spec §6.1 — real UpdateDemographicsRequest fields, filled from the MaritalStatus /
-      // LivingGroup lookups by the step component.
-      maritalStatus: [''],
     }),
     contact: this.fb.nonNullable.group({
       address: [''],
       postCode: [''],
       contactEmail: ['', Validators.email],
-      housingStatus: [''],
-      nationality: [''],
-      countryOfOrigin: [''],
-      livingGroup: [''],
-      employmentStatus: [''],
-    }),
-    additional: this.fb.nonNullable.group({
-      preferredLanguage: [''],
-      interpreterNeeded: [false],
-      emergencyContactName: [''],
-      emergencyContactPhone: [''],
-      emergencyContactRelationship: [''],
-      gpName: [''],
-      gpPractice: [''],
-      nhsNumber: [''],
     }),
     referral: this.fb.nonNullable.group({
       /** RegisterGuestRequest.referralSource. */
@@ -462,9 +449,10 @@ export class RegisterGuestComponent {
     this.router.navigate(['/guests'], { queryParamsHandling: 'preserve' });
   }
 
+  /** Success screen CTA — lands on the Demographics tab, where the remaining sections are Pending. */
   protected goToWorkspace(): void {
     const id = this.guestId();
-    if (id) this.router.navigate(['/guests', id]);
+    if (id) this.router.navigate(['/guests', id], { queryParams: { tab: 'demographics' } });
   }
 
   protected primaryLabel(): string {
@@ -655,24 +643,29 @@ export class RegisterGuestComponent {
     };
   }
 
+  /**
+   * Only ethnicity is captured at registration (it feeds the demographics reports). Every other
+   * field starts empty and is filled in on the workspace Demographics tab — the guest is brand
+   * new here, so writing nulls cannot overwrite anything.
+   */
   private buildDemographicsRequest(): UpdateDemographicsRequest {
-    const { personal, contact, additional } = this.demographicsForm.getRawValue();
+    const { personal } = this.demographicsForm.getRawValue();
     return {
       ethnicity: personal.ethnicity || null,
-      nationality: contact.nationality || null,
-      countryOfOrigin: contact.countryOfOrigin || null,
-      preferredLanguage: additional.preferredLanguage || null,
-      interpreterNeeded: additional.interpreterNeeded,
-      housingStatus: contact.housingStatus || null,
-      employmentStatus: contact.employmentStatus || null,
-      maritalStatus: personal.maritalStatus || null,
-      livingGroup: contact.livingGroup || null,
-      emergencyContactName: additional.emergencyContactName || null,
-      emergencyContactPhone: additional.emergencyContactPhone || null,
-      emergencyContactRelationship: additional.emergencyContactRelationship || null,
-      gpName: additional.gpName || null,
-      gpPractice: additional.gpPractice || null,
-      nhsNumber: additional.nhsNumber || null,
+      nationality: null,
+      countryOfOrigin: null,
+      preferredLanguage: null,
+      interpreterNeeded: false,
+      housingStatus: null,
+      employmentStatus: null,
+      maritalStatus: null,
+      livingGroup: null,
+      emergencyContactName: null,
+      emergencyContactPhone: null,
+      emergencyContactRelationship: null,
+      gpName: null,
+      gpPractice: null,
+      nhsNumber: null,
     };
   }
 
@@ -819,6 +812,6 @@ export class RegisterGuestComponent {
 
   protected successMessage(): string {
     const firstName = this.demographicsForm.getRawValue().personal.firstName || 'The guest';
-    return `${firstName} is now successfully registered as an ACTIVE guest in the EMHIP system.`;
+    return `${firstName} is now successfully registered as an ACTIVE guest in the EMHIP system. Complete the remaining demographic details on the Demographics tab of the guest workspace when you have time with them.`;
   }
 }

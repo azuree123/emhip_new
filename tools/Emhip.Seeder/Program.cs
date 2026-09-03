@@ -40,7 +40,7 @@ var roleManager = identityScope.ServiceProvider.GetRequiredService<RoleManager<A
 // Roles are normally seeded (with permission claims) by the API on startup; create them bare
 // here as a fallback so staff creation doesn't fail if the seeder runs first — the API's
 // IdentitySeeder backfills permission claims onto existing roles idempotently.
-foreach (var roleName in new[] { RoleNames.Cmhw, RoleNames.HubManager })
+foreach (var roleName in new[] { RoleNames.Cmhw, RoleNames.Cpn, RoleNames.HubManager })
 {
     if (!await roleManager.RoleExistsAsync(roleName))
     {

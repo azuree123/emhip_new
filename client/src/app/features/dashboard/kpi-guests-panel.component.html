@@ -2,7 +2,7 @@
   <div class="drill-panel__head">
     <div class="drill-panel__title">{{ title() }}</div>
 
-    @if (variant() === 'active') {
+    @if (variant() !== 'urgent') {
       <div class="drill-panel__tools">
         <div class="drill-search">
           <svg width="15" height="15" viewBox="0 0 15.001 15.001" fill="none" aria-hidden="true">
@@ -14,47 +14,42 @@
           <input
             type="text"
             placeholder="Search guest by name, ID, phone, CMHW..."
-            aria-label="Search active guests"
+            aria-label="Search guests in this list"
             [value]="query()"
             (input)="query.set($any($event.target).value)"
           />
         </div>
-        <!-- Static dropdown affordances from Frame 23 (no backing filter data yet). -->
-        <div class="drill-chip" aria-hidden="true">
-          Pathway
-          <svg width="14" height="14" viewBox="0 0 8.75 4.375" fill="none">
-            <path
-              d="M 9.28 0.53 C 9.573 0.237 9.573 -0.237 9.28 -0.53 C 8.987 -0.823 8.513 -0.823 8.22 -0.53 L 8.75 0 L 9.28 0.53 Z M 4.375 4.375 L 3.845 4.905 C 4.138 5.198 4.612 5.198 4.905 4.905 L 4.375 4.375 Z M 0.53 -0.53 C 0.237 -0.823 -0.237 -0.823 -0.53 -0.53 C -0.823 -0.237 -0.823 0.237 -0.53 0.53 L 0 0 L 0.53 -0.53 Z M 8.75 0 L 8.22 -0.53 L 3.845 3.845 L 4.375 4.375 L 4.905 4.905 L 9.28 0.53 L 8.75 0 Z M 4.375 4.375 L 4.905 3.845 L 0.53 -0.53 L 0 0 L -0.53 0.53 L 3.845 4.905 L 4.375 4.375 Z"
-              fill="currentColor"
-            />
-          </svg>
+        <!-- Frame 23's dropdowns, wired to real GET /guests filters (pathway, cmhw,
+             lastActivityDays); Next Contact buckets the fetched rows client-side. -->
+        <div class="drill-select">
+          <select aria-label="Filter by pathway" [value]="pathwayFilter()" (change)="onPathwayChange($any($event.target).value)">
+            <option value="">Pathway</option>
+            @for (option of pathwayOptions; track option.value) {
+              <option [value]="option.value">{{ option.label }}</option>
+            }
+          </select>
         </div>
-        <div class="drill-chip" aria-hidden="true">
-          Assigned CMHW
-          <svg width="14" height="14" viewBox="0 0 8.75 4.375" fill="none">
-            <path
-              d="M 9.28 0.53 C 9.573 0.237 9.573 -0.237 9.28 -0.53 C 8.987 -0.823 8.513 -0.823 8.22 -0.53 L 8.75 0 L 9.28 0.53 Z M 4.375 4.375 L 3.845 4.905 C 4.138 5.198 4.612 5.198 4.905 4.905 L 4.375 4.375 Z M 0.53 -0.53 C 0.237 -0.823 -0.237 -0.823 -0.53 -0.53 C -0.823 -0.237 -0.823 0.237 -0.53 0.53 L 0 0 L 0.53 -0.53 Z M 8.75 0 L 8.22 -0.53 L 3.845 3.845 L 4.375 4.375 L 4.905 4.905 L 9.28 0.53 L 8.75 0 Z M 4.375 4.375 L 4.905 3.845 L 0.53 -0.53 L 0 0 L -0.53 0.53 L 3.845 4.905 L 4.375 4.375 Z"
-              fill="currentColor"
-            />
-          </svg>
+        <emhip-staff-picker
+          class="drill-picker"
+          placeholder="Assigned CMHW"
+          searchPlaceholder="Search CMHW…"
+          [allowClear]="true"
+          [ngModel]="cmhwFilter()"
+          (ngModelChange)="onCmhwChange($event)"
+        />
+        <div class="drill-select">
+          <select aria-label="Filter by last activity" [value]="activityFilter()" (change)="onActivityChange($any($event.target).value)">
+            @for (option of activityOptions; track option.value) {
+              <option [value]="option.value">{{ option.label }}</option>
+            }
+          </select>
         </div>
-        <div class="drill-chip" aria-hidden="true">
-          Last Activity
-          <svg width="14" height="14" viewBox="0 0 8.75 4.375" fill="none">
-            <path
-              d="M 9.28 0.53 C 9.573 0.237 9.573 -0.237 9.28 -0.53 C 8.987 -0.823 8.513 -0.823 8.22 -0.53 L 8.75 0 L 9.28 0.53 Z M 4.375 4.375 L 3.845 4.905 C 4.138 5.198 4.612 5.198 4.905 4.905 L 4.375 4.375 Z M 0.53 -0.53 C 0.237 -0.823 -0.237 -0.823 -0.53 -0.53 C -0.823 -0.237 -0.823 0.237 -0.53 0.53 L 0 0 L 0.53 -0.53 Z M 8.75 0 L 8.22 -0.53 L 3.845 3.845 L 4.375 4.375 L 4.905 4.905 L 9.28 0.53 L 8.75 0 Z M 4.375 4.375 L 4.905 3.845 L 0.53 -0.53 L 0 0 L -0.53 0.53 L 3.845 4.905 L 4.375 4.375 Z"
-              fill="currentColor"
-            />
-          </svg>
-        </div>
-        <div class="drill-chip" aria-hidden="true">
-          Next Contact
-          <svg width="14" height="14" viewBox="0 0 8.75 4.375" fill="none">
-            <path
-              d="M 9.28 0.53 C 9.573 0.237 9.573 -0.237 9.28 -0.53 C 8.987 -0.823 8.513 -0.823 8.22 -0.53 L 8.75 0 L 9.28 0.53 Z M 4.375 4.375 L 3.845 4.905 C 4.138 5.198 4.612 5.198 4.905 4.905 L 4.375 4.375 Z M 0.53 -0.53 C 0.237 -0.823 -0.237 -0.823 -0.53 -0.53 C -0.823 -0.237 -0.823 0.237 -0.53 0.53 L 0 0 L 0.53 -0.53 Z M 8.75 0 L 8.22 -0.53 L 3.845 3.845 L 4.375 4.375 L 4.905 4.905 L 9.28 0.53 L 8.75 0 Z M 4.375 4.375 L 4.905 3.845 L 0.53 -0.53 L 0 0 L -0.53 0.53 L 3.845 4.905 L 4.375 4.375 Z"
-              fill="currentColor"
-            />
-          </svg>
+        <div class="drill-select">
+          <select aria-label="Filter by next contact" [value]="nextContactFilter()" (change)="onNextContactChange($any($event.target).value)">
+            @for (option of nextContactOptions; track option.value) {
+              <option [value]="option.value">{{ option.label }}</option>
+            }
+          </select>
         </div>
       </div>
     }

@@ -288,6 +288,9 @@ public sealed class GuestsController(IMediator mediator, ICurrentUser currentUse
     public async Task<IActionResult> SaveCaseworkNote(
         Guid guestId, [FromBody] CaseworkNoteInput input, [FromQuery] bool submit = false, CancellationToken cancellationToken = default)
     {
+        // The CPN branch of the popup is its own permission — a role without it never sees the
+        // toggle, and a hand-crafted request is refused here rather than silently reclassified.
+        if (input.IsCpnContact && !CanLogCpnContacts) return Forbid();
         var id = await mediator.Send(new SaveCaseworkNoteCommand(guestId, null, input, submit), cancellationToken);
         return CreatedAtAction(nameof(GetCaseworkNotes), new { guestId }, new { id });
     }
@@ -297,9 +300,13 @@ public sealed class GuestsController(IMediator mediator, ICurrentUser currentUse
     public async Task<IActionResult> UpdateCaseworkNote(
         Guid guestId, Guid noteId, [FromBody] CaseworkNoteInput input, [FromQuery] bool submit = false, CancellationToken cancellationToken = default)
     {
+        if (input.IsCpnContact && !CanLogCpnContacts) return Forbid();
         await mediator.Send(new SaveCaseworkNoteCommand(guestId, noteId, input, submit), cancellationToken);
         return NoContent();
     }
+
+    /// <summary>Whether the caller's role carries the CPN-contact permission (see Permissions.Guests.CpnContactsLog).</summary>
+    private bool CanLogCpnContacts => currentUser.Permissions.Contains(Permissions.Guests.CpnContactsLog);
 
     /// <summary>Discards a draft. Submitted notes are part of the clinical record and cannot be deleted.</summary>
     [HttpDelete("{guestId:guid}/casework-notes/{noteId:guid}")]
@@ -325,7 +332,7 @@ public sealed class GuestsController(IMediator mediator, ICurrentUser currentUse
     /// submitted is rejected rather than given a second baseline.
     /// </summary>
     [HttpPut("{guestId:guid}/cpn-assessment")]
-    [Authorize(Policy = Permissions.Guests.NotesAdd)]
+    [Authorize(Policy = Permissions.Guests.CpnContactsLog)]
     public async Task<IActionResult> SaveCpnAssessment(
         Guid guestId, [FromBody] CpnAssessmentInput input, [FromQuery] bool submit = false, CancellationToken cancellationToken = default)
     {

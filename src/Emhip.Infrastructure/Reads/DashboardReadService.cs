@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Emhip.Application.Dashboards;
+using Emhip.Application.Reports;
 using Emhip.Application.UrgentCases;
 using Emhip.Domain.Enums;
 using Emhip.Infrastructure.Persistence;
@@ -12,7 +13,7 @@ namespace Emhip.Infrastructure.Reads;
 /// ReportMaterializerWorker) — never a live GROUP BY over guest history. See
 /// ARCHITECTURE.md "Read-model tables for dashboards".
 /// </summary>
-public sealed class DashboardReadService(EmhipDbContext db, IUrgentCaseReadService urgentCases) : IDashboardReadService
+public sealed class DashboardReadService(EmhipDbContext db, IUrgentCaseReadService urgentCases, IReportReadService reports) : IDashboardReadService
 {
     public async Task<GuestsSeenDto> GetGuestsSeenAsync(
         Guid hubId, GuestsSeenPeriod period, Guid? cmhwStaffId = null,
@@ -136,6 +137,63 @@ public sealed class DashboardReadService(EmhipDbContext db, IUrgentCaseReadServi
                   ?? new GuestDemographicsBreakdownDto([], [], [], []),
             snapshot is null
                 ? []
-                : JsonSerializer.Deserialize<List<DataQualityIssueTileDto>>(snapshot.DataQualityJson) ?? []);
+                : JsonSerializer.Deserialize<List<DataQualityIssueTileDto>>(snapshot.DataQualityJson) ?? [],
+            await BuildCpnInvolvementAsync(hubId, cancellationToken),
+            // "Caseload per CMHW" — the same per-worker rows the Caseload report shows, so the
+            // manager sees every worker's assigned cases without leaving the dashboard.
+            await reports.GetCaseloadReportAsync(hubId, cancellationToken));
+    }
+
+    /// <summary>
+    /// Live, but narrow: CPN activity is a small slice of the record (one profile flag, one Part 1
+    /// per guest, the CPN-tagged casework notes), so it is read directly rather than materialized.
+    /// </summary>
+    private async Task<CpnInvolvementDto> BuildCpnInvolvementAsync(Guid hubId, CancellationToken cancellationToken)
+    {
+        var thirtyDaysAgo = DateTimeOffset.UtcNow.AddDays(-30);
+        var hubGuests = db.Guests.AsNoTracking().Where(g => g.HubId == hubId && !g.IsDeleted);
+
+        var guestsWithCpn = await db.GuestClinicalProfiles.AsNoTracking()
+            .CountAsync(p => p.CpnInvolved && hubGuests.Any(g => g.Id == p.GuestId), cancellationToken);
+
+        var assessments = await db.CpnInitialAssessments.AsNoTracking()
+            .CountAsync(a => a.Status == CpnAssessmentStatus.Submitted && hubGuests.Any(g => g.Id == a.GuestId), cancellationToken);
+
+        var submittedNotes = db.CaseworkNotes.AsNoTracking()
+            .Where(n => n.Status == CaseworkNoteStatus.Submitted && hubGuests.Any(g => g.Id == n.GuestId));
+
+        var sessions30 = await submittedNotes
+            .CountAsync(n => n.IsCpnContact && n.OccurredAt >= thirtyDaysAgo, cancellationToken);
+
+        var referrals30 = await submittedNotes
+            .CountAsync(n => n.CpnReferralRequested && n.SubmittedAt != null && n.SubmittedAt >= thirtyDaysAgo, cancellationToken);
+
+        var guests = await hubGuests
+            .Where(g => db.GuestClinicalProfiles.Any(p => p.GuestId == g.Id && p.CpnInvolved)
+                || db.CpnInitialAssessments.Any(a => a.GuestId == g.Id && a.Status == CpnAssessmentStatus.Submitted)
+                || db.CaseworkNotes.Any(n => n.GuestId == g.Id && n.IsCpnContact && n.Status == CaseworkNoteStatus.Submitted))
+            .Select(g => new CpnInvolvedGuestDto(
+                g.Id,
+                g.GuestNumber,
+                g.FirstName + " " + g.LastName,
+                g.Status.ToString(),
+                db.Users.Where(u => u.Id == g.AssignedCmhwId).Select(u => u.DisplayName).FirstOrDefault(),
+                db.CaseworkNotes
+                    .Where(n => n.GuestId == g.Id && n.IsCpnContact && n.Status == CaseworkNoteStatus.Submitted)
+                    .OrderByDescending(n => n.OccurredAt)
+                    .Select(n => (DateTimeOffset?)n.OccurredAt)
+                    .FirstOrDefault(),
+                db.CpnInitialAssessments.Any(a => a.GuestId == g.Id && a.Status == CpnAssessmentStatus.Submitted),
+                db.CaseworkNotes.Count(n => n.GuestId == g.Id && n.IsCpnContact && n.Status == CaseworkNoteStatus.Submitted)))
+            .ToListAsync(cancellationToken);
+
+        // Ordering by a constructor-projected member doesn't translate — sort the short list in memory.
+        var recent = guests
+            .OrderByDescending(g => g.LastCpnContactAt ?? DateTimeOffset.MinValue)
+            .ThenBy(g => g.Name)
+            .Take(8)
+            .ToList();
+
+        return new CpnInvolvementDto(guestsWithCpn, assessments, sessions30, referrals30, recent);
     }
 }

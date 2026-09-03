@@ -142,6 +142,10 @@
             />
           </svg>
         </div>
+
+        <!-- Demographic filters (ethnicity / age group / gender / country of origin) — the
+             Guest Report tab's "Additional Filters" drawer, shared. -->
+        <emhip-demographic-filters [value]="demographics()" (valueChange)="onDemographicsChange($event)" />
       </div>
     </div>
 

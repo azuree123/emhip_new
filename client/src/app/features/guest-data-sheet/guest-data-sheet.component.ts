@@ -8,6 +8,12 @@ import { catchError, debounceTime } from 'rxjs/operators';
 
 import { GuestsApiService } from '../../core/guests-api.service';
 import { GuestListItemDto, GuestStatus, PathwayCategory } from '../../core/api-models';
+import {
+  DemographicFilterValue,
+  DemographicFiltersComponent,
+  EMPTY_DEMOGRAPHIC_FILTERS,
+  demographicFilterParams,
+} from '../../shared/demographic-filters.component';
 import { StaffPickerComponent } from '../../shared/staff-picker.component';
 
 type StatusFilterValue = GuestStatus | 'All';
@@ -65,8 +71,10 @@ const ACTIVITY_OPTIONS: { value: ActivityFilterValue; label: string }[] = [
  * screen. Scrolling near the bottom of what's loaded — or pressing "Load more" — fetches the
  * next page by passing the opaque `nextCursor` straight back to the API.
  *
- * All filters (search, status, pathway, assigned CMHW, last activity, urgent-only) are
- * applied server-side; changing any of them resets the keyset list and reloads page one.
+ * All filters (search, status, pathway, assigned CMHW, last activity, urgent-only, and the
+ * demographic drawer's ethnicity / age group / gender / country of origin — the same
+ * "Additional Filters" drawer the Reports → Guest Report tab uses) are applied server-side;
+ * changing any of them resets the keyset list and reloads page one.
  *
  * Layout/styling follow the Figma GuestDataSheet3 frame (Components.bundle.js lines
  * 9051-13375, 1440px design).
@@ -74,7 +82,7 @@ const ACTIVITY_OPTIONS: { value: ActivityFilterValue; label: string }[] = [
 @Component({
   selector: 'app-guest-data-sheet',
   standalone: true,
-  imports: [ScrollingModule, RouterOutlet, FormsModule, StaffPickerComponent],
+  imports: [ScrollingModule, RouterOutlet, FormsModule, StaffPickerComponent, DemographicFiltersComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './guest-data-sheet.component.html',
   styleUrl: './guest-data-sheet.component.scss',
@@ -106,6 +114,8 @@ export class GuestDataSheetComponent {
   /** Assigned CMHW filter — a staff id, or null for "all staff" (the picker's cleared state). */
   protected readonly cmhwFilter = signal<string | null>(null);
   protected readonly activityFilter = signal<ActivityFilterValue>('All');
+  /** Ethnicity / age group / gender / country of origin from the shared demographic drawer. */
+  protected readonly demographics = signal<DemographicFilterValue>(EMPTY_DEMOGRAPHIC_FILTERS);
   protected readonly exporting = signal(false);
   protected readonly exportError = signal<string | null>(null);
 
@@ -129,8 +139,9 @@ export class GuestDataSheetComponent {
       this.resetAndLoad();
     });
 
-    // The header search bar navigates here with ?q=…, and the dashboard KPI cards with
-    // ?status=… or ?urgent=true (urgency is a flag, not a status) — including while this
+    // The header search bar navigates here with ?q=…, the dashboard KPI cards with
+    // ?status=… or ?urgent=true (urgency is a flag, not a status) plus their toolbar's
+    // pathway / cmhw / activity, and "Caseload per CMHW" with ?cmhw=… — including while this
     // screen is already active, so track the params instead of reading them once. The
     // first (synchronous) emission doubles as the initial load.
     this.route.queryParamMap.pipe(takeUntilDestroyed()).subscribe((params) => {
@@ -139,10 +150,26 @@ export class GuestDataSheetComponent {
       const status: StatusFilterValue =
         statusParam && STATUS_OPTIONS.some((o) => o.value === statusParam) ? (statusParam as StatusFilterValue) : 'All';
       const urgent = params.get('urgent') === 'true';
-      const changed = q !== this.searchTerm || status !== this.statusFilter() || urgent !== this.urgentOnly();
+      const pathwayParam = params.get('pathway');
+      const pathway: PathwayFilterValue =
+        pathwayParam && PATHWAY_OPTIONS.some((o) => o.value === pathwayParam) ? (pathwayParam as PathwayFilterValue) : 'All';
+      const cmhw = params.get('cmhw');
+      const activityParam = params.get('activity');
+      const activity: ActivityFilterValue =
+        activityParam && ACTIVITY_OPTIONS.some((o) => o.value === activityParam) ? (activityParam as ActivityFilterValue) : 'All';
+      const changed =
+        q !== this.searchTerm ||
+        status !== this.statusFilter() ||
+        urgent !== this.urgentOnly() ||
+        pathway !== this.pathwayFilter() ||
+        cmhw !== this.cmhwFilter() ||
+        activity !== this.activityFilter();
       this.searchTerm = q;
       this.statusFilter.set(status);
       this.urgentOnly.set(urgent);
+      this.pathwayFilter.set(pathway);
+      this.cmhwFilter.set(cmhw);
+      this.activityFilter.set(activity);
       if (changed || !this.initialized) {
         this.initialized = true;
         this.resetAndLoad();
@@ -184,6 +211,12 @@ export class GuestDataSheetComponent {
     this.resetAndLoad();
   }
 
+  /** The demographic drawer applied / cleared / removed a chip — all server-side filters. */
+  protected onDemographicsChange(value: DemographicFilterValue): void {
+    this.demographics.set(value);
+    this.resetAndLoad();
+  }
+
   /** The toolbar's filter icon — resets every filter (and the search box) to its default. */
   protected clearFilters(): void {
     this.searchTerm = '';
@@ -192,6 +225,7 @@ export class GuestDataSheetComponent {
     this.pathwayFilter.set('All');
     this.cmhwFilter.set(null);
     this.activityFilter.set('All');
+    this.demographics.set(EMPTY_DEMOGRAPHIC_FILTERS);
     this.resetAndLoad();
   }
 
@@ -227,6 +261,11 @@ export class GuestDataSheetComponent {
     cmhw?: string;
     lastActivityDays?: number;
     urgent?: boolean;
+    ethnicity?: string;
+    gender?: string;
+    countryOfOrigin?: string;
+    ageMin?: number;
+    ageMax?: number;
   } {
     const status = this.statusFilter();
     const pathway = this.pathwayFilter();
@@ -240,6 +279,7 @@ export class GuestDataSheetComponent {
       lastActivityDays: activity === 'All' ? undefined : Number(activity),
       // Only ever narrows to urgent guests — the chip has no "non-urgent only" state.
       urgent: this.urgentOnly() ? true : undefined,
+      ...demographicFilterParams(this.demographics()),
     };
   }
 

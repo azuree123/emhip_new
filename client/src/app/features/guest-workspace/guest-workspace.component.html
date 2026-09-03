@@ -130,7 +130,12 @@
           <app-guest-overview-tab [overview]="guest" (viewContactHistory)="selectTab('contacts')" />
         }
         @case ('demographics') {
-          <app-guest-demographics-tab [guestId]="guestId()" [overview]="guest" />
+          <app-guest-demographics-tab
+            [guestId]="guestId()"
+            [overview]="guest"
+            [startEditing]="openDemographicsEditor()"
+            (continueTo)="continueFromDemographics($event)"
+          />
         }
         @case ('initial') {
           <app-guest-initial-conversation-tab

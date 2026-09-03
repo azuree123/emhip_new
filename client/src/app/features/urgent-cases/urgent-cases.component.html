@@ -131,15 +131,7 @@
             </div>
 
             <div class="row__actions">
-              <button type="button" class="btn btn--outline" (click)="openLogFollowUp(c)">
-                <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                  <path transform="translate(1.5 1.5)"
-                    d="M 13.495 2.255 L 13.499 2.346 L 13.5 2.438 L 13.5 10.763 C 13.5 12.274 12.274 13.5 10.763 13.5 L 2.438 13.5 C 2.376 13.5 2.316 13.498 2.255 13.495 C 2.687 14.174 3.447 14.625 4.313 14.625 L 10.763 14.625 C 12.896 14.625 14.625 12.896 14.625 10.763 L 14.625 4.313 C 14.625 3.447 14.174 2.688 13.495 2.255 Z M 2.438 0 C 1.091 0 0 1.091 0 2.438 L 0 10.313 C 0 11.659 1.091 12.75 2.438 12.75 L 10.313 12.75 C 11.659 12.75 12.75 11.659 12.75 10.313 L 12.75 2.438 C 12.75 1.091 11.659 0 10.313 0 L 2.438 0 Z M 1.125 4.125 L 11.625 4.125 L 11.625 10.313 C 11.625 11.037 11.037 11.625 10.313 11.625 L 2.438 11.625 C 1.713 11.625 1.125 11.037 1.125 10.313 L 1.125 4.125 Z M 2.438 1.125 L 10.313 1.125 C 11.037 1.125 11.625 1.713 11.625 2.438 L 11.625 3 L 1.125 3 L 1.125 2.438 C 1.125 1.713 1.713 1.125 2.438 1.125 Z"
-                    fill="currentColor" />
-                </svg>
-                Log follow up
-              </button>
-              <a class="btn btn--primary" [routerLink]="['/guests', c.guestId]">
+              <a class="btn btn--outline" [routerLink]="['/guests', c.guestId]">
                 <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
                   <path transform="translate(2.25 2.25)"
                     d="M 2.437 1.125 C 1.713 1.125 1.125 1.713 1.125 2.438 L 1.125 11.063 C 1.125 11.787 1.713 12.375 2.437 12.375 L 11.062 12.375 C 11.787 12.375 12.375 11.787 12.375 11.063 L 12.375 8.063 C 12.375 7.752 12.627 7.5 12.937 7.5 C 13.248 7.5 13.5 7.752 13.5 8.063 L 13.5 11.063 C 13.5 12.409 12.408 13.5 11.062 13.5 L 2.437 13.5 C 1.091 13.5 0 12.409 0 11.063 L 0 2.438 C 0 1.091 1.091 0 2.437 0 L 5.437 0 C 5.748 0 6 0.252 6 0.563 C 6 0.873 5.748 1.125 5.437 1.125 L 2.437 1.125 Z M 7.5 0.563 C 7.5 0.252 7.752 0 8.062 0 L 12.938 0 C 13.248 0 13.5 0.252 13.5 0.563 L 13.5 5.438 C 13.5 5.748 13.248 6 12.938 6 C 12.627 6 12.375 5.748 12.375 5.438 L 12.375 1.921 L 8.46 5.835 C 8.24 6.055 7.884 6.055 7.665 5.835 C 7.445 5.616 7.445 5.259 7.665 5.04 L 11.58 1.125 L 8.062 1.125 C 7.752 1.125 7.5 0.873 7.5 0.563 Z"
@@ -147,6 +139,24 @@
                 </svg>
                 Open Guest
               </a>
+              @if (canAddContact) {
+                <button type="button" class="btn btn--outline" (click)="openAddContact(c, $event)">
+                  <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                    <path transform="translate(4 4)"
+                      d="M 0 4.25 C -0.414 4.25 -0.75 4.586 -0.75 5 C -0.75 5.414 -0.414 5.75 0 5.75 L 0 5 L 0 4.25 Z M 10 5.75 C 10.414 5.75 10.75 5.414 10.75 5 C 10.75 4.586 10.414 4.25 10 4.25 L 10 5 L 10 5.75 Z M 5.75 0 C 5.75 -0.414 5.414 -0.75 5 -0.75 C 4.586 -0.75 4.25 -0.414 4.25 0 L 5 0 L 5.75 0 Z M 4.25 10 C 4.25 10.414 4.586 10.75 5 10.75 C 5.414 10.75 5.75 10.414 5.75 10 L 5 10 L 4.25 10 Z M 0 5 L 0 5.75 L 5 5.75 L 5 5 L 5 4.25 L 0 4.25 L 0 5 Z M 10 5 L 10 4.25 L 5 4.25 L 5 5 L 5 5.75 L 10 5.75 L 10 5 Z M 5 5 L 5.75 5 L 5.75 0 L 5 0 L 4.25 0 L 4.25 5 L 5 5 Z M 5 5 L 4.25 5 L 4.25 10 L 5 10 L 5.75 10 L 5.75 5 L 5 5 Z"
+                      fill="currentColor" />
+                  </svg>
+                  Add contact
+                </button>
+              }
+              <button type="button" class="btn btn--primary" (click)="openDetails(c); $event.stopPropagation()">
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                  <path transform="translate(1.5 1.5)"
+                    d="M 7.5 0 C 3.359 0 0 3.359 0 7.5 C 0 11.641 3.359 15 7.5 15 C 11.641 15 15 11.641 15 7.5 C 15 3.359 11.641 0 7.5 0 Z M 7.5 1.125 C 11.02 1.125 13.875 3.98 13.875 7.5 C 13.875 11.02 11.02 13.875 7.5 13.875 C 3.98 13.875 1.125 11.02 1.125 7.5 C 1.125 3.98 3.98 1.125 7.5 1.125 Z M 7.495 3.486 C 7.457 3.212 7.222 3 6.938 3 C 6.627 3 6.375 3.252 6.375 3.563 L 6.375 8.063 L 6.38 8.139 C 6.418 8.413 6.653 8.625 6.938 8.625 L 9.938 8.625 L 10.014 8.62 C 10.288 8.582 10.5 8.347 10.5 8.063 C 10.5 7.752 10.248 7.5 9.938 7.5 L 7.5 7.5 L 7.5 3.563 L 7.495 3.486 Z"
+                    fill="currentColor" />
+                </svg>
+                View Crisis Episode
+              </button>
             </div>
           </div>
         </article>
@@ -236,62 +246,6 @@
     }
   </section>
 </div>
-
-@if (modalOpen()) {
-  <div class="modal-overlay" (click)="closeModal()">
-    <div class="modal" (click)="$event.stopPropagation()">
-      <div class="modal__header">
-        <h2>Log follow-up for {{ modalGuestName() }}</h2>
-        <button type="button" class="modal__close" (click)="closeModal()" aria-label="Close">
-          <svg width="14" height="14" viewBox="0 0 10 10" fill="none">
-            <path
-              d="M 0 4.25 C -0.414 4.25 -0.75 4.586 -0.75 5 C -0.75 5.414 -0.414 5.75 0 5.75 L 0 5 L 0 4.25 Z M 10 5.75 C 10.414 5.75 10.75 5.414 10.75 5 C 10.75 4.586 10.414 4.25 10 4.25 L 10 5 L 10 5.75 Z M 5.75 0 C 5.75 -0.414 5.414 -0.75 5 -0.75 C 4.586 -0.75 4.25 -0.414 4.25 0 L 5 0 L 5.75 0 Z M 4.25 10 C 4.25 10.414 4.586 10.75 5 10.75 C 5.414 10.75 5.75 10.414 5.75 10 L 5 10 L 4.25 10 Z M 0 5 L 0 5.75 L 5 5.75 L 5 5 L 5 4.25 L 0 4.25 L 0 5 Z M 10 5 L 10 4.25 L 5 4.25 L 5 5 L 5 5.75 L 10 5.75 L 10 5 Z M 5 5 L 5.75 5 L 5.75 0 L 5 0 L 4.25 0 L 4.25 5 L 5 5 Z M 5 5 L 4.25 5 L 4.25 10 L 5 10 L 5.75 10 L 5.75 5 L 5 5 Z"
-              fill="currentColor" transform="rotate(45 5 5)" />
-          </svg>
-        </button>
-      </div>
-
-      <div class="modal__body">
-        <label class="field">
-          <span>Due date</span>
-          <input type="datetime-local" [(ngModel)]="scheduleForm.dueDate" />
-        </label>
-        <div class="field">
-          <span>Assignee</span>
-          <emhip-staff-picker
-            name="assigneeStaffId"
-            [(ngModel)]="scheduleForm.assigneeStaffId"
-            placeholder="Select an assignee" />
-        </div>
-        <label class="field">
-          <span>Notes</span>
-          <textarea rows="3" [(ngModel)]="scheduleForm.notes"></textarea>
-        </label>
-
-        <!-- Admin-defined follow-up fields; saved once the follow-up has an id. -->
-        <div class="extra-fields" [class.extra-fields--empty]="!hasFollowUpFields()">
-          <emhip-custom-fields
-            #followUpFields
-            entityType="FollowUp"
-            [entityId]="null"
-            [showSaveButton]="false"
-            heading="Additional information" />
-        </div>
-
-        @if (saveError()) {
-          <div class="banner banner--error">{{ saveError() }}</div>
-        }
-      </div>
-
-      <div class="modal__footer">
-        <button type="button" class="btn btn--outline" (click)="closeModal()">Cancel</button>
-        <button type="button" class="btn btn--primary" [disabled]="saving()" (click)="submitModal()">
-          {{ saving() ? 'Saving…' : 'Save' }}
-        </button>
-      </div>
-    </div>
-  </div>
-}
 
 <!-- "Urgent Case Details" drawer — Desktop58 -->
 @if (detailsCase(); as dc) {
@@ -484,7 +438,9 @@
       </section>
 
       <div class="drawer__actions">
-        <button type="button" class="drawer-btn drawer-btn--red" (click)="openLogContact()">Log urgent follow-up note</button>
+        @if (canAddContact) {
+          <button type="button" class="drawer-btn drawer-btn--red" (click)="openAddContact(dc)">Add contact</button>
+        }
         <button type="button" class="drawer-btn drawer-btn--maroon" (click)="openResolve()">Mark episode as resolved</button>
         <button type="button" class="drawer-btn drawer-btn--dark" (click)="openEscalate()">Escalate to CMHT</button>
         <a class="drawer-btn drawer-btn--outline" [routerLink]="['/guests', dc.guestId]" (click)="closeDetails()">
@@ -492,76 +448,6 @@
         </a>
       </div>
     </aside>
-  </div>
-}
-
-<!-- "Log urgent follow-up note" — records a contact against the guest -->
-@if (contactModalOpen()) {
-  <div class="modal-overlay" (click)="closeContactModal()">
-    <div class="modal" (click)="$event.stopPropagation()">
-      <div class="modal__header">
-        <h2>Log urgent follow-up note</h2>
-        <button type="button" class="modal__close" (click)="closeContactModal()" aria-label="Close">
-          <svg width="14" height="14" viewBox="0 0 10 10" fill="none">
-            <path
-              d="M 0 4.25 C -0.414 4.25 -0.75 4.586 -0.75 5 C -0.75 5.414 -0.414 5.75 0 5.75 L 0 5 L 0 4.25 Z M 10 5.75 C 10.414 5.75 10.75 5.414 10.75 5 C 10.75 4.586 10.414 4.25 10 4.25 L 10 5 L 10 5.75 Z M 5.75 0 C 5.75 -0.414 5.414 -0.75 5 -0.75 C 4.586 -0.75 4.25 -0.414 4.25 0 L 5 0 L 5.75 0 Z M 4.25 10 C 4.25 10.414 4.586 10.75 5 10.75 C 5.414 10.75 5.75 10.414 5.75 10 L 5 10 L 4.25 10 Z M 0 5 L 0 5.75 L 5 5.75 L 5 5 L 5 4.25 L 0 4.25 L 0 5 Z M 10 5 L 10 4.25 L 5 4.25 L 5 5 L 5 5.75 L 10 5.75 L 10 5 Z M 5 5 L 5.75 5 L 5.75 0 L 5 0 L 4.25 0 L 4.25 5 L 5 5 Z M 5 5 L 4.25 5 L 4.25 10 L 5 10 L 5.75 10 L 5.75 5 L 5 5 Z"
-              fill="currentColor" transform="rotate(45 5 5)" />
-          </svg>
-        </button>
-      </div>
-
-      <div class="modal__body">
-        <div class="field field--readonly">
-          <span>Guest</span>
-          <strong>{{ detailsCase()?.guestName }}</strong>
-        </div>
-        <label class="field">
-          <span>Contact type</span>
-          <select [(ngModel)]="contactForm.type">
-            @for (t of contactTypes; track t) {
-              <option [value]="t">{{ pretty(t) }}</option>
-            }
-          </select>
-        </label>
-        <label class="field">
-          <span>Outcome</span>
-          <select [(ngModel)]="contactForm.outcome">
-            @for (o of contactOutcomes; track o) {
-              <option [value]="o">{{ pretty(o) }}</option>
-            }
-          </select>
-        </label>
-        <label class="field">
-          <span>Occurred at</span>
-          <input type="datetime-local" [(ngModel)]="contactForm.occurredAt" />
-        </label>
-        <label class="field">
-          <span>Notes</span>
-          <textarea rows="3" [(ngModel)]="contactForm.notes"></textarea>
-        </label>
-
-        <!-- Admin-defined contact fields; saved once the contact has an id. -->
-        <div class="extra-fields" [class.extra-fields--empty]="!hasContactFields()">
-          <emhip-custom-fields
-            #contactFields
-            entityType="Contact"
-            [entityId]="null"
-            [showSaveButton]="false"
-            heading="Additional information" />
-        </div>
-
-        @if (contactError()) {
-          <div class="banner banner--error">{{ contactError() }}</div>
-        }
-      </div>
-
-      <div class="modal__footer">
-        <button type="button" class="btn btn--outline" (click)="closeContactModal()">Cancel</button>
-        <button type="button" class="btn btn--primary" [disabled]="savingContact()" (click)="submitContact()">
-          {{ savingContact() ? 'Saving…' : 'Save' }}
-        </button>
-      </div>
-    </div>
   </div>
 }
 
@@ -813,4 +699,14 @@
       </div>
     </aside>
   </div>
+}
+
+<!-- "Add contact" — the shared Add Contact popup (the same casework-note record the workspace writes). -->
+@if (contactDrawerGuest(); as guest) {
+  <emhip-casework-note-drawer
+    [guestId]="guest.id"
+    [guestName]="guest.name"
+    (closed)="closeAddContact()"
+    (saved)="contactSaved($event)"
+  />
 }

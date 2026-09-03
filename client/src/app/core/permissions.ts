@@ -19,6 +19,8 @@ export const Permissions = {
     NotesView: 'guests.notes.view',
     NotesAdd: 'guests.notes.add',
     ContactsAdd: 'guests.contacts.add',
+    /** May log a contact as a CPN contact — the popup's "Is this a CPN contact?" toggle and Part 1. */
+    CpnContactsLog: 'guests.contacts.cpn',
   },
   FollowUps: {
     View: 'followups.view',

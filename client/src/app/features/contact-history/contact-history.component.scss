@@ -1,0 +1,454 @@
+// Contact History — the same page / card / toolbar / row language as the Guest Data Sheet
+// (Figma GuestDataSheet3), so the two list screens read as one system.
+
+$font-stack: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+$pager-font-stack: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+
+:host {
+  display: block;
+}
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 35px;
+  padding: 56px 21px 32px 17px;
+  box-sizing: border-box;
+  font-family: $font-stack;
+}
+
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+
+  &__title {
+    margin: 0;
+    font-weight: 600;
+    font-size: 20px;
+    line-height: 24px;
+    color: rgb(42, 42, 42);
+  }
+
+  &__subtitle {
+    margin: 6px 0 0;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 24px;
+    color: rgb(42, 42, 42);
+  }
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  background: rgb(255, 255, 255);
+  border-radius: 12px;
+  padding: 20px 24px;
+  box-sizing: border-box;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 0 6px 29px;
+}
+
+.search-box {
+  position: relative;
+  width: 360px;
+  max-width: 100%;
+  height: 36px;
+  border-radius: 4px;
+  box-shadow: inset 0 0 0 1px rgb(229, 229, 229);
+  background: rgb(255, 255, 255);
+  display: flex;
+  align-items: center;
+
+  &__icon {
+    position: absolute;
+    left: 18px;
+    color: rgb(114, 114, 114);
+    pointer-events: none;
+  }
+
+  &__input {
+    width: 100%;
+    height: 100%;
+    border: none;
+    outline: none;
+    background: transparent;
+    padding: 0 12px 0 46px;
+    box-sizing: border-box;
+    font-family: $font-stack;
+    font-weight: 500;
+    font-size: 12px;
+    color: rgb(42, 42, 42);
+
+    &::placeholder {
+      color: rgb(140, 140, 140);
+    }
+  }
+}
+
+.filter-cluster {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  flex-wrap: wrap;
+}
+
+.filter-reset {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 4px;
+  box-shadow: inset 0 0 0 1px rgb(229, 229, 229);
+  background: rgb(255, 255, 255);
+  color: rgb(42, 42, 42);
+  cursor: pointer;
+
+  &:hover {
+    background: rgb(250, 250, 250);
+  }
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.filter {
+  position: relative;
+  height: 36px;
+
+  &__select {
+    height: 100%;
+    min-width: 130px;
+    appearance: none;
+    border: none;
+    border-radius: 4px;
+    box-shadow: inset 0 0 0 1px rgb(229, 229, 229);
+    background: rgb(255, 255, 255)
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 14 14' fill='none'%3E%3Cpath d='M 3.5 5.25 L 7 8.75 L 10.5 5.25' stroke='%23727272' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
+      no-repeat right 10px center;
+    padding: 0 30px 0 15px;
+    font-family: $font-stack;
+    font-weight: 500;
+    font-size: 14px;
+    letter-spacing: -0.005em;
+    color: rgb(42, 42, 42);
+    cursor: pointer;
+  }
+}
+
+.filter-chip {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 36px;
+  padding: 0 15px;
+  border: none;
+  border-radius: 4px;
+  box-shadow: inset 0 0 0 1px rgb(229, 229, 229);
+  background: rgb(255, 255, 255);
+  font-family: $font-stack;
+  font-weight: 500;
+  font-size: 14px;
+  letter-spacing: -0.005em;
+  color: rgb(42, 42, 42);
+  white-space: nowrap;
+  cursor: pointer;
+
+  &__dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: rgb(148, 28, 60);
+    opacity: 0.35;
+  }
+
+  &:hover {
+    background: rgb(250, 250, 250);
+  }
+
+  &--on {
+    background: rgb(255, 240, 241);
+    box-shadow: inset 0 0 0 1px rgb(240, 178, 184);
+    color: rgb(148, 28, 60);
+
+    .filter-chip__dot {
+      opacity: 1;
+    }
+  }
+}
+
+.filter-picker {
+  flex-shrink: 0;
+  width: 163px;
+}
+
+// Columns: Guest | Date & time | Type | Outcome | Logged by | Assigned CMHW | Notes | Actions
+$table-columns: minmax(200px, 1.4fr) 150px 110px 120px 140px 140px minmax(120px, 1fr) 100px;
+
+.table-head {
+  display: grid;
+  grid-template-columns: $table-columns;
+  align-items: center;
+  height: 41px;
+  padding: 0 23px;
+  border-radius: 3px 3px 0 0;
+  background: rgb(241, 241, 241);
+  flex-shrink: 0;
+
+  .col {
+    font-weight: 600;
+    font-size: 12px;
+    line-height: 24px;
+    letter-spacing: 0.01em;
+    color: rgb(42, 42, 42);
+  }
+}
+
+.row {
+  display: grid;
+  grid-template-columns: $table-columns;
+  align-items: center;
+  min-height: 72px;
+  padding: 8px 23px;
+  box-sizing: border-box;
+  border-bottom: 1px solid rgb(232, 232, 232);
+  cursor: pointer;
+
+  &:hover {
+    background: rgb(250, 250, 250);
+  }
+
+  .col {
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 24px;
+    letter-spacing: -0.005em;
+    color: rgb(42, 42, 42);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    padding-right: 8px;
+  }
+
+  .col--notes {
+    font-size: 12px;
+    color: rgb(114, 114, 114);
+  }
+}
+
+.name-cell {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.avatar {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 24px;
+  background: rgb(240, 240, 240);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 15px;
+  color: rgb(148, 148, 148);
+}
+
+.name-block {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+
+  &__name {
+    font-weight: 600;
+    font-size: 12px;
+    line-height: 20px;
+    color: rgb(42, 42, 42);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__id {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 600;
+    font-size: 10px;
+    line-height: 18px;
+    color: rgb(140, 140, 140);
+  }
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 6px;
+  border-radius: 200px;
+  font-weight: 500;
+  font-size: 10px;
+  line-height: 14px;
+
+  &[data-status='Active'] {
+    background: rgb(234, 253, 238);
+    color: rgb(20, 113, 41);
+  }
+
+  &[data-status='New'] {
+    background: rgb(255, 249, 228);
+    color: rgb(157, 133, 45);
+  }
+
+  &[data-status='OnHold'] {
+    background: rgb(231, 238, 255);
+    color: rgb(52, 91, 177);
+  }
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  border-radius: 200px;
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 16px;
+  white-space: nowrap;
+}
+
+.open-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 14px 0 16px;
+  border-radius: 4px;
+  border: none;
+  box-shadow: inset 0 0 0 1px rgb(217, 217, 217);
+  background: rgb(255, 255, 255);
+  font-family: $font-stack;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 24px;
+  letter-spacing: -0.005em;
+  color: rgb(42, 42, 42);
+  cursor: pointer;
+
+  &:hover {
+    background: rgb(250, 250, 250);
+  }
+}
+
+.state-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: 200px;
+  font-weight: 500;
+  font-size: 14px;
+  color: rgb(114, 114, 114);
+
+  &--error {
+    color: rgb(225, 38, 40);
+  }
+}
+
+.retry-btn {
+  height: 32px;
+  padding: 0 14px;
+  border-radius: 4px;
+  border: none;
+  box-shadow: inset 0 0 0 1px rgb(217, 217, 217);
+  background: rgb(255, 255, 255);
+  font-family: $font-stack;
+  font-weight: 500;
+  font-size: 12px;
+  color: rgb(42, 42, 42);
+  cursor: pointer;
+}
+
+.load-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 62px;
+  margin: 0 6px;
+
+  &__showing,
+  &__note {
+    font-weight: 500;
+    font-size: 12px;
+    line-height: 24px;
+    letter-spacing: -0.005em;
+    color: rgb(50, 50, 50);
+  }
+}
+
+.load-more-btn {
+  height: 38px;
+  padding: 0 16px;
+  border-radius: 8px;
+  border: 1px solid rgb(229, 229, 229);
+  background: rgb(246, 246, 246);
+  font-family: $pager-font-stack;
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 24px;
+  color: rgb(50, 50, 50);
+  cursor: pointer;
+
+  &:hover {
+    background: rgb(238, 238, 238);
+  }
+}
+
+@media (max-width: 1279px) {
+  .card {
+    overflow-x: auto;
+  }
+
+  .table-head,
+  .row {
+    min-width: 1180px;
+  }
+}
+
+@media (max-width: 1023px) {
+  .page {
+    padding: 16px 16px 24px;
+    gap: 24px;
+  }
+
+  .search-box {
+    width: auto;
+    flex: 1 1 320px;
+  }
+
+  .filter-cluster {
+    margin-left: 0;
+  }
+}

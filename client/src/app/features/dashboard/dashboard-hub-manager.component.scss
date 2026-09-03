@@ -352,6 +352,240 @@
   }
 }
 
+// ---- CPN involvement + Caseload per CMHW (grey 41px header band over 66px rows, as in the
+// KPI drill-down tables) ----
+
+.mini-table {
+  margin-top: 22px;
+  --mini-columns: 1fr;
+
+  &--cpn {
+    --mini-columns: minmax(200px, 1.5fr) 110px 1fr 140px 110px 150px;
+  }
+
+  &--caseload {
+    --mini-columns: minmax(180px, 1.4fr) 90px 80px 80px 150px 120px 150px 90px;
+  }
+
+  &__header {
+    display: grid;
+    grid-template-columns: var(--mini-columns);
+    align-items: center;
+    height: 41px;
+    padding: 0 0 0 21px;
+    border-radius: 3px;
+    background: #f1f1f1;
+
+    span {
+      font-weight: 600;
+      font-size: 12px;
+      line-height: 24px;
+      color: #2a2a2a;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      padding-right: 12px;
+    }
+  }
+
+  &__row {
+    display: grid;
+    grid-template-columns: var(--mini-columns);
+    align-items: center;
+    min-height: 66px;
+    padding-left: 21px;
+    border-bottom: 1px solid #e8e8e8;
+    cursor: pointer;
+
+    &:hover {
+      background: #fafafa;
+    }
+
+    &--static {
+      cursor: default;
+
+      &:hover {
+        background: transparent;
+      }
+    }
+  }
+
+  &__num {
+    text-align: right;
+    padding-right: 24px !important;
+  }
+}
+
+.mini-cell {
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 24px;
+  color: #2a2a2a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding-right: 12px;
+
+  &--strong {
+    font-weight: 600;
+  }
+
+  &--red {
+    color: #d02537;
+    font-weight: 600;
+  }
+
+  &--green {
+    color: #147129;
+  }
+}
+
+.mini-guest {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  padding-right: 12px;
+
+  &__avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #f0f0f0;
+    color: #949494;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 15px;
+    flex-shrink: 0;
+  }
+
+  &__text {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  &__name {
+    font-weight: 600;
+    font-size: 12px;
+    line-height: 24px;
+    color: #2a2a2a;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &__id {
+    font-weight: 500;
+    font-size: 10px;
+    line-height: 18px;
+    color: #8c8c8c;
+    white-space: nowrap;
+  }
+}
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  border-radius: 200px;
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 16px;
+
+  &[data-status='Active'] {
+    background: #eafdee;
+    color: #147129;
+  }
+
+  &[data-status='New'] {
+    background: #fff9e4;
+    color: #9d852d;
+  }
+
+  &[data-status='OnHold'] {
+    background: #e7eeff;
+    color: #345bb1;
+  }
+}
+
+.load-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding-right: 12px;
+
+  &__track {
+    flex: 1;
+    height: 6px;
+    border-radius: 444px;
+    background: #ededed;
+    overflow: hidden;
+  }
+
+  &__fill {
+    display: block;
+    height: 100%;
+    border-radius: 444px;
+    background: #941c3c;
+    min-width: 2px;
+  }
+
+  &__pct {
+    font-weight: 600;
+    font-size: 12px;
+    line-height: 24px;
+    color: #2a2a2a;
+    min-width: 34px;
+    text-align: right;
+  }
+}
+
+.mini-action {
+  height: 32px;
+  padding: 0 14px;
+  border: none;
+  border-radius: 4px;
+  box-shadow: inset 0 0 0 1px #d9d9d9;
+  background: #ffffff;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-weight: 500;
+  font-size: 12px;
+  color: #2a2a2a;
+  cursor: pointer;
+
+  &:hover {
+    background: #fafafa;
+  }
+}
+
+.caseload-card__footer {
+  margin-top: 16px;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 18px;
+  color: #8c8c8c;
+
+  span {
+    font-weight: 600;
+    color: #2a2a2a;
+  }
+}
+
+@media (max-width: 1279px) {
+  .mini-table {
+    overflow-x: auto;
+
+    &__header,
+    &__row {
+      min-width: 860px;
+    }
+  }
+}
+
 // ---- Outstanding team actions (design y=2360) ----
 
 .link-red--lower {

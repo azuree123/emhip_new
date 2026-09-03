@@ -5,3 +5,14 @@
   flex-direction: column;
   gap: 6px;
 }
+
+// The "completed later in the workspace" note — the info banner in a neutral grey.
+.info-banner--muted {
+  margin-top: 16px;
+  background: rgb(246, 246, 246);
+  color: rgb(114, 114, 114);
+
+  .info-banner__text {
+    color: rgb(80, 80, 80);
+  }
+}

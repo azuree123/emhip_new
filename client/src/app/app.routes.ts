@@ -56,6 +56,12 @@ export const routes: Routes = [
         canActivate: [permissionGuard],
       },
       {
+        path: 'contact-history',
+        loadComponent: () => import('./features/contact-history/contact-history.component').then((m) => m.ContactHistoryComponent),
+        data: { permission: Permissions.Guests.View },
+        canActivate: [permissionGuard],
+      },
+      {
         path: 'reports',
         loadComponent: () => import('./features/reports/reports.component').then((m) => m.ReportsComponent),
         data: { permission: Permissions.Reports.View },

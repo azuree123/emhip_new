@@ -129,6 +129,100 @@
   }
 }
 
+// Section headings inside the editor, so the form mirrors the read-only cards' grouping.
+.edit-form__section {
+  margin: 8px 0 -8px;
+  font-family: t.$font-primary;
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 24px;
+  color: t.$color-text-primary;
+
+  &:first-child {
+    margin-top: 0;
+  }
+}
+
+.completion__saved {
+  margin: 16px 0 0;
+  font-family: t.$font-primary;
+  font-weight: 500;
+  font-size: 12px;
+  color: t.$color-success-text;
+}
+
+// "Next steps" card — carries the registration flow on into the workspace.
+.next-steps {
+  &__list {
+    list-style: none;
+    margin: 16px 0 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  &__item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  &__index {
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    background: t.$color-tile-bg;
+    color: t.$color-text-meta;
+    font-family: t.$font-primary;
+    font-weight: 600;
+    font-size: 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &__item--current &__index {
+    background: t.$color-brand;
+    color: #fff;
+  }
+
+  &__text {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  &__label {
+    font-family: t.$font-primary;
+    font-weight: 600;
+    font-size: 14px;
+    line-height: 24px;
+    color: t.$color-text-primary;
+  }
+
+  &__hint {
+    font-family: t.$font-primary;
+    font-weight: 400;
+    font-size: 12px;
+    line-height: 18px;
+    color: t.$color-text-meta;
+  }
+
+  &__actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 20px;
+
+    .btn-primary,
+    .btn-ghost {
+      width: 100%;
+    }
+  }
+}
+
 @media (max-width: 960px) {
   .demographics {
     grid-template-columns: 1fr;

@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Identity;
 namespace Emhip.Api.Auth;
 
 /// <summary>
-/// Ensures the default roles (Cmhw, HubManager, Admin) exist with sensible permission sets, and
+/// Ensures the default roles (Cmhw, Cpn, HubManager, Admin) exist with sensible permission sets, and
 /// bootstraps a first Admin user if none exists yet — otherwise there'd be no way to log in and
 /// create further users, since there's no self-registration by design (see README "Known gaps").
 /// Runs once at API startup, idempotently.
@@ -13,6 +13,7 @@ namespace Emhip.Api.Auth;
 public static class IdentitySeeder
 {
     public const string CmhwRole = RoleNames.Cmhw;
+    public const string CpnRole = RoleNames.Cpn;
     public const string HubManagerRole = RoleNames.HubManager;
     public const string AdminRole = RoleNames.Admin;
 
@@ -23,6 +24,7 @@ public static class IdentitySeeder
         var configuration = services.GetRequiredService<IConfiguration>();
 
         await EnsureRoleAsync(roleManager, CmhwRole, "Community Mental Health Worker", CmhwPermissions);
+        await EnsureRoleAsync(roleManager, CpnRole, "Community Psychiatric Nurse", CpnPermissions);
         await EnsureRoleAsync(roleManager, HubManagerRole, "Hub Manager", HubManagerPermissions);
         await EnsureRoleAsync(roleManager, AdminRole, "Administrator", Permissions.All);
 
@@ -61,6 +63,17 @@ public static class IdentitySeeder
         Permissions.UrgentCases.View,
         Permissions.Reports.View,
         Permissions.Documents.View, Permissions.Documents.Upload, Permissions.Documents.Edit,
+    ];
+
+    /// <summary>
+    /// A CPN works the same caseload screens as a CMHW, plus the CPN branch of the Add Contact
+    /// popup. CMHWs deliberately do not get CpnContactsLog — the "Is this a CPN contact?"
+    /// toggle is hidden for them unless an admin grants the permission to their role.
+    /// </summary>
+    private static readonly string[] CpnPermissions =
+    [
+        .. CmhwPermissions,
+        Permissions.Guests.CpnContactsLog,
     ];
 
     private static readonly string[] HubManagerPermissions =

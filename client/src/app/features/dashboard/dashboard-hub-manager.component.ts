@@ -6,6 +6,8 @@ import { DashboardsApiService } from '../../core/dashboards-api.service';
 import { FollowUpsApiService } from '../../core/follow-ups-api.service';
 import { Permissions } from '../../core/permissions';
 import {
+  CaseloadReportRowDto,
+  CpnInvolvedGuestDto,
   DataQualityIssueTileDto,
   DemographicSliceDto,
   FollowUpQueueItemDto,
@@ -58,6 +60,13 @@ interface DataQualityRow extends DataQualityIssueTileDto {
   hint: string | null;
 }
 
+/** One "Caseload per CMHW" row — the report row plus the avatar initials and load bar width. */
+interface CaseloadRow extends CaseloadReportRowDto {
+  initials: string;
+  /** Assigned caseload relative to the busiest worker (the Caseload report's "Load" bar). */
+  loadPct: number;
+}
+
 /**
  * Hub Manager dashboard — reworked to the new `GuestDataSheet2` design (node 1034:7909,
  * project/screens/Components.bundle.js lines 2748-8987). Sidebar/header come from the shared
@@ -67,7 +76,10 @@ interface DataQualityRow extends DataQualityIssueTileDto {
  * that reuses the same language — the design ships no frame for it), Pathway distribution,
  * Clinical complexity indicators (spec §5.1), Guest Seen, Guest demographics, Outstanding team
  * actions (live follow-up queue), Staff activity (recent activity feed) and Data quality
- * issues. Caseload per CMHW is still omitted — no backing data (see feature report).
+ * issues. "CPN involvement" sits directly above "Caseload per CMHW": the first summarises the
+ * Community Psychiatric Nurse's share of the caseload (cpnInvolvement on the DTO), the second
+ * lists every worker's assigned cases (caseloadPerCmhw — the same rows as the Caseload
+ * report) so a manager can see who is carrying what without leaving the dashboard.
  */
 @Component({
   selector: 'app-dashboard-hub-manager',
@@ -96,6 +108,7 @@ export class DashboardHubManagerComponent {
 
   protected readonly canViewFollowUps = this.auth.hasPermission(Permissions.FollowUps.View);
   protected readonly canViewGuests = this.auth.hasPermission(Permissions.Guests.View);
+  protected readonly canViewReports = this.auth.hasPermission(Permissions.Reports.View);
 
   private readonly todayIso = (() => {
     const now = new Date();
@@ -174,6 +187,31 @@ export class DashboardHubManagerComponent {
       build('gender', 'Gender', '#941c3c', demographics.gender),
       build('countryOfOrigin', 'Country of origin', '#8f8f8f', demographics.countryOfOrigin, true),
     ];
+  });
+
+  /** "CPN involvement" card — null until the dashboard has loaded. */
+  protected readonly cpn = computed(() => this.data()?.cpnInvolvement ?? null);
+
+  /** "Caseload per CMHW" rows, busiest worker first, with the load bar scaled to that worker. */
+  protected readonly caseloadRows = computed<CaseloadRow[]>(() => {
+    const rows = [...(this.data()?.caseloadPerCmhw ?? [])].sort((a, b) => b.assignedGuests - a.assignedGuests);
+    const max = rows[0]?.assignedGuests ?? 0;
+    return rows.map((r) => ({
+      ...r,
+      initials: this.initials(r.displayName),
+      loadPct: max > 0 ? Math.round((r.assignedGuests / max) * 100) : 0,
+    }));
+  });
+
+  /** Footer totals under the caseload table. */
+  protected readonly caseloadTotals = computed(() => {
+    const rows = this.caseloadRows();
+    return {
+      workers: rows.length,
+      assigned: rows.reduce((sum, r) => sum + r.assignedGuests, 0),
+      urgent: rows.reduce((sum, r) => sum + r.urgentGuests, 0),
+      overdue: rows.reduce((sum, r) => sum + r.overdueFollowUps, 0),
+    };
   });
 
   /** "Data quality issues" rows — labels and counts straight from the API, hints by issue key. */
@@ -272,5 +310,22 @@ export class DashboardHubManagerComponent {
 
   protected openGuest(guestId: string): void {
     this.router.navigate(['/guests', guestId]);
+  }
+
+  /** "View" on a caseload row — the guest list filtered to that worker's assigned guests. */
+  protected viewCaseload(staffId: string): void {
+    this.router.navigate(['/guests'], { queryParams: { cmhw: staffId } });
+  }
+
+  protected cpnStatusLabel(guest: CpnInvolvedGuestDto): string {
+    return guest.status === 'OnHold' ? 'On hold' : guest.status;
+  }
+
+  protected formatDate(value: string | null): string {
+    if (!value) return '—';
+    const date = new Date(value);
+    return Number.isNaN(date.getTime())
+      ? '—'
+      : date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
   }
 }

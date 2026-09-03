@@ -24,7 +24,9 @@
     </div>
 
     <form class="drawer__form" (ngSubmit)="submitNote()">
-      <!-- The first branch: a CPN contact uses the two clinical forms, anything else the chips. -->
+      <!-- The first branch: a CPN contact uses the two clinical forms, anything else the chips.
+           Only offered to roles holding guests.contacts.cpn (the CPN role by default). -->
+      @if (canLogCpnContact || header.isCpnContact) {
       <div class="field field--full">
         <span class="field__label">Is this a CPN contact?&nbsp;*</span>
         <div class="toggle-row toggle-row--lead">
@@ -48,6 +50,7 @@
           }
         </span>
       </div>
+      }
 
       @if (!header.isCpnContact) {
         <div class="field field--full">

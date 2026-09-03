@@ -46,6 +46,7 @@ public static class DependencyInjection
         services.AddScoped<IUrgentCaseReadService, UrgentCaseReadService>();
         services.AddScoped<IDashboardReadService, DashboardReadService>();
         services.AddScoped<IReportReadService, ReportReadService>();
+        services.AddScoped<Emhip.Application.Contacts.IContactReadService, ContactReadService>();
 
         services.AddSingleton<IDateTimeProvider, SystemDateTimeProvider>();
 

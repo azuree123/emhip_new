@@ -19,6 +19,7 @@ import {
   YesNoUnknown,
 } from '../../core/api-models';
 import { AuthService } from '../../core/auth.service';
+import { Permissions } from '../../core/permissions';
 import { GuestsApiService } from '../../core/guests-api.service';
 import { SettingsApiService } from '../../core/settings-api.service';
 import { StaffPickerComponent } from '../../shared/staff-picker.component';
@@ -196,6 +197,14 @@ export class CaseworkNoteDrawerComponent implements OnInit {
 
   readonly loggedBy = this.auth.current().displayName || '—';
   readonly humanize = humanize;
+
+  /**
+   * Whether the "Is this a CPN contact?" toggle is offered at all. It follows the
+   * guests.contacts.cpn permission — granted to the CPN role by default and assignable to any
+   * other role by an admin (Roles & Permissions) — so a CMHW sees the contact-type chips only.
+   * A resumed CPN draft still shows its toggle so the note is not silently reclassified.
+   */
+  readonly canLogCpnContact = this.auth.hasPermission(Permissions.Guests.CpnContactsLog);
 
   /** The four chips the design offers when the contact is not a CPN one. */
   readonly categories: { value: CaseworkNoteCategory; label: string }[] = [

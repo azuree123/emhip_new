@@ -141,6 +141,214 @@
   }
 }
 
+// Pathway / Sort dropdowns — the design's chips, as real <select>s.
+.filter-select {
+  position: relative;
+  height: 36px;
+  flex-shrink: 0;
+  margin-left: auto;
+
+  & ~ & {
+    margin-left: 0;
+  }
+
+  select {
+    height: 100%;
+    min-width: 120px;
+    appearance: none;
+    border: none;
+    border-radius: 4px;
+    box-shadow: inset 0 0 0 1px #e5e5e5;
+    background: #ffffff
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 14 14' fill='none'%3E%3Cpath d='M 3.5 5.25 L 7 8.75 L 10.5 5.25' stroke='%23727272' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
+      no-repeat right 10px center;
+    padding: 0 32px 0 17px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-weight: 500;
+    font-size: 14px;
+    letter-spacing: -0.005em;
+    color: #2a2a2a;
+    cursor: pointer;
+
+    &:focus {
+      outline: 2px solid #941c3c;
+      outline-offset: -1px;
+    }
+  }
+}
+
+// ---- Filtered caseload table under the chips (drill-panel table language) ----
+
+.contact-table {
+  margin-top: 22px;
+  --contact-columns: minmax(200px, 1.5fr) 150px 1fr 120px 170px 90px;
+
+  &__header {
+    display: grid;
+    grid-template-columns: var(--contact-columns);
+    align-items: center;
+    height: 41px;
+    padding: 0 0 0 21px;
+    border-radius: 3px;
+    background: #f1f1f1;
+
+    span {
+      font-weight: 600;
+      font-size: 12px;
+      line-height: 24px;
+      color: #2a2a2a;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      padding-right: 12px;
+    }
+  }
+
+  &__row {
+    display: grid;
+    grid-template-columns: var(--contact-columns);
+    align-items: center;
+    min-height: 66px;
+    padding-left: 21px;
+    border-bottom: 1px solid #e8e8e8;
+    cursor: pointer;
+
+    &:hover {
+      background: #fafafa;
+    }
+  }
+
+  &__footer {
+    margin-top: 12px;
+    font-weight: 500;
+    font-size: 12px;
+    line-height: 24px;
+    color: #8c8c8c;
+  }
+}
+
+.contact-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 24px;
+  color: #2a2a2a;
+  min-width: 0;
+  padding-right: 12px;
+
+  &--red {
+    color: #e12628;
+  }
+
+  &--yellow {
+    color: #9d852d;
+  }
+
+  &--action {
+    justify-content: flex-end;
+    padding-right: 16px;
+  }
+}
+
+.contact-guest {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  padding-right: 12px;
+
+  &__avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #f0f0f0;
+    color: #949494;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 15px;
+    flex-shrink: 0;
+  }
+
+  &__text {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  &__name {
+    font-weight: 600;
+    font-size: 12px;
+    line-height: 24px;
+    color: #2a2a2a;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &__id {
+    font-weight: 500;
+    font-size: 10px;
+    line-height: 18px;
+    color: #8c8c8c;
+    white-space: nowrap;
+  }
+}
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  border-radius: 200px;
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 16px;
+  white-space: nowrap;
+
+  &[data-status='Active'] {
+    background: #eafdee;
+    color: #147129;
+  }
+
+  &[data-status='New'] {
+    background: #fff9e4;
+    color: #9d852d;
+  }
+
+  &[data-status='OnHold'] {
+    background: #e7eeff;
+    color: #345bb1;
+  }
+
+  &--urgent {
+    background: #fff0f1;
+    color: #d02537;
+    font-size: 11px;
+  }
+}
+
+.contact-open {
+  height: 32px;
+  padding: 0 14px;
+  border: none;
+  border-radius: 4px;
+  box-shadow: inset 0 0 0 1px #d9d9d9;
+  background: #ffffff;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-weight: 500;
+  font-size: 12px;
+  color: #2a2a2a;
+  cursor: pointer;
+
+  &:hover {
+    background: #fafafa;
+  }
+}
+
 // Static dropdown affordances (Pathway / Contact Status / Sort) — no backing data yet.
 .filter-chip {
   display: inline-flex;
@@ -311,8 +519,18 @@
     flex-wrap: wrap;
   }
 
-  .filter-chip {
+  .filter-chip,
+  .filter-select {
     margin-left: 0;
+  }
+
+  .contact-table {
+    overflow-x: auto;
+
+    &__header,
+    &__row {
+      min-width: 820px;
+    }
   }
 }
 

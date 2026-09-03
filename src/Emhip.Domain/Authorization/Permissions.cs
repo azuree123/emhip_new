@@ -31,6 +31,12 @@ public static class Permissions
         public const string NotesView = "guests.notes.view";
         public const string NotesAdd = "guests.notes.add";
         public const string ContactsAdd = "guests.contacts.add";
+        /// <summary>
+        /// May log a contact as a CPN contact (the "Is this a CPN contact?" toggle on the Add
+        /// Contact popup, the CPN follow-up session and the Part 1 initial assessment). Granted to
+        /// the CPN role by default; an admin can add it to any other role.
+        /// </summary>
+        public const string CpnContactsLog = "guests.contacts.cpn";
     }
 
     public static class FollowUps
@@ -80,7 +86,7 @@ public static class Permissions
         Dashboard.ViewCmhw, Dashboard.ViewHubManager,
         Guests.View, Guests.Register, Guests.Edit, Guests.DemographicsView, Guests.DemographicsEdit,
         Guests.ClinicalView, Guests.ClinicalEdit, Guests.PathwayView, Guests.PathwayEdit,
-        Guests.NotesView, Guests.NotesAdd, Guests.ContactsAdd,
+        Guests.NotesView, Guests.NotesAdd, Guests.ContactsAdd, Guests.CpnContactsLog,
         FollowUps.View, FollowUps.Manage,
         UrgentCases.View,
         Reports.View, Reports.Export,
@@ -97,7 +103,7 @@ public static class Permissions
         [
             Guests.View, Guests.Register, Guests.Edit, Guests.DemographicsView, Guests.DemographicsEdit,
             Guests.ClinicalView, Guests.ClinicalEdit, Guests.PathwayView, Guests.PathwayEdit,
-            Guests.NotesView, Guests.NotesAdd, Guests.ContactsAdd,
+            Guests.NotesView, Guests.NotesAdd, Guests.ContactsAdd, Guests.CpnContactsLog,
         ],
         ["Follow-ups"] = [FollowUps.View, FollowUps.Manage],
         ["Urgent Cases"] = [UrgentCases.View],

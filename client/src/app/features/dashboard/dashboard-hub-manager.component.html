@@ -298,6 +298,142 @@
       </div>
     </div>
 
+    <!-- CPN involvement — directly above Caseload per CMHW. Counts and the guest rows are live
+         from the API (clinical-profile flag, submitted Part 1s, CPN-tagged casework notes). -->
+    @if (cpn(); as cpn) {
+      <div class="panel-card cpn-card">
+        <div class="panel-card__head">
+          <div>
+            <div class="panel-card__title">CPN involvement</div>
+            <div class="panel-card__subtitle">Community Psychiatric Nurse activity across the hub's caseload</div>
+          </div>
+        </div>
+
+        <div class="indicator-grid">
+          <div class="indicator-tile">
+            <div class="indicator-tile__label">Guests with CPN involved</div>
+            <div class="indicator-tile__number">{{ cpn.guestsWithCpnInvolved }}</div>
+          </div>
+          <div class="indicator-tile">
+            <div class="indicator-tile__label">Initial assessments completed</div>
+            <div class="indicator-tile__number">{{ cpn.initialAssessmentsSubmitted }}</div>
+          </div>
+          <div class="indicator-tile">
+            <div class="indicator-tile__label">CPN sessions · last 30 days</div>
+            <div class="indicator-tile__number">{{ cpn.followUpSessionsLast30Days }}</div>
+          </div>
+          <div class="indicator-tile">
+            <div class="indicator-tile__label">Referred to CPN · last 30 days</div>
+            <div class="indicator-tile__number">{{ cpn.cpnReferralsLast30Days }}</div>
+          </div>
+        </div>
+
+        <div class="mini-table mini-table--cpn">
+          <div class="mini-table__header">
+            <span>Guest</span>
+            <span>Status</span>
+            <span>Assigned CMHW</span>
+            <span>Initial assessment</span>
+            <span>CPN sessions</span>
+            <span>Last CPN contact</span>
+          </div>
+          @for (g of cpn.guests; track g.guestId) {
+            <div class="mini-table__row" (click)="openGuest(g.guestId)">
+              <span class="mini-guest">
+                <span class="mini-guest__avatar">{{ initials(g.name) }}</span>
+                <span class="mini-guest__text">
+                  <span class="mini-guest__name">{{ g.name }}</span>
+                  <span class="mini-guest__id">ID: G-{{ g.guestNumber }}</span>
+                </span>
+              </span>
+              <span class="mini-cell">
+                <span class="status-pill" [attr.data-status]="g.status">{{ cpnStatusLabel(g) }}</span>
+              </span>
+              <span class="mini-cell">{{ g.assignedCmhwName ?? '—' }}</span>
+              <span class="mini-cell" [class.mini-cell--green]="g.hasInitialAssessment">
+                {{ g.hasInitialAssessment ? 'Completed' : 'Not yet' }}
+              </span>
+              <span class="mini-cell">{{ g.followUpSessions }}</span>
+              <span class="mini-cell">{{ formatDate(g.lastCpnContactAt) }}</span>
+            </div>
+          } @empty {
+            <div class="empty">No guests with CPN involvement recorded yet.</div>
+          }
+        </div>
+      </div>
+    }
+
+    <!-- Caseload per CMHW — every worker's assigned cases (the Caseload report's rows). -->
+    <div class="panel-card caseload-card">
+      <div class="panel-card__head">
+        <div>
+          <div class="panel-card__title">Caseload per CMHW</div>
+          <div class="panel-card__subtitle">All cases assigned to each worker · View opens that worker's guests</div>
+        </div>
+        @if (canViewReports) {
+          <a class="link-red" routerLink="/reports">
+            Full caseload report
+            <svg width="14" height="14" viewBox="0 0 13.5 13.5" fill="none" aria-hidden="true">
+              <path
+                d="M 2.437 1.125 C 1.713 1.125 1.125 1.713 1.125 2.438 L 1.125 11.063 C 1.125 11.787 1.713 12.375 2.437 12.375 L 11.062 12.375 C 11.787 12.375 12.375 11.787 12.375 11.063 L 12.375 8.063 C 12.375 7.752 12.627 7.5 12.937 7.5 C 13.248 7.5 13.5 7.752 13.5 8.063 L 13.5 11.063 C 13.5 12.409 12.408 13.5 11.062 13.5 L 2.437 13.5 C 1.091 13.5 0 12.409 0 11.063 L 0 2.438 C 0 1.091 1.091 0 2.437 0 L 5.437 0 C 5.748 0 6 0.252 6 0.563 C 6 0.873 5.748 1.125 5.437 1.125 L 2.437 1.125 Z M 7.5 0.563 C 7.5 0.252 7.752 0 8.062 0 L 12.938 0 C 13.248 0 13.5 0.252 13.5 0.563 L 13.5 5.438 C 13.5 5.748 13.248 6 12.938 6 C 12.627 6 12.375 5.748 12.375 5.438 L 12.375 1.921 L 8.46 5.835 C 8.24 6.055 7.884 6.055 7.665 5.835 C 7.445 5.616 7.445 5.259 7.665 5.04 L 11.58 1.125 L 8.062 1.125 C 7.752 1.125 7.5 0.873 7.5 0.563 Z"
+                fill="currentColor"
+              />
+            </svg>
+          </a>
+        }
+      </div>
+
+      <div class="mini-table mini-table--caseload">
+        <div class="mini-table__header">
+          <span>Worker</span>
+          <span class="mini-table__num">Assigned</span>
+          <span class="mini-table__num">Active</span>
+          <span class="mini-table__num">Urgent</span>
+          <span class="mini-table__num">Overdue follow-ups</span>
+          <span class="mini-table__num">Contacts (30d)</span>
+          <span>Load</span>
+          <span>Actions</span>
+        </div>
+        @for (row of caseloadRows(); track row.staffId) {
+          <div class="mini-table__row mini-table__row--static">
+            <span class="mini-guest">
+              <span class="mini-guest__avatar">{{ row.initials }}</span>
+              <span class="mini-guest__text">
+                <span class="mini-guest__name">{{ row.displayName }}</span>
+              </span>
+            </span>
+            <span class="mini-cell mini-table__num mini-cell--strong">{{ row.assignedGuests }}</span>
+            <span class="mini-cell mini-table__num">{{ row.activeGuests }}</span>
+            <span class="mini-cell mini-table__num" [class.mini-cell--red]="row.urgentGuests > 0">{{ row.urgentGuests }}</span>
+            <span class="mini-cell mini-table__num" [class.mini-cell--red]="row.overdueFollowUps > 0">{{ row.overdueFollowUps }}</span>
+            <span class="mini-cell mini-table__num">{{ row.contactsLast30Days }}</span>
+            <span class="mini-cell">
+              <span class="load-cell">
+                <span class="load-cell__track"><span class="load-cell__fill" [style.width.%]="row.loadPct"></span></span>
+                <span class="load-cell__pct">{{ row.loadPct }}%</span>
+              </span>
+            </span>
+            <span class="mini-cell">
+              @if (canViewGuests) {
+                <button type="button" class="mini-action" (click)="viewCaseload(row.staffId)">View</button>
+              }
+            </span>
+          </div>
+        } @empty {
+          <div class="empty">No caseload data recorded yet.</div>
+        }
+      </div>
+
+      @if (caseloadRows().length > 0) {
+        <div class="caseload-card__footer">
+          {{ caseloadTotals().workers }} worker{{ caseloadTotals().workers === 1 ? '' : 's' }} ·
+          <span>{{ caseloadTotals().assigned }}</span> assigned ·
+          <span>{{ caseloadTotals().urgent }}</span> urgent ·
+          <span>{{ caseloadTotals().overdue }}</span> overdue follow-ups
+        </div>
+      }
+    </div>
+
     <!-- Outstanding team actions (design y=2360) — hub-wide open follow-ups. -->
     @if (canViewFollowUps) {
       <div class="panel-card team-actions">

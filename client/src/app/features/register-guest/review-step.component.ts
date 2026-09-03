@@ -86,12 +86,14 @@ export class ReviewStepComponent {
     return subcategory ? `${type} — ${subcategory}` : type;
   }
 
-  protected maritalStatus(): string {
-    return this.value(this.demographicsForm, 'personal.maritalStatus') || '—';
+  protected gender(): string {
+    return this.value(this.demographicsForm, 'personal.gender') || '—';
   }
 
-  protected livingGroup(): string {
-    return this.value(this.demographicsForm, 'contact.livingGroup') || '—';
+  protected address(): string {
+    const address = this.value(this.demographicsForm, 'contact.address');
+    const postCode = this.value(this.demographicsForm, 'contact.postCode');
+    return [address, postCode].filter(Boolean).join(', ') || '—';
   }
 
   protected immediateRisk(): string {

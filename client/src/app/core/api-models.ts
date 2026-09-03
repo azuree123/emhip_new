@@ -458,6 +458,29 @@ export interface HubManagerDashboardDto {
   clinicalComplexity: ClinicalIndicatorDto[];
   demographics: GuestDemographicsBreakdownDto;
   dataQuality: DataQualityIssueTileDto[];
+  /** "CPN involvement" card — live counts plus the most recently seen CPN-involved guests. */
+  cpnInvolvement: CpnInvolvementDto;
+  /** "Caseload per CMHW" card — the same per-worker rows as the Caseload report. */
+  caseloadPerCmhw: CaseloadReportRowDto[];
+}
+
+export interface CpnInvolvementDto {
+  guestsWithCpnInvolved: number;
+  initialAssessmentsSubmitted: number;
+  followUpSessionsLast30Days: number;
+  cpnReferralsLast30Days: number;
+  guests: CpnInvolvedGuestDto[];
+}
+
+export interface CpnInvolvedGuestDto {
+  guestId: string;
+  guestNumber: number;
+  name: string;
+  status: GuestStatus;
+  assignedCmhwName: string | null;
+  lastCpnContactAt: string | null;
+  hasInitialAssessment: boolean;
+  followUpSessions: number;
 }
 
 export interface PathwayCategoryTotalDto {
@@ -1212,4 +1235,22 @@ export interface DataQualityIssueTileDto {
   key: string;
   label: string;
   count: number;
+}
+
+// ---- Hub-wide contact history (GET /contacts) ----
+
+/** One row of the Contact History screen — a contact logged against any guest in the hub. */
+export interface ContactHistoryRowDto {
+  id: string;
+  guestId: string;
+  guestNumber: number;
+  guestName: string;
+  guestStatus: GuestStatus;
+  type: string;
+  outcome: string;
+  occurredAt: string;
+  notes: string | null;
+  createdByStaffId: string;
+  createdByName: string;
+  assignedCmhwName: string | null;
 }

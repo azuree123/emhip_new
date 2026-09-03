@@ -30,7 +30,9 @@ public sealed record HubManagerDashboardDto(
     IReadOnlyList<RecentActivityDto> RecentActivity,
     IReadOnlyList<ClinicalIndicatorDto> ClinicalComplexity,
     GuestDemographicsBreakdownDto Demographics,
-    IReadOnlyList<DataQualityIssueTileDto> DataQuality);
+    IReadOnlyList<DataQualityIssueTileDto> DataQuality,
+    CpnInvolvementDto CpnInvolvement,
+    IReadOnlyList<Reports.CaseloadReportRowDto> CaseloadPerCmhw);
 
 public sealed record PathwayDistributionDto(string Category, int Count, double Percentage);
 
@@ -49,3 +51,26 @@ public sealed record DemographicSliceDto(string Label, int Count, double Percent
 
 /// <summary>One row of the "Data quality issues" card.</summary>
 public sealed record DataQualityIssueTileDto(string Key, string Label, int Count);
+
+/// <summary>
+/// "CPN involvement" dashboard card — how much of the hub's caseload the Community Psychiatric
+/// Nurse is carrying: guests flagged CPN-involved on their clinical profile, submitted Part 1
+/// assessments, CPN follow-up sessions and CPN referrals raised in the last 30 days, plus the
+/// most recently seen CPN-involved guests.
+/// </summary>
+public sealed record CpnInvolvementDto(
+    int GuestsWithCpnInvolved,
+    int InitialAssessmentsSubmitted,
+    int FollowUpSessionsLast30Days,
+    int CpnReferralsLast30Days,
+    IReadOnlyList<CpnInvolvedGuestDto> Guests);
+
+public sealed record CpnInvolvedGuestDto(
+    Guid GuestId,
+    int GuestNumber,
+    string Name,
+    string Status,
+    string? AssignedCmhwName,
+    DateTimeOffset? LastCpnContactAt,
+    bool HasInitialAssessment,
+    int FollowUpSessions);

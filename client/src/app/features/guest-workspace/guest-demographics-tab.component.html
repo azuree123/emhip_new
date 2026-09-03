@@ -48,15 +48,16 @@
 
           <section class="card">
             <div class="card__header-row">
-              <h2 class="card__title">GP &amp; NHS details</h2>
+              <h2 class="card__title">Household, housing &amp; employment</h2>
               <span class="chip" [class.chip--complete]="sections()[1].complete" [class.chip--pending]="!sections()[1].complete">
                 {{ sections()[1].complete ? 'Completed' : 'Pending' }}
               </span>
             </div>
             <div class="field-grid">
-              <div class="field"><span class="field__label">GP name</span><span class="field__value">{{ d.gpName || '—' }}</span></div>
-              <div class="field"><span class="field__label">GP practice</span><span class="field__value">{{ d.gpPractice || '—' }}</span></div>
-              <div class="field"><span class="field__label">NHS number</span><span class="field__value">{{ d.nhsNumber || '—' }}</span></div>
+              <div class="field"><span class="field__label">Marital status</span><span class="field__value">{{ d.maritalStatus || '—' }}</span></div>
+              <div class="field"><span class="field__label">Living group</span><span class="field__value">{{ d.livingGroup || '—' }}</span></div>
+              <div class="field"><span class="field__label">Housing status</span><span class="field__value">{{ d.housingStatus || '—' }}</span></div>
+              <div class="field"><span class="field__label">Economic activity</span><span class="field__value">{{ d.employmentStatus || '—' }}</span></div>
             </div>
           </section>
 
@@ -76,30 +77,38 @@
 
           <section class="card">
             <div class="card__header-row">
-              <h2 class="card__title">Housing &amp; employment</h2>
+              <h2 class="card__title">GP &amp; NHS details</h2>
               <span class="chip" [class.chip--complete]="sections()[3].complete" [class.chip--pending]="!sections()[3].complete">
                 {{ sections()[3].complete ? 'Completed' : 'Pending' }}
               </span>
             </div>
             <div class="field-grid">
-              <div class="field"><span class="field__label">Housing status</span><span class="field__value">{{ d.housingStatus || '—' }}</span></div>
-              <div class="field"><span class="field__label">Economic activity</span><span class="field__value">{{ d.employmentStatus || '—' }}</span></div>
+              <div class="field"><span class="field__label">GP name</span><span class="field__value">{{ d.gpName || '—' }}</span></div>
+              <div class="field"><span class="field__label">GP practice</span><span class="field__value">{{ d.gpPractice || '—' }}</span></div>
+              <div class="field"><span class="field__label">NHS number</span><span class="field__value">{{ d.nhsNumber || '—' }}</span></div>
             </div>
           </section>
         } @else {
           <section class="card">
             <div class="card__header-row">
-              <h2 class="card__title">Edit demographics</h2>
+              <h2 class="card__title">Complete demographics</h2>
+              <span class="section-title__hint">Fill in what you can now — every field can be updated later.</span>
             </div>
             <form class="edit-form" (ngSubmit)="save()">
+              <h3 class="edit-form__section">Identity &amp; language</h3>
               <div class="edit-form__grid">
                 <label class="edit-form__field">
                   <span>Ethnicity</span>
-                  <input type="text" name="ethnicity" [(ngModel)]="form.ethnicity" />
+                  <select name="ethnicity" [(ngModel)]="form.ethnicity">
+                    <option [ngValue]="null">Not recorded</option>
+                    @for (option of ethnicityChoices(); track option) {
+                      <option [ngValue]="option">{{ option }}</option>
+                    }
+                  </select>
                 </label>
                 <label class="edit-form__field">
                   <span>Nationality</span>
-                  <input type="text" name="nationality" [(ngModel)]="form.nationality" />
+                  <input type="text" name="nationality" [(ngModel)]="form.nationality" placeholder="British" />
                 </label>
                 <label class="edit-form__field">
                   <!-- Recorded separately from nationality — options from the "CountryOfOrigin" lookup category. -->
@@ -116,51 +125,103 @@
                 </label>
                 <label class="edit-form__field">
                   <span>Preferred language</span>
-                  <input type="text" name="preferredLanguage" [(ngModel)]="form.preferredLanguage" />
+                  <input type="text" name="preferredLanguage" [(ngModel)]="form.preferredLanguage" placeholder="English" />
                 </label>
                 <label class="edit-form__field edit-form__field--checkbox">
                   <input type="checkbox" name="interpreterNeeded" [(ngModel)]="form.interpreterNeeded" />
                   <span>Interpreter needed</span>
                 </label>
+              </div>
+
+              <h3 class="edit-form__section">Household, housing &amp; employment</h3>
+              <div class="edit-form__grid">
+                <label class="edit-form__field">
+                  <!-- Spec §6.1 — options from the "MaritalStatus" lookup category. -->
+                  <span>Marital status</span>
+                  <select name="maritalStatus" [(ngModel)]="form.maritalStatus">
+                    <option [ngValue]="null">Not recorded</option>
+                    @for (option of maritalStatusChoices(); track option) {
+                      <option [ngValue]="option">{{ option }}</option>
+                    }
+                  </select>
+                  @if (maritalStatusChoices().length === 0) {
+                    <span class="edit-form__hint">No marital status options are configured in Settings &rarr; Lookups yet.</span>
+                  }
+                </label>
+                <label class="edit-form__field">
+                  <!-- Spec §6.1 — options from the "LivingGroup" lookup category. -->
+                  <span>Living group</span>
+                  <select name="livingGroup" [(ngModel)]="form.livingGroup">
+                    <option [ngValue]="null">Not recorded</option>
+                    @for (option of livingGroupChoices(); track option) {
+                      <option [ngValue]="option">{{ option }}</option>
+                    }
+                  </select>
+                  @if (livingGroupChoices().length === 0) {
+                    <span class="edit-form__hint">No living group options are configured in Settings &rarr; Lookups yet.</span>
+                  }
+                </label>
                 <label class="edit-form__field">
                   <span>Housing status</span>
-                  <input type="text" name="housingStatus" [(ngModel)]="form.housingStatus" />
+                  <select name="housingStatus" [(ngModel)]="form.housingStatus">
+                    <option [ngValue]="null">Not recorded</option>
+                    @for (option of housingChoices(); track option) {
+                      <option [ngValue]="option">{{ option }}</option>
+                    }
+                  </select>
                 </label>
                 <label class="edit-form__field">
                   <span>Economic activity</span>
-                  <input type="text" name="employmentStatus" [(ngModel)]="form.employmentStatus" />
+                  <select name="employmentStatus" [(ngModel)]="form.employmentStatus">
+                    <option [ngValue]="null">Not recorded</option>
+                    @for (option of employmentChoices(); track option) {
+                      <option [ngValue]="option">{{ option }}</option>
+                    }
+                  </select>
                 </label>
+              </div>
+
+              <h3 class="edit-form__section">Emergency contact</h3>
+              <div class="edit-form__grid">
                 <label class="edit-form__field">
                   <span>Emergency contact name</span>
-                  <input type="text" name="emergencyContactName" [(ngModel)]="form.emergencyContactName" />
+                  <input type="text" name="emergencyContactName" [(ngModel)]="form.emergencyContactName" placeholder="Contact name" />
                 </label>
                 <label class="edit-form__field">
                   <span>Emergency contact phone</span>
-                  <input type="text" name="emergencyContactPhone" [(ngModel)]="form.emergencyContactPhone" />
+                  <input type="text" name="emergencyContactPhone" [(ngModel)]="form.emergencyContactPhone" placeholder="077 1734 6784" />
                 </label>
                 <label class="edit-form__field">
                   <span>Relationship</span>
-                  <input type="text" name="emergencyContactRelationship" [(ngModel)]="form.emergencyContactRelationship" />
+                  <input type="text" name="emergencyContactRelationship" [(ngModel)]="form.emergencyContactRelationship" placeholder="e.g. Sister" />
                 </label>
+              </div>
+
+              <h3 class="edit-form__section">GP &amp; NHS details</h3>
+              <div class="edit-form__grid">
                 <label class="edit-form__field">
                   <span>GP name</span>
-                  <input type="text" name="gpName" [(ngModel)]="form.gpName" />
+                  <input type="text" name="gpName" [(ngModel)]="form.gpName" placeholder="Dr. Smith" />
                 </label>
                 <label class="edit-form__field">
                   <span>GP practice</span>
-                  <input type="text" name="gpPractice" [(ngModel)]="form.gpPractice" />
+                  <input type="text" name="gpPractice" [(ngModel)]="form.gpPractice" placeholder="Riverside Practice" />
                 </label>
                 <label class="edit-form__field">
                   <span>NHS number</span>
-                  <input type="text" name="nhsNumber" [(ngModel)]="form.nhsNumber" />
+                  <input type="text" name="nhsNumber" [(ngModel)]="form.nhsNumber" placeholder="000 000 0000" />
                 </label>
               </div>
+
               @if (saveError()) {
                 <p class="form-error">{{ saveError() }}</p>
               }
               <div class="edit-form__actions">
                 <button type="button" class="btn-ghost" (click)="cancelEdit()">Cancel</button>
-                <button type="submit" class="btn-primary" [disabled]="saving()">{{ saving() ? 'Saving…' : 'Save changes' }}</button>
+                <button type="submit" class="btn-ghost" [disabled]="saving()">{{ saving() ? 'Saving…' : 'Save changes' }}</button>
+                <button type="button" class="btn-primary" [disabled]="saving()" (click)="save(true)">
+                  {{ saving() ? 'Saving…' : 'Save & continue to Initial conversation' }}
+                </button>
               </div>
             </form>
           </section>
@@ -172,7 +233,7 @@
           <div class="card__header-row">
             <h2 class="card__title">Profile completion</h2>
             @if (!editing()) {
-              <button type="button" class="btn-link" (click)="startEdit()">Edit</button>
+              <button type="button" class="btn-link" (click)="startEdit()">{{ allComplete() ? 'Edit' : 'Complete now' }}</button>
             }
           </div>
           <div class="completion">
@@ -202,10 +263,46 @@
                 </li>
               }
             </ul>
+            @if (savedAt(); as saved) {
+              <p class="completion__saved">Saved at {{ saved.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }}</p>
+            }
             <p class="completion__note">
-              Complete these sections when you have time with the guest — they are not required to start the
-              initial conversation but are important for accurate commissioner reporting and clinical planning.
+              Registration only captures the guest's identity and ethnicity — complete these sections when you have
+              time with the guest. They are not required to start the initial conversation but are important for
+              accurate commissioner reporting and clinical planning.
             </p>
+          </div>
+        </section>
+
+        <!-- The flow continues here: demographics → initial conversation → DIALOG scores. -->
+        <section class="card next-steps">
+          <h2 class="card__title">Next steps</h2>
+          <ol class="next-steps__list">
+            <li class="next-steps__item next-steps__item--current">
+              <span class="next-steps__index">1</span>
+              <span class="next-steps__text">
+                <span class="next-steps__label">Demographics</span>
+                <span class="next-steps__hint">{{ allComplete() ? 'All sections complete' : 'Complete when you have time with the guest' }}</span>
+              </span>
+            </li>
+            <li class="next-steps__item">
+              <span class="next-steps__index">2</span>
+              <span class="next-steps__text">
+                <span class="next-steps__label">Initial conversation</span>
+                <span class="next-steps__hint">Presenting issues, risk screening, pathway &amp; allocation</span>
+              </span>
+            </li>
+            <li class="next-steps__item">
+              <span class="next-steps__index">3</span>
+              <span class="next-steps__text">
+                <span class="next-steps__label">DIALOG scores</span>
+                <span class="next-steps__hint">Baseline across the 11 life areas</span>
+              </span>
+            </li>
+          </ol>
+          <div class="next-steps__actions">
+            <button type="button" class="btn-primary" (click)="goTo('initial')">Continue to Initial conversation</button>
+            <button type="button" class="btn-ghost" (click)="goTo('dialog')">Go to DIALOG scores</button>
           </div>
         </section>
       </aside>

@@ -147,6 +147,16 @@ export class AppShellComponent implements OnInit {
           permissions: [Permissions.UrgentCases.View],
         },
         {
+          // Speech bubble drawn as a filled outer shape with an opposite-wound inner subpath,
+          // matching the other nav glyphs. Hub-wide log of every contact recorded on a guest.
+          label: 'Contact History',
+          route: '/contact-history',
+          iconViewBox: '0 0 16 16',
+          iconPath:
+            'M 1 1 L 15 1 L 15 11 L 6 11 L 3 14 L 3 11 L 1 11 Z M 2.2 2.2 L 2.2 9.8 L 4.2 9.8 L 4.2 11.2 L 5.6 9.8 L 13.8 9.8 L 13.8 2.2 Z',
+          permissions: [Permissions.Guests.View],
+        },
+        {
           // Outlined page with a folded corner — drawn as one filled path with an
           // opposite-wound inner subpath, matching the other nav glyphs.
           label: 'Documents',

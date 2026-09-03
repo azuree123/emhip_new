@@ -93,39 +93,27 @@
           </svg>
           <input
             type="text"
-            placeholder="Search guest by name, ID, phone, CMHW..."
-            aria-label="Search follow-up contacts"
+            placeholder="Search guest by name, ID, CMHW..."
+            aria-label="Search your caseload"
             [value]="actionSearch()"
             (input)="actionSearch.set($any($event.target).value)"
           />
         </div>
-        <!-- Static dropdown affordances from the design (no backing filter data yet). -->
-        <div class="filter-chip" aria-hidden="true">
-          Pathway
-          <svg width="14" height="14" viewBox="0 0 8.75 4.375" fill="none">
-            <path
-              d="M 9.28 0.53 C 9.573 0.237 9.573 -0.237 9.28 -0.53 C 8.987 -0.823 8.513 -0.823 8.22 -0.53 L 8.75 0 L 9.28 0.53 Z M 4.375 4.375 L 3.845 4.905 C 4.138 5.198 4.612 5.198 4.905 4.905 L 4.375 4.375 Z M 0.53 -0.53 C 0.237 -0.823 -0.237 -0.823 -0.53 -0.53 C -0.823 -0.237 -0.823 0.237 -0.53 0.53 L 0 0 L 0.53 -0.53 Z M 8.75 0 L 8.22 -0.53 L 3.845 3.845 L 4.375 4.375 L 4.905 4.905 L 9.28 0.53 L 8.75 0 Z M 4.375 4.375 L 4.905 3.845 L 0.53 -0.53 L 0 0 L -0.53 0.53 L 3.845 4.905 L 4.375 4.375 Z"
-              fill="currentColor"
-            />
-          </svg>
+        <!-- Pathway: a real GET /guests filter over the worker's caseload. Sort orders the table. -->
+        <div class="filter-select">
+          <select aria-label="Filter by pathway" [value]="pathwayFilter()" (change)="onPathwayChange($any($event.target).value)">
+            <option value="">Pathway</option>
+            @for (option of pathwayOptions; track option.value) {
+              <option [value]="option.value">{{ option.label }}</option>
+            }
+          </select>
         </div>
-        <div class="filter-chip" aria-hidden="true">
-          Contact Status
-          <svg width="14" height="14" viewBox="0 0 8.75 4.375" fill="none">
-            <path
-              d="M 9.28 0.53 C 9.573 0.237 9.573 -0.237 9.28 -0.53 C 8.987 -0.823 8.513 -0.823 8.22 -0.53 L 8.75 0 L 9.28 0.53 Z M 4.375 4.375 L 3.845 4.905 C 4.138 5.198 4.612 5.198 4.905 4.905 L 4.375 4.375 Z M 0.53 -0.53 C 0.237 -0.823 -0.237 -0.823 -0.53 -0.53 C -0.823 -0.237 -0.823 0.237 -0.53 0.53 L 0 0 L 0.53 -0.53 Z M 8.75 0 L 8.22 -0.53 L 3.845 3.845 L 4.375 4.375 L 4.905 4.905 L 9.28 0.53 L 8.75 0 Z M 4.375 4.375 L 4.905 3.845 L 0.53 -0.53 L 0 0 L -0.53 0.53 L 3.845 4.905 L 4.375 4.375 Z"
-              fill="currentColor"
-            />
-          </svg>
-        </div>
-        <div class="filter-chip" aria-hidden="true">
-          Sort: next contact date
-          <svg width="14" height="14" viewBox="0 0 8.75 4.375" fill="none">
-            <path
-              d="M 9.28 0.53 C 9.573 0.237 9.573 -0.237 9.28 -0.53 C 8.987 -0.823 8.513 -0.823 8.22 -0.53 L 8.75 0 L 9.28 0.53 Z M 4.375 4.375 L 3.845 4.905 C 4.138 5.198 4.612 5.198 4.905 4.905 L 4.375 4.375 Z M 0.53 -0.53 C 0.237 -0.823 -0.237 -0.823 -0.53 -0.53 C -0.823 -0.237 -0.823 0.237 -0.53 0.53 L 0 0 L 0.53 -0.53 Z M 8.75 0 L 8.22 -0.53 L 3.845 3.845 L 4.375 4.375 L 4.905 4.905 L 9.28 0.53 L 8.75 0 Z M 4.375 4.375 L 4.905 3.845 L 0.53 -0.53 L 0 0 L -0.53 0.53 L 3.845 4.905 L 4.375 4.375 Z"
-              fill="currentColor"
-            />
-          </svg>
+        <div class="filter-select">
+          <select aria-label="Sort contacts" [value]="sortBy()" (change)="onSortChange($any($event.target).value)">
+            @for (option of sortOptions; track option.value) {
+              <option [value]="option.value">{{ option.label }}</option>
+            }
+          </select>
         </div>
       </div>
 
@@ -138,7 +126,7 @@
               fill="currentColor"
             />
           </svg>
-          All guest ({{ d.totalActiveGuests }})
+          All guest ({{ caseload().length }})
         </button>
         <button type="button" class="status-chip" [class.status-chip--active]="chip() === 'overdue'" (click)="setChip('overdue')">
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
@@ -147,7 +135,7 @@
               fill="currentColor"
             />
           </svg>
-          Overdue ({{ overdueItems().length }})
+          Overdue ({{ overdueGuests().length }})
         </button>
         <button type="button" class="status-chip" [class.status-chip--active]="chip() === 'today'" (click)="setChip('today')">
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
@@ -156,7 +144,7 @@
               fill="currentColor"
             />
           </svg>
-          Due today - not seen ({{ dueTodayItems().length }})
+          Due today - not seen ({{ dueTodayGuests().length }})
         </button>
         <button type="button" class="status-chip" [class.status-chip--active]="chip() === 'week'" (click)="setChip('week')">
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
@@ -165,9 +153,61 @@
               fill="currentColor"
             />
           </svg>
-          Upcoming this week ({{ upcomingWeekItems().length }})
+          Upcoming this week ({{ upcomingWeekGuests().length }})
         </button>
       </div>
+
+      <!-- The filtered caseload — every guest assigned to you that matches the filters above. -->
+      <div class="contact-table">
+        <div class="contact-table__header">
+          <span>Guest</span>
+          <span>Status</span>
+          <span>Pathway</span>
+          <span>Last activity</span>
+          <span>Next contact</span>
+          <span></span>
+        </div>
+        @for (g of filteredGuests(); track g.id) {
+          <div class="contact-table__row" (click)="openGuest(g.id)">
+            <span class="contact-guest">
+              <span class="contact-guest__avatar">{{ initials(guestName(g)) }}</span>
+              <span class="contact-guest__text">
+                <span class="contact-guest__name">{{ guestName(g) }}</span>
+                <span class="contact-guest__id">ID: G-{{ g.guestNumber }}</span>
+              </span>
+            </span>
+            <span class="contact-cell">
+              <span class="status-pill" [attr.data-status]="g.status">{{ statusLabel(g.status) }}</span>
+              @if (g.isUrgent) {
+                <span class="status-pill status-pill--urgent">Urgent</span>
+              }
+            </span>
+            <span class="contact-cell">{{ pathwayLabel(g) }}</span>
+            <span class="contact-cell">{{ formatDayMonth(g.lastContactAt) }}</span>
+            @if (nextContactFor(g); as next) {
+              <span class="contact-cell" [class.contact-cell--red]="next.tone === 'red'" [class.contact-cell--yellow]="next.tone === 'yellow'">
+                {{ next.text }}
+              </span>
+            }
+            <span class="contact-cell contact-cell--action">
+              <button type="button" class="contact-open" (click)="$event.stopPropagation(); openGuest(g.id)">Open</button>
+            </span>
+          </div>
+        } @empty {
+          @if (caseloadState() === 'loading') {
+            <div class="empty">Loading your caseload…</div>
+          } @else if (caseloadState() === 'unavailable') {
+            <div class="empty">Your caseload is unavailable right now.</div>
+          } @else if (caseload().length === 0) {
+            <div class="empty">No guests are assigned to you yet.</div>
+          } @else {
+            <div class="empty">No guests match these filters.</div>
+          }
+        }
+      </div>
+      @if (caseloadState() === 'ready' && filteredGuests().length > 0) {
+        <div class="contact-table__footer">Showing {{ filteredGuests().length }} of {{ caseload().length }} guests on your caseload</div>
+      }
     </div>
 
     <!-- Guest Seen (design y=1031) — the signed-in worker's own contacts (mine=true). -->

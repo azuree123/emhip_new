@@ -1,6 +1,7 @@
 import { Component, computed, effect, inject, input, signal } from '@angular/core';
 import { Location } from '@angular/common';
-import { Router } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { ActivatedRoute, Router } from '@angular/router';
 import { Observable, forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { GuestOverviewDto } from '../../core/api-models';
@@ -86,6 +87,7 @@ export class GuestWorkspaceComponent {
   private readonly guestsApi = inject(GuestsApiService);
   private readonly location = inject(Location);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
   private readonly auth = inject(AuthService);
 
   readonly guestId = input.required<string>();
@@ -144,12 +146,26 @@ export class GuestWorkspaceComponent {
     return last ? formatDate(last) : null;
   });
 
+  /** Set when the record was opened with ?tab=demographics straight after registration. */
+  readonly openDemographicsEditor = signal(false);
+
   constructor() {
     effect((onCleanup) => {
       const id = this.guestId();
       let cancelled = false;
       onCleanup(() => (cancelled = true));
       this.loadOverview(id, () => cancelled);
+    });
+
+    // Deep links pick the tab: the registration success screen lands on Demographics (with
+    // the editor open, so the remaining sections can be completed straight away), the
+    // dashboards' "Start conversation" on Initial Conversation, Contact History on Contacts.
+    this.route.queryParamMap.pipe(takeUntilDestroyed()).subscribe((params) => {
+      const tab = params.get('tab');
+      if (tab && this.tabs.some((t) => t.id === tab)) {
+        this.activeTab.set(tab as TabId);
+        this.openDemographicsEditor.set(tab === 'demographics');
+      }
     });
   }
 
@@ -166,6 +182,12 @@ export class GuestWorkspaceComponent {
   selectTab(id: TabId): void {
     this.pendingRiskForm.set(false);
     this.activeTab.set(id);
+  }
+
+  /** The Demographics tab's "Continue to …" hand-off into the next section of the flow. */
+  continueFromDemographics(step: 'initial' | 'dialog'): void {
+    this.openDemographicsEditor.set(false);
+    this.selectTab(step);
   }
 
   /** Urgent flags are raised by recording a risk assessment — jump to Clinical Details with
