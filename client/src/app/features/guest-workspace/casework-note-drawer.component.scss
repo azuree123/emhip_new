@@ -689,8 +689,66 @@
 }
 
 // The lead toggle sits directly under its own label, so it drops the row's top margin.
-.toggle-row--lead {
-  margin-top: 0;
+// "Is this a CPN contact?" card — contact-popup 1:234: 812x78, radius 8, inset 1px #eeeeee;
+// 48px radius-6 icon tile (red when on), 14/500 title over a 12/500 grey hint, switch at right.
+.cpn-toggle {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 78px;
+  padding: 15px 27px 15px 15px;
+  box-sizing: border-box;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: inset 0 0 0 1px #eeeeee;
+
+  &__tile {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    flex-shrink: 0;
+    border-radius: 6px;
+    background: t.$color-tile-bg;
+    color: t.$color-text-meta;
+    transition: background 120ms ease, color 120ms ease;
+  }
+
+  &__text {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    min-width: 0;
+    flex: 1;
+  }
+
+  &__title {
+    font-family: t.$font-primary;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 24px;
+    color: t.$color-text-primary;
+  }
+
+  &__hint {
+    font-family: t.$font-primary;
+    font-weight: 500;
+    font-size: 12px;
+    line-height: 18px;
+    color: t.$color-text-meta;
+  }
+
+  .switch {
+    margin-left: auto;
+  }
+
+  &--on {
+    .cpn-toggle__tile {
+      background: t.$color-brand-red;
+      color: #fff;
+    }
+  }
 }
 
 // ---- Refer-to-CPN / MDT discussion detail boxes (revealed by their toggles) ----
