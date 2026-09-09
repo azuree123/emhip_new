@@ -6,6 +6,7 @@ namespace Emhip.Application.Documents;
 public sealed record DocumentListItemDto(
     Guid Id,
     Guid? GuestId,
+    Guid? CaseworkNoteId,
     string? GuestName,
     int? GuestNumber,
     string Title,

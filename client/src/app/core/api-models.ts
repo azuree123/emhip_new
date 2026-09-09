@@ -345,6 +345,17 @@ export interface CaseworkNoteDto {
   createdAt: string;
   submittedAt: string | null;
   actions: CaseworkNoteActionDto[];
+  /** Files attached through the Document Management module with this note's id. */
+  attachments: CaseworkNoteAttachmentDto[];
+}
+
+export interface CaseworkNoteAttachmentDto {
+  documentId: string;
+  fileName: string;
+  contentType: string;
+  sizeBytes: number;
+  uploadedAt: string;
+  uploadedByName: string;
 }
 
 export interface GuestPathwayDto {
@@ -754,6 +765,98 @@ export interface EscalateToCmhtRequest {
 
 export interface ResolveUrgentCaseRequest {
   resolutionNote?: string | null;
+  /** "Pathway re-entry decision" — applied to the guest and appended to the pathway history when it differs. */
+  pathwayAfterResolution?: GuestPathway | null;
+  /** yyyy-MM-dd; scheduled as a follow-up for the guest's CMHW. */
+  nextContactDate?: string | null;
+  /** Free text, e.g. "Yes — weekly CPN input added"; null when unchanged. */
+  sessionFrequencyChange?: string | null;
+  inpatientAdmission?: boolean;
+}
+
+// ---- Urgent Episode Record (design Desktop57) ----
+
+/** One "Episode N" tab on the record screen. */
+export interface UrgentEpisodeSummaryDto {
+  id: string;
+  episodeNumber: number;
+  raisedAt: string;
+  resolvedAt: string | null;
+}
+
+export interface UrgentEpisodeIntakeDto {
+  riskAssessmentId: string | null;
+  riskFlags: string[];
+  notes: string | null;
+  assessedAt: string | null;
+  assessedByName: string | null;
+}
+
+export type UrgentEpisodeTimelineKind = 'flag' | 'note' | 'escalation' | 'contact' | 'followup' | 'pathway' | 'resolved';
+
+export interface UrgentEpisodeTimelineEntryDto {
+  kind: UrgentEpisodeTimelineKind;
+  title: string;
+  description: string | null;
+  secondaryDescription: string | null;
+  occurredAt: string;
+  actorName: string | null;
+}
+
+export interface UrgentEpisodeAuditEntryDto {
+  tone: 'red' | 'blue' | 'green' | 'grey';
+  title: string;
+  detail: string;
+  occurredAt: string;
+}
+
+export interface UrgentEpisodeRecordDto {
+  id: string;
+  guestId: string;
+  guestName: string;
+  guestNumber: number;
+  episodeNumber: number;
+  episodes: UrgentEpisodeSummaryDto[];
+  responseHours: number;
+  raisedAt: string;
+  deadlineAt: string;
+  raisedByName: string | null;
+  pathwayAtFlag: GuestPathway | null;
+  assignedCmhwName: string | null;
+  escalatedToCmhtAt: string | null;
+  escalatedToCmhtByName: string | null;
+  cmhtTeam: string | null;
+  escalationReason: string | null;
+  escalationUrgency: string | null;
+  escalationNotes: string | null;
+  isResolved: boolean;
+  resolvedAt: string | null;
+  resolvedByName: string | null;
+  resolvedWithinWindow: boolean | null;
+  resolutionNote: string | null;
+  pathwayAfterResolution: GuestPathway | null;
+  cmhwAfterResolutionName: string | null;
+  nextContactDate: string | null;
+  sessionFrequencyChange: string | null;
+  inpatientAdmission: boolean;
+  followUpsLogged: number;
+  durationMinutes: number;
+  recordAccessCount: number;
+  intake: UrgentEpisodeIntakeDto;
+  timeline: UrgentEpisodeTimelineEntryDto[];
+  auditTrail: UrgentEpisodeAuditEntryDto[];
+}
+
+// ---- UK GDPR: per-guest access log ----
+
+export interface GuestAuditEntryDto {
+  id: string;
+  occurredAt: string;
+  actorName: string;
+  action: 'Read' | 'Create' | 'Update' | 'Delete' | string;
+  entityName: string;
+  entityId: string;
+  details: string | null;
 }
 
 // ---- New report tabs ----
@@ -853,6 +956,8 @@ export type DocumentStorageProvider = 'Local' | 'AwsS3' | 'S3Compatible' | 'Azur
 export interface DocumentListItemDto {
   id: string;
   guestId: string | null;
+  /** Set when the file was attached to a casework note. */
+  caseworkNoteId: string | null;
   guestName: string | null;
   guestNumber: number | null;
   title: string;
@@ -939,6 +1044,8 @@ export interface UploadDocumentRequest {
   tags?: string | null;
   /** yyyy-MM-dd; defaults from the retention setting when omitted. */
   retainUntil?: string | null;
+  /** Attach to a draft casework note (the note's guest becomes the document's guest). */
+  caseworkNoteId?: string | null;
 }
 
 export interface UpdateDocumentRequest {

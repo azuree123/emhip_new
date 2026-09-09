@@ -8,13 +8,13 @@ namespace Emhip.Application.Documents;
 
 public sealed record GetDocumentListQuery(
     Guid HubId, string? Q, Guid? GuestId, string? Category, DocumentStatus? Status, string? Tag,
-    bool IncludeDeleted, bool DeletedOnly, string? Cursor, int PageSize) : IRequest<KeysetPage<DocumentListItemDto>>;
+    bool IncludeDeleted, bool DeletedOnly, string? Cursor, int PageSize, Guid? CaseworkNoteId = null) : IRequest<KeysetPage<DocumentListItemDto>>;
 
 public sealed class GetDocumentListQueryHandler(IDocumentReadService reads) : IRequestHandler<GetDocumentListQuery, KeysetPage<DocumentListItemDto>>
 {
     public Task<KeysetPage<DocumentListItemDto>> Handle(GetDocumentListQuery request, CancellationToken cancellationToken) =>
         reads.GetListAsync(request.HubId, request.Q, request.GuestId, request.Category, request.Status, request.Tag,
-            request.IncludeDeleted, request.DeletedOnly, request.Cursor, request.PageSize, cancellationToken);
+            request.IncludeDeleted, request.DeletedOnly, request.Cursor, request.PageSize, cancellationToken, request.CaseworkNoteId);
 }
 
 public sealed record GetDocumentDetailQuery(Guid HubId, Guid DocumentId) : IRequest<DocumentDetailDto?>;
@@ -34,7 +34,7 @@ public sealed class GetDocumentStatsQueryHandler(IDocumentReadService reads) : I
 }
 
 /// <summary>Open stream for a stored version — the caller (controller) owns disposing it.</summary>
-public sealed record DocumentDownloadDto(string FileName, string ContentType, long SizeBytes, string Sha256, Stream Content);
+public sealed record DocumentDownloadDto(string FileName, string ContentType, long SizeBytes, string Sha256, Stream Content, Guid? GuestId = null);
 
 /// <summary>Downloads a specific version, or the current one when <paramref name="VersionNumber"/> is null.</summary>
 public sealed record GetDocumentDownloadQuery(Guid HubId, Guid DocumentId, int? VersionNumber) : IRequest<DocumentDownloadDto?>;
@@ -57,6 +57,6 @@ public sealed class GetDocumentDownloadQueryHandler(IAppDbContext db, IDocumentS
         var storage = await storageFactory.GetAsync(version.StorageProvider, cancellationToken);
         var stream = await storage.OpenReadAsync(version.StorageKey, cancellationToken);
 
-        return new DocumentDownloadDto(version.FileName, version.ContentType, version.SizeBytes, version.Sha256, stream);
+        return new DocumentDownloadDto(version.FileName, version.ContentType, version.SizeBytes, version.Sha256, stream, document.GuestId);
     }
 }

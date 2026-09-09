@@ -182,6 +182,11 @@ production.**
 
 ## Production considerations
 
+> **Data protection:** `docs/uk-gdpr-compliance.md` maps the UK GDPR requirements to the controls in this
+> codebase (audit logging, subject-access export, anonymisation, security headers, lockout, idle sign-out,
+> retention) and lists the organisational actions — DPIA, privacy notices, processor agreements, encryption
+> at rest — that remain with the controller.
+
 Whichever deployment path you use, before treating this as production-ready:
 
 - **Real email**: replace `LoggingEmailSender` (see "Authentication, roles & permissions" above)

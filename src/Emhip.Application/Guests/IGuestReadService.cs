@@ -45,4 +45,7 @@ public interface IGuestReadService
     /// <summary>All quick notes for the guest, pinned first — the Notes tab's list.</summary>
     Task<IReadOnlyList<Dtos.GuestNoteDto>> GetNotesAsync(Guid guestId, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<Actions.GuestActionDto>> GetActionsAsync(Guid guestId, CancellationToken cancellationToken = default);
+
+    /// <summary>The guest's access log (audit events), newest first; empty when the guest is not in the hub.</summary>
+    Task<IReadOnlyList<Compliance.GuestAuditEntryDto>> GetAccessLogAsync(Guid hubId, Guid guestId, int limit, CancellationToken cancellationToken = default);
 }

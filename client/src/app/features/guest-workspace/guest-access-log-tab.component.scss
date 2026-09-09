@@ -1,0 +1,94 @@
+@use './guest-tab-shared';
+@use './guest-workspace.tokens' as t;
+
+.count-label {
+  font-family: t.$font-primary;
+  font-size: 12px;
+  font-weight: 500;
+  color: t.$color-text-meta;
+}
+
+.intro {
+  margin: 0 0 16px;
+  font-family: t.$font-primary;
+  font-size: 13px;
+  line-height: 20px;
+  color: t.$color-text-meta;
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+.log {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: t.$font-primary;
+  font-size: 13px;
+  color: t.$color-text-body;
+
+  th {
+    text-align: left;
+    padding: 8px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    color: t.$color-text-meta;
+    border-bottom: 1px solid t.$color-border;
+    white-space: nowrap;
+  }
+
+  td {
+    padding: 10px 12px;
+    border-bottom: 1px solid t.$color-divider;
+    vertical-align: top;
+  }
+
+  tr:last-child td {
+    border-bottom: none;
+  }
+
+  &__when {
+    white-space: nowrap;
+    color: t.$color-text-meta;
+  }
+
+  &__who {
+    white-space: nowrap;
+    font-weight: 500;
+    color: t.$color-text-primary;
+  }
+
+  &__event {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: t.$radius-pill;
+    font-size: 12px;
+    font-weight: 500;
+    white-space: nowrap;
+    background: t.$color-neutral-bg;
+    color: t.$color-neutral-text;
+
+    &[data-tone='write'] {
+      background: t.$color-gold-bg;
+      color: t.$color-gold-text;
+    }
+
+    &[data-tone='danger'] {
+      background: t.$color-chip-red-bg;
+      color: t.$color-brand-red;
+    }
+  }
+
+  &__details {
+    color: t.$color-text-meta;
+    overflow-wrap: anywhere;
+  }
+}
+
+.empty-state {
+  margin: 0;
+  font-family: t.$font-primary;
+  font-size: 14px;
+  color: t.$color-text-meta;
+}

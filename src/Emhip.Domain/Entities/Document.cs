@@ -16,6 +16,9 @@ public class Document : AggregateRoot
     /// <summary>Set when the document belongs to a guest's record; null for hub-level documents (policies, templates…).</summary>
     public Guid? GuestId { get; private set; }
 
+    /// <summary>Set when the file was attached to a casework note; the document also carries that note's guest.</summary>
+    public Guid? CaseworkNoteId { get; private set; }
+
     public string Title { get; private set; } = default!;
     public string? Description { get; private set; }
 
@@ -50,10 +53,12 @@ public class Document : AggregateRoot
 
     public Document(
         Guid hubId, string title, string category, Guid createdByStaffId,
-        Guid? guestId = null, string? description = null, string? tags = null, DateOnly? retainUntil = null)
+        Guid? guestId = null, string? description = null, string? tags = null, DateOnly? retainUntil = null,
+        Guid? caseworkNoteId = null)
     {
         HubId = hubId;
         GuestId = guestId;
+        CaseworkNoteId = caseworkNoteId;
         Title = title;
         Category = category;
         Description = description;

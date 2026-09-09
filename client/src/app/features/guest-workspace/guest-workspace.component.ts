@@ -20,6 +20,9 @@ import { GuestContactHistoryTabComponent } from './guest-contact-history-tab.com
 import { GuestCpnRecordTabComponent } from './guest-cpn-record-tab.component';
 import { GuestActionTabComponent } from './guest-action-tab.component';
 import { GuestNotesTabComponent } from './guest-notes-tab.component';
+import { GuestAccessLogTabComponent } from './guest-access-log-tab.component';
+import { DocumentConfirmDialogComponent } from '../documents/document-confirm-dialog.component';
+import { documentErrorMessage } from '../../core/documents-api.service';
 import { CaseworkNoteDrawerComponent } from './casework-note-drawer.component';
 import { formatDate, guestPathwayChip, initials, statusChip, urgentChip } from './guest-workspace.util';
 
@@ -35,7 +38,8 @@ type TabId =
   | 'cpn'
   | 'documents'
   | 'action'
-  | 'notes';
+  | 'notes'
+  | 'audit';
 
 interface TabDef {
   id: TabId;
@@ -82,6 +86,8 @@ interface TabDef {
     GuestActionTabComponent,
     GuestNotesTabComponent,
     CaseworkNoteDrawerComponent,
+    GuestAccessLogTabComponent,
+    DocumentConfirmDialogComponent,
   ],
   templateUrl: './guest-workspace.component.html',
   styleUrl: './guest-workspace.component.scss',
@@ -97,6 +103,15 @@ export class GuestWorkspaceComponent {
 
   /** "Add Contact" writes a casework note, so it follows the notes-add claim. */
   readonly canAddNote = this.auth.hasPermission(Permissions.Guests.NotesAdd);
+  /** Subject-access export and anonymisation are data-protection duties — separate claims (UK GDPR). */
+  readonly canExport = this.auth.hasPermission(Permissions.Guests.Export);
+  readonly canErase = this.auth.hasPermission(Permissions.Guests.Erase);
+  readonly canViewAudit = this.auth.hasPermission(Permissions.Guests.AuditView);
+
+  /** "Anonymise record" confirmation state. */
+  readonly anonymiseOpen = signal(false);
+  readonly anonymising = signal(false);
+  readonly anonymiseError = signal<string | null>(null);
 
   readonly tabs: TabDef[] = [
     { id: 'overview', label: 'Overview' },
@@ -111,6 +126,8 @@ export class GuestWorkspaceComponent {
     { id: 'documents', label: 'Documents' },
     { id: 'action', label: 'Actions & Reminders' },
     { id: 'notes', label: 'Notes' },
+    // Hub Managers / Admins only: who has accessed the record (UK GDPR accountability).
+    ...(this.auth.hasPermission(Permissions.Guests.AuditView) ? [{ id: 'audit' as const, label: 'Access Log' }] : []),
   ];
   readonly activeTab = signal<TabId>('overview');
 
@@ -222,36 +239,58 @@ export class GuestWorkspaceComponent {
     this.reloadOverview();
   }
 
-  /** Downloads the guest's full record as JSON. Sections the user may not view (403) export as null. */
+  /**
+   * Subject-access export (UK GDPR Art. 15): the API assembles the complete record — including
+   * the access log — as one JSON file and records the disclosure, so it never happens silently.
+   */
   exportRecord(): void {
     const guest = this.overview();
-    if (!guest || this.exporting()) return;
+    if (!guest || this.exporting() || !this.canExport) return;
     this.exporting.set(true);
+    this.guestsApi.exportRecord(this.guestId()).subscribe({
+      next: (blob) => {
+        this.exporting.set(false);
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement('a');
+        anchor.href = url;
+        anchor.download = `guest-record-G-${guest.guestNumber}.json`;
+        anchor.click();
+        URL.revokeObjectURL(url);
+      },
+      error: () => this.exporting.set(false),
+    });
+  }
 
-    const id = this.guestId();
-    const section = <T>(obs: Observable<T>): Observable<T | null> => obs.pipe(catchError(() => of(null)));
-    forkJoin({
-      overview: of(guest),
-      demographics: section(this.guestsApi.getDemographics(id)),
-      clinical: section(this.guestsApi.getClinical(id)),
-      clinicalProfile: section(this.guestsApi.getClinicalProfile(id)),
-      pathway: section(this.guestsApi.getPathway(id)),
-      followUps: section(this.guestsApi.getFollowUps(id)),
-      initialConversation: section(this.guestsApi.getInitialConversation(id)),
-      dialog: section(this.guestsApi.getDialog(id)),
-      actions: section(this.guestsApi.getActions(id)),
-    }).subscribe((record) => {
-      this.exporting.set(false);
-      const blob = new Blob(
-        [JSON.stringify({ exportedAt: new Date().toISOString(), ...record }, null, 2)],
-        { type: 'application/json' },
-      );
-      const url = URL.createObjectURL(blob);
-      const anchor = document.createElement('a');
-      anchor.href = url;
-      anchor.download = `guest-record-${guest.firstName}-${guest.lastName}-G-${guest.guestNumber}.json`;
-      anchor.click();
-      URL.revokeObjectURL(url);
+  // ---- "Anonymise record" (right to erasure / end of retention) ----
+
+  openAnonymise(): void {
+    if (!this.canErase) return;
+    this.anonymiseError.set(null);
+    this.anonymiseOpen.set(true);
+  }
+
+  cancelAnonymise(): void {
+    if (this.anonymising()) return;
+    this.anonymiseOpen.set(false);
+  }
+
+  confirmAnonymise(reason: string | null): void {
+    if (!reason || reason.trim().length < 10) {
+      this.anonymiseError.set('Record the reason for anonymising this guest (at least 10 characters).');
+      return;
+    }
+    this.anonymising.set(true);
+    this.anonymiseError.set(null);
+    this.guestsApi.anonymise(this.guestId(), reason.trim()).subscribe({
+      next: () => {
+        this.anonymising.set(false);
+        this.anonymiseOpen.set(false);
+        void this.router.navigateByUrl('/guests');
+      },
+      error: (err: unknown) => {
+        this.anonymising.set(false);
+        this.anonymiseError.set(documentErrorMessage(err, 'Could not anonymise this record.'));
+      },
     });
   }
 

@@ -1,10 +1,11 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, EventEmitter, OnInit, Output, computed, effect, inject, input, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Observable, forkJoin, map, of } from 'rxjs';
+import { Observable, forkJoin, map, of, switchMap } from 'rxjs';
 import {
   CapacityToConsent,
   CaseworkActionInput,
+  CaseworkNoteAttachmentDto,
   CaseworkNoteCategory,
   CaseworkNoteDto,
   CaseworkNoteInput,
@@ -22,6 +23,7 @@ import { AuthService } from '../../core/auth.service';
 import { Permissions } from '../../core/permissions';
 import { GuestsApiService } from '../../core/guests-api.service';
 import { SettingsApiService } from '../../core/settings-api.service';
+import { DocumentsApiService, documentErrorMessage } from '../../core/documents-api.service';
 import { StaffPickerComponent } from '../../shared/staff-picker.component';
 import { humanize } from './guest-workspace.util';
 
@@ -175,6 +177,7 @@ function today(): string {
 export class CaseworkNoteDrawerComponent implements OnInit {
   private readonly guestsApi = inject(GuestsApiService);
   private readonly settingsApi = inject(SettingsApiService);
+  private readonly documentsApi = inject(DocumentsApiService);
   private readonly auth = inject(AuthService);
 
   readonly guestId = input.required<string>();
@@ -193,6 +196,19 @@ export class CaseworkNoteDrawerComponent implements OnInit {
   readonly draftSavedAt = signal<string | null>(null);
   /** Id of the casework note being edited — from a resumed draft, or from the first draft save. */
   private readonly noteId = signal<string | null>(null);
+
+  // ---- Attachments — files stored in Document Management against this note ----
+  /** Uploading goes through the documents module, so it follows the documents.upload claim. */
+  readonly canAttach = this.auth.hasPermission(Permissions.Documents.Upload);
+  readonly attachments = signal<CaseworkNoteAttachmentDto[]>([]);
+  /** Files chosen but not yet stored; `percent` drives the progress bar, `error` keeps a failed one visible. */
+  readonly pendingUploads = signal<{ key: number; name: string; percent: number; error: string | null }[]>([]);
+  readonly attachError = signal<string | null>(null);
+  readonly removingAttachmentId = signal<string | null>(null);
+  readonly attachDragging = signal(false);
+  private nextUploadKey = 1;
+  readonly maxUploadMb = this.settingsApi.maxUploadMb;
+  readonly allowedExtensions = this.settingsApi.allowedExtensions;
 
   /** True until the CPN assessment state and the lookup lists have loaded. */
   readonly loading = signal(true);
@@ -325,6 +341,7 @@ export class CaseworkNoteDrawerComponent implements OnInit {
   constructor() {
     effect(() => {
       const existing = this.note();
+      this.attachments.set(existing?.attachments ?? []);
       this.noteId.set(existing?.id ?? null);
       this.header = existing ? this.headerFrom(existing) : this.emptyHeader();
       this.followUp = existing ? this.followUpFrom(existing) : this.emptyFollowUp();
@@ -616,6 +633,152 @@ export class CaseworkNoteDrawerComponent implements OnInit {
 
   removeActionRow(key: number): void {
     this.actions = this.actions.filter((a) => a.key !== key);
+  }
+
+  // ---- Attachments ----
+
+  onAttachmentInput(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    this.addFiles(Array.from(input.files ?? []));
+    input.value = '';
+  }
+
+  onAttachmentDragOver(event: DragEvent): void {
+    event.preventDefault();
+    this.attachDragging.set(true);
+  }
+
+  onAttachmentDragLeave(event: DragEvent): void {
+    event.preventDefault();
+    this.attachDragging.set(false);
+  }
+
+  onAttachmentDrop(event: DragEvent): void {
+    event.preventDefault();
+    this.attachDragging.set(false);
+    this.addFiles(Array.from(event.dataTransfer?.files ?? []));
+  }
+
+  /**
+   * A file needs a note id to be attached to, so a brand-new note is first saved as a draft
+   * (the same save "Save as draft" does — it needs only the contact method and date). Each file
+   * is then uploaded through the documents module with the note id, and lands in the guest's
+   * Documents tab as well as here.
+   */
+  private addFiles(files: File[]): void {
+    if (!files.length || !this.canAttach) return;
+    const problem = files.map((f) => this.validateFile(f)).find((p) => p !== null);
+    if (problem) {
+      this.attachError.set(problem);
+      return;
+    }
+    this.attachError.set(null);
+
+    this.ensureNoteId().subscribe({
+      next: (noteId) => files.forEach((file) => this.uploadAttachment(noteId, file)),
+      error: (err: unknown) =>
+        this.attachError.set(typeof err === 'string' ? err : documentErrorMessage(err, 'Could not save the draft before attaching files.')),
+    });
+  }
+
+  private ensureNoteId(): Observable<string> {
+    const existing = this.noteId();
+    if (existing) return of(existing);
+    if (this.body === 'assessment') return new Observable<string>((s) => s.error('Attachments are not available on the initial assessment.'));
+    const problem = this.validate(false);
+    if (problem) return new Observable<string>((s) => s.error(problem));
+
+    this.saving.set('draft');
+    return this.guestsApi.saveCaseworkNote(this.guestId(), this.toNoteInput(), false).pipe(
+      map((res) => {
+        this.noteId.set(res.id);
+        this.saving.set(null);
+        this.draftSavedAt.set(new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }));
+        this.saved.emit(false);
+        return res.id;
+      }),
+    );
+  }
+
+  private uploadAttachment(noteId: string, file: File): void {
+    const key = this.nextUploadKey++;
+    this.pendingUploads.update((list) => [...list, { key, name: file.name, percent: 0, error: null }]);
+    this.documentsApi
+      .upload({
+        file,
+        title: file.name.replace(/\.[^.]+$/, ''),
+        category: 'Casework note attachment',
+        guestId: this.guestId(),
+        caseworkNoteId: noteId,
+        description: 'Attached to a casework note',
+      })
+      .subscribe({
+        next: (progress) => {
+          if (progress.state === 'progress') {
+            this.pendingUploads.update((list) => list.map((u) => (u.key === key ? { ...u, percent: progress.percent } : u)));
+            return;
+          }
+          this.pendingUploads.update((list) => list.filter((u) => u.key !== key));
+          this.attachments.update((list) => [
+            ...list,
+            {
+              documentId: progress.id ?? '',
+              fileName: file.name,
+              contentType: file.type || 'application/octet-stream',
+              sizeBytes: file.size,
+              uploadedAt: new Date().toISOString(),
+              uploadedByName: this.loggedBy,
+            },
+          ]);
+        },
+        error: (err: unknown) => {
+          const message = documentErrorMessage(err, 'Could not upload this file.');
+          this.pendingUploads.update((list) => list.map((u) => (u.key === key ? { ...u, error: message } : u)));
+        },
+      });
+  }
+
+  dismissFailedUpload(key: number): void {
+    this.pendingUploads.update((list) => list.filter((u) => u.key !== key));
+  }
+
+  removeAttachment(attachment: CaseworkNoteAttachmentDto): void {
+    const noteId = this.noteId();
+    if (!noteId || this.removingAttachmentId()) return;
+    this.removingAttachmentId.set(attachment.documentId);
+    this.attachError.set(null);
+    this.guestsApi.removeCaseworkNoteAttachment(this.guestId(), noteId, attachment.documentId).subscribe({
+      next: () => {
+        this.removingAttachmentId.set(null);
+        this.attachments.update((list) => list.filter((a) => a.documentId !== attachment.documentId));
+      },
+      error: (err: unknown) => {
+        this.removingAttachmentId.set(null);
+        this.attachError.set(documentErrorMessage(err, 'Could not remove this attachment.'));
+      },
+    });
+  }
+
+  /** Client-side mirror of the server's upload rules (documents.upload.* settings). */
+  private validateFile(file: File): string | null {
+    const maxMb = this.maxUploadMb();
+    if (maxMb > 0 && file.size > maxMb * 1024 * 1024) {
+      return `"${file.name}" is ${this.formatSize(file.size)} — the limit is ${maxMb} MB.`;
+    }
+    const allowed = this.allowedExtensions();
+    if (allowed.length) {
+      const extension = file.name.includes('.') ? file.name.split('.').pop()!.toLowerCase() : '';
+      if (!allowed.includes(extension)) {
+        return `${extension ? `.${extension}` : 'That file type'} is not allowed. Accepted types: ${allowed.join(', ')}.`;
+      }
+    }
+    return null;
+  }
+
+  formatSize(bytes: number): string {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   }
 
   close(): void {

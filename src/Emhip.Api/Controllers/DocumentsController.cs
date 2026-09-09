@@ -17,7 +17,7 @@ namespace Emhip.Api.Controllers;
 [ApiController]
 [Route("documents")]
 [Authorize]
-public sealed class DocumentsController(IMediator mediator, ICurrentUser currentUser) : ControllerBase
+public sealed class DocumentsController(IMediator mediator, ICurrentUser currentUser, IAuditTrail audit) : ControllerBase
 {
     /// <summary>Document register — keyset-paginated. `deletedOnly=true` is the recycle bin.</summary>
     [HttpGet]
@@ -26,11 +26,12 @@ public sealed class DocumentsController(IMediator mediator, ICurrentUser current
         [FromQuery] string? q, [FromQuery] Guid? guestId, [FromQuery] string? category,
         [FromQuery] DocumentStatus? status, [FromQuery] string? tag,
         [FromQuery] bool includeDeleted = false, [FromQuery] bool deletedOnly = false,
-        [FromQuery] string? cursor = null, [FromQuery] int pageSize = 50, CancellationToken cancellationToken = default)
+        [FromQuery] string? cursor = null, [FromQuery] int pageSize = 50, [FromQuery] Guid? caseworkNoteId = null,
+        CancellationToken cancellationToken = default)
     {
         var result = await mediator.Send(
             new GetDocumentListQuery(currentUser.HubId, q, guestId, category, status, tag, includeDeleted, deletedOnly,
-                cursor, Math.Clamp(pageSize, 1, 200)),
+                cursor, Math.Clamp(pageSize, 1, 200), caseworkNoteId),
             cancellationToken);
         return Ok(result);
     }
@@ -61,6 +62,7 @@ public sealed class DocumentsController(IMediator mediator, ICurrentUser current
         [FromForm] string? description,
         [FromForm] string? tags,
         [FromForm] DateOnly? retainUntil,
+        [FromForm] Guid? caseworkNoteId,
         CancellationToken cancellationToken)
     {
         if (file is null || file.Length == 0) return BadRequest(new { error = "No file was uploaded." });
@@ -69,7 +71,7 @@ public sealed class DocumentsController(IMediator mediator, ICurrentUser current
         var id = await mediator.Send(
             new UploadDocumentCommand(
                 title, category, file.FileName, ContentTypeOf(file), stream, file.Length,
-                guestId, description, tags, retainUntil),
+                guestId, description, tags, retainUntil, caseworkNoteId),
             cancellationToken);
 
         return CreatedAtAction(nameof(GetDetail), new { documentId = id }, new { id });
@@ -99,6 +101,10 @@ public sealed class DocumentsController(IMediator mediator, ICurrentUser current
     {
         var download = await mediator.Send(new GetDocumentDownloadQuery(currentUser.HubId, documentId, version), cancellationToken);
         if (download is null) return NotFound();
+
+        // Downloads leave the system's control, so every one is written to the access log.
+        await audit.RecordAsync(download.GuestId, Domain.Enums.AuditAction.Read, "Document", documentId.ToString(),
+            $"Downloaded {download.FileName}", cancellationToken);
 
         // Lets the client verify the bytes match what was recorded at upload time.
         Response.Headers["X-Document-Sha256"] = download.Sha256;

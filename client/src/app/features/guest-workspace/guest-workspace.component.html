@@ -74,6 +74,12 @@
             </svg>
             Raise Urgent Flag
           </button>
+          @if (canErase) {
+            <button type="button" class="btn btn--outline btn--danger" (click)="openAnonymise()" title="Irreversibly remove the identifying details from this record">
+              Anonymise record
+            </button>
+          }
+          @if (canExport) {
           <button type="button" class="btn btn--outline" [disabled]="exporting()" (click)="exportRecord()">
             <svg class="btn__icon" width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
               <path
@@ -84,6 +90,7 @@
             </svg>
             {{ exporting() ? 'Exporting…' : 'Export Record' }}
           </button>
+          }
         </div>
       </div>
 
@@ -179,8 +186,27 @@
             (refresh)="reloadOverview()"
           />
         }
+        @case ('audit') {
+          <emhip-guest-access-log-tab [guestId]="guestId()" />
+        }
       }
     </section>
+
+    @if (anonymiseOpen()) {
+      <app-document-confirm-dialog
+        title="Anonymise this guest's record"
+        message="This removes the guest's name, date of birth (year is kept), contact details, address, NHS number, GP and emergency-contact details, retires their documents to the recycle bin and hides the record. The pseudonymous clinical history is kept for the statutory retention period. This cannot be undone."
+        confirmLabel="Anonymise record"
+        tone="danger"
+        reasonLabel="Reason (kept on the audit log, e.g. erasure request received 12 May, or retention period ended)"
+        typedConfirmation="ANONYMISE"
+        warning="Resolve any open urgent episode first. Staff will no longer be able to find this guest."
+        [busy]="anonymising()"
+        [error]="anonymiseError()"
+        (confirmed)="confirmAnonymise($event)"
+        (cancelled)="cancelAnonymise()"
+      />
+    }
 
     @if (noteDrawerOpen()) {
       <emhip-casework-note-drawer

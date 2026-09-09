@@ -814,6 +814,9 @@ namespace Emhip.Infrastructure.Persistence.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<Guid?>("CaseworkNoteId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<string>("Category")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -884,6 +887,9 @@ namespace Emhip.Infrastructure.Persistence.Migrations
                         .HasColumnType("datetimeoffset");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("CaseworkNoteId")
+                        .HasDatabaseName("IX_Documents_CaseworkNoteId");
 
                     b.HasIndex("GuestId")
                         .HasDatabaseName("IX_Documents_GuestId");
@@ -1095,6 +1101,9 @@ namespace Emhip.Infrastructure.Persistence.Migrations
                     b.Property<bool>("AfaSupportNeeded")
                         .HasColumnType("bit");
 
+                    b.Property<DateTimeOffset?>("AnonymisedAt")
+                        .HasColumnType("datetimeoffset");
+
                     b.Property<Guid?>("AssignedCmhwId")
                         .HasColumnType("uniqueidentifier");
 
@@ -1131,6 +1140,9 @@ namespace Emhip.Infrastructure.Persistence.Migrations
 
                     b.Property<Guid>("HubId")
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsAnonymised")
+                        .HasColumnType("bit");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
@@ -1799,9 +1811,15 @@ namespace Emhip.Infrastructure.Persistence.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<Guid?>("AssignedCmhwIdAtFlag")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<string>("CmhtTeam")
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
+
+                    b.Property<Guid?>("CmhwAfterResolutionStaffId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTimeOffset?>("EscalatedToCmhtAt")
                         .HasColumnType("datetimeoffset");
@@ -1824,8 +1842,25 @@ namespace Emhip.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("GuestId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<bool>("InpatientAdmission")
+                        .HasColumnType("bit");
+
+                    b.Property<DateOnly?>("NextContactDate")
+                        .HasColumnType("date");
+
+                    b.Property<string>("PathwayAfterResolution")
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<string>("PathwayAtFlag")
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
                     b.Property<DateTimeOffset>("RaisedAt")
                         .HasColumnType("datetimeoffset");
+
+                    b.Property<Guid?>("RaisedByStaffId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("ResolutionNote")
                         .HasMaxLength(4000)
@@ -1836,6 +1871,13 @@ namespace Emhip.Infrastructure.Persistence.Migrations
 
                     b.Property<Guid?>("ResolvedByStaffId")
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("RiskAssessmentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("SessionFrequencyChange")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
 
                     b.HasKey("Id");
 

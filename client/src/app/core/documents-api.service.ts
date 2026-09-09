@@ -34,8 +34,11 @@ export class DocumentsApiService {
     deletedOnly?: boolean;
     cursor?: string;
     pageSize?: number;
+    /** Only the attachments of one casework note. */
+    caseworkNoteId?: string;
   }): Observable<KeysetPage<DocumentListItemDto>> {
     let params = new HttpParams();
+    if (opts.caseworkNoteId) params = params.set('caseworkNoteId', opts.caseworkNoteId);
     if (opts.q) params = params.set('q', opts.q);
     if (opts.guestId) params = params.set('guestId', opts.guestId);
     if (opts.category) params = params.set('category', opts.category);
@@ -66,6 +69,7 @@ export class DocumentsApiService {
     if (request.description) form.append('description', request.description);
     if (request.tags) form.append('tags', request.tags);
     if (request.retainUntil) form.append('retainUntil', request.retainUntil);
+    if (request.caseworkNoteId) form.append('caseworkNoteId', request.caseworkNoteId);
 
     return this.trackUpload(new HttpRequest('POST', this.base, form, { reportProgress: true }));
   }

@@ -82,6 +82,9 @@ public static class IdentitySeeder
         Permissions.Dashboard.ViewHubManager, Permissions.Mdt.Manage, Permissions.Reports.Export,
         Permissions.Documents.Delete, Permissions.Documents.Restore,
         Permissions.Settings.View,
+        // Data-protection duties sit with the hub manager: access logs and subject-access exports.
+        // Anonymisation (guests.erase) is Admin-only unless an admin grants it.
+        Permissions.Guests.AuditView, Permissions.Guests.Export,
     ];
 
     private static async Task EnsureRoleAsync(RoleManager<ApplicationRole> roleManager, string name, string description, IReadOnlyList<string> permissions)

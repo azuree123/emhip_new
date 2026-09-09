@@ -149,7 +149,7 @@
                   Add contact
                 </button>
               }
-              <button type="button" class="btn btn--primary" (click)="openDetails(c); $event.stopPropagation()">
+              <button type="button" class="btn btn--primary" (click)="openCrisisEpisode(c, $event)">
                 <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
                   <path transform="translate(1.5 1.5)"
                     d="M 7.5 0 C 3.359 0 0 3.359 0 7.5 C 0 11.641 3.359 15 7.5 15 C 11.641 15 15 11.641 15 7.5 C 15 3.359 11.641 0 7.5 0 Z M 7.5 1.125 C 11.02 1.125 13.875 3.98 13.875 7.5 C 13.875 11.02 11.02 13.875 7.5 13.875 C 3.98 13.875 1.125 11.02 1.125 7.5 C 1.125 3.98 3.98 1.125 7.5 1.125 Z M 7.495 3.486 C 7.457 3.212 7.222 3 6.938 3 C 6.627 3 6.375 3.252 6.375 3.563 L 6.375 8.063 L 6.38 8.139 C 6.418 8.413 6.653 8.625 6.938 8.625 L 9.938 8.625 L 10.014 8.62 C 10.288 8.582 10.5 8.347 10.5 8.063 C 10.5 7.752 10.248 7.5 9.938 7.5 L 7.5 7.5 L 7.5 3.563 L 7.495 3.486 Z"
@@ -469,7 +469,7 @@
       <div class="modal__body">
         <div class="field field--readonly">
           <span>Guest</span>
-          <strong>{{ detailsCase()?.guestName }}</strong>
+          <strong>{{ actionGuest()?.name }}</strong>
         </div>
 
         <label class="field">
@@ -546,11 +546,36 @@
       <div class="modal__body">
         <div class="field field--readonly">
           <span>Guest</span>
-          <strong>{{ detailsCase()?.guestName }}</strong>
+          <strong>{{ actionGuest()?.name }}</strong>
         </div>
         <label class="field">
           <span>Resolution note</span>
-          <textarea rows="4" [(ngModel)]="resolveNote" placeholder="How was the episode resolved? (optional)"></textarea>
+          <textarea rows="4" [(ngModel)]="resolveForm.note" placeholder="How was the episode resolved? (optional)"></textarea>
+        </label>
+
+        <!-- Pathway re-entry decision — recorded on the episode and shown on the Urgent Episode Record. -->
+        <label class="field">
+          <span>Pathway after resolution</span>
+          <select [(ngModel)]="resolveForm.pathway">
+            <option value="">Keep current pathway</option>
+            @for (p of pathwayOptions; track p.value) {
+              <option [value]="p.value">{{ p.label }}</option>
+            }
+          </select>
+          <span class="field__hint">A change is applied to the guest and added to their pathway history.</span>
+        </label>
+        <label class="field">
+          <span>Next contact date</span>
+          <input type="date" [(ngModel)]="resolveForm.nextContactDate" />
+          <span class="field__hint">Scheduled as a follow-up for the guest's CMHW.</span>
+        </label>
+        <label class="field">
+          <span>Session frequency changed?</span>
+          <input type="text" [(ngModel)]="resolveForm.sessionFrequencyChange" placeholder="e.g. Yes — weekly CPN input added (leave blank if unchanged)" />
+        </label>
+        <label class="check-filter">
+          <input type="checkbox" [(ngModel)]="resolveForm.inpatientAdmission" />
+          Guest was admitted as an inpatient during this episode
         </label>
 
         @if (resolveError()) {
@@ -568,137 +593,15 @@
   </div>
 }
 
-<!-- "Urgent Episode Record" — Desktop57 (resolved episode, read-only) -->
-@if (episodeRecord(); as ep) {
-  <div class="drawer-overlay" (click)="closeEpisodeRecord()">
-    <aside class="drawer" (click)="$event.stopPropagation()">
-      <header class="drawer__header">
-        <div>
-          <h2 class="drawer__title">Urgent Episode Record</h2>
-          <span class="drawer__ref">Resolved · {{ ep.resolvedAt | date: 'd MMM y · h:mm a' }}</span>
-        </div>
-        <button type="button" class="drawer__close" (click)="closeEpisodeRecord()" aria-label="Close">
-          <svg width="14" height="14" viewBox="0 0 10 10" fill="none">
-            <path
-              d="M 0 4.25 C -0.414 4.25 -0.75 4.586 -0.75 5 C -0.75 5.414 -0.414 5.75 0 5.75 L 0 5 L 0 4.25 Z M 10 5.75 C 10.414 5.75 10.75 5.414 10.75 5 C 10.75 4.586 10.414 4.25 10 4.25 L 10 5 L 10 5.75 Z M 5.75 0 C 5.75 -0.414 5.414 -0.75 5 -0.75 C 4.586 -0.75 4.25 -0.414 4.25 0 L 5 0 L 5.75 0 Z M 4.25 10 C 4.25 10.414 4.586 10.75 5 10.75 C 5.414 10.75 5.75 10.414 5.75 10 L 5 10 L 4.25 10 Z M 0 5 L 0 5.75 L 5 5.75 L 5 5 L 5 4.25 L 0 4.25 L 0 5 Z M 10 5 L 10 4.25 L 5 4.25 L 5 5 L 5 5.75 L 10 5.75 L 10 5 Z M 5 5 L 5.75 5 L 5.75 0 L 5 0 L 4.25 0 L 4.25 5 L 5 5 Z M 5 5 L 4.25 5 L 4.25 10 L 5 10 L 5.75 10 L 5.75 5 L 5 5 Z"
-              fill="currentColor" transform="rotate(45 5 5)" />
-          </svg>
-        </button>
-      </header>
-
-      <div class="locked-box">
-        <span class="locked-box__title">Episode resolved and locked</span>
-        <span class="locked-box__sub">
-          {{ ep.resolvedAt | date: 'd MMM y · h:mm a' }}
-          @if (ep.resolvedByName) {
-            · {{ ep.resolvedByName }}
-          }
-        </span>
-      </div>
-
-      <section class="panel-card">
-        <div class="panel-card__head">
-          <h3>Episode overview</h3>
-        </div>
-        <div class="info-grid info-grid--tight">
-          <div class="info-grid__cell">
-            <span class="info-grid__label">Guest</span>
-            <span class="info-grid__value">{{ ep.guestName }} ({{ epRef(ep) }})</span>
-          </div>
-          <div class="info-grid__cell">
-            <span class="info-grid__label">Flag raised at</span>
-            <span class="info-grid__value">{{ ep.raisedAt | date: 'd MMM y · h:mm a' }}</span>
-          </div>
-          <div class="info-grid__cell">
-            <span class="info-grid__label">72-hour deadline</span>
-            <span class="info-grid__value">{{ episodeDeadline(ep) }}</span>
-          </div>
-          <div class="info-grid__cell">
-            <span class="info-grid__label">Resolved at</span>
-            <span class="info-grid__value">{{ ep.resolvedAt | date: 'd MMM y · h:mm a' }}</span>
-          </div>
-          <div class="info-grid__cell">
-            <span class="info-grid__label">Resolved by</span>
-            <span class="info-grid__value">{{ ep.resolvedByName ?? '—' }}</span>
-          </div>
-          <div class="info-grid__cell">
-            <span class="info-grid__label">Resolved within 72h</span>
-            <span class="info-grid__value">{{ resolvedWithinLabel(ep) }}</span>
-          </div>
-          <div class="info-grid__cell">
-            <span class="info-grid__label">CMHT team involved</span>
-            <span class="info-grid__value">{{ ep.cmhtTeam ?? 'No' }}</span>
-          </div>
-          <div class="info-grid__cell">
-            <span class="info-grid__label">Escalated to CMHT</span>
-            <span class="info-grid__value">
-              @if (ep.escalatedToCmhtAt) {
-                {{ ep.escalatedToCmhtAt | date: 'd MMM y · h:mm a' }}
-              } @else {
-                No
-              }
-            </span>
-          </div>
-        </div>
-      </section>
-
-      <section class="timeline-card">
-        <div class="timeline-card__head">
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-            <path transform="translate(1.667 1.667)"
-              d="M 1.25 8.333 C 1.25 4.421 4.421 1.25 8.333 1.25 C 12.245 1.25 15.417 4.421 15.417 8.333 C 15.417 12.245 12.245 15.417 8.333 15.417 C 4.421 15.417 1.25 12.245 1.25 8.333 Z M 8.333 0 C 3.731 0 0 3.731 0 8.333 C 0 12.936 3.731 16.667 8.333 16.667 C 12.936 16.667 16.667 12.936 16.667 8.333 C 16.667 3.731 12.936 0 8.333 0 Z M 8.328 3.874 C 8.286 3.568 8.024 3.333 7.708 3.333 C 7.363 3.333 7.083 3.613 7.083 3.958 L 7.083 8.958 L 7.089 9.043 C 7.13 9.348 7.392 9.583 7.708 9.583 L 11.042 9.583 L 11.126 9.578 C 11.431 9.536 11.667 9.274 11.667 8.958 C 11.667 8.613 11.387 8.333 11.042 8.333 L 8.333 8.333 L 8.333 3.958 L 8.328 3.874 Z"
-              fill="rgb(42,42,42)" />
-          </svg>
-          <h3>Full episode timeline</h3>
-        </div>
-
-        <div class="timeline">
-          <div class="timeline__event">
-            <span class="timeline__title">Urgent flag raised</span>
-            <p class="timeline__desc">72-hour follow-up window opened.</p>
-            <div class="timeline__meta">
-              <span class="timeline__time">{{ ep.raisedAt | date: 'd MMM y, h:mm a' }}</span>
-            </div>
-          </div>
-          @if (ep.escalatedToCmhtAt) {
-            <div class="timeline__event">
-              <span class="timeline__title">Escalated to CMHT</span>
-              <p class="timeline__desc">
-                {{ ep.cmhtTeam ?? 'CMHT' }}{{ ep.escalationReason ? ' — ' + ep.escalationReason : '' }}{{ ep.escalationUrgency ? ' (' + ep.escalationUrgency + ')' : '' }}
-              </p>
-              @if (ep.escalationNotes) {
-                <p class="timeline__desc timeline__desc--secondary">{{ ep.escalationNotes }}</p>
-              }
-              <div class="timeline__meta">
-                @if (ep.escalatedToCmhtByName; as byName) {
-                  <span class="timeline__author">{{ byName }}</span>
-                  <span class="timeline__sep"></span>
-                }
-                <span class="timeline__time">{{ ep.escalatedToCmhtAt | date: 'd MMM y, h:mm a' }}</span>
-              </div>
-            </div>
-          }
-          <div class="timeline__event">
-            <span class="timeline__title">Episode resolved — flag closed</span>
-            <p class="timeline__desc">{{ ep.resolutionNote ?? 'Resolution note not recorded.' }}</p>
-            <div class="timeline__meta">
-              @if (ep.resolvedByName; as byName) {
-                <span class="timeline__author">{{ byName }}</span>
-                <span class="timeline__sep"></span>
-              }
-              <span class="timeline__time">{{ ep.resolvedAt | date: 'd MMM y, h:mm a' }}</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <div class="drawer__actions">
-        <a class="drawer-btn drawer-btn--outline" [routerLink]="['/guests', ep.guestId]" (click)="closeEpisodeRecord()">
-          Open Guest Workspace
-        </a>
-      </div>
-    </aside>
-  </div>
+<!-- "Urgent Episode Record" — Desktop57. Opened by "Open Crisis Episode" and "View Episode". -->
+@if (recordTarget(); as target) {
+  <emhip-urgent-episode-record
+    [guestId]="target.guestId"
+    [episodeId]="target.episodeId"
+    (closed)="closeEpisodeRecord()"
+    (escalate)="openEscalate($event)"
+    (resolve)="openResolve($event)"
+  />
 }
 
 <!-- "Add contact" — the shared Add Contact popup (the same casework-note record the workspace writes). -->

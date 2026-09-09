@@ -1,0 +1,52 @@
+<div class="tab-panel">
+  @if (loading()) {
+    <div class="state-card">Loading access log…</div>
+  } @else if (error()) {
+    <div class="state-card state-card--error">
+      {{ error() }}
+      <div class="state-card__actions">
+        <button type="button" class="btn-ghost" (click)="retry()">Try again</button>
+      </div>
+    </div>
+  } @else {
+    <section class="card">
+      <div class="card__header-row">
+        <h2 class="card__title">Access log</h2>
+        <span class="count-label">{{ entries().length }} most recent events</span>
+      </div>
+      <p class="intro">
+        Every view, change, download and export of this record is written to the audit log by the
+        server (UK GDPR accountability). Field names are recorded for changes — never the values.
+      </p>
+
+      @if (entries().length) {
+        <div class="table-wrap">
+          <table class="log">
+            <thead>
+              <tr>
+                <th scope="col">When</th>
+                <th scope="col">Who</th>
+                <th scope="col">Event</th>
+                <th scope="col">Details</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (e of entries(); track e.id) {
+                <tr>
+                  <td class="log__when">{{ formatDateTime(e.occurredAt) }}</td>
+                  <td class="log__who">{{ e.actorName }}</td>
+                  <td>
+                    <span class="log__event" [attr.data-tone]="tone(e)">{{ actionLabel(e) }}</span>
+                  </td>
+                  <td class="log__details">{{ e.details || '—' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      } @else {
+        <p class="empty-state">No access has been recorded for this guest yet.</p>
+      }
+    </section>
+  }
+</div>

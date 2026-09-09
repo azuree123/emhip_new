@@ -38,6 +38,22 @@ public class GuestDemographics : Entity
         UpdatedAt = DateTimeOffset.UtcNow;
     }
 
+    /// <summary>
+    /// Clears the fields that identify a person (NHS number, GP, emergency contact). The
+    /// categorical fields (ethnicity, housing, employment…) stay: they are what the service is
+    /// funded to report on and cannot identify anyone once the guest record is anonymised.
+    /// </summary>
+    public void Anonymise()
+    {
+        EmergencyContactName = null;
+        EmergencyContactPhone = null;
+        EmergencyContactRelationship = null;
+        GpName = null;
+        GpPractice = null;
+        NhsNumber = null;
+        UpdatedAt = DateTimeOffset.UtcNow;
+    }
+
     public void Update(
         string? ethnicity, string? nationality, string? preferredLanguage, bool interpreterNeeded,
         string? housingStatus, string? employmentStatus, string? maritalStatus, string? livingGroup, string? countryOfOrigin,

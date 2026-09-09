@@ -19,9 +19,9 @@ public sealed class DocumentReadService(EmhipDbContext db, Application.Abstracti
     public async Task<KeysetPage<DocumentListItemDto>> GetListAsync(
         Guid hubId, string? searchText, Guid? guestId, string? category, DocumentStatus? status,
         string? tag, bool includeDeleted, bool deletedOnly, string? cursor, int pageSize,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default, Guid? caseworkNoteId = null)
     {
-        var query = Filtered(hubId, searchText, guestId, category, status, tag, includeDeleted, deletedOnly);
+        var query = Filtered(hubId, searchText, guestId, category, status, tag, includeDeleted, deletedOnly, caseworkNoteId);
 
         var decoded = KeysetCursor.Decode<DocumentCursor>(cursor);
         if (decoded is not null)
@@ -33,7 +33,7 @@ public sealed class DocumentReadService(EmhipDbContext db, Application.Abstracti
             .OrderByDescending(d => d.UpdatedAt).ThenByDescending(d => d.Id)
             .Take(pageSize + 1)
             .Select(d => new DocumentListItemDto(
-                d.Id, d.GuestId,
+                d.Id, d.GuestId, d.CaseworkNoteId,
                 db.Guests.Where(g => g.Id == d.GuestId).Select(g => g.FirstName + " " + g.LastName).FirstOrDefault(),
                 db.Guests.Where(g => g.Id == d.GuestId).Select(g => (int?)g.GuestNumber).FirstOrDefault(),
                 d.Title, d.Category, d.Tags, d.Status, d.CurrentVersionNumber,
@@ -52,7 +52,7 @@ public sealed class DocumentReadService(EmhipDbContext db, Application.Abstracti
         var page = rows.Take(pageSize).ToList();
 
         int? totalCount = decoded is null
-            ? await Filtered(hubId, searchText, guestId, category, status, tag, includeDeleted, deletedOnly).CountAsync(cancellationToken)
+            ? await Filtered(hubId, searchText, guestId, category, status, tag, includeDeleted, deletedOnly, caseworkNoteId).CountAsync(cancellationToken)
             : null;
 
         return new KeysetPage<DocumentListItemDto>
@@ -142,7 +142,7 @@ public sealed class DocumentReadService(EmhipDbContext db, Application.Abstracti
 
     private IQueryable<Domain.Entities.Document> Filtered(
         Guid hubId, string? searchText, Guid? guestId, string? category, DocumentStatus? status,
-        string? tag, bool includeDeleted, bool deletedOnly)
+        string? tag, bool includeDeleted, bool deletedOnly, Guid? caseworkNoteId = null)
     {
         var query = db.Documents.AsNoTracking().Where(d => d.HubId == hubId);
 
@@ -151,6 +151,7 @@ public sealed class DocumentReadService(EmhipDbContext db, Application.Abstracti
             : query.Where(d => !d.IsDeleted);
 
         if (guestId is not null) query = query.Where(d => d.GuestId == guestId);
+        if (caseworkNoteId is not null) query = query.Where(d => d.CaseworkNoteId == caseworkNoteId);
         if (!string.IsNullOrWhiteSpace(category)) query = query.Where(d => d.Category == category);
         if (status is not null) query = query.Where(d => d.Status == status);
         if (!string.IsNullOrWhiteSpace(tag)) query = query.Where(d => d.Tags != null && d.Tags.Contains(tag));

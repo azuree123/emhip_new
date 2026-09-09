@@ -3,6 +3,7 @@ import { Component, EventEmitter, Output, computed, effect, inject, input, signa
 import { FormsModule } from '@angular/forms';
 import {
   AddNoteRequest,
+  CaseworkNoteAttachmentDto,
   CaseworkNoteCategory,
   CaseworkNoteDto,
   CaseworkRiskLevel,
@@ -11,6 +12,7 @@ import {
 } from '../../core/api-models';
 import { AuthService } from '../../core/auth.service';
 import { GuestsApiService } from '../../core/guests-api.service';
+import { DocumentsApiService, documentErrorMessage } from '../../core/documents-api.service';
 import { Permissions } from '../../core/permissions';
 import { CaseworkNoteDrawerComponent } from './casework-note-drawer.component';
 import { StatusChip, formatDate, formatDateTime, humanize, noteColorDot } from './guest-workspace.util';
@@ -57,6 +59,7 @@ const RISK_CHIPS: Record<CaseworkRiskLevel, StatusChip> = {
 })
 export class GuestNotesTabComponent {
   private readonly guestsApi = inject(GuestsApiService);
+  private readonly documentsApi = inject(DocumentsApiService);
   private readonly auth = inject(AuthService);
 
   readonly guestId = input.required<string>();
@@ -66,6 +69,11 @@ export class GuestNotesTabComponent {
 
   readonly canView = this.auth.hasPermission(Permissions.Guests.NotesView);
   readonly canAdd = this.auth.hasPermission(Permissions.Guests.NotesAdd);
+  /** Attachments are documents, so opening one follows the documents.view claim. */
+  readonly canDownload = this.auth.hasPermission(Permissions.Documents.View);
+  /** Attachment being fetched, so its button can show progress. */
+  readonly downloadingId = signal<string | null>(null);
+  readonly downloadError = signal<string | null>(null);
 
   // ---- Casework notes ----
   readonly caseworkNotes = signal<CaseworkNoteDto[] | null>(null);
@@ -125,6 +133,34 @@ export class GuestNotesTabComponent {
 
   toggleExpanded(noteId: string): void {
     this.expandedId.set(this.expandedId() === noteId ? null : noteId);
+  }
+
+  /** Streams the file through the API (so the JWT applies and the download is logged) and saves it. */
+  downloadAttachment(attachment: CaseworkNoteAttachmentDto): void {
+    if (this.downloadingId()) return;
+    this.downloadingId.set(attachment.documentId);
+    this.downloadError.set(null);
+    this.documentsApi.download(attachment.documentId).subscribe({
+      next: (blob) => {
+        this.downloadingId.set(null);
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement('a');
+        anchor.href = url;
+        anchor.download = attachment.fileName;
+        anchor.click();
+        URL.revokeObjectURL(url);
+      },
+      error: (err: unknown) => {
+        this.downloadingId.set(null);
+        this.downloadError.set(documentErrorMessage(err, 'Could not download this attachment.'));
+      },
+    });
+  }
+
+  formatSize(bytes: number): string {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   }
 
   // ---- Drawer ----

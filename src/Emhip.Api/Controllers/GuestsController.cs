@@ -7,6 +7,7 @@ using Emhip.Application.Guests.Casework;
 using Emhip.Application.Guests.Cpn;
 using Emhip.Application.Guests.Clinical;
 using Emhip.Application.Guests.Commands;
+using Emhip.Application.Guests.Compliance;
 using Emhip.Application.Guests.Dialog;
 using Emhip.Application.Guests.Pathways;
 using Emhip.Application.Guests.Dtos;
@@ -308,6 +309,15 @@ public sealed class GuestsController(IMediator mediator, ICurrentUser currentUse
     /// <summary>Whether the caller's role carries the CPN-contact permission (see Permissions.Guests.CpnContactsLog).</summary>
     private bool CanLogCpnContacts => currentUser.Permissions.Contains(Permissions.Guests.CpnContactsLog);
 
+    /// <summary>Removes a file attached to a draft note (soft-deletes the document). Author only.</summary>
+    [HttpDelete("{guestId:guid}/casework-notes/{noteId:guid}/attachments/{documentId:guid}")]
+    [Authorize(Policy = Permissions.Guests.NotesAdd)]
+    public async Task<IActionResult> RemoveCaseworkNoteAttachment(Guid guestId, Guid noteId, Guid documentId, CancellationToken cancellationToken)
+    {
+        await mediator.Send(new RemoveCaseworkNoteAttachmentCommand(guestId, noteId, documentId), cancellationToken);
+        return NoContent();
+    }
+
     /// <summary>Discards a draft. Submitted notes are part of the clinical record and cannot be deleted.</summary>
     [HttpDelete("{guestId:guid}/casework-notes/{noteId:guid}")]
     [Authorize(Policy = Permissions.Guests.NotesAdd)]
@@ -372,6 +382,40 @@ public sealed class GuestsController(IMediator mediator, ICurrentUser currentUse
         await mediator.Send(new CloseCarePlanCommand(guestId, request.Status), cancellationToken);
         return NoContent();
     }
+
+    /// <summary>Who has viewed or changed this guest's record (UK GDPR accountability) — newest first.</summary>
+    [HttpGet("{guestId:guid}/access-log")]
+    [Authorize(Policy = Permissions.Guests.AuditView)]
+    public async Task<IActionResult> GetAccessLog(Guid guestId, [FromQuery] int limit = 200, CancellationToken cancellationToken = default) =>
+        Ok(await mediator.Send(new GetGuestAccessLogQuery(currentUser.HubId, guestId, limit), cancellationToken));
+
+    /// <summary>Subject-access export (UK GDPR Art. 15): the complete record as a JSON file. Logged as a disclosure.</summary>
+    [HttpGet("{guestId:guid}/export")]
+    [Authorize(Policy = Permissions.Guests.Export)]
+    public async Task<IActionResult> ExportRecord(Guid guestId, CancellationToken cancellationToken)
+    {
+        var export = await mediator.Send(new ExportGuestRecordQuery(currentUser.HubId, guestId), cancellationToken);
+        if (export is null) return NotFound();
+
+        var json = System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(export, new System.Text.Json.JsonSerializerOptions
+        {
+            WriteIndented = true,
+            PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase,
+            Converters = { new System.Text.Json.Serialization.JsonStringEnumConverter() },
+        });
+        return File(json, "application/json", $"guest-record-G-{export.Overview.GuestNumber}.json");
+    }
+
+    /// <summary>UK GDPR right to erasure / end of retention: irreversibly anonymises the record.</summary>
+    [HttpPost("{guestId:guid}/anonymise")]
+    [Authorize(Policy = Permissions.Guests.Erase)]
+    public async Task<IActionResult> Anonymise(Guid guestId, [FromBody] AnonymiseGuestRequest request, CancellationToken cancellationToken)
+    {
+        await mediator.Send(new AnonymiseGuestCommand(guestId, request.Reason), cancellationToken);
+        return NoContent();
+    }
+
+    public sealed record AnonymiseGuestRequest(string Reason);
 
     /// <summary>Contact History tab — every recorded contact, newest first, keyset-paginated.</summary>
     [HttpGet("{guestId:guid}/contacts")]

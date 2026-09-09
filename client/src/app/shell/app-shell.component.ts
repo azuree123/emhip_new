@@ -5,6 +5,7 @@ import { Subject, catchError, debounceTime, distinctUntilChanged, of, switchMap 
 import { GuestStatus, GuestSuggestionDto } from '../core/api-models';
 import { AuthService } from '../core/auth.service';
 import { GuestsApiService } from '../core/guests-api.service';
+import { IdleTimeoutService } from '../core/idle-timeout.service';
 import { Permissions } from '../core/permissions';
 import { MdtApiService } from '../core/mdt-api.service';
 import { UrgentCasesApiService } from '../core/urgent-cases-api.service';
@@ -49,6 +50,8 @@ export class AppShellComponent implements OnInit {
   private readonly urgentCasesHub = inject(UrgentCasesHubService);
   private readonly guestsApi = inject(GuestsApiService);
   private readonly mdtApi = inject(MdtApiService);
+  /** Automatic sign-out after inactivity — started with the shell, warned about in the header. */
+  readonly idle = inject(IdleTimeoutService);
 
   readonly currentUser = this.auth.current;
   readonly urgentCaseCount = signal<number | null>(null);
@@ -224,6 +227,7 @@ export class AppShellComponent implements OnInit {
   ];
 
   ngOnInit(): void {
+    this.idle.start();
     // The urgent-cases endpoints and hub are [Authorize]d — only touch them when permitted.
     if (this.canViewUrgentCases) {
       this.urgentCasesApi.getActive().subscribe((cases) => this.urgentCaseCount.set(cases.length));

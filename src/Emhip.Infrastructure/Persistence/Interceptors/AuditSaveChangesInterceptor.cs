@@ -62,7 +62,20 @@ public sealed class AuditSaveChangesInterceptor(ICurrentUser currentUser) : Save
             var guestId = ResolveGuestId(entry);
             var entityId = entry.Property("Id").CurrentValue?.ToString() ?? "unknown";
 
-            context.Set<AuditEvent>().Add(new AuditEvent(guestId, currentUser.StaffId, action, entry.Entity.GetType().Name, entityId, details: null));
+            // For updates, record *which* fields changed — never their values, so the audit log
+            // itself does not become a second copy of the personal data it protects.
+            string? details = null;
+            if (entry.State == EntityState.Modified)
+            {
+                var changed = entry.Properties
+                    .Where(p => p.IsModified && p.Metadata.Name != "RowVersion")
+                    .Select(p => p.Metadata.Name)
+                    .OrderBy(n => n)
+                    .ToList();
+                if (changed.Count > 0) details = "Changed: " + string.Join(", ", changed);
+            }
+
+            context.Set<AuditEvent>().Add(new AuditEvent(guestId, currentUser.StaffId, action, entry.Entity.GetType().Name, entityId, details));
         }
     }
 

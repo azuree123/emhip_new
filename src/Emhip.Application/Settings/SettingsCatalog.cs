@@ -56,6 +56,11 @@ public static class SettingsCatalog
 
         public const string GuestListPageSize = "ui.guestListPageSize";
 
+        /// <summary>Minutes of inactivity before the SPA signs the user out (NHS DSPT / UK GDPR Art. 32).</summary>
+        public const string SessionIdleMinutes = "security.sessionIdleMinutes";
+        /// <summary>Years after a guest's last activity before their record is flagged for retention review (NHS Records Management Code: 20 for adult mental health).</summary>
+        public const string RecordRetentionYears = "compliance.recordRetentionYears";
+
         public const string EmailProvider = "email.provider";
         public const string EmailFromAddress = "email.fromAddress";
         public const string EmailFromName = "email.fromName";
@@ -131,6 +136,9 @@ public static class SettingsCatalog
 
         new(Keys.GuestListPageSize, "Interface", "Guest list page size", "Rows fetched per page in the guest list.", SettingKind.Number, "50"),
 
+        new(Keys.SessionIdleMinutes, "Security & data protection", "Sign out after inactivity (minutes)", "Staff are signed out automatically after this long without activity, so an unattended screen cannot expose guest records. 0 disables.", SettingKind.Number, "30"),
+        new(Keys.RecordRetentionYears, "Security & data protection", "Record retention period (years)", "Guests with no activity for longer than this are listed for retention review in the Data Quality report. The NHS Records Management Code recommends 20 years for adult mental-health records.", SettingKind.Number, "20"),
+
         new(Keys.EmailProvider, EmailSection, "Email provider", "How transactional email is delivered. \"Not configured\" logs messages instead of sending them.", SettingKind.Select, "None",
             [new("None", "Not configured (log only)"), new("Smtp", "SMTP server"), new("AwsSes", "Amazon SES"), new("Mailgun", "Mailgun")]),
         new(Keys.EmailFromAddress, EmailSection, "From address", "The address staff will see messages arrive from.", SettingKind.Text, null,
@@ -184,5 +192,6 @@ public static class SettingsCatalog
         Keys.MaxUploadMb, Keys.AllowedExtensions, Keys.DefaultRetentionYears,
         Keys.UrgentResponseHours, Keys.InactivityDays, Keys.FollowUpDefaultDays, Keys.DialogReviewWeeks,
         Keys.GuestListPageSize,
+        Keys.SessionIdleMinutes,
     ];
 }

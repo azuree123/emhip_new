@@ -11,7 +11,7 @@ namespace Emhip.Infrastructure.Reads;
 /// The row-level export streams the source table directly via IAsyncEnumerable so
 /// GET /reports/export never buffers the full result set in memory.
 /// </summary>
-public sealed class ReportReadService(EmhipDbContext db) : IReportReadService
+public sealed class ReportReadService(EmhipDbContext db, Emhip.Application.Abstractions.IAppSettingsService settings) : IReportReadService
 {
     public async Task<PathwayReportDto> GetPathwayReportAsync(Guid hubId, DateOnly from, DateOnly to, CancellationToken cancellationToken = default)
     {
@@ -242,6 +242,16 @@ public sealed class ReportReadService(EmhipDbContext db) : IReportReadService
             new("missingReferralSource", "No referral source recorded",
                 await guests.CountAsync(g => g.ReferralSource == null, cancellationToken)),
         };
+
+        // Retention review (UK GDPR storage limitation): records with no activity for longer than
+        // the configured retention period are listed so a manager can decide to anonymise them.
+        var retentionYears = await settings.GetIntAsync(Emhip.Application.Settings.SettingsCatalog.Keys.RecordRetentionYears, 20, cancellationToken);
+        if (retentionYears > 0)
+        {
+            var cutoff = DateTimeOffset.UtcNow.AddYears(-retentionYears);
+            issues.Add(new("pastRetention", $"No activity for over {retentionYears} years — due for retention review",
+                await guests.CountAsync(g => (g.LastActivityAt ?? g.RegisteredAt) < cutoff, cancellationToken)));
+        }
 
         return new DataQualityReportDto(total, issues);
     }

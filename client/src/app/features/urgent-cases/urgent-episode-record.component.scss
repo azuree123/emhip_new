@@ -1,0 +1,675 @@
+// "Urgent Episode Record" modal — Components.bundle.js Desktop57. 939px panel, two columns
+// (548 / 380), hairline cards, tinted intake/resolution boxes, coloured audit dots.
+$ink: rgb(42, 42, 42);
+$ink-body: rgb(50, 50, 50);
+$ink-meta: rgb(140, 140, 140);
+$line: rgb(238, 238, 238);
+$line-row: rgb(232, 232, 232);
+$green: rgb(20, 113, 41);
+$blue: rgb(52, 91, 177);
+$coral: rgb(235, 60, 44);
+$red: rgb(225, 38, 40);
+$gold: rgb(157, 133, 45);
+
+.record-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 110;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 24px 16px;
+  overflow-y: auto;
+  animation: record-fade 0.2s ease-out both;
+}
+
+.record {
+  width: min(939px, 100%);
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  color: $ink;
+  animation: record-rise 0.22s ease-out both;
+
+  &__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 24px 28px 16px;
+  }
+
+  &__title {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 600;
+    line-height: 24px;
+  }
+
+  &__sub {
+    display: block;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 24px;
+  }
+
+  &__actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  &__close {
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: rgb(33, 33, 33);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+
+    &:hover {
+      background: rgb(240, 240, 240);
+    }
+  }
+
+  &__tabs {
+    display: flex;
+    gap: 8px;
+    padding: 8px 28px;
+    background: rgb(243, 243, 243);
+  }
+
+  &__tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 26px;
+    padding: 0 14px;
+    border: none;
+    border-radius: 4px;
+    background: transparent;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 500;
+    color: $ink;
+    cursor: pointer;
+
+    &--active {
+      background: $coral;
+      color: #fff;
+    }
+  }
+
+  &__tab-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+
+  &__body {
+    padding: 16px 28px 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  &__loading {
+    padding: 48px;
+    text-align: center;
+    color: $ink-meta;
+    font-size: 14px;
+  }
+
+  &__columns {
+    display: grid;
+    grid-template-columns: minmax(0, 548fr) minmax(0, 380fr);
+    gap: 14px;
+    align-items: start;
+  }
+
+  &__main,
+  &__side {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    min-width: 0;
+  }
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 16px 0 12px;
+  border: none;
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: -0.005em;
+  line-height: 24px;
+  white-space: nowrap;
+  text-decoration: none;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  &--primary {
+    background: $coral;
+    color: #fff;
+  }
+
+  &--outline {
+    background: #fff;
+    color: $ink;
+    box-shadow: inset 0 0 0 1px rgb(217, 217, 217);
+  }
+
+  &--dark {
+    background: $ink;
+    color: #fff;
+  }
+
+  &--maroon {
+    background: rgb(148, 28, 60);
+    color: #fff;
+  }
+}
+
+.banner {
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-size: 14px;
+  font-weight: 500;
+
+  &--error {
+    background: rgb(254, 242, 242);
+    color: rgb(208, 37, 55);
+    border-left: 3px solid $red;
+  }
+}
+
+// ---- Status banner (green resolved / amber open / red overdue) ----
+
+.status-banner {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 11px 20px 11px 16px;
+  border-left: 3px solid $green;
+  background: rgb(241, 255, 244);
+  color: $green;
+
+  &__icon {
+    flex-shrink: 0;
+  }
+
+  &__text {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+    color: $ink;
+  }
+
+  &__title {
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 24px;
+  }
+
+  &__sub {
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 20px;
+  }
+
+  &__when {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    color: $ink;
+  }
+
+  &__date {
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 20px;
+  }
+
+  &__by {
+    font-size: 10px;
+    font-weight: 400;
+    line-height: 18px;
+  }
+
+  &__actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  &--open {
+    border-left-color: $gold;
+    background: rgb(255, 249, 228);
+    color: $gold;
+  }
+
+  &--overdue {
+    border-left-color: $red;
+    background: rgb(255, 237, 237);
+    color: $red;
+  }
+}
+
+// ---- Cards ----
+
+.card {
+  border-radius: 8px;
+  box-shadow: inset 0 0 0 1px $line;
+  padding: 14px 20px 16px;
+  background: #fff;
+
+  &__head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    color: rgb(33, 33, 33);
+
+    h3 {
+      margin: 0;
+      font-size: 14px;
+      font-weight: 600;
+      line-height: 24px;
+      color: $ink;
+    }
+
+    svg {
+      flex-shrink: 0;
+    }
+  }
+
+  &--intake {
+    background: rgb(255, 243, 243);
+    box-shadow: inset 0 0 0 1px rgb(255, 214, 214);
+  }
+
+  &--resolution {
+    background: rgb(240, 255, 244);
+    box-shadow: inset 0 0 0 1px rgb(204, 236, 212);
+  }
+
+  &--outcome {
+    background: rgba(240, 240, 240, 0.52);
+    box-shadow: none;
+  }
+}
+
+// Label / value rows — label left (14/600), value right-aligned (14/400), hairline between.
+.rows {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+
+  &__row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    min-height: 44px;
+    padding: 8px 0;
+    border-bottom: 1px solid $line-row;
+
+    &:last-child {
+      border-bottom: none;
+    }
+  }
+
+  dt {
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 24px;
+    color: $ink;
+  }
+
+  dd {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 24px;
+    color: $ink-body;
+    text-align: right;
+  }
+
+  &--outcome {
+    dd {
+      text-transform: none;
+    }
+  }
+}
+
+.chip,
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  border-radius: 200px;
+  padding: 4px 8px;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 16px;
+  white-space: nowrap;
+}
+
+.pill {
+  &--urgent {
+    background: rgb(255, 237, 237);
+    color: $red;
+  }
+
+  &--resolved {
+    background: rgb(234, 255, 239);
+    color: $green;
+  }
+
+  &--open {
+    background: rgb(255, 249, 228);
+    color: $gold;
+  }
+}
+
+// ---- Tinted note boxes ----
+
+.note-box {
+  border-radius: 6px;
+  background: #fff;
+  padding: 12px 24px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  &--intake {
+    box-shadow: inset 0 0 0 1px rgba(225, 38, 40, 0.3);
+  }
+
+  &--resolution {
+    box-shadow: inset 0 0 0 1px rgba(20, 113, 41, 0.36);
+  }
+
+  &__flags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  &__text {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 24px;
+    color: $ink-body;
+    white-space: pre-wrap;
+  }
+
+  &__meta {
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 18px;
+    color: $ink-meta;
+  }
+}
+
+// ---- Timeline ----
+
+.timeline {
+  position: relative;
+  margin: 8px 0 0 7px;
+  padding-left: 24px;
+  border-left: 1px solid rgba(197, 197, 197, 0.31);
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+
+  &__event {
+    position: relative;
+
+    &::before {
+      content: '';
+      position: absolute;
+      left: -29.5px;
+      top: 8px;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: rgb(188, 183, 183);
+    }
+
+    &[data-kind='flag']::before {
+      background: $red;
+    }
+
+    &[data-kind='escalation']::before {
+      background: $blue;
+    }
+
+    &[data-kind='resolved']::before {
+      background: $green;
+    }
+  }
+
+  &__title {
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 26px;
+    color: $ink;
+  }
+
+  &__desc {
+    margin: 2px 0 0;
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 24px;
+    color: $ink;
+    white-space: pre-wrap;
+
+    &--secondary {
+      color: rgb(114, 114, 114);
+    }
+  }
+
+  &__meta {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    margin-top: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 18px;
+    color: $ink-meta;
+  }
+
+  &__sep {
+    width: 3px;
+    height: 3px;
+    border-radius: 50%;
+    background: $ink-meta;
+  }
+}
+
+// ---- Audit trail ----
+
+.audit {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+
+  &__item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  &__dot {
+    flex-shrink: 0;
+    width: 10px;
+    height: 10px;
+    margin-top: 7px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(140, 140, 140, 0.2);
+
+    span {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: $ink-meta;
+    }
+
+    &[data-tone='green'] {
+      background: rgba(20, 113, 41, 0.16);
+
+      span {
+        background: $green;
+      }
+    }
+
+    &[data-tone='blue'] {
+      background: rgba(52, 91, 177, 0.2);
+
+      span {
+        background: $blue;
+      }
+    }
+
+    &[data-tone='red'] {
+      background: rgba(235, 60, 44, 0.21);
+
+      span {
+        background: $coral;
+      }
+    }
+  }
+
+  &__text {
+    display: flex;
+    flex-direction: column;
+  }
+
+  &__title {
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 24px;
+    color: $ink;
+  }
+
+  &__detail {
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 18px;
+    color: $ink-meta;
+  }
+}
+
+@keyframes record-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes record-rise {
+  from {
+    transform: translateY(12px);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .record-overlay,
+  .record {
+    animation: none;
+  }
+}
+
+@media (max-width: 1023px) {
+  .record__columns {
+    grid-template-columns: 1fr;
+  }
+
+  .record__header {
+    flex-direction: column;
+  }
+
+  .record__actions {
+    justify-content: flex-start;
+  }
+
+  .status-banner {
+    flex-wrap: wrap;
+
+    &__when {
+      align-items: flex-start;
+    }
+  }
+}
+
+@media (max-width: 767px) {
+  .record-overlay {
+    padding: 0;
+  }
+
+  .record {
+    border-radius: 0;
+    min-height: 100%;
+  }
+
+  .record__header,
+  .record__body {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .record__tabs {
+    padding-left: 16px;
+    padding-right: 16px;
+    overflow-x: auto;
+  }
+
+  .rows__row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+
+    dd {
+      text-align: left;
+    }
+  }
+}

@@ -17,6 +17,9 @@ public class UrgentEpisodeConfiguration : IEntityTypeConfiguration<UrgentEpisode
         builder.Property(e => e.EscalationUrgency).HasMaxLength(50);
         builder.Property(e => e.EscalationNotes).HasMaxLength(4000);
         builder.Property(e => e.ResolutionNote).HasMaxLength(4000);
+        builder.Property(e => e.PathwayAtFlag).HasConversion<string>().HasMaxLength(30);
+        builder.Property(e => e.PathwayAfterResolution).HasConversion<string>().HasMaxLength(30);
+        builder.Property(e => e.SessionFrequencyChange).HasMaxLength(200);
     }
 }
 

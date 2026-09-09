@@ -42,6 +42,7 @@ import {
   ScheduleFollowUpRequest,
   UpdateClinicalProfileRequest,
   UpdateDemographicsRequest,
+  GuestAuditEntryDto,
 } from './api-models';
 
 /** Maps 1:1 to GuestsController — see ARCHITECTURE.md "API surface". */
@@ -212,6 +213,29 @@ export class GuestsApiService {
   /** Discards a draft; submitted notes are part of the clinical record and cannot be deleted. */
   deleteCaseworkNote(guestId: string, noteId: string): Observable<void> {
     return this.http.delete<void>(`${this.base}/${guestId}/casework-notes/${noteId}`);
+  }
+
+  /** Removes a file from a draft note (soft-deletes the document). Author only. */
+  removeCaseworkNoteAttachment(guestId: string, noteId: string, documentId: string): Observable<void> {
+    return this.http.delete<void>(`${this.base}/${guestId}/casework-notes/${noteId}/attachments/${documentId}`);
+  }
+
+  // ---- UK GDPR: accountability and data-subject rights ----
+
+  /** Who has viewed or changed the record, newest first (guests.audit.view). */
+  getAccessLog(guestId: string, limit = 200): Observable<GuestAuditEntryDto[]> {
+    const params = new HttpParams().set('limit', limit);
+    return this.http.get<GuestAuditEntryDto[]>(`${this.base}/${guestId}/access-log`, { params });
+  }
+
+  /** Subject-access export — the complete record as a JSON file, logged server-side as a disclosure. */
+  exportRecord(guestId: string): Observable<Blob> {
+    return this.http.get(`${this.base}/${guestId}/export`, { responseType: 'blob' });
+  }
+
+  /** Irreversibly anonymises the record (right to erasure / end of retention). */
+  anonymise(guestId: string, reason: string): Observable<void> {
+    return this.http.post<void>(`${this.base}/${guestId}/anonymise`, { reason });
   }
 
   /** Care Plan tab — the active plan with goals, plus closed plans as history. */

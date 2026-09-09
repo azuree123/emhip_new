@@ -155,6 +155,35 @@ public class Guest : AggregateRoot
 
     public void SoftDelete() => IsDeleted = true;
 
+    /// <summary>True once the identifying fields have been stripped by <see cref="Anonymise"/>.</summary>
+    public bool IsAnonymised { get; private set; }
+    public DateTimeOffset? AnonymisedAt { get; private set; }
+
+    /// <summary>
+    /// UK GDPR right to erasure / end of retention: strips every direct identifier while keeping
+    /// the pseudonymous clinical record (guest number, year of birth, pathway, status) that
+    /// service reporting and the NHS records-management retention schedule still need. The
+    /// record is soft-deleted at the same time, so it disappears from every query that goes
+    /// through the global filter. Irreversible by design.
+    /// </summary>
+    public void Anonymise()
+    {
+        FirstName = "Anonymised";
+        LastName = $"Guest {GuestNumber}";
+        // Keep the year only — age bands still feed the demographic reports.
+        DateOfBirth = new DateOnly(DateOfBirth.Year, 1, 1);
+        Gender = null;
+        ContactPhone = null;
+        ContactEmail = null;
+        AddressLine1 = null;
+        AddressLine2 = null;
+        PostCode = null;
+        LegacyReference = null;
+        IsAnonymised = true;
+        AnonymisedAt = DateTimeOffset.UtcNow;
+        IsDeleted = true;
+    }
+
     public void UpdateContactDetails(string? phone, string? email, string? addressLine1, string? addressLine2, string? postCode)
     {
         ContactPhone = phone;

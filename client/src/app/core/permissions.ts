@@ -21,6 +21,12 @@ export const Permissions = {
     ContactsAdd: 'guests.contacts.add',
     /** May log a contact as a CPN contact — the popup's "Is this a CPN contact?" toggle and Part 1. */
     CpnContactsLog: 'guests.contacts.cpn',
+    /** Per-guest access log (who viewed/changed the record). */
+    AuditView: 'guests.audit.view',
+    /** Subject-access export of the full record — logged server-side. */
+    Export: 'guests.export',
+    /** Irreversible anonymisation of a guest record. */
+    Erase: 'guests.erase',
   },
   FollowUps: {
     View: 'followups.view',

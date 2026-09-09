@@ -52,6 +52,8 @@ public static class LookupSeeder
         (Categories.DocumentCategory, [
             "Consent form", "Assessment", "Care plan", "Correspondence", "Risk assessment",
             "Discharge summary", "Identification", "Referral letter", "Report", "Other",
+            // Files attached from the Add Contact popup land under this category.
+            "Casework note attachment",
         ]),
         (Categories.ReferralSource, [
             "GP referral", "CMHT", "Community organisation", "Self-referral", "Family / carer", "Hospital discharge",

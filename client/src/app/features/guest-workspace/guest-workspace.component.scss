@@ -301,3 +301,9 @@
     display: none;
   }
 }
+
+// "Anonymise record" — outline button in the brand red so it reads as destructive.
+.btn--danger {
+  color: #d02537;
+  box-shadow: inset 0 0 0 1px #f3b4bb;
+}

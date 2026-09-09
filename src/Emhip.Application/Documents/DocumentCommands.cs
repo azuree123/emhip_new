@@ -27,7 +27,8 @@ public sealed record UploadDocumentCommand(
     Guid? GuestId = null,
     string? Description = null,
     string? Tags = null,
-    DateOnly? RetainUntil = null) : IRequest<Guid>;
+    DateOnly? RetainUntil = null,
+    Guid? CaseworkNoteId = null) : IRequest<Guid>;
 
 public sealed class UploadDocumentCommandValidator : AbstractValidator<UploadDocumentCommand>
 {
@@ -49,17 +50,38 @@ public sealed class UploadDocumentCommandHandler(
     {
         await DocumentUpload.ValidateAsync(settings, request.FileName, request.DeclaredSize, cancellationToken);
 
-        if (request.GuestId is not null)
+        var guestId = request.GuestId;
+
+        if (request.CaseworkNoteId is not null)
+        {
+            // An attachment always belongs to the note's guest; the note must still be a draft
+            // (submitted notes are locked, attachments included) and the caller must be its author.
+            var note = await db.CaseworkNotes.AsNoTracking()
+                .Where(n => n.Id == request.CaseworkNoteId)
+                .Select(n => new { n.GuestId, n.Status, n.AuthorStaffId })
+                .FirstOrDefaultAsync(cancellationToken)
+                ?? throw new KeyNotFoundException($"Casework note {request.CaseworkNoteId} not found.");
+            if (note.Status != CaseworkNoteStatus.Draft)
+                throw new InvalidOperationException("Attachments can only be added while the casework note is a draft.");
+            if (note.AuthorStaffId != currentUser.StaffId)
+                throw new InvalidOperationException("Only the note's author can attach files to it.");
+            if (guestId is not null && guestId != note.GuestId)
+                throw new InvalidOperationException("The attachment's guest does not match the note's guest.");
+            guestId = note.GuestId;
+        }
+
+        if (guestId is not null)
         {
             var guestInHub = await db.Guests.AsNoTracking()
-                .AnyAsync(g => g.Id == request.GuestId && g.HubId == currentUser.HubId, cancellationToken);
-            if (!guestInHub) throw new KeyNotFoundException($"Guest {request.GuestId} not found.");
+                .AnyAsync(g => g.Id == guestId && g.HubId == currentUser.HubId, cancellationToken);
+            if (!guestInHub) throw new KeyNotFoundException($"Guest {guestId} not found.");
         }
 
         var document = new Document(
             currentUser.HubId, request.Title, request.Category, currentUser.StaffId,
-            request.GuestId, request.Description, request.Tags,
-            request.RetainUntil ?? await DocumentUpload.DefaultRetentionAsync(settings, cancellationToken));
+            guestId, request.Description, request.Tags,
+            request.RetainUntil ?? await DocumentUpload.DefaultRetentionAsync(settings, cancellationToken),
+            request.CaseworkNoteId);
 
         db.Documents.Add(document);
 

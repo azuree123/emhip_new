@@ -1,0 +1,293 @@
+<div class="record-overlay" (click)="close()">
+  <div class="record" role="dialog" aria-modal="true" aria-labelledby="episode-record-title" (click)="$event.stopPropagation()">
+    <header class="record__header">
+      <div class="record__heading">
+        <h2 class="record__title" id="episode-record-title">Urgent Episode Record</h2>
+        @if (record(); as r) {
+          <span class="record__sub">
+            @if (r.isResolved) {
+              Resolved · {{ r.resolvedAt | date: 'd MMM y · h:mm a' }}
+            } @else {
+              Open · flag raised {{ r.raisedAt | date: 'd MMM y · h:mm a' }}
+            }
+          </span>
+        }
+      </div>
+      <div class="record__actions">
+        <a class="btn btn--outline" [routerLink]="['/guests', guestId()]" (click)="close()">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+            <path transform="translate(2.25 2.25)"
+              d="M 2.437 1.125 C 1.713 1.125 1.125 1.713 1.125 2.438 L 1.125 11.063 C 1.125 11.787 1.713 12.375 2.437 12.375 L 11.062 12.375 C 11.787 12.375 12.375 11.787 12.375 11.063 L 12.375 8.063 C 12.375 7.752 12.627 7.5 12.937 7.5 C 13.248 7.5 13.5 7.752 13.5 8.063 L 13.5 11.063 C 13.5 12.409 12.408 13.5 11.062 13.5 L 2.437 13.5 C 1.091 13.5 0 12.409 0 11.063 L 0 2.438 C 0 1.091 1.091 0 2.437 0 L 5.437 0 C 5.748 0 6 0.252 6 0.563 C 6 0.873 5.748 1.125 5.437 1.125 L 2.437 1.125 Z M 7.5 0.563 C 7.5 0.252 7.752 0 8.062 0 L 12.938 0 C 13.248 0 13.5 0.252 13.5 0.563 L 13.5 5.438 C 13.5 5.748 13.248 6 12.938 6 C 12.627 6 12.375 5.748 12.375 5.438 L 12.375 1.921 L 8.46 5.835 C 8.24 6.055 7.884 6.055 7.665 5.835 C 7.445 5.616 7.445 5.259 7.665 5.04 L 11.58 1.125 L 8.062 1.125 C 7.752 1.125 7.5 0.873 7.5 0.563 Z"
+              fill="currentColor" />
+          </svg>
+          Open Guest Workspace
+        </a>
+        <button type="button" class="btn btn--primary" [disabled]="!record() || exporting()" (click)="exportRecord()">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+            <path transform="translate(2.813 1.125)"
+              d="M 12.375 6.75 L 12.375 13.5 C 12.375 13.799 12.256 14.085 12.045 14.296 C 11.835 14.507 11.548 14.625 11.25 14.625 L 1.125 14.625 C 0.827 14.625 0.54 14.507 0.33 14.296 C 0.119 14.085 0 13.799 0 13.5 L 0 6.75 C 0 6.452 0.119 6.166 0.33 5.955 C 0.54 5.744 0.827 5.625 1.125 5.625 L 2.813 5.625 C 2.962 5.625 3.105 5.685 3.21 5.79 C 3.316 5.896 3.375 6.039 3.375 6.188 C 3.375 6.337 3.316 6.48 3.21 6.586 C 3.105 6.691 2.962 6.75 2.813 6.75 L 1.125 6.75 L 1.125 13.5 L 11.25 13.5 L 11.25 6.75 L 9.563 6.75 C 9.413 6.75 9.27 6.691 9.165 6.586 C 9.059 6.48 9 6.337 9 6.188 C 9 6.039 9.059 5.896 9.165 5.79 C 9.27 5.685 9.413 5.625 9.563 5.625 L 11.25 5.625 C 11.548 5.625 11.835 5.744 12.045 5.955 C 12.256 6.166 12.375 6.452 12.375 6.75 Z M 3.773 3.773 L 5.625 1.921 L 5.625 8.438 C 5.625 8.587 5.684 8.73 5.79 8.836 C 5.895 8.941 6.038 9 6.188 9 C 6.337 9 6.48 8.941 6.585 8.836 C 6.691 8.73 6.75 8.587 6.75 8.438 L 6.75 1.921 L 8.602 3.773 C 8.708 3.879 8.851 3.938 9 3.938 C 9.149 3.938 9.292 3.879 9.398 3.773 C 9.504 3.668 9.563 3.525 9.563 3.375 C 9.563 3.226 9.504 3.083 9.398 2.977 L 6.585 0.165 C 6.533 0.113 6.471 0.071 6.403 0.043 C 6.335 0.015 6.261 0 6.188 0 C 6.114 0 6.04 0.015 5.972 0.043 C 5.904 0.071 5.842 0.113 5.79 0.165 L 2.977 2.977 C 2.871 3.083 2.812 3.226 2.812 3.375 C 2.812 3.525 2.871 3.668 2.977 3.773 C 3.083 3.879 3.226 3.938 3.375 3.938 C 3.524 3.938 3.667 3.879 3.773 3.773 Z"
+              fill="currentColor" />
+          </svg>
+          {{ exporting() ? 'Exporting…' : 'Export Record' }}
+        </button>
+        <button type="button" class="record__close" (click)="close()" aria-label="Close">
+          <svg width="16" height="16" viewBox="0 0 15.5 15.5" fill="none" aria-hidden="true">
+            <path d="M 0.22 0.22 C 0.513 -0.073 0.987 -0.073 1.28 0.22 L 7.75 6.689 L 14.22 0.22 C 14.513 -0.073 14.987 -0.073 15.28 0.22 C 15.573 0.513 15.573 0.987 15.28 1.28 L 8.811 7.75 L 15.28 14.22 C 15.573 14.513 15.573 14.987 15.28 15.28 C 14.987 15.573 14.513 15.573 14.22 15.28 L 7.75 8.811 L 1.28 15.28 C 0.987 15.573 0.513 15.573 0.22 15.28 C -0.073 14.987 -0.073 14.513 0.22 14.22 L 6.689 7.75 L 0.22 1.28 C -0.073 0.987 -0.073 0.513 0.22 0.22 Z" fill="currentColor" />
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    @if (episodes().length) {
+      <div class="record__tabs" role="tablist" aria-label="Episodes">
+        @for (ep of episodes(); track ep.id) {
+          <button
+            type="button"
+            role="tab"
+            class="record__tab"
+            [class.record__tab--active]="ep.id === selectedId()"
+            [attr.aria-selected]="ep.id === selectedId()"
+            (click)="selectEpisode(ep.id)"
+            [title]="ep.resolvedAt ? 'Resolved ' + (ep.resolvedAt | date: 'd MMM y') : 'Open'">
+            Episode {{ ep.episodeNumber }}
+            @if (!ep.resolvedAt) {
+              <span class="record__tab-dot" aria-label="Open"></span>
+            }
+          </button>
+        }
+      </div>
+    }
+
+    <div class="record__body">
+      @if (exportError(); as message) {
+        <div class="banner banner--error">{{ message }}</div>
+      }
+      @if (error(); as message) {
+        <div class="banner banner--error">{{ message }}</div>
+      } @else if (loading() && !record()) {
+        <div class="record__loading">Loading episode record…</div>
+      } @else if (record(); as r) {
+        <!-- Status banner -->
+        @if (r.isResolved) {
+          <div class="status-banner status-banner--resolved">
+            <svg class="status-banner__icon" width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+              <circle cx="10" cy="10" r="8.25" stroke="currentColor" stroke-width="1.5" />
+              <path d="M6.5 10.2l2.4 2.4 4.6-4.9" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+            <div class="status-banner__text">
+              <span class="status-banner__title">Episode resolved - {{ r.guestName }}</span>
+              <span class="status-banner__sub">{{ resolutionSummary(r) }}</span>
+            </div>
+            <div class="status-banner__when">
+              <span class="status-banner__date">{{ r.resolvedAt | date: 'd MMM y · h:mm a' }}</span>
+              @if (r.resolvedByName) {
+                <span class="status-banner__by">Resolved by {{ r.resolvedByName }}</span>
+              }
+            </div>
+          </div>
+        } @else {
+          <div class="status-banner" [class.status-banner--open]="!isOverdue()" [class.status-banner--overdue]="isOverdue()">
+            <svg class="status-banner__icon" width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+              <circle cx="10" cy="10" r="8.25" stroke="currentColor" stroke-width="1.5" />
+              <path d="M10 5.5v5l3 1.8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+            <div class="status-banner__text">
+              <span class="status-banner__title">Episode open - {{ r.guestName }}</span>
+              <span class="status-banner__sub">{{ withinWindowLabel(r) }} · Deadline {{ r.deadlineAt | date: 'd MMM y · h:mm a' }}</span>
+            </div>
+            @if (canAct) {
+              <div class="status-banner__actions">
+                <button type="button" class="btn btn--dark" (click)="requestEscalate()">Escalate to CMHT</button>
+                <button type="button" class="btn btn--maroon" (click)="requestResolve()">Mark episode as resolved</button>
+              </div>
+            }
+          </div>
+        }
+
+        <div class="record__columns">
+          <div class="record__main">
+            <!-- Episode overview -->
+            <section class="card">
+              <div class="card__head">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                  <rect x="3" y="3.5" width="14" height="13" rx="2" stroke="currentColor" stroke-width="1.4" />
+                  <path d="M6.5 8h7M6.5 11h7M6.5 14h4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
+                </svg>
+                <h3>Episode overview</h3>
+              </div>
+              <dl class="rows">
+                <div class="rows__row"><dt>Guest</dt><dd>{{ r.guestName }} (#{{ r.guestNumber }})</dd></div>
+                <div class="rows__row">
+                  <dt>Pathway at time of flag</dt>
+                  <dd><span class="chip" [style.background]="pathwayChip(r.pathwayAtFlag).bg" [style.color]="pathwayChip(r.pathwayAtFlag).fg">{{ pathwayChip(r.pathwayAtFlag).label }}</span></dd>
+                </div>
+                <div class="rows__row"><dt>Assigned CMHW</dt><dd>{{ r.assignedCmhwName ?? 'Unassigned' }}</dd></div>
+                <div class="rows__row"><dt>Flag raised by</dt><dd>{{ r.raisedByName ?? '—' }}</dd></div>
+                <div class="rows__row"><dt>Flag raised at</dt><dd>{{ r.raisedAt | date: 'd MMM y · h:mm a' }}</dd></div>
+                <div class="rows__row"><dt>{{ r.responseHours }}-hour deadline</dt><dd>{{ r.deadlineAt | date: 'd MMM y · h:mm a' }}</dd></div>
+                <div class="rows__row"><dt>Resolved at</dt><dd>{{ r.resolvedAt ? (r.resolvedAt | date: 'd MMM y · h:mm a') : '—' }}</dd></div>
+                <div class="rows__row"><dt>Resolved by</dt><dd>{{ r.resolvedByName ?? '—' }}</dd></div>
+                <div class="rows__row"><dt>Resolved within {{ r.responseHours }}h</dt><dd>{{ withinWindowLabel(r) }}</dd></div>
+                <div class="rows__row"><dt>External service involved</dt><dd>{{ r.cmhtTeam ?? 'None' }}</dd></div>
+              </dl>
+            </section>
+
+            <!-- Crisis action notes at intake -->
+            <section class="card card--intake">
+              <div class="card__head">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                  <path d="M10 3.2l7 12.3H3L10 3.2Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" />
+                  <path d="M10 8v3.5M10 13.5v.2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+                </svg>
+                <h3>Crisis action notes at intake</h3>
+              </div>
+              <div class="note-box note-box--intake">
+                @if (r.intake.riskFlags.length) {
+                  <div class="note-box__flags">
+                    @for (flag of r.intake.riskFlags; track flag) {
+                      <span class="pill pill--urgent">{{ flag }}</span>
+                    }
+                  </div>
+                }
+                <p class="note-box__text">{{ r.intake.notes || 'No intake notes were recorded with the risk assessment that raised this flag.' }}</p>
+                @if (r.intake.assessedAt) {
+                  <span class="note-box__meta">
+                    {{ r.intake.assessedAt | date: 'd MMM y · h:mm a' }}
+                    @if (r.intake.assessedByName) { · {{ r.intake.assessedByName }} }
+                  </span>
+                }
+              </div>
+            </section>
+
+            <!-- Full episode timeline -->
+            <section class="card">
+              <div class="card__head">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                  <circle cx="5" cy="5" r="2" stroke="currentColor" stroke-width="1.4" />
+                  <circle cx="15" cy="10" r="2" stroke="currentColor" stroke-width="1.4" />
+                  <circle cx="5" cy="15" r="2" stroke="currentColor" stroke-width="1.4" />
+                  <path d="M7 5h4a2 2 0 0 1 2 2v1M13 12v1a2 2 0 0 1-2 2H7" stroke="currentColor" stroke-width="1.4" />
+                </svg>
+                <h3>Full episode timeline</h3>
+              </div>
+              <div class="timeline">
+                @for (t of r.timeline; track $index) {
+                  <div class="timeline__event" [attr.data-kind]="t.kind">
+                    <span class="timeline__title">{{ t.title }}</span>
+                    @if (t.description) {
+                      <p class="timeline__desc">{{ t.description }}</p>
+                    }
+                    @if (t.secondaryDescription) {
+                      <p class="timeline__desc timeline__desc--secondary">{{ t.secondaryDescription }}</p>
+                    }
+                    <div class="timeline__meta">
+                      <span>{{ t.occurredAt | date: 'd MMM y' }}</span>
+                      <span class="timeline__sep"></span>
+                      <span>{{ t.occurredAt | date: 'h:mm a' }}</span>
+                      @if (t.actorName) {
+                        <span class="timeline__sep"></span>
+                        <span>{{ t.actorName }}</span>
+                      }
+                    </div>
+                  </div>
+                }
+              </div>
+            </section>
+
+            <!-- Resolution note -->
+            @if (r.isResolved) {
+              <section class="card card--resolution">
+                <div class="card__head">
+                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                    <path d="M5.5 2.5h6.5l3.5 3.5v11.5h-10V2.5Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" />
+                    <path d="M12 2.5V6h3.5M8 10.5h4M8 13.5h4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
+                  </svg>
+                  <h3>Resolution note</h3>
+                </div>
+                <div class="note-box note-box--resolution">
+                  <p class="note-box__text">{{ r.resolutionNote || 'Resolution note not recorded.' }}</p>
+                </div>
+              </section>
+
+              <!-- Pathway re-entry decision -->
+              <section class="card">
+                <div class="card__head">
+                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                    <path d="M4 15.5V6a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v9.5l-3-2-3 2-3-2-3 2Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" />
+                  </svg>
+                  <h3>Pathway re-entry decision</h3>
+                </div>
+                <dl class="rows">
+                  <div class="rows__row">
+                    <dt>Pathway before crisis</dt>
+                    <dd><span class="chip" [style.background]="pathwayChip(r.pathwayAtFlag).bg" [style.color]="pathwayChip(r.pathwayAtFlag).fg">{{ pathwayChip(r.pathwayAtFlag).label }}</span></dd>
+                  </div>
+                  <div class="rows__row">
+                    <dt>Pathway after resolution</dt>
+                    <dd><span class="chip" [style.background]="pathwayChip(r.pathwayAfterResolution).bg" [style.color]="pathwayChip(r.pathwayAfterResolution).fg">{{ pathwayChip(r.pathwayAfterResolution).label }}</span></dd>
+                  </div>
+                  <div class="rows__row"><dt>CMHW after resolution</dt><dd>{{ r.cmhwAfterResolutionName ?? r.assignedCmhwName ?? 'Unassigned' }}</dd></div>
+                  <div class="rows__row"><dt>Next contact set</dt><dd>{{ r.nextContactDate ? (r.nextContactDate | date: 'd MMM y') : 'Not set' }}</dd></div>
+                  <div class="rows__row"><dt>Session frequency changed</dt><dd>{{ r.sessionFrequencyChange || 'No' }}</dd></div>
+                </dl>
+              </section>
+            }
+          </div>
+
+          <aside class="record__side">
+            <!-- Episode outcome -->
+            <section class="card card--outcome">
+              <div class="card__head">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                  <path d="M3.5 15.5h13M6 12V8M10 12V5M14 12v-2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                </svg>
+                <h3>Episode outcome</h3>
+              </div>
+              <dl class="rows rows--outcome">
+                <div class="rows__row">
+                  <dt>Status</dt>
+                  <dd>
+                    @if (r.isResolved) {
+                      <span class="pill pill--resolved">Resolved</span>
+                    } @else if (isOverdue()) {
+                      <span class="pill pill--urgent">Overdue</span>
+                    } @else {
+                      <span class="pill pill--open">Open</span>
+                    }
+                  </dd>
+                </div>
+                <div class="rows__row"><dt>Within {{ r.responseHours }} hours</dt><dd>{{ r.resolvedWithinWindow === null ? 'PENDING' : r.resolvedWithinWindow ? 'YES' : 'NO' }}</dd></div>
+                <div class="rows__row"><dt>Duration</dt><dd>{{ durationLabel(r) }}</dd></div>
+                <div class="rows__row"><dt>Follow-ups logged</dt><dd>{{ r.followUpsLogged }}</dd></div>
+                <div class="rows__row"><dt>Escalation to CMHT</dt><dd>{{ r.escalatedToCmhtAt ? 'YES' : 'NO' }}</dd></div>
+                <div class="rows__row"><dt>Inpatient admission</dt><dd>{{ r.inpatientAdmission ? 'YES' : 'NO' }}</dd></div>
+              </dl>
+            </section>
+
+            <!-- System audit trail -->
+            <section class="card">
+              <div class="card__head">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                  <path d="M10 2.5l6.5 2.5v4.5c0 4-2.8 6.6-6.5 8-3.7-1.4-6.5-4-6.5-8V5L10 2.5Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" />
+                  <path d="M7.5 10l1.8 1.8 3.4-3.6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+                <h3>System audit trail</h3>
+              </div>
+              <ul class="audit">
+                @for (a of r.auditTrail; track $index) {
+                  <li class="audit__item">
+                    <span class="audit__dot" [attr.data-tone]="a.tone" aria-hidden="true"><span></span></span>
+                    <div class="audit__text">
+                      <span class="audit__title">{{ a.title }}</span>
+                      <span class="audit__detail">{{ a.detail }}</span>
+                    </div>
+                  </li>
+                }
+              </ul>
+            </section>
+          </aside>
+        </div>
+      }
+    </div>
+  </div>
+</div>

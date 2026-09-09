@@ -9,7 +9,7 @@ public interface IDocumentReadService
     Task<KeysetPage<DocumentListItemDto>> GetListAsync(
         Guid hubId, string? searchText, Guid? guestId, string? category, DocumentStatus? status,
         string? tag, bool includeDeleted, bool deletedOnly, string? cursor, int pageSize,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken = default, Guid? caseworkNoteId = null);
 
     /// <summary>Full record with version history. Returns deleted documents too (the UI shows them read-only).</summary>
     Task<DocumentDetailDto?> GetDetailAsync(Guid hubId, Guid documentId, CancellationToken cancellationToken = default);

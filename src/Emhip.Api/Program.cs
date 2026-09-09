@@ -15,6 +15,8 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
+using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -42,6 +44,11 @@ builder.Services
         options.Password.RequiredLength = 10;
         options.Password.RequireNonAlphanumeric = false;
         options.User.RequireUniqueEmail = true;
+        // Brute-force protection (UK GDPR Art. 32 / NHS DSPT): five failed attempts lock the
+        // account for 15 minutes. AuthController.Login counts the failures.
+        options.Lockout.AllowedForNewUsers = true;
+        options.Lockout.MaxFailedAccessAttempts = 5;
+        options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
     })
     .AddEntityFrameworkStores<EmhipDbContext>()
     .AddDefaultTokenProviders();
@@ -117,6 +124,22 @@ builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(o =>
     o.ValueLengthLimit = int.MaxValue;
 });
 
+// Per-client throttling on the anonymous auth endpoints, so password guessing is slow even
+// across many accounts (the Identity lockout above protects a single account).
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.AddPolicy(RateLimitPolicies.Auth, context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 10,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0,
+            }));
+});
+
 builder.Services.AddCors(options => options.AddPolicy(AngularClientCorsPolicy, policy =>
     policy.WithOrigins(builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? ["http://localhost:4200"])
         .AllowAnyHeader()
@@ -144,6 +167,7 @@ if (builder.Configuration.GetValue<bool>("ApplyMigrationsOnStartup"))
 }
 
 app.UseExceptionHandler();
+app.UseMiddleware<SecurityHeadersMiddleware>();
 
 if (app.Environment.IsDevelopment())
 {
@@ -156,10 +180,17 @@ if (app.Environment.IsDevelopment())
 // would just loop, since the container itself never serves HTTPS.
 if (!app.Environment.IsEnvironment("Docker"))
 {
+    if (!app.Environment.IsDevelopment())
+    {
+        // Pin browsers to HTTPS once they have seen us over TLS. Behind the Docker nginx the
+        // header is set by client/nginx.conf instead, since the container never speaks TLS.
+        app.UseHsts();
+    }
     app.UseHttpsRedirection();
 }
 
 app.UseCors(AngularClientCorsPolicy);
+app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 

@@ -29,6 +29,7 @@ export const SettingKeys = {
   FollowUpDefaultDays: 'clinical.followUpDefaultDays',
   DialogReviewWeeks: 'clinical.dialogReviewWeeks',
   GuestListPageSize: 'ui.guestListPageSize',
+  SessionIdleMinutes: 'security.sessionIdleMinutes',
 } as const;
 
 /** Maps 1:1 to SettingsController and LookupsController. */
@@ -54,6 +55,8 @@ export class SettingsApiService {
   readonly urgentResponseHours = computed(() => Number(this.publicSettings()[SettingKeys.UrgentResponseHours] ?? 72));
   readonly followUpDefaultDays = computed(() => Number(this.publicSettings()[SettingKeys.FollowUpDefaultDays] ?? 14));
   readonly dialogReviewWeeks = computed(() => Number(this.publicSettings()[SettingKeys.DialogReviewWeeks] ?? 12));
+  /** Minutes of inactivity before automatic sign-out; 0 disables (see IdleTimeoutService). */
+  readonly sessionIdleMinutes = computed(() => Number(this.publicSettings()[SettingKeys.SessionIdleMinutes] ?? 30));
 
   /** Called once by the shell after sign-in; safe to call again to refresh after a settings save. */
   loadPublicSettings(): Observable<PublicSettings> {

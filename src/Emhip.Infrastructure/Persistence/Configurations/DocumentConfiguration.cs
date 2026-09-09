@@ -23,6 +23,7 @@ public class DocumentConfiguration : IEntityTypeConfiguration<Document>
         // so deleted rows must stay queryable and are filtered per query instead.
         builder.HasIndex(d => new { d.HubId, d.IsDeleted, d.UpdatedAt }).HasDatabaseName("IX_Documents_Hub_Deleted_Updated");
         builder.HasIndex(d => d.GuestId).HasDatabaseName("IX_Documents_GuestId");
+        builder.HasIndex(d => d.CaseworkNoteId).HasDatabaseName("IX_Documents_CaseworkNoteId");
         builder.HasIndex(d => new { d.HubId, d.Category }).HasDatabaseName("IX_Documents_Hub_Category");
     }
 }

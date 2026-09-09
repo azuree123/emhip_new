@@ -56,7 +56,11 @@ public sealed class RecordRiskAssessmentCommandHandler(IAppDbContext db, ICurren
                 .AnyAsync(e => e.GuestId == request.GuestId && e.ResolvedAt == null, cancellationToken);
             if (!hasOpenEpisode)
             {
-                db.UrgentEpisodes.Add(new UrgentEpisode(request.GuestId, DateTimeOffset.UtcNow));
+                // Snapshot who raised it and where the guest was, so the episode record reads the
+                // same way later even after the guest's live pathway/CMHW have moved on.
+                db.UrgentEpisodes.Add(new UrgentEpisode(
+                    request.GuestId, DateTimeOffset.UtcNow, currentUser.StaffId, assessment.Id,
+                    guest.Pathway, guest.AssignedCmhwId));
             }
         }
 

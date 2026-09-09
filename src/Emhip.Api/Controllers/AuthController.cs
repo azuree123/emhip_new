@@ -5,6 +5,7 @@ using Emhip.Infrastructure.Identity;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace Emhip.Api.Controllers;
 
@@ -21,15 +22,29 @@ public sealed class AuthController(
     public sealed record LoginRequest(string Email, string Password);
     public sealed record LoginResponse(string Token, DateTimeOffset ExpiresAt, Guid StaffId, string DisplayName, Guid HubId, string[] Roles, string[] Permissions);
 
+    /// <summary>
+    /// Credential check with brute-force protection: per-IP rate limiting (the "auth" policy) plus
+    /// ASP.NET Core Identity lockout after repeated failures. The response is the same whether the
+    /// account exists, is inactive, is locked or the password is wrong, so nothing can be enumerated.
+    /// </summary>
     [HttpPost("login")]
     [AllowAnonymous]
+    [EnableRateLimiting(RateLimitPolicies.Auth)]
     public async Task<IActionResult> Login([FromBody] LoginRequest request, CancellationToken cancellationToken)
     {
         var user = await userManager.FindByEmailAsync(request.Email);
-        if (user is null || !user.IsActive || !await userManager.CheckPasswordAsync(user, request.Password))
+        if (user is null || !user.IsActive || await userManager.IsLockedOutAsync(user))
         {
             return Unauthorized(new { message = "Invalid email or password." });
         }
+
+        if (!await userManager.CheckPasswordAsync(user, request.Password))
+        {
+            await userManager.AccessFailedAsync(user);
+            return Unauthorized(new { message = "Invalid email or password." });
+        }
+
+        await userManager.ResetAccessFailedCountAsync(user);
 
         var (token, expiresAt) = await tokenService.GenerateTokenAsync(user);
         var roles = await userManager.GetRolesAsync(user);
@@ -42,6 +57,7 @@ public sealed class AuthController(
     /// <summary>Always returns 204 regardless of whether the email exists, so callers can't enumerate registered accounts.</summary>
     [HttpPost("forgot-password")]
     [AllowAnonymous]
+    [EnableRateLimiting(RateLimitPolicies.Auth)]
     public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request, CancellationToken cancellationToken)
     {
         var user = await userManager.FindByEmailAsync(request.Email);
@@ -70,6 +86,7 @@ public sealed class AuthController(
 
     [HttpPost("reset-password")]
     [AllowAnonymous]
+    [EnableRateLimiting(RateLimitPolicies.Auth)]
     public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
     {
         var user = await userManager.FindByEmailAsync(request.Email);

@@ -136,6 +136,36 @@
                         </div>
                       }
 
+                      @if (note.attachments.length) {
+                        <div class="sbar-block">
+                          <span class="sbar-block__label">Attachments</span>
+                          @if (downloadError(); as message) {
+                            <p class="form-error note-error">{{ message }}</p>
+                          }
+                          <ul class="note-attachments">
+                            @for (a of note.attachments; track a.documentId) {
+                              <li class="note-attachments__item">
+                                <button
+                                  type="button"
+                                  class="note-attachments__file"
+                                  [disabled]="!canDownload || downloadingId() === a.documentId"
+                                  [title]="canDownload ? 'Download ' + a.fileName : 'You do not have permission to open documents'"
+                                  (click)="downloadAttachment(a)"
+                                >
+                                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                                    <path d="M 4 1.5 h 5.5 L 13 5 v 9.5 H 4 Z M 9.5 1.5 V 5 H 13" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" />
+                                  </svg>
+                                  {{ downloadingId() === a.documentId ? 'Downloading…' : a.fileName }}
+                                </button>
+                                <span class="note-attachments__meta">
+                                  {{ formatSize(a.sizeBytes) }} · {{ a.uploadedByName }} · {{ formatDate(a.uploadedAt) }}
+                                </span>
+                              </li>
+                            }
+                          </ul>
+                        </div>
+                      }
+
                       <div class="note__footer">
                         <div class="note__flags">
                           @if (note.nextContactDate) {

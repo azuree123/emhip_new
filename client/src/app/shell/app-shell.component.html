@@ -50,6 +50,14 @@
   </aside>
 
   <div class="main">
+    @if (idle.warning()) {
+      <div class="idle-banner" role="alert">
+        <span class="idle-banner__text">
+          You will be signed out in {{ idle.secondsLeft() }} second{{ idle.secondsLeft() === 1 ? '' : 's' }} due to inactivity.
+        </span>
+        <button type="button" class="idle-banner__btn" (click)="idle.extend()">Stay signed in</button>
+      </div>
+    }
     <header class="header">
       <div class="header__greeting-block">
         <div class="header__greeting">Good Morning, {{ currentUser().displayName }}!</div>

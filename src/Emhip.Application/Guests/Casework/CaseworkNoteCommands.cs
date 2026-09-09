@@ -35,9 +35,14 @@ public sealed record CaseworkNoteDto(
     string AuthorName,
     DateTimeOffset CreatedAt,
     DateTimeOffset? SubmittedAt,
-    IReadOnlyList<CaseworkNoteActionDto> Actions);
+    IReadOnlyList<CaseworkNoteActionDto> Actions,
+    IReadOnlyList<CaseworkNoteAttachmentDto> Attachments);
 
 public sealed record CaseworkNoteActionDto(Guid Id, string Description, DateOnly DueDate, bool IsCompleted, string? AssignedToName);
+
+/// <summary>A document attached to the note (uploaded through the Document Management module with the note's id).</summary>
+public sealed record CaseworkNoteAttachmentDto(
+    Guid DocumentId, string FileName, string ContentType, long SizeBytes, DateTimeOffset UploadedAt, string UploadedByName);
 
 /// <summary>The fields shared by "save draft" and "submit".</summary>
 public sealed record CaseworkNoteInput(
@@ -241,4 +246,34 @@ public sealed class GetCaseworkNotesQueryHandler(IGuestReadService reads) : IReq
 {
     public Task<IReadOnlyList<CaseworkNoteDto>> Handle(GetCaseworkNotesQuery request, CancellationToken cancellationToken) =>
         reads.GetCaseworkNotesAsync(request.GuestId, cancellationToken);
+}
+
+/// <summary>
+/// Removes an attachment from a draft note. The document is soft-deleted (recoverable from the
+/// recycle bin by a manager); once the note is submitted its attachments are part of the record
+/// and can only be retired through the Documents register with the delete permission.
+/// </summary>
+public sealed record RemoveCaseworkNoteAttachmentCommand(Guid GuestId, Guid NoteId, Guid DocumentId) : IRequest;
+
+public sealed class RemoveCaseworkNoteAttachmentCommandHandler(IAppDbContext db, ICurrentUser currentUser)
+    : IRequestHandler<RemoveCaseworkNoteAttachmentCommand>
+{
+    public async Task Handle(RemoveCaseworkNoteAttachmentCommand request, CancellationToken cancellationToken)
+    {
+        var note = await db.CaseworkNotes.AsNoTracking()
+            .FirstOrDefaultAsync(n => n.Id == request.NoteId && n.GuestId == request.GuestId, cancellationToken)
+            ?? throw new KeyNotFoundException($"Casework note {request.NoteId} not found.");
+
+        if (note.Status != CaseworkNoteStatus.Draft)
+            throw new InvalidOperationException("Attachments on a submitted note are part of the clinical record and cannot be removed here.");
+        if (note.AuthorStaffId != currentUser.StaffId)
+            throw new InvalidOperationException("Only the note's author can remove its attachments.");
+
+        var document = await db.Documents
+            .FirstOrDefaultAsync(d => d.Id == request.DocumentId && d.CaseworkNoteId == request.NoteId && !d.IsDeleted, cancellationToken)
+            ?? throw new KeyNotFoundException($"Attachment {request.DocumentId} not found on this note.");
+
+        document.SoftDelete(currentUser.StaffId, "Removed from draft casework note");
+        await db.SaveChangesAsync(cancellationToken);
+    }
 }

@@ -19,16 +19,22 @@ namespace Emhip.Api.Controllers;
 [AllowAnonymous]
 public sealed class InternalNotificationsController(IHubContext<UrgentCasesHub> hubContext, IConfiguration configuration) : ControllerBase
 {
+    /// <summary>Constant-time comparison so response timing cannot be used to guess the secret byte by byte.</summary>
+    private bool SecretMatches(string? presented)
+    {
+        var expected = configuration["Internal:SharedSecret"];
+        if (string.IsNullOrEmpty(expected) || string.IsNullOrEmpty(presented)) return false;
+        var a = System.Text.Encoding.UTF8.GetBytes(expected);
+        var b = System.Text.Encoding.UTF8.GetBytes(presented);
+        return a.Length == b.Length && System.Security.Cryptography.CryptographicOperations.FixedTimeEquals(a, b);
+    }
+
     public sealed record NotifyRequest(Guid HubId, UrgentCaseDto UrgentCase);
 
     [HttpPost("notify")]
     public async Task<IActionResult> Notify([FromBody] NotifyRequest request, [FromHeader(Name = "X-Internal-Secret")] string? secret, CancellationToken cancellationToken)
     {
-        var expectedSecret = configuration["Internal:SharedSecret"];
-        if (string.IsNullOrEmpty(expectedSecret) || secret != expectedSecret)
-        {
-            return Unauthorized();
-        }
+        if (!SecretMatches(secret)) return Unauthorized();
 
         await hubContext.Clients.Group(UrgentCasesHub.GroupName(request.HubId)).SendAsync("urgentCaseEscalated", request.UrgentCase, cancellationToken);
         return NoContent();
@@ -39,11 +45,7 @@ public sealed class InternalNotificationsController(IHubContext<UrgentCasesHub> 
     [HttpPost("notify-resolved")]
     public async Task<IActionResult> NotifyResolved([FromBody] NotifyResolvedRequest request, [FromHeader(Name = "X-Internal-Secret")] string? secret, CancellationToken cancellationToken)
     {
-        var expectedSecret = configuration["Internal:SharedSecret"];
-        if (string.IsNullOrEmpty(expectedSecret) || secret != expectedSecret)
-        {
-            return Unauthorized();
-        }
+        if (!SecretMatches(secret)) return Unauthorized();
 
         await hubContext.Clients.Group(UrgentCasesHub.GroupName(request.HubId)).SendAsync("urgentCaseResolved", request.GuestId, cancellationToken);
         return NoContent();

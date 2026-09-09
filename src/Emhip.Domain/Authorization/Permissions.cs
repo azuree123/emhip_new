@@ -37,6 +37,12 @@ public static class Permissions
         /// the CPN role by default; an admin can add it to any other role.
         /// </summary>
         public const string CpnContactsLog = "guests.contacts.cpn";
+        /// <summary>See who accessed or changed a guest's record (the per-guest access log — UK GDPR accountability).</summary>
+        public const string AuditView = "guests.audit.view";
+        /// <summary>Download a guest's complete record (subject access request bundle). Every export is logged.</summary>
+        public const string Export = "guests.export";
+        /// <summary>Irreversibly anonymise a guest's record (right to erasure / end of retention).</summary>
+        public const string Erase = "guests.erase";
     }
 
     public static class FollowUps
@@ -93,6 +99,7 @@ public static class Permissions
         Guests.View, Guests.Register, Guests.Edit, Guests.DemographicsView, Guests.DemographicsEdit,
         Guests.ClinicalView, Guests.ClinicalEdit, Guests.PathwayView, Guests.PathwayEdit,
         Guests.NotesView, Guests.NotesAdd, Guests.ContactsAdd, Guests.CpnContactsLog,
+        Guests.AuditView, Guests.Export, Guests.Erase,
         FollowUps.View, FollowUps.Manage,
         UrgentCases.View,
         Mdt.Manage,
@@ -111,6 +118,7 @@ public static class Permissions
             Guests.View, Guests.Register, Guests.Edit, Guests.DemographicsView, Guests.DemographicsEdit,
             Guests.ClinicalView, Guests.ClinicalEdit, Guests.PathwayView, Guests.PathwayEdit,
             Guests.NotesView, Guests.NotesAdd, Guests.ContactsAdd, Guests.CpnContactsLog,
+            Guests.AuditView, Guests.Export, Guests.Erase,
         ],
         ["Follow-ups"] = [FollowUps.View, FollowUps.Manage],
         ["Urgent Cases"] = [UrgentCases.View],

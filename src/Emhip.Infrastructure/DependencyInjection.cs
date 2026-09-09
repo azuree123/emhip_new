@@ -39,6 +39,8 @@ public static class DependencyInjection
         });
 
         services.AddScoped<Application.Abstractions.IAppDbContext>(sp => sp.GetRequiredService<EmhipDbContext>());
+        services.AddScoped<IAuditTrail, AuditTrail>();
+        services.AddScoped<IGuestAnonymiser, GuestAnonymiser>();
 
         services.AddScoped<IGuestReadService, GuestReadService>();
         services.AddScoped<IDocumentReadService, DocumentReadService>();

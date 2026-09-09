@@ -332,6 +332,24 @@ public sealed class GuestReadService(ISqlConnectionFactory connectionFactory, Em
 
         if (notes.Count == 0) return [];
 
+        var noteIds = notes.Select(n => n.Id).ToList();
+        var attachments = await db.Documents.AsNoTracking()
+            .Where(d => d.CaseworkNoteId != null && noteIds.Contains(d.CaseworkNoteId.Value) && !d.IsDeleted)
+            .OrderBy(d => d.CreatedAt)
+            .Select(d => new
+            {
+                NoteId = d.CaseworkNoteId!.Value,
+                Dto = new CaseworkNoteAttachmentDto(
+                    d.Id,
+                    db.DocumentVersions.Where(v => v.DocumentId == d.Id && v.VersionNumber == d.CurrentVersionNumber).Select(v => v.FileName).FirstOrDefault() ?? d.Title,
+                    db.DocumentVersions.Where(v => v.DocumentId == d.Id && v.VersionNumber == d.CurrentVersionNumber).Select(v => v.ContentType).FirstOrDefault() ?? "application/octet-stream",
+                    db.DocumentVersions.Where(v => v.DocumentId == d.Id && v.VersionNumber == d.CurrentVersionNumber).Select(v => v.SizeBytes).FirstOrDefault(),
+                    d.CreatedAt,
+                    db.Users.Where(u => u.Id == d.CreatedByStaffId).Select(u => u.DisplayName).FirstOrDefault() ?? "Unknown"),
+            })
+            .ToListAsync(cancellationToken);
+        var attachmentsByNote = attachments.GroupBy(a => a.NoteId).ToDictionary(g => g.Key, g => (IReadOnlyList<CaseworkNoteAttachmentDto>)g.Select(a => a.Dto).ToList());
+
         // Actions created from a note share the guest and were raised in the same moment; match
         // them by the day the note was submitted so the note shows what it produced.
         var actions = await db.GuestActions.AsNoTracking()
@@ -356,7 +374,8 @@ public sealed class GuestReadService(ISqlConnectionFactory connectionFactory, Em
                     : actions
                         .Where(a => Math.Abs((a.CreatedAt - n.SubmittedAt.Value).TotalMinutes) < 5)
                         .Select(a => new CaseworkNoteActionDto(a.Id, a.Description, a.DueDate, a.IsCompleted, a.AssignedToName))
-                        .ToList()))
+                        .ToList(),
+                attachmentsByNote.TryGetValue(n.Id, out var files) ? files : []))
             .ToList();
     }
 
@@ -626,5 +645,23 @@ public sealed class GuestReadService(ISqlConnectionFactory connectionFactory, Em
         public string? PathwayCategory { get; set; }
         public bool HasRiskFlags { get; set; }
         public DateTime? NextContactDue { get; set; }
+    }
+
+    public async Task<IReadOnlyList<Emhip.Application.Guests.Compliance.GuestAuditEntryDto>> GetAccessLogAsync(
+        Guid hubId, Guid guestId, int limit, CancellationToken cancellationToken = default)
+    {
+        // IgnoreQueryFilters: the log must stay readable after the guest is anonymised (soft-deleted).
+        var inHub = await db.Guests.IgnoreQueryFilters().AsNoTracking().AnyAsync(g => g.Id == guestId && g.HubId == hubId, cancellationToken);
+        if (!inHub) return [];
+
+        return await db.AuditEvents.AsNoTracking()
+            .Where(a => a.GuestId == guestId)
+            .OrderByDescending(a => a.OccurredAt)
+            .Take(limit)
+            .Select(a => new Emhip.Application.Guests.Compliance.GuestAuditEntryDto(
+                a.Id, a.OccurredAt,
+                db.Users.Where(u => u.Id == a.ActorStaffId).Select(u => u.DisplayName).FirstOrDefault() ?? "System",
+                a.Action.ToString(), a.EntityName, a.EntityId, a.Details))
+            .ToListAsync(cancellationToken);
     }
 }
