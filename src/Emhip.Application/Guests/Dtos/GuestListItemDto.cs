@@ -20,7 +20,9 @@ public sealed record GuestListItemDto(
     bool HasRiskFlags,
     /// <summary>Temporary safety escalation — independent of status and pathway (spec §3.3).</summary>
     bool IsUrgent,
-    DateOnly? NextContactDue);
+    DateOnly? NextContactDue,
+    /// <summary>The guest's clinical pathway — the only pathways: Mental Wellbeing, Clinical Support, Community Recovery.</summary>
+    GuestPathway? Pathway = null);
 
 /// <summary>Option for the guest list's "Assigned CMHW" filter dropdown.</summary>
 public sealed record CmhwOptionDto(Guid Id, string DisplayName);

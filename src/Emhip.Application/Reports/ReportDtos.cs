@@ -4,8 +4,10 @@ namespace Emhip.Application.Reports;
 public sealed record PathwayReportDto(
     DateOnly From,
     DateOnly To,
+    // Guests currently allocated to each of the three clinical pathways (enum name in Category),
+    // and how many guests are allocated in all. Not range-scoped, like the status tiles.
     IReadOnlyList<PathwayCategoryTotalDto> CategoryTotals,
-    int TotalReferrals,
+    int TotalAllocated,
     GuestStatusCountsDto StatusCounts,
     IReadOnlyList<MonthlyCountDto> MonthlyRegistrations,
     ReportActivityDto Activity,
@@ -83,13 +85,16 @@ public sealed record DialogTrendPointDto(int Year, int Month, double AverageTota
 public sealed record ExportHistoryItemDto(
     Guid Id, DateTimeOffset ExportedAt, string ExportedByName, string ExportType, DateOnly FromDate, DateOnly ToDate);
 
-/// <summary>One row of the streamed CSV export — the referral plus the guest's demographics and referral source.</summary>
+/// <summary>
+/// One row of the streamed CSV export — a guest registered in the period, with their clinical
+/// pathway, status, demographics and referral source.
+/// </summary>
 public sealed record ReportExportRowDto(
-    Guid GuestId,
+    int GuestNumber,
     string GuestName,
-    string Category,
+    string Pathway,
     string Status,
-    DateTimeOffset ReferredAt,
+    DateTimeOffset RegisteredAt,
     string? Ethnicity,
     /// <summary>Age group on the export date (<see cref="ReportAgeBands"/>).</summary>
     string AgeGroup,

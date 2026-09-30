@@ -115,10 +115,7 @@ The **urgent flag** is separate from status. It marks a guest who needs contact 
 
 ### 1.10 Two kinds of pathway
 
-EMHIP uses the word "pathway" for two different things.
-
-- **Clinical pathway:** Mental Wellbeing, Clinical Support or Community Recovery. It is chosen at the initial conversation, shown as a gold chip on the guest record and changed on the **Pathway History** tab. Some screens word these as "Wellbeing support", "Additional / Clinical" and "Community & Recovery".
-- **Support referral:** a practical-support category such as Housing Advice, Employment Support, Benefits & Financial Support, Food Essentials, Immigration & Legal Advice or Other Practical Advice. The **Pathway** column and filter on the guest list and dashboard tables show the guest's most recent support referral.
+EMHIP has three pathways: **Mental Wellbeing**, **Clinical Support** and **Community Recovery**. A guest's pathway is chosen at the initial conversation, shown as a gold chip on the guest record, and changed on the **Pathway History** tab. Every **Pathway** filter, column and report uses these three.
 
 The **AFA** flag marks a guest who also needs practical support alongside any pathway. See the glossary in section 12.
 
@@ -155,7 +152,7 @@ The Dashboard is the first screen after you sign in. Hub Managers and Administra
 This card lists the guests assigned to you.
 
 - **Search** matches a guest name, reference or CMHW name. The same box also filters the Actions pending today list.
-- **Pathway** narrows the list to one support referral category.
+- **Pathway** narrows the list to one of the three pathways.
 - **Sort** orders it by next contact date, last activity or guest name.
 - The **Contact Status** chips show All guest, Overdue, Due today - not seen and Upcoming this week. Each is based on the guest's next scheduled contact, and each shows its count.
 
@@ -261,7 +258,7 @@ Select **Guest** in the menu. The list is sorted by surname and loads 50 guests 
 | --- | --- |
 | Guest Name | Name and reference, for example G-1001 |
 | Status | New, Active or Inactive, and an Urgent badge if flagged |
-| Pathway | The most recent support referral category |
+| Pathway | The guest's pathway: Mental Wellbeing, Clinical Support or Community Recovery |
 | CMHW | The assigned worker |
 | Last Activity | Date of the last recorded contact ("Today", "Yesterday" or a date) |
 | Next Contact | Date of the earliest open scheduled contact |
@@ -285,7 +282,7 @@ The list updates a moment after you stop typing.
 | Filter | Options |
 | --- | --- |
 | Reset filters (the icon left of the filters) | Clears the search box and every filter |
-| Pathway | Housing Advice, Employment Support, Benefits & Financial Support, Food Essentials, Immigration & Legal Advice, Other Practical Advice |
+| Pathway | Mental Wellbeing, Clinical Support, Community Recovery |
 | Status | New, Active, Inactive |
 | Urgent only | Shows only guests with the urgent flag; select again to turn off |
 | Assigned CMHW | Type to search staff; select × to clear |
@@ -537,7 +534,7 @@ If the guest has no baseline yet, the first assessment you record becomes the ba
 
 ### 5.7 Pathway History tab
 
-This tab shows the current clinical pathway, every pathway change, the support referrals and the caseload allocation.
+This tab shows the current pathway, every pathway change and the caseload allocation.
 
 #### Change the clinical pathway
 
@@ -549,15 +546,6 @@ This tab shows the current clinical pathway, every pathway change, the support r
 6. Select **Change Pathway**.
 
 The old pathway stays in the history. The change is permanent and appears in reports.
-
-#### Record a support referral
-
-1. Under **Support Referrals**, select **+ New referral**.
-2. Choose the **Category**, for example Housing Advice.
-3. Add any **Detail**.
-4. Select **Create referral**.
-
-The newest support referral is what the guest list shows in its **Pathway** column.
 
 #### Reassign the CMHW
 
@@ -1066,7 +1054,7 @@ The other tabs always show the current position.
 
 - **Tiles:** Total guests, New, Active guests, Inactive and Urgent cases.
 - **DIALOG outcome metrics:** total assessments, baselines, reassessments, average score change and guests with no reassessment yet.
-- **Pathway distribution:** support referrals in the period by category.
+- **Pathway distribution:** how many guests are on each of the three pathways now (not limited by the date range).
 - **Guest registrations over time:** new registrations each month.
 - **Guest demographics:** an ethnicity breakdown.
 - **Referral sources:** the share of guests from each source.
@@ -1147,7 +1135,7 @@ To choose a different period, or to download a CSV file:
 2. Set the **From** and **To** dates under **Reporting period**.
 3. Select **Download CSV** or **Export to Excel**.
 
-The CSV file has one row per support referral in the period. Each row includes the guest's ethnicity, age group, gender, country of origin, referral source and referral type. Demographics and referral sources are included in every export.
+The CSV file has one row per guest registered in the period. Each row gives the guest's G-number, name, pathway, status, registration date, ethnicity, age group, gender, country of origin, referral source and referral type. Demographics and referral sources are included in every export.
 
 > **Warning:** Exports contain guest information. Store them only in approved locations.
 
@@ -1169,7 +1157,6 @@ The "Who can" column shows the built-in roles. Your Administrator may have chang
 | Update clinical details | Guest record, Clinical Details tab | CMHW, CPN, Hub Manager |
 | Record a DIALOG reassessment | Guest record, DIALOG Scores tab, **Record new** | CMHW, CPN, Hub Manager |
 | Change the clinical pathway | Guest record, Pathway History tab, **Add New Pathway** | CMHW, CPN, Hub Manager |
-| Record a support referral | Guest record, Pathway History tab, **+ New referral** | CMHW, CPN, Hub Manager |
 | Reassign the CMHW | Guest record, Pathway History tab, **Reassign CMHW** | CMHW, CPN, Hub Manager |
 | Start or close a care plan | Guest record, Care Plan tab | CMHW, CPN, Hub Manager |
 | Add or complete an action | Guest record, Actions & Reminders tab | CMHW, CPN, Hub Manager |
@@ -1223,6 +1210,5 @@ The "Who can" column shows the built-in roles. Your Administrator may have chang
 | SBAR | Situation, Background, Assessment, Recommendation: the structure of every contact note |
 | Scheduled contact | A contact planned for a date and assigned to someone |
 | SMI | A yes/no indicator on the Clinical Details tab, counted on the dashboards |
-| Support referral | A practical-support referral, such as Housing Advice |
 | Urgent episode | The record of one urgent flag, from raising it to resolving it |
 | Urgent flag | A marker that a guest needs contact within 72 hours because of risk |

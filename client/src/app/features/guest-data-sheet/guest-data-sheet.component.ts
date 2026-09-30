@@ -7,7 +7,7 @@ import { Subject, firstValueFrom, of } from 'rxjs';
 import { catchError, debounceTime } from 'rxjs/operators';
 
 import { GuestsApiService } from '../../core/guests-api.service';
-import { GuestListItemDto, GuestStatus, PathwayCategory } from '../../core/api-models';
+import { GuestListItemDto, GuestPathway, GuestStatus } from '../../core/api-models';
 import {
   DemographicFilterValue,
   DemographicFiltersComponent,
@@ -16,10 +16,11 @@ import {
 } from '../../shared/demographic-filters.component';
 import { StaffPickerComponent } from '../../shared/staff-picker.component';
 import { AGE_BANDS } from '../../core/api-models';
-import { GuestSegment, clinicalPathwayLabel, guestSegmentLabel, isGuestSegment } from '../../core/guest-segments';
+import { CLINICAL_PATHWAY_OPTIONS, clinicalPathwayLabel } from '../../core/demographic-options';
+import { GuestSegment, guestSegmentLabel, isGuestSegment } from '../../core/guest-segments';
 
 type StatusFilterValue = GuestStatus | 'All';
-type PathwayFilterValue = PathwayCategory | 'All';
+type PathwayFilterValue = GuestPathway | 'All';
 /** Number of days sent as lastActivityDays, or 'All' for no filter. */
 type ActivityFilterValue = 'All' | '1' | '7' | '30';
 
@@ -45,15 +46,11 @@ const STATUS_OPTIONS: { value: StatusFilterValue; label: string }[] = [
   { value: 'OnHold', label: 'Inactive' },
 ];
 
+/** The three clinical pathways — the only pathways. */
 const PATHWAY_OPTIONS: { value: PathwayFilterValue; label: string }[] = [
   // As with Status, the chip name doubles as the closed-state/clear option label.
   { value: 'All', label: 'Pathway' },
-  { value: 'HousingAdvice', label: 'Housing Advice' },
-  { value: 'EmploymentSupport', label: 'Employment Support' },
-  { value: 'BenefitsFinancialSupport', label: 'Benefits & Financial Support' },
-  { value: 'FoodEssentials', label: 'Food Essentials' },
-  { value: 'ImmigrationLegalAdvice', label: 'Immigration & Legal Advice' },
-  { value: 'OtherPracticalAdvice', label: 'Other Practical Advice' },
+  ...CLINICAL_PATHWAY_OPTIONS,
 ];
 
 const ACTIVITY_OPTIONS: { value: ActivityFilterValue; label: string }[] = [
@@ -119,11 +116,11 @@ export class GuestDataSheetComponent {
   /** Ethnicity / age group / gender / country of origin from the shared demographic drawer. */
   protected readonly demographics = signal<DemographicFilterValue>(EMPTY_DEMOGRAPHIC_FILTERS);
   /**
-   * Dashboard / report drill-through (?segment=smi, ?clinicalPathway=ClinicalSupport): the exact
-   * set of guests behind the count that was clicked, shown as a removable banner over the table.
+   * Dashboard / report drill-through (?segment=smi): the exact set of guests behind the count
+   * that was clicked, shown as a removable banner over the table. A pathway drill-through
+   * (?clinicalPathway=…) simply sets the Pathway filter.
    */
   protected readonly segment = signal<GuestSegment | null>(null);
-  protected readonly clinicalPathway = signal<string | null>(null);
   protected readonly exporting = signal(false);
   protected readonly exportError = signal<string | null>(null);
 
@@ -151,7 +148,7 @@ export class GuestDataSheetComponent {
     // ?status=… or ?urgent=true (urgency is a flag, not a status) plus their toolbar's
     // pathway / cmhw / activity, "Caseload per CMHW" with ?cmhw=…, the demographics card with
     // ?ethnicity= / ?gender= / ?countryOfOrigin= / ?ageBand=, and the other dashboard and report
-    // counts with ?segment= / ?clinicalPathway= — including while this screen is already
+    // counts with ?segment= / ?clinicalPathway= (the Pathway filter) — including while this screen is already
     // active, so track the params instead of reading them once. The first (synchronous)
     // emission doubles as the initial load.
     this.route.queryParamMap.pipe(takeUntilDestroyed()).subscribe((params) => {
@@ -160,7 +157,7 @@ export class GuestDataSheetComponent {
       const status: StatusFilterValue =
         statusParam && STATUS_OPTIONS.some((o) => o.value === statusParam) ? (statusParam as StatusFilterValue) : 'All';
       const urgent = params.get('urgent') === 'true';
-      const pathwayParam = params.get('pathway');
+      const pathwayParam = params.get('clinicalPathway');
       const pathway: PathwayFilterValue =
         pathwayParam && PATHWAY_OPTIONS.some((o) => o.value === pathwayParam) ? (pathwayParam as PathwayFilterValue) : 'All';
       const cmhw = params.get('cmhw');
@@ -169,7 +166,6 @@ export class GuestDataSheetComponent {
         activityParam && ACTIVITY_OPTIONS.some((o) => o.value === activityParam) ? (activityParam as ActivityFilterValue) : 'All';
       const segmentParam = params.get('segment');
       const segment = isGuestSegment(segmentParam) ? segmentParam : null;
-      const clinicalPathway = params.get('clinicalPathway');
       const ageBandParam = params.get('ageBand') ?? '';
       const demographics: DemographicFilterValue = {
         ethnicity: params.get('ethnicity') ?? '',
@@ -186,7 +182,6 @@ export class GuestDataSheetComponent {
         cmhw !== this.cmhwFilter() ||
         activity !== this.activityFilter() ||
         segment !== this.segment() ||
-        clinicalPathway !== this.clinicalPathway() ||
         demographics.ethnicity !== current.ethnicity ||
         demographics.gender !== current.gender ||
         demographics.countryOfOrigin !== current.countryOfOrigin ||
@@ -198,7 +193,6 @@ export class GuestDataSheetComponent {
       this.cmhwFilter.set(cmhw);
       this.activityFilter.set(activity);
       this.segment.set(segment);
-      this.clinicalPathway.set(clinicalPathway);
       this.demographics.set(demographics);
       if (changed || !this.initialized) {
         this.initialized = true;
@@ -257,27 +251,21 @@ export class GuestDataSheetComponent {
     this.activityFilter.set('All');
     this.demographics.set(EMPTY_DEMOGRAPHIC_FILTERS);
     this.segment.set(null);
-    this.clinicalPathway.set(null);
     this.resetAndLoad();
   }
 
   /** Banner text for the drill-through the list was opened with, e.g. "SMI recorded". */
   protected drillThroughLabel(): string | null {
-    const parts: string[] = [];
     const segment = this.segment();
-    if (segment) parts.push(guestSegmentLabel(segment));
-    const clinicalPathway = this.clinicalPathway();
-    if (clinicalPathway) parts.push(`${clinicalPathwayLabel(clinicalPathway)} pathway`);
-    return parts.length ? parts.join(' · ') : null;
+    return segment ? guestSegmentLabel(segment) : null;
   }
 
   /** "Show all guests" on the drill-through banner — drops the segment but keeps other filters. */
   protected clearDrillThrough(): void {
     this.segment.set(null);
-    this.clinicalPathway.set(null);
     void this.router.navigate([], {
       relativeTo: this.route,
-      queryParams: { segment: null, clinicalPathway: null },
+      queryParams: { segment: null },
       queryParamsHandling: 'merge',
     });
     this.resetAndLoad();
@@ -311,7 +299,6 @@ export class GuestDataSheetComponent {
   private listFilters(): {
     q?: string;
     status?: GuestStatus;
-    pathway?: PathwayCategory;
     cmhw?: string;
     lastActivityDays?: number;
     urgent?: boolean;
@@ -330,14 +317,13 @@ export class GuestDataSheetComponent {
     return {
       q: this.searchTerm || undefined,
       status: status === 'All' ? undefined : status,
-      pathway: pathway === 'All' ? undefined : pathway,
+      clinicalPathway: pathway === 'All' ? undefined : pathway,
       cmhw: cmhw ?? undefined,
       lastActivityDays: activity === 'All' ? undefined : Number(activity),
       // Only ever narrows to urgent guests — the chip has no "non-urgent only" state.
       urgent: this.urgentOnly() ? true : undefined,
       ...demographicFilterParams(this.demographics()),
       segment: this.segment() ?? undefined,
-      clinicalPathway: this.clinicalPathway() ?? undefined,
     };
   }
 
@@ -449,7 +435,7 @@ export class GuestDataSheetComponent {
           guest.dateOfBirth,
           this.statusLabel(guest.status),
           guest.isUrgent ? 'Yes' : 'No',
-          guest.pathwayCategory ? this.pathwayLabel(guest.pathwayCategory) : '',
+          guest.pathway ? this.pathwayLabel(guest.pathway) : '',
           guest.hasRiskFlags ? 'High' : 'Low',
           guest.assignedCmhwName ?? '',
           guest.registeredAt,
@@ -483,13 +469,9 @@ export class GuestDataSheetComponent {
     return status === 'OnHold' ? 'Inactive' : status;
   }
 
-  /** Humanizes a PathwayCategory enum name — "HousingAdvice" → "Housing Advice". */
-  protected pathwayLabel(category: string | null): string {
-    if (!category) {
-      return '—';
-    }
-    const curated = PATHWAY_OPTIONS.find((o) => o.value === category);
-    return curated ? curated.label : category.replace(/([a-z0-9])([A-Z])/g, '$1 $2');
+  /** "ClinicalSupport" → "Clinical Support"; "—" when the guest has no pathway yet. */
+  protected pathwayLabel(pathway: string | null): string {
+    return clinicalPathwayLabel(pathway);
   }
 
   protected formatDate(value: string | null): string {

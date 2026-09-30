@@ -82,6 +82,9 @@ export class GuestPathwayTabComponent {
   /** Reassignment is a caseload action, not a pathway one — it follows the guests.edit claim. */
   readonly canReassign = this.auth.hasPermission(Permissions.Guests.Edit);
 
+  /** Practical-support referrals are hidden: the only pathways are the three clinical ones. */
+  readonly showSupportReferrals = false;
+
   // "+ New referral" inline form (practical-support referrals, secondary card).
   readonly showReferralForm = signal(false);
   readonly submittingReferral = signal(false);

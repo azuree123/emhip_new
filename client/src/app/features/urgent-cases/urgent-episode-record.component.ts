@@ -9,9 +9,9 @@ import { documentErrorMessage } from '../../core/documents-api.service';
 import { StatusChip } from '../guest-workspace/guest-workspace.util';
 
 const PATHWAY_CHIPS: Record<GuestPathway, StatusChip> = {
-  MentalWellbeing: { label: 'Wellbeing support', bg: '#fff9e4', fg: '#9d852d' },
-  ClinicalSupport: { label: 'Clinical', bg: '#ecf2ff', fg: '#345bb1' },
-  CommunityRecovery: { label: 'Community recovery', bg: '#eafdee', fg: '#147129' },
+  MentalWellbeing: { label: 'Mental Wellbeing', bg: '#fff9e4', fg: '#9d852d' },
+  ClinicalSupport: { label: 'Clinical Support', bg: '#ecf2ff', fg: '#345bb1' },
+  CommunityRecovery: { label: 'Community Recovery', bg: '#eafdee', fg: '#147129' },
 };
 
 const NO_PATHWAY: StatusChip = { label: 'Not allocated', bg: '#f0f0f0', fg: '#646464' };

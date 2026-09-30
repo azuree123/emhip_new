@@ -82,7 +82,7 @@ export class ReportsExportDialogComponent implements OnInit {
   downloadCsv(): void {
     const from = this.draftFrom();
     const to = this.draftTo();
-    this.run('csv', this.reportsApi.exportCsv(from, to), `pathway-report-${from}-to-${to}.csv`);
+    this.run('csv', this.reportsApi.exportCsv(from, to), `emhip-guests-${from}-to-${to}.csv`);
   }
 
   private run(format: ExportFormat, request: Observable<Blob>, filename: string): void {

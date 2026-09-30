@@ -20,13 +20,13 @@ import {
   AGE_BANDS,
   GuestListItemDto,
   GuestStatus,
+  GuestPathway,
   LookupItemDto,
-  PathwayCategory,
 } from '../../core/api-models';
 import { GuestsApiService } from '../../core/guests-api.service';
 import { LookupCategories, SettingsApiService } from '../../core/settings-api.service';
 import { StaffPickerComponent } from '../../shared/staff-picker.component';
-import { CATEGORY_META, STATUS_META, pathwayCategoryLabel, shortDay } from './report-meta';
+import { PATHWAY_META, STATUS_META, pathwayLabel, shortDay } from './report-meta';
 
 const PAGE_SIZE = 10;
 
@@ -77,9 +77,10 @@ export class ReportsGuestReportComponent implements OnInit, OnDestroy {
     { value: 'OnHold', label: 'Inactive' },
   ];
 
-  readonly pathwayOptions: { value: PathwayCategory; label: string }[] = (
-    Object.keys(CATEGORY_META) as PathwayCategory[]
-  ).map((value) => ({ value, label: CATEGORY_META[value].label }));
+  /** The three clinical pathways — the only pathways. */
+  readonly pathwayOptions: { value: GuestPathway; label: string }[] = (
+    Object.keys(PATHWAY_META) as GuestPathway[]
+  ).map((value) => ({ value, label: PATHWAY_META[value].label }));
 
   readonly activityOptions = [
     { value: '7', label: 'Last 7 days' },
@@ -93,7 +94,7 @@ export class ReportsGuestReportComponent implements OnInit, OnDestroy {
   // Filters (all map 1:1 to real GET /guests query params).
   readonly q = signal('');
   readonly status = signal<'' | GuestStatus>('');
-  readonly pathway = signal<'' | PathwayCategory>('');
+  readonly pathway = signal<'' | GuestPathway>('');
   readonly cmhw = signal('');
   readonly lastActivityDays = signal('');
 
@@ -184,7 +185,7 @@ export class ReportsGuestReportComponent implements OnInit, OnDestroy {
   }
 
   onPathwayChange(event: Event): void {
-    this.pathway.set((event.target as HTMLSelectElement).value as '' | PathwayCategory);
+    this.pathway.set((event.target as HTMLSelectElement).value as '' | GuestPathway);
     this.resetAndLoad();
   }
 
@@ -322,8 +323,8 @@ export class ReportsGuestReportComponent implements OnInit, OnDestroy {
     return STATUS_META[status]?.pillClass ?? 'status-pill--onhold';
   }
 
-  pathwayLabel(category: string | null): string {
-    return pathwayCategoryLabel(category);
+  pathwayLabel(pathway: string | null): string {
+    return pathwayLabel(pathway);
   }
 
   lastActivity(guest: GuestListItemDto): string {
@@ -347,7 +348,7 @@ export class ReportsGuestReportComponent implements OnInit, OnDestroy {
       .getGuestList({
         q: this.q() || undefined,
         status: this.status() || undefined,
-        pathway: this.pathway() || undefined,
+        clinicalPathway: this.pathway() || undefined,
         cmhw: this.cmhw() || undefined,
         lastActivityDays: this.lastActivityDays() ? Number(this.lastActivityDays()) : undefined,
         ethnicity: this.ethnicity() || undefined,

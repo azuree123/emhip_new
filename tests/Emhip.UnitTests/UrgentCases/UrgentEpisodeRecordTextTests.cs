@@ -36,8 +36,9 @@ public class UrgentEpisodeRecordTextTests
         Assert.Contains("Crisis Resolution Team", text);
         Assert.Contains("Guest disclosed significant deterioration.", text);
         Assert.Contains("CRT conducted home visit.", text);
-        Assert.Contains("Wellbeing support", text);
-        Assert.Contains("Clinical support", text);
+        // The service's names for its three pathways, as used on every screen.
+        Assert.Contains("Mental Wellbeing", text);
+        Assert.Contains("Clinical Support", text);
         Assert.Contains("Yes — weekly CPN input added", text);
         Assert.Contains("1d 5h", text);
         Assert.Contains("Episode resolved and locked", text);

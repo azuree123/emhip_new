@@ -122,13 +122,7 @@ public static class UrgentEpisodeRecordText
         var sb = new StringBuilder();
         string When(DateTimeOffset? d) => d is null ? "—" : d.Value.ToString("dd MMM yyyy · HH:mm");
         string YesNo(bool b) => b ? "YES" : "NO";
-        string Pathway(GuestPathway? p) => p switch
-        {
-            GuestPathway.MentalWellbeing => "Wellbeing support",
-            GuestPathway.ClinicalSupport => "Clinical support",
-            GuestPathway.CommunityRecovery => "Community recovery",
-            _ => "Not allocated",
-        };
+        string Pathway(GuestPathway? p) => Guests.GuestPathwayLabels.For(p);
 
         sb.AppendLine("URGENT EPISODE RECORD");
         sb.AppendLine($"{(r.IsResolved ? "Resolved" : "Open")} · {When(r.ResolvedAt ?? r.RaisedAt)}");

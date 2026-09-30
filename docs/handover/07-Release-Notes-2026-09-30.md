@@ -8,6 +8,7 @@ This release answers the customer's first round of testing feedback (EMHIP EPR B
 
 | Area | Change |
 | --- | --- |
+| Pathways | Only Mental Wellbeing, Clinical Support and Community Recovery, everywhere; practical-support categories removed |
 | Must fix (3 items) | Guest records, urgent cases and every dashboard count can now be opened with a click |
 | Fixes (5 items) | Documents moved into the guest record; CPN activity separated from AFA & Hospitality; DIALOG scores can be filtered by demographics; exports include demographics and referral sources; the reports tab bar shows when more tabs exist |
 | Terminology (5 items) | "Inactive" replaces "On hold"; "Contact" replaces "Follow-up"; menu typo fixed; plain-English activity log; full CMHW names |
@@ -32,6 +33,17 @@ Numbers match the customer's feedback sheet. The copy of the sheet returned with
 | 13 | Typo "CASE MANGEMENT" | The menu heading reads CASE MANAGEMENT. |
 | 14 | Technical labels in the staff activity log | Activity is described in plain English, for example "Opened guest record" and "Viewed urgent case", with the guest's name and G-number, and the name opens the record. Repeated lines are merged. A guest's **Access Log** uses the same wording. |
 | 15 | CMHW names cut off | Full names are shown, wrapping onto a second line, in the guest list, dashboard tables and preview panels; the CMHW filter shows the full name on hover. |
+
+## Pathways
+
+EMHIP has three pathways only: **Mental Wellbeing**, **Clinical Support** and **Community Recovery**.
+
+- The **Pathway** filter and column on the guest list, the dashboard preview panels, the CMHW dashboard and **Reports → Guest Report** now use these three. Before, they showed practical-support categories (Housing Advice, Employment Support, Benefits & Financial Support, Food Essentials, Immigration & Legal Advice, Other Practical Advice).
+- The **Support Referrals** card on the guest's **Pathway History** tab is removed from view. Referrals already recorded are kept in the database.
+- **Reports → Overview → Pathway distribution** shows how many guests are on each of the three pathways now, instead of referrals by category.
+- **Export CSV** now has one row per guest registered in the period, with their pathway, status, demographics and referral source. Before, it had one row per practical-support referral.
+- The three names are the same on every screen, export and episode record. Before, some screens said "Wellbeing support", "Additional / Clinical" or "Community & Recovery".
+- Opening the guest list from a dashboard count now shows the chosen Pathway or Status in its dropdown.
 
 ## Also fixed
 

@@ -1,3 +1,5 @@
+import { CLINICAL_PATHWAY_OPTIONS } from './demographic-options';
+
 // Mirrors Emhip.Application.Guests.GuestSegments — the named guest-list filters behind the
 // dashboard and report counts (GET /guests?segment=…). Clicking a count opens /guests with the
 // segment key, and the list shows the label below as the active drill-through.
@@ -72,17 +74,7 @@ export function segmentForClinicalIndicator(label: string): GuestSegment | null 
   }
 }
 
-/** Clinical pathways (Guest.pathway) as the dashboard labels them — "Mental Wellbeing" etc. */
-export const CLINICAL_PATHWAYS: { value: 'MentalWellbeing' | 'ClinicalSupport' | 'CommunityRecovery'; label: string }[] = [
-  { value: 'MentalWellbeing', label: 'Mental Wellbeing' },
-  { value: 'ClinicalSupport', label: 'Clinical Support' },
-  { value: 'CommunityRecovery', label: 'Community Recovery' },
-];
-
+/** Pathway distribution label ("Clinical Support") → the clinicalPathway value. */
 export function clinicalPathwayFromLabel(label: string): string | null {
-  return CLINICAL_PATHWAYS.find((p) => p.label.toLowerCase() === label.trim().toLowerCase())?.value ?? null;
-}
-
-export function clinicalPathwayLabel(value: string): string {
-  return CLINICAL_PATHWAYS.find((p) => p.value === value)?.label ?? value;
+  return CLINICAL_PATHWAY_OPTIONS.find((p) => p.label.toLowerCase() === label.trim().toLowerCase())?.value ?? null;
 }

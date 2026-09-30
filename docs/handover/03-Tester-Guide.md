@@ -67,6 +67,8 @@ All 13 items in the feedback sheet are fixed and ready to retest. Numbers match 
 - **Reports** hides the export buttons from roles that cannot export (CMHW, CPN). Before, they showed and then failed.
 - **The Urgent Cases count in the menu** goes down as soon as a case is resolved.
 - **Email links** in urgent-case and overdue-contact emails open the website.
+- **Only three pathways:** Mental Wellbeing, Clinical Support and Community Recovery are the only pathways in every filter, column, report and export, with the same names on every screen. The practical-support categories (Housing Advice and so on) and the Support Referrals card are removed.
+- **Filters set by a link show in the dropdown:** opening the guest list from a dashboard count now shows the chosen Status or Pathway in its dropdown.
 
 ## Workflows
 
@@ -123,7 +125,7 @@ Staff activity is in plain English, for example "Opened guest record · Test Gue
 - **Open a guest:** click the name, anywhere on the row, or **Open**. Ctrl-click or Cmd-click the name to open it in a new tab.
 - **Search:** by name, G-number, phone number or CMHW name.
 - **Filters:**
-    - Pathway (practical support category)
+    - Pathway (Mental Wellbeing, Clinical Support, Community Recovery)
     - Status (New, Active, Inactive)
     - **Urgent only**
     - Assigned CMHW
@@ -176,7 +178,7 @@ The header shows the guest's status, an Urgent badge when flagged, their pathway
 | Initial Conversation | For a New guest, **Start Initial Conversation**; completing it makes the guest Active, the same as registration step 2 |
 | Clinical Details | **Edit details** (medication, diagnoses, SMI, CPN involved, Trust involvement); **Record assessment**: ticking any risk flags the guest urgent and opens an urgent case |
 | DIALOG Scores | **Record new** scores; baseline and latest are compared |
-| Pathway History | **Change Pathway** (date not in the future, "assigned by" required); support referrals; **Reassign CMHW** |
+| Pathway History | **Change Pathway** (date not in the future, "assigned by" required); **Reassign CMHW** |
 | Care Plan | Start or edit a plan with goals (each needs a description); **Close plan** as Completed or Superseded |
 | Contact History | Every contact logged for this guest |
 | CPN Record | Referral, MDT decision, CPN allocated, Part 1 status and CPN sessions; **Add CPN contact** |
@@ -262,7 +264,7 @@ Every role can view reports; exporting needs the Hub Manager or Admin role.
 
 | Tab | What it shows |
 | --- | --- |
-| Overview | Totals by status (New, Active, Inactive, Urgent), DIALOG outcomes, pathway distribution, monthly registrations, contact activity, referral sources, ethnicity |
+| Overview | Totals by status (New, Active, Inactive, Urgent), DIALOG outcomes, guests on each of the three pathways, monthly registrations, contact activity, referral sources, ethnicity |
 | Guest Report | A filterable guest table: status, pathway, last activity, CMHW and the demographics drawer |
 | Pathway Analytics | Per clinical pathway: guests, active, inactive, urgent, AFA support, average DIALOG score |
 | Caseload Reports | Per worker: assigned, active, urgent, contacts in 30 days, overdue contacts, load; **View** opens that worker's guests |
@@ -279,7 +281,7 @@ Every role can view reports; exporting needs the Hub Manager or Admin role.
     - Demographics covers ethnicity, age group, gender and country of origin.
     - Referral sources covers source, type and subcategory.
     - Each row gives counts and percentages for all current guests and for guests registered in the period.
-- **Export CSV** gives one row per referral, now including ethnicity, age group, gender, country of origin, referral source and referral type.
+- **Export CSV** gives one row per guest registered in the period, with their pathway, status, ethnicity, age group, gender, country of origin, referral source and referral type.
 
 ### Hub Workers and Roles & Permissions (Admin)
 
@@ -331,7 +333,7 @@ Work through this in order: each part creates the data the next part needs. Tick
 - [ ] Register a second guest with **Register & schedule for later**; they are New, then complete their Initial Conversation from the record
 - [ ] Edit and save each Demographics section
 - [ ] Record new DIALOG scores and compare with the baseline
-- [ ] Change Pathway, add a support referral, and reassign the CMHW
+- [ ] Change Pathway and reassign the CMHW
 - [ ] Start a care plan with two goals, then close it
 - [ ] Add, complete and delete an action
 - [ ] Add a quick note and pin it to Overview

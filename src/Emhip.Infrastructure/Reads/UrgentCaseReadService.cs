@@ -250,13 +250,7 @@ public sealed class UrgentCaseReadService(EmhipDbContext db) : IUrgentCaseReadSe
         return list;
     }
 
-    private static string PathwayLabel(GuestPathway? p) => p switch
-    {
-        GuestPathway.MentalWellbeing => "Wellbeing support",
-        GuestPathway.ClinicalSupport => "Clinical support",
-        GuestPathway.CommunityRecovery => "Community recovery",
-        _ => "Not allocated",
-    };
+    private static string PathwayLabel(GuestPathway? p) => Emhip.Application.Guests.GuestPathwayLabels.For(p);
 
     /// <summary>"PhoneCall" → "Phone call".</summary>
     private static string Pretty(string value)

@@ -49,6 +49,8 @@ export interface GuestListItemDto {
   isUrgent: boolean;
   /** Due date (yyyy-MM-dd) of the next scheduled follow-up, or null. */
   nextContactDue: string | null;
+  /** Clinical pathway — the only pathways: Mental Wellbeing, Clinical Support, Community Recovery. */
+  pathway: GuestPathway | null;
 }
 
 /** Option for the guest list's "Assigned CMHW" filter — GET /guests/cmhws. */
@@ -518,8 +520,9 @@ export interface PathwayCategoryTotalDto {
 export interface PathwayReportDto {
   from: string;
   to: string;
+  /** Guests currently on each of the three clinical pathways (category = GuestPathway name). */
   categoryTotals: PathwayCategoryTotalDto[];
-  totalReferrals: number;
+  totalAllocated: number;
   /** Current hub-wide counts (point-in-time) — the report header KPI tiles. */
   statusCounts: GuestStatusCountsDto;
   /** Registrations per calendar month inside the range — "Guest registrations over time". */

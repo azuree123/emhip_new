@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Emhip.Api.Controllers;
 
-/// <summary>Reports screen: pathway category aggregates plus a streaming CSV export.</summary>
+/// <summary>Reports screen: the report tabs, the Excel workbook and the streaming CSV export.</summary>
 [ApiController]
 [Route("reports")]
 [Authorize]
@@ -123,22 +123,22 @@ public sealed class ReportsController(
     public async Task Export([FromQuery] DateOnly from, [FromQuery] DateOnly to, CancellationToken cancellationToken)
     {
         Response.ContentType = "text/csv";
-        Response.Headers.ContentDisposition = $"attachment; filename=\"pathway-report-{from:yyyy-MM-dd}-{to:yyyy-MM-dd}.csv\"";
+        Response.Headers.ContentDisposition = $"attachment; filename=\"emhip-guests-{from:yyyy-MM-dd}-{to:yyyy-MM-dd}.csv\"";
 
-        // The demographic and referral columns are appended after the original five, so anything
-        // reading the file by position keeps working.
+        // One row per guest registered in the period, with their clinical pathway, demographics
+        // and referral source.
         await Response.WriteAsync(
-            "GuestId,GuestName,Category,Status,ReferredAt,Ethnicity,AgeGroup,Gender,CountryOfOrigin,ReferralSource,ReferralType\n",
+            "GuestRef,GuestName,Pathway,Status,RegisteredAt,Ethnicity,AgeGroup,Gender,CountryOfOrigin,ReferralSource,ReferralType\n",
             cancellationToken);
 
         await foreach (var row in reportReads.StreamExportAsync(currentUser.HubId, from, to, cancellationToken))
         {
             var line = new StringBuilder()
-                .Append(row.GuestId).Append(',')
+                .Append("G-").Append(row.GuestNumber).Append(',')
                 .Append(CsvEscape(row.GuestName)).Append(',')
-                .Append(row.Category).Append(',')
+                .Append(row.Pathway).Append(',')
                 .Append(row.Status).Append(',')
-                .Append(row.ReferredAt.ToString("O", CultureInfo.InvariantCulture)).Append(',')
+                .Append(row.RegisteredAt.ToString("O", CultureInfo.InvariantCulture)).Append(',')
                 .Append(CsvEscape(row.Ethnicity ?? string.Empty)).Append(',')
                 .Append(CsvEscape(row.AgeGroup)).Append(',')
                 .Append(CsvEscape(row.Gender ?? string.Empty)).Append(',')

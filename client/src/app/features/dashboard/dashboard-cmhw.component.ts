@@ -6,8 +6,8 @@ import { DashboardsApiService } from '../../core/dashboards-api.service';
 import { FollowUpsApiService } from '../../core/follow-ups-api.service';
 import { GuestsApiService } from '../../core/guests-api.service';
 import { Permissions } from '../../core/permissions';
-import { PATHWAY_CATEGORY_OPTIONS, pathwayCategoryLabel } from '../../core/demographic-options';
-import { CmhwDashboardDto, FollowUpQueueItemDto, GuestListItemDto, GuestStatus, PathwayCategory } from '../../core/api-models';
+import { CLINICAL_PATHWAY_OPTIONS, clinicalPathwayLabel } from '../../core/demographic-options';
+import { CmhwDashboardDto, FollowUpQueueItemDto, GuestListItemDto, GuestPathway, GuestStatus } from '../../core/api-models';
 import { GuestSegment, segmentForClinicalIndicator } from '../../core/guest-segments';
 import { GuestSeenCardComponent } from './guest-seen-card.component';
 
@@ -89,9 +89,10 @@ export class DashboardCmhwComponent {
   protected readonly caseloadState = signal<'loading' | 'ready' | 'unavailable'>('loading');
   protected readonly chip = signal<ContactChip>('all');
   protected readonly contactSearch = signal('');
-  protected readonly pathwayFilter = signal<'' | PathwayCategory>('');
+  protected readonly pathwayFilter = signal<'' | GuestPathway>('');
   protected readonly sortBy = signal<ContactSort>('next');
-  protected readonly pathwayOptions = PATHWAY_CATEGORY_OPTIONS;
+  /** The three clinical pathways — the only pathways. */
+  protected readonly pathwayOptions = CLINICAL_PATHWAY_OPTIONS;
   protected readonly sortOptions = SORT_OPTIONS;
 
   /** Search bar under "Actions pending today" is the same box — it filters both lists. */
@@ -239,7 +240,7 @@ export class DashboardCmhwComponent {
     this.guestsApi
       .getGuestList({
         cmhw: this.auth.current().staffId,
-        pathway: this.pathwayFilter() || undefined,
+        clinicalPathway: this.pathwayFilter() || undefined,
         pageSize: CASELOAD_PAGE,
       })
       .pipe(catchError(() => of(null)))
@@ -295,7 +296,7 @@ export class DashboardCmhwComponent {
   }
 
   protected onPathwayChange(value: string): void {
-    this.pathwayFilter.set(value as '' | PathwayCategory);
+    this.pathwayFilter.set(value as '' | GuestPathway);
     this.loadCaseload();
   }
 
@@ -313,7 +314,7 @@ export class DashboardCmhwComponent {
   }
 
   protected pathwayLabel(g: GuestListItemDto): string {
-    return pathwayCategoryLabel(g.pathwayCategory);
+    return clinicalPathwayLabel(g.pathway);
   }
 
   protected statusLabel(status: GuestStatus): string {

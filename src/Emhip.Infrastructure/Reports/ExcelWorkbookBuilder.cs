@@ -155,7 +155,7 @@ public sealed class ExcelWorkbookBuilder : IExcelWorkbookBuilder
         foreach (var pathway in report.Pathways)
         {
             row++;
-            sheet.Cell(row, 1).Value = pathway.Pathway;
+            sheet.Cell(row, 1).Value = Emhip.Application.Guests.GuestPathwayLabels.For(pathway.Pathway);
             sheet.Cell(row, 2).Value = pathway.TotalGuests;
             sheet.Cell(row, 3).Value = pathway.ActiveGuests;
             sheet.Cell(row, 4).Value = pathway.UrgentGuests;

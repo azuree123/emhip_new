@@ -68,72 +68,76 @@
       </div>
     </section>
 
-    <!-- Practical-support referrals — separate data from the pathway history above. -->
-    <section class="card">
-      <div class="card__header-row">
-        <h2 class="card__title">Support Referrals</h2>
-        @if (canEdit) {
-          <button type="button" class="btn-link" (click)="toggleReferralForm()">
-            {{ showReferralForm() ? 'Cancel' : '+ New referral' }}
-          </button>
-        }
-      </div>
-
-      @if (showReferralForm()) {
-        <form class="edit-form referral-form" (ngSubmit)="submitReferral()">
-          <div class="edit-form__grid">
-            <label class="edit-form__field">
-              <span>Category</span>
-              <select name="category" [(ngModel)]="referralForm.category">
-                @for (cat of categories; track cat) {
-                  <option [value]="cat">{{ humanize(cat) }}</option>
-                }
-              </select>
-            </label>
-          </div>
-          <label class="edit-form__field edit-form__field--full">
-            <span>Detail</span>
-            <textarea name="detail" rows="2" [(ngModel)]="referralForm.detail" placeholder="Optional detail…"></textarea>
-          </label>
-          @if (referralError()) {
-            <p class="form-error">{{ referralError() }}</p>
-          }
-          <div class="edit-form__actions">
-            <button type="submit" class="btn-primary" [disabled]="submittingReferral()">
-              {{ submittingReferral() ? 'Saving…' : 'Create referral' }}
+    <!-- Practical-support referrals (Housing, Employment, …) are not pathways — EMHIP has only
+         Mental Wellbeing, Clinical Support and Community Recovery — so the card is hidden at the
+         customer's request. The data and API stay; set showSupportReferrals to bring it back. -->
+    @if (showSupportReferrals) {
+      <section class="card">
+        <div class="card__header-row">
+          <h2 class="card__title">Support Referrals</h2>
+          @if (canEdit) {
+            <button type="button" class="btn-link" (click)="toggleReferralForm()">
+              {{ showReferralForm() ? 'Cancel' : '+ New referral' }}
             </button>
-          </div>
-        </form>
-      }
+          }
+        </div>
 
-      <div class="entries">
-        @for (r of p.referrals; track r.id) {
-          <article class="pathway-entry">
-            <div class="pathway-entry__top">
-              <div class="pathway-entry__heading">
-                <span class="pathway-entry__date">{{ formatDate(r.referredAt) }}</span>
-                <span class="pathway-entry__title">{{ humanize(r.category) }}</span>
-              </div>
-              <span class="chip" [style.background]="pathwayStatusChip(r.status).bg" [style.color]="pathwayStatusChip(r.status).fg">
-                {{ pathwayStatusChip(r.status).label }}
-              </span>
+        @if (showReferralForm()) {
+          <form class="edit-form referral-form" (ngSubmit)="submitReferral()">
+            <div class="edit-form__grid">
+              <label class="edit-form__field">
+                <span>Category</span>
+                <select name="category" [(ngModel)]="referralForm.category">
+                  @for (cat of categories; track cat) {
+                    <option [value]="cat">{{ humanize(cat) }}</option>
+                  }
+                </select>
+              </label>
             </div>
-            <div class="pathway-entry__cols">
-              <div class="pathway-entry__col">
-                <span class="pathway-entry__label">Detail:</span>
-                <span class="pathway-entry__value">{{ r.detail || '—' }}</span>
-              </div>
-              <div class="pathway-entry__col">
-                <span class="pathway-entry__label">Referred By</span>
-                <span class="pathway-entry__value">{{ r.referredByName }}</span>
-              </div>
+            <label class="edit-form__field edit-form__field--full">
+              <span>Detail</span>
+              <textarea name="detail" rows="2" [(ngModel)]="referralForm.detail" placeholder="Optional detail…"></textarea>
+            </label>
+            @if (referralError()) {
+              <p class="form-error">{{ referralError() }}</p>
+            }
+            <div class="edit-form__actions">
+              <button type="submit" class="btn-primary" [disabled]="submittingReferral()">
+                {{ submittingReferral() ? 'Saving…' : 'Create referral' }}
+              </button>
             </div>
-          </article>
-        } @empty {
-          <p class="empty-state">No support referrals recorded yet.</p>
+          </form>
         }
-      </div>
-    </section>
+
+        <div class="entries">
+          @for (r of p.referrals; track r.id) {
+            <article class="pathway-entry">
+              <div class="pathway-entry__top">
+                <div class="pathway-entry__heading">
+                  <span class="pathway-entry__date">{{ formatDate(r.referredAt) }}</span>
+                  <span class="pathway-entry__title">{{ humanize(r.category) }}</span>
+                </div>
+                <span class="chip" [style.background]="pathwayStatusChip(r.status).bg" [style.color]="pathwayStatusChip(r.status).fg">
+                  {{ pathwayStatusChip(r.status).label }}
+                </span>
+              </div>
+              <div class="pathway-entry__cols">
+                <div class="pathway-entry__col">
+                  <span class="pathway-entry__label">Detail:</span>
+                  <span class="pathway-entry__value">{{ r.detail || '—' }}</span>
+                </div>
+                <div class="pathway-entry__col">
+                  <span class="pathway-entry__label">Referred By</span>
+                  <span class="pathway-entry__value">{{ r.referredByName }}</span>
+                </div>
+              </div>
+            </article>
+          } @empty {
+            <p class="empty-state">No support referrals recorded yet.</p>
+          }
+        </div>
+      </section>
+    }
   }
 
   <!-- Caseload allocation (spec §4.4) — who holds this guest, and every handover since then. -->

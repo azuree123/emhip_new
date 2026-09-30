@@ -104,19 +104,19 @@ export class GuestInitialConversationTabComponent {
   readonly pathwayOptions: PathwayOption[] = [
     {
       key: 'MentalWellbeing',
-      label: 'Wellbeing',
+      label: 'Mental Wellbeing',
       formLabel: 'Mental Wellbeing',
       description: 'Early intervention and general wellbeing support.',
     },
     {
       key: 'ClinicalSupport',
-      label: 'Clinical',
+      label: 'Clinical Support',
       formLabel: 'Clinical Support',
       description: 'Intense support for complex mental health needs.',
     },
     {
       key: 'CommunityRecovery',
-      label: 'Recovery',
+      label: 'Community Recovery',
       formLabel: 'Community Recovery',
       description: 'Community-focused recovery and group support.',
     },

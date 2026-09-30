@@ -1,17 +1,14 @@
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { GuestPathway, PathwayAnalyticsDto, PathwayAnalyticsRowDto } from '../../core/api-models';
+import { PATHWAY_META as SHARED_PATHWAY_META } from './report-meta';
 import { ReportsApiService } from '../../core/reports-api.service';
 
 /**
- * Labels/colors for the three clinical pathways, matching the "Pathway
- * distribution" card rows in the source (Desktop45/72: Wellbeing Support,
- * Additional / Clinical, Community & Recovery in coral/gold/maroon).
+ * Labels/colors for the three clinical pathways — the service's names (Mental Wellbeing,
+ * Clinical Support, Community Recovery), shared with every other report tab. The source
+ * (Desktop45/72) used draft names; the customer confirmed these three.
  */
-const PATHWAY_META: Record<GuestPathway, { label: string; color: string }> = {
-  MentalWellbeing: { label: 'Wellbeing Support', color: 'rgb(235, 60, 44)' },
-  ClinicalSupport: { label: 'Additional / Clinical', color: 'rgb(201, 167, 35)' },
-  CommunityRecovery: { label: 'Community & Recovery', color: 'rgb(148, 28, 60)' },
-};
+const PATHWAY_META: Record<GuestPathway, { label: string; color: string }> = SHARED_PATHWAY_META;
 
 interface PathwayRow extends PathwayAnalyticsRowDto {
   label: string;

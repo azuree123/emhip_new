@@ -1,27 +1,20 @@
-import { GuestStatus } from '../../core/api-models';
+import { GuestPathway, GuestStatus } from '../../core/api-models';
 import { DemographicFilterValue } from '../../shared/demographic-filters.component';
 
 /**
- * Display metadata (label + chart color) for each PathwayCategory enum value.
- * The three brand colors (maroon/coral/gold) are lifted verbatim from the
- * "Pathway distribution" card in the source Figma export (Desktop72, around
- * lines 74000-74400 of project/screens/Components.bundle.js); the remaining
- * three extend the same palette with the secondary-*-700 tones defined in
- * project/screens/fig-tokens.css, since the source mockup only drew three
- * sample rows but our real data has six pathway categories.
+ * Display metadata (label + chart color) for the three clinical pathways — the only
+ * pathways. Colors are the "Pathway distribution" card's coral / gold / maroon from the
+ * source Figma export (Desktop72), the same order the Hub Manager dashboard uses.
  */
-export const CATEGORY_META: Record<string, { label: string; color: string }> = {
-  HousingAdvice: { label: 'Housing Advice', color: 'rgb(148, 28, 60)' },
-  EmploymentSupport: { label: 'Employment Support', color: 'rgb(235, 60, 44)' },
-  BenefitsFinancialSupport: { label: 'Benefits & Financial Support', color: 'rgb(201, 167, 35)' },
-  FoodEssentials: { label: 'Food & Essentials', color: 'rgb(15, 118, 110)' },
-  ImmigrationLegalAdvice: { label: 'Immigration & Legal Advice', color: 'rgb(29, 78, 216)' },
-  OtherPracticalAdvice: { label: 'Other Practical Advice', color: 'rgb(109, 40, 217)' },
+export const PATHWAY_META: Record<GuestPathway, { label: string; color: string }> = {
+  MentalWellbeing: { label: 'Mental Wellbeing', color: 'rgb(235, 60, 44)' },
+  ClinicalSupport: { label: 'Clinical Support', color: 'rgb(201, 167, 35)' },
+  CommunityRecovery: { label: 'Community Recovery', color: 'rgb(148, 28, 60)' },
 };
 
-export function pathwayCategoryLabel(category: string | null): string {
-  if (!category) return '—';
-  return CATEGORY_META[category]?.label ?? category;
+export function pathwayLabel(pathway: string | null): string {
+  if (!pathway) return '—';
+  return PATHWAY_META[pathway as GuestPathway]?.label ?? pathway;
 }
 
 /**

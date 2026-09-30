@@ -5,7 +5,7 @@ import {
   PathwayCategoryTotalDto,
   PathwayReportDto,
 } from '../../core/api-models';
-import { CATEGORY_META } from './report-meta';
+import { PATHWAY_META } from './report-meta';
 import { ReportsDomainTableComponent } from './reports-domain-table.component';
 
 interface CategoryRow extends PathwayCategoryTotalDto {
@@ -117,18 +117,17 @@ export class ReportsOverviewComponent {
   /** Index into regChart().points of the month the pointer is over, or null. */
   readonly hoveredPoint = signal<number | null>(null);
 
-  readonly categoryRows = computed<CategoryRow[]>(() => {
-    const totals = this.report()?.categoryTotals ?? [];
-    return [...totals]
-      .sort((a, b) => b.percentage - a.percentage)
-      .map((ct) => ({
-        ...ct,
-        label: CATEGORY_META[ct.category]?.label ?? ct.category,
-        color: CATEGORY_META[ct.category]?.color ?? 'rgb(114, 114, 114)',
-      }));
-  });
+  /** The three clinical pathways in the service's order (the API always sends all three). */
+  readonly categoryRows = computed<CategoryRow[]>(() =>
+    (this.report()?.categoryTotals ?? []).map((ct) => ({
+      ...ct,
+      label: PATHWAY_META[ct.category as keyof typeof PATHWAY_META]?.label ?? ct.category,
+      color: PATHWAY_META[ct.category as keyof typeof PATHWAY_META]?.color ?? 'rgb(114, 114, 114)',
+    })),
+  );
 
-  readonly totalReferrals = computed<number | null>(() => this.report()?.totalReferrals ?? null);
+  /** Guests allocated to any pathway — the denominator behind the percentages. */
+  readonly totalAllocated = computed<number | null>(() => this.report()?.totalAllocated ?? null);
 
   /**
    * KPI tile row driven by statusCounts. The source draws TOTAL GUESTS / ACTIVE

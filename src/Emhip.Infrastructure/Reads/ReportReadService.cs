@@ -6,35 +6,34 @@ using Microsoft.EntityFrameworkCore;
 namespace Emhip.Infrastructure.Reads;
 
 /// <summary>
-/// Aggregate totals are read from the columnstore-backed PathwayReportAggregates_ReadModel
-/// (maintained by ReportMaterializerWorker) — never a live GROUP BY over PathwayReferrals.
-/// The row-level export streams the source table directly via IAsyncEnumerable so
-/// GET /reports/export never buffers the full result set in memory.
+/// Report reads. Hub-wide counts come from the materialized dashboard snapshot (maintained by
+/// ReportMaterializerWorker) rather than a live GROUP BY over Guests. The row-level export
+/// streams guests directly via IAsyncEnumerable so GET /reports/export never buffers the full
+/// result set in memory.
 /// </summary>
 public sealed class ReportReadService(EmhipDbContext db, Emhip.Application.Abstractions.IAppSettingsService settings) : IReportReadService
 {
     public async Task<PathwayReportDto> GetPathwayReportAsync(Guid hubId, DateOnly from, DateOnly to, CancellationToken cancellationToken = default)
     {
-        var totals = await db.PathwayReportAggregates.AsNoTracking()
-            .Where(p => p.HubId == hubId
-                && (p.Year > from.Year || (p.Year == from.Year && p.Month >= from.Month))
-                && (p.Year < to.Year || (p.Year == to.Year && p.Month <= to.Month)))
-            .GroupBy(p => p.Category)
-            .Select(g => new { Category = g.Key, Count = g.Sum(x => x.ReferralCount) })
-            .ToListAsync(cancellationToken);
-
-        var totalReferrals = totals.Sum(t => t.Count);
-
-        var categoryTotals = totals
-            .Select(t => new PathwayCategoryTotalDto(
-                t.Category.ToString(), t.Count, totalReferrals == 0 ? 0 : Math.Round(100.0 * t.Count / totalReferrals, 1)))
-            .OrderByDescending(t => t.Count)
-            .ToList();
-
-        // Header KPI tiles — current counts, reused from the materialized dashboard snapshot
-        // (never a live GROUP BY over Guests).
+        // Header KPI tiles and the pathway distribution — current counts, reused from the
+        // materialized dashboard snapshot (never a live GROUP BY over Guests).
         var snapshot = await db.DashboardSnapshots.AsNoTracking()
             .FirstOrDefaultAsync(s => s.HubId == hubId, cancellationToken);
+
+        // Pathway distribution: the three clinical pathways only, always all three and in the
+        // service's order. The snapshot stores display labels, so match them back to the enum.
+        var distribution = snapshot is null
+            ? []
+            : System.Text.Json.JsonSerializer.Deserialize<List<Emhip.Application.Dashboards.PathwayDistributionDto>>(snapshot.PathwayDistributionJson) ?? [];
+        var totalAllocated = distribution.Sum(d => d.Count);
+        var categoryTotals = new[] { Domain.Enums.GuestPathway.MentalWellbeing, Domain.Enums.GuestPathway.ClinicalSupport, Domain.Enums.GuestPathway.CommunityRecovery }
+            .Select(pathway =>
+            {
+                var count = distribution.FirstOrDefault(d => d.Category == Emhip.Application.Guests.GuestPathwayLabels.For(pathway))?.Count ?? 0;
+                return new PathwayCategoryTotalDto(
+                    pathway.ToString(), count, totalAllocated == 0 ? 0 : Math.Round(100.0 * count / totalAllocated, 1));
+            })
+            .ToList();
         var statusCounts = new GuestStatusCountsDto(
             snapshot?.TotalGuestsAcrossHub ?? 0,
             snapshot?.TotalActiveGuests ?? 0,
@@ -89,7 +88,7 @@ public sealed class ReportReadService(EmhipDbContext db, Emhip.Application.Abstr
             .ToList();
 
         return new PathwayReportDto(
-            from, to, categoryTotals, totalReferrals,
+            from, to, categoryTotals, totalAllocated,
             statusCounts, monthlyRegistrations, activity, ethnicityBreakdown);
     }
 
@@ -492,17 +491,18 @@ public sealed class ReportReadService(EmhipDbContext db, Emhip.Application.Abstr
         var fromOffset = new DateTimeOffset(from.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
         var toOffset = new DateTimeOffset(to.ToDateTime(TimeOnly.MaxValue), TimeSpan.Zero);
 
-        // Inner join on Guests keeps the hub scope (and the soft-delete query filter) the previous
-        // Any() check applied, while also supplying the guest columns each row now carries.
-        var query = db.PathwayReferrals.AsNoTracking()
-            .Where(p => p.ReferredAt >= fromOffset && p.ReferredAt <= toOffset)
-            .Join(db.Guests.AsNoTracking().Where(g => g.HubId == hubId), p => p.GuestId, g => g.Id, (p, g) => new
+        // One row per guest registered in the period, with their clinical pathway (Mental
+        // Wellbeing, Clinical Support or Community Recovery — the only pathways). The soft-delete
+        // query filter keeps anonymised guests out.
+        var query = db.Guests.AsNoTracking()
+            .Where(g => g.HubId == hubId && g.RegisteredAt >= fromOffset && g.RegisteredAt <= toOffset)
+            .Select(g => new
             {
-                p.GuestId,
+                g.GuestNumber,
                 GuestName = g.FirstName + " " + g.LastName,
-                p.Category,
-                p.Status,
-                p.ReferredAt,
+                g.Pathway,
+                g.Status,
+                g.RegisteredAt,
                 // Demographics and referral source ride along on every row (customer feedback #9),
                 // so the CSV can be pivoted by ethnicity, age group, gender, country or source.
                 g.DateOfBirth,
@@ -512,14 +512,15 @@ public sealed class ReportReadService(EmhipDbContext db, Emhip.Application.Abstr
                 Ethnicity = db.GuestDemographics.Where(d => d.GuestId == g.Id).Select(d => d.Ethnicity).FirstOrDefault(),
                 CountryOfOrigin = db.GuestDemographics.Where(d => d.GuestId == g.Id).Select(d => d.CountryOfOrigin).FirstOrDefault(),
             })
-            .OrderBy(r => r.ReferredAt)
+            .OrderBy(r => r.RegisteredAt)
             .AsAsyncEnumerable();
 
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
         await foreach (var row in query.WithCancellation(cancellationToken))
         {
             yield return new ReportExportRowDto(
-                row.GuestId, row.GuestName, row.Category.ToString(), row.Status.ToString(), row.ReferredAt,
+                row.GuestNumber, row.GuestName, Emhip.Application.Guests.GuestPathwayLabels.For(row.Pathway),
+                row.Status == Domain.Enums.GuestStatus.OnHold ? "Inactive" : row.Status.ToString(), row.RegisteredAt,
                 row.Ethnicity, ReportAgeBands.LabelFor(row.DateOfBirth, today), row.Gender, row.CountryOfOrigin,
                 row.ReferralSource, row.ReferralType?.ToString());
         }

@@ -72,27 +72,27 @@
           <div>
             <h2 class="report-card__title">Pathway distribution</h2>
             <p class="report-card__subtitle">
-              @if (totalReferrals() !== null) {
-                {{ totalReferrals() }} referrals in period
+              @if (totalAllocated() !== null) {
+                {{ totalAllocated() }} guests currently allocated to a pathway
               } @else {
-                Referrals by category
+                Guests on each pathway
               }
             </p>
           </div>
-          <span class="report-card__corner">{{ rangeLabel() }}</span>
+          <span class="report-card__corner">Current</span>
         </div>
 
         @if (loading()) {
           <div class="report-card__state">Loading pathway report…</div>
         } @else if (categoryRows().length === 0) {
-          <div class="report-card__state">No pathway referrals recorded for this period.</div>
+          <div class="report-card__state">No guests allocated to a pathway yet.</div>
         } @else {
           @for (row of categoryRows(); track row.category) {
             <div class="pathway-row">
               <div class="pathway-row__top">
                 <span class="pathway-row__label">{{ row.label }}</span>
                 <span class="pathway-row__count">{{ row.count }}</span>
-                <span class="pathway-row__unit">REFERRALS</span>
+                <span class="pathway-row__unit">GUESTS</span>
                 <span class="pathway-row__dot" aria-hidden="true"></span>
                 <span class="pathway-row__percentage" [style.color]="row.color">{{ row.percentage }}%</span>
               </div>

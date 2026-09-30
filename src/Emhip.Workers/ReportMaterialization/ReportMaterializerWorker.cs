@@ -165,12 +165,7 @@ public sealed class ReportMaterializerWorker(IServiceScopeFactory scopeFactory, 
         }
     }
 
-    private static string PathwayLabel(GuestPathway pathway) => pathway switch
-    {
-        GuestPathway.MentalWellbeing => "Mental Wellbeing",
-        GuestPathway.ClinicalSupport => "Clinical Support",
-        _ => "Community Recovery",
-    };
+    private static string PathwayLabel(GuestPathway pathway) => Emhip.Application.Guests.GuestPathwayLabels.For(pathway);
 
     /// <summary>
     /// Guest demographics card. Age is bucketed from the date of birth here rather than stored,

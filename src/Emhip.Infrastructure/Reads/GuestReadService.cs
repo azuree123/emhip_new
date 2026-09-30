@@ -83,7 +83,7 @@ public sealed class GuestReadService(ISqlConnectionFactory connectionFactory, Em
 
         var sql = $"""
             SELECT TOP (@FetchSize)
-                g.Id, g.GuestNumber, g.FirstName, g.LastName, g.DateOfBirth, g.Status, g.IsUrgent,
+                g.Id, g.GuestNumber, g.FirstName, g.LastName, g.DateOfBirth, g.Status, g.IsUrgent, g.Pathway,
                 s.DisplayName AS AssignedCmhwName, g.RegisteredAt, lc.OccurredAt AS LastContactAt,
                 pw.Category AS PathwayCategory, ISNULL(rk.HasFlags, 0) AS HasRiskFlags, nf.DueDate AS NextContactDue
             FROM Guests g
@@ -257,7 +257,8 @@ public sealed class GuestReadService(ISqlConnectionFactory connectionFactory, Em
                 r.Id, r.GuestNumber, r.FirstName, r.LastName, DateOnly.FromDateTime(r.DateOfBirth),
                 Enum.Parse<GuestStatus>(r.Status), r.AssignedCmhwName, r.RegisteredAt, r.LastContactAt,
                 r.PathwayCategory, r.HasRiskFlags, r.IsUrgent,
-                r.NextContactDue.HasValue ? DateOnly.FromDateTime(r.NextContactDue.Value) : null)).ToList(),
+                r.NextContactDue.HasValue ? DateOnly.FromDateTime(r.NextContactDue.Value) : null,
+                Enum.TryParse<GuestPathway>(r.Pathway, out var clinicalPathway) ? clinicalPathway : null)).ToList(),
             NextCursor = nextCursor,
             HasMore = hasMore,
             TotalCount = totalCount,
@@ -710,6 +711,7 @@ public sealed class GuestReadService(ISqlConnectionFactory connectionFactory, Em
         public DateTimeOffset RegisteredAt { get; set; }
         public DateTimeOffset? LastContactAt { get; set; }
         public string? PathwayCategory { get; set; }
+        public string? Pathway { get; set; }
         public bool HasRiskFlags { get; set; }
         public DateTime? NextContactDue { get; set; }
     }

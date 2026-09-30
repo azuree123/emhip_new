@@ -192,9 +192,9 @@ export class UrgentCasesComponent implements OnInit, OnDestroy {
   readonly savingResolve = signal(false);
   readonly resolveError = signal<string | null>(null);
   readonly pathwayOptions: { value: GuestPathway; label: string }[] = [
-    { value: 'MentalWellbeing', label: 'Wellbeing support' },
-    { value: 'ClinicalSupport', label: 'Clinical support' },
-    { value: 'CommunityRecovery', label: 'Community recovery' },
+    { value: 'MentalWellbeing', label: 'Mental Wellbeing' },
+    { value: 'ClinicalSupport', label: 'Clinical Support' },
+    { value: 'CommunityRecovery', label: 'Community Recovery' },
   ];
   resolveForm: {
     note: string;

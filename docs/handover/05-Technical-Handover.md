@@ -29,7 +29,7 @@ Some screen labels were changed at the customer's request without renaming the c
 | Contact, scheduled contact | `FollowUp` | "Contact" replaced "Follow-up" on screen |
 | Contact (recorded) | `Contact`, `CaseworkNote` | A logged interaction; casework notes use SBAR |
 | Pathway | `GuestPathway` | Mental Wellbeing, Clinical Support, Community Recovery |
-| Referral category | `PathwayCategory` | Practical support: housing, employment, benefits, food, immigration, other |
+| Referral category | `PathwayCategory` | Practical-support referrals (housing, employment, …). Not pathways: hidden from every screen on 30 Sep 2026 (the only pathways are the three `GuestPathway` values); data and `POST /guests/{id}/pathway` referral API kept |
 | DIALOG scores | `DialogAssessment` | 11 life domains scored 1 to 7 |
 | Guest reference G-1001 | `Guest.GuestNumber` | From the SQL sequence `GuestNumbers` |
 | Hub | `Hub`, `HubId` | Every guest and staff member belongs to one hub |
@@ -149,7 +149,7 @@ Dashboards and some reports read denormalised tables rather than grouping over a
 | --- | --- | --- |
 | `UrgentCases_ReadModel` | `EscalationWorker` (and `GuestAnonymiser` on anonymisation) | Active urgent-case list, dashboard urgent banner |
 | `DashboardSnapshots_ReadModel` | `ReportMaterializerWorker`, every 5 minutes | CMHW and Hub Manager dashboard counts, pathway distribution, monthly stats, clinical complexity, demographics, data quality cards |
-| `PathwayReportAggregates_ReadModel` | `ReportMaterializerWorker`, every 5 minutes | Pathway report |
+| `PathwayReportAggregates_ReadModel` | `ReportMaterializerWorker`, every 5 minutes | Nothing since 30 Sep 2026 (referral categories are no longer reported); safe to retire |
 
 `ReportMaterializerWorker` loops over the rows in the `Hubs` table. A hub with staff and guests but no `Hubs` row gets no snapshot, and its dashboard shows zeros. There is no screen for creating hubs; rows come from the seeder or SQL (document 06 has the SQL).
 
@@ -231,7 +231,7 @@ Public URLs are prefixed with `/api` (the `client` nginx strips it). Every contr
 | Minimal API | `/health` | Liveness probe; does not touch the database | None |
 | SignalR hub | `/hubs/urgent-cases` | Live urgent-case events | `urgentcases.view` |
 
-The Excel export (`GET /reports/export.xlsx`) is built by `ExcelWorkbookBuilder` with ClosedXML and has seven sheets: Summary, Demographics, Referral sources, Pathways, Caseload, DIALOG outcomes and Data quality. Sheet names must stay in step with `WORKBOOK_SHEETS` in `client/src/app/features/reports/report-meta.ts`. The optional cohort parameters (`ethnicity`, `gender`, `countryOfOrigin`, `ageMin`, `ageMax`) are parsed by `ReportCohortFilter` and apply to the DIALOG outcomes sheet, the DIALOG outcomes tab and the DIALOG trend. The CSV export (`GET /reports/export`) streams rows as they are read. Both exports are recorded in `ExportRecords`.
+The Excel export (`GET /reports/export.xlsx`) is built by `ExcelWorkbookBuilder` with ClosedXML and has seven sheets: Summary, Demographics, Referral sources, Pathways, Caseload, DIALOG outcomes and Data quality. Sheet names must stay in step with `WORKBOOK_SHEETS` in `client/src/app/features/reports/report-meta.ts`. The optional cohort parameters (`ethnicity`, `gender`, `countryOfOrigin`, `ageMin`, `ageMax`) are parsed by `ReportCohortFilter` and apply to the DIALOG outcomes sheet, the DIALOG outcomes tab and the DIALOG trend. The CSV export (`GET /reports/export`) streams one row per guest registered in the period (G-number, name, pathway, status, registration date, demographics, referral source and type) as the rows are read. Pathway names come from `GuestPathwayLabels` (server) and `CLINICAL_PATHWAY_OPTIONS` (client), which must stay in step. Both exports are recorded in `ExportRecords`.
 
 Swagger UI is served at `/swagger` only when `ASPNETCORE_ENVIRONMENT` is `Development` (local `dotnet run`). It is not available in the Docker containers, whose environment is `Docker`.
 

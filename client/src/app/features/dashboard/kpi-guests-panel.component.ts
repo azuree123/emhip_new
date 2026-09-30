@@ -3,8 +3,8 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { catchError, of } from 'rxjs';
 import { GuestsApiService } from '../../core/guests-api.service';
-import { GuestListItemDto, GuestStatus, PathwayCategory } from '../../core/api-models';
-import { PATHWAY_CATEGORY_OPTIONS } from '../../core/demographic-options';
+import { GuestListItemDto, GuestPathway, GuestStatus } from '../../core/api-models';
+import { CLINICAL_PATHWAY_OPTIONS, clinicalPathwayLabel } from '../../core/demographic-options';
 import { StaffPickerComponent } from '../../shared/staff-picker.component';
 
 /** Engagement statuses per spec §4.7, plus the urgency flag drill-down (spec §3.3). */
@@ -50,21 +50,6 @@ const NEXT_CONTACT_OPTIONS: { value: NextContactFilter; label: string }[] = [
   { value: 'none', label: 'Nothing scheduled' },
 ];
 
-/**
- * Short labels for the drill-down tables' Pathway column. This column shows the guest's
- * practical-support referral category (PathwayCategory), which is a different axis from the
- * three clinical pathways on the Pathway distribution card — so only the referral categories
- * are mapped here. Anything unknown falls back to the de-camel-cased key.
- */
-const PATHWAY_SHORT: Record<string, string> = {
-  HousingAdvice: 'Housing Advice',
-  EmploymentSupport: 'Employment Support',
-  BenefitsFinancialSupport: 'Benefits & Financial',
-  FoodEssentials: 'Food & Essentials',
-  ImmigrationLegalAdvice: 'Immigration & Legal',
-  OtherPracticalAdvice: 'Other Practical',
-};
-
 /** yyyy-MM-dd for a Date in local time. */
 function isoDay(date: Date): string {
   const m = `${date.getMonth() + 1}`.padStart(2, '0');
@@ -79,7 +64,7 @@ function isoDay(date: Date): string {
  * live from GET /guests?status=….
  *
  * The toolbar's Pathway / Assigned CMHW / Last Activity dropdowns are real server-side
- * filters on that same endpoint (pathway, cmhw, lastActivityDays); "Next Contact" buckets
+ * filters on that same endpoint (clinicalPathway, cmhw, lastActivityDays); "Next Contact" buckets
  * the returned rows by nextContactDue client-side, since the endpoint has no such filter.
  *
  * The `urgent` variant has no status behind it — urgency is a separate flag (spec §3.3),
@@ -115,10 +100,11 @@ export class KpiGuestsPanelComponent {
   private readonly serverTotal = signal<number | null>(null);
 
   // --- Toolbar filters ---
-  protected readonly pathwayOptions = PATHWAY_CATEGORY_OPTIONS;
+  /** The three clinical pathways — the only pathways. */
+  protected readonly pathwayOptions = CLINICAL_PATHWAY_OPTIONS;
   protected readonly activityOptions = ACTIVITY_OPTIONS;
   protected readonly nextContactOptions = NEXT_CONTACT_OPTIONS;
-  protected readonly pathwayFilter = signal<'' | PathwayCategory>('');
+  protected readonly pathwayFilter = signal<'' | GuestPathway>('');
   /** Staff id from the shared picker, or null for all workers. */
   protected readonly cmhwFilter = signal<string | null>(null);
   protected readonly activityFilter = signal<ActivityFilter>('');
@@ -200,7 +186,7 @@ export class KpiGuestsPanelComponent {
     const status = this.statusParam();
     if (status) params['status'] = status;
     if (this.variant() === 'urgent') return {};
-    if (this.pathwayFilter()) params['pathway'] = this.pathwayFilter();
+    if (this.pathwayFilter()) params['clinicalPathway'] = this.pathwayFilter();
     if (this.cmhwFilter()) params['cmhw'] = this.cmhwFilter()!;
     if (this.activityFilter()) params['activity'] = this.activityFilter();
     return params;
@@ -226,7 +212,7 @@ export class KpiGuestsPanelComponent {
           // Only send the flag for the urgent panel; the others must not exclude urgent guests.
           urgent: urgentOnly ? true : undefined,
           q: q || undefined,
-          pathway: pathway || undefined,
+          clinicalPathway: pathway || undefined,
           cmhw: cmhw ?? undefined,
           lastActivityDays: activity ? Number(activity) : undefined,
           pageSize: FETCH_SIZE,
@@ -250,7 +236,7 @@ export class KpiGuestsPanelComponent {
   }
 
   protected onPathwayChange(value: string): void {
-    this.pathwayFilter.set(value as '' | PathwayCategory);
+    this.pathwayFilter.set(value as '' | GuestPathway);
   }
 
   protected onCmhwChange(value: string | null): void {
@@ -278,8 +264,7 @@ export class KpiGuestsPanelComponent {
   }
 
   protected pathwayLabel(g: GuestListItemDto): string {
-    if (!g.pathwayCategory) return '—';
-    return PATHWAY_SHORT[g.pathwayCategory] ?? g.pathwayCategory.replace(/([a-z])([A-Z])/g, '$1 $2');
+    return clinicalPathwayLabel(g.pathway);
   }
 
   protected dayMonth(value: string | null): string {

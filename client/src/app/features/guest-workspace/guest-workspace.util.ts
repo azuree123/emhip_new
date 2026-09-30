@@ -94,12 +94,12 @@ export function followUpStatusChip(status: string): StatusChip {
   return FOLLOWUP_STATUS_CHIPS[status] ?? { label: humanize(status), bg: '#f0f0f0', fg: '#646464' };
 }
 
-/** Display labels for the guest's overall pathway allocation, matching the header chip and
- *  "Current pathway" copy in GuestOverviewTab (bundle shows "Wellbeing support"). */
+/** Display labels for the guest's pathway — the service's names for its three pathways, the
+ *  same on every screen (the header chip, Overview, Pathway History, lists and reports). */
 const GUEST_PATHWAY_LABELS: Record<GuestPathway, string> = {
-  MentalWellbeing: 'Wellbeing support',
-  ClinicalSupport: 'Clinical support',
-  CommunityRecovery: 'Community recovery',
+  MentalWellbeing: 'Mental Wellbeing',
+  ClinicalSupport: 'Clinical Support',
+  CommunityRecovery: 'Community Recovery',
 };
 
 export function guestPathwayLabel(pathway: GuestPathway | string | null | undefined): string | null {

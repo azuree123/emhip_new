@@ -1,3 +1,5 @@
+import { GuestPathway } from './api-models';
+
 /**
  * Fixed option lists shared by the registration form and the workspace Demographics tab, so a
  * value chosen at reception and one chosen later by the CMHW come from the same vocabulary.
@@ -46,19 +48,17 @@ export const EMPLOYMENT_STATUS_OPTIONS = [
   'Unable to Work',
 ];
 
-/** Practical-support referral categories (PathwayCategory) with their display labels. */
-export const PATHWAY_CATEGORY_OPTIONS: { value: string; label: string }[] = [
-  { value: 'HousingAdvice', label: 'Housing Advice' },
-  { value: 'EmploymentSupport', label: 'Employment Support' },
-  { value: 'BenefitsFinancialSupport', label: 'Benefits & Financial Support' },
-  { value: 'FoodEssentials', label: 'Food Essentials' },
-  { value: 'ImmigrationLegalAdvice', label: 'Immigration & Legal Advice' },
-  { value: 'OtherPracticalAdvice', label: 'Other Practical Advice' },
+/**
+ * The three clinical pathways — the only pathways in EMHIP — by the names the service uses
+ * everywhere. Mirrors Emhip.Application.Guests.GuestPathwayLabels on the server.
+ */
+export const CLINICAL_PATHWAY_OPTIONS: { value: GuestPathway; label: string }[] = [
+  { value: 'MentalWellbeing', label: 'Mental Wellbeing' },
+  { value: 'ClinicalSupport', label: 'Clinical Support' },
+  { value: 'CommunityRecovery', label: 'Community Recovery' },
 ];
 
-/** "HousingAdvice" → "Housing Advice", using the curated label when there is one. */
-export function pathwayCategoryLabel(category: string | null | undefined): string {
-  if (!category) return '—';
-  const curated = PATHWAY_CATEGORY_OPTIONS.find((o) => o.value === category);
-  return curated ? curated.label : category.replace(/([a-z0-9])([A-Z])/g, '$1 $2');
+export function clinicalPathwayLabel(pathway: string | null | undefined): string {
+  if (!pathway) return '—';
+  return CLINICAL_PATHWAY_OPTIONS.find((o) => o.value === pathway)?.label ?? pathway;
 }

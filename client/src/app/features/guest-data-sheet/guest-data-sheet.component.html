@@ -63,6 +63,9 @@
         </button>
 
         <div class="filter filter--pathway">
+          <!-- [selected] on each option (not only [value] on the select) so a filter set by a link,
+               e.g. a dashboard count, shows in the dropdown: the select's value is bound before
+               its @for options exist. -->
           <select
             class="filter__select"
             aria-label="Filter by pathway"
@@ -70,7 +73,7 @@
             (change)="onPathwayChange($any($event.target).value)"
           >
             @for (option of pathwayOptions; track option.value) {
-              <option [value]="option.value">{{ option.label }}</option>
+              <option [value]="option.value" [selected]="option.value === pathwayFilter()">{{ option.label }}</option>
             }
           </select>
           <svg width="9" height="5" viewBox="0 0 8.75 4.375" fill="none" class="filter__chevron">
@@ -89,7 +92,7 @@
             (change)="onStatusChange($any($event.target).value)"
           >
             @for (option of statusOptions; track option.value) {
-              <option [value]="option.value">{{ option.label }}</option>
+              <option [value]="option.value" [selected]="option.value === statusFilter()">{{ option.label }}</option>
             }
           </select>
           <svg width="9" height="5" viewBox="0 0 8.75 4.375" fill="none" class="filter__chevron">
@@ -132,7 +135,7 @@
             (change)="onActivityChange($any($event.target).value)"
           >
             @for (option of activityOptions; track option.value) {
-              <option [value]="option.value">{{ option.label }}</option>
+              <option [value]="option.value" [selected]="option.value === activityFilter()">{{ option.label }}</option>
             }
           </select>
           <svg width="9" height="5" viewBox="0 0 8.75 4.375" fill="none" class="filter__chevron">
@@ -208,7 +211,7 @@
             }
           </span>
 
-          <span class="col col--pathway">{{ pathwayLabel(guest.pathwayCategory) }}</span>
+          <span class="col col--pathway">{{ pathwayLabel(guest.pathway) }}</span>
           <span class="col col--cmhw" [title]="guest.assignedCmhwName ?? ''">{{ guest.assignedCmhwName ?? '—' }}</span>
           <span class="col col--activity">{{ formatActivity(guest.lastContactAt) }}</span>
           <span class="col col--next">{{ formatDate(guest.nextContactDue) }}</span>
