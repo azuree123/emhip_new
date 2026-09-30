@@ -366,6 +366,37 @@ export class RegisterGuestComponent {
       crisisNotes.updateValueAndValidity({ emitEvent: false });
     });
 
+    // Follow-up fields only apply when the answer calls for detail ("Yes…" or "Unsure"): for
+    // "No", "Unknown" or no answer yet they are cleared and disabled, so a stale detail can
+    // never be saved against a "No". Submission reads getRawValue(), so disabled fields still
+    // arrive — empty.
+    const history = this.conversationForm.controls.history.controls;
+    const physical = this.conversationForm.controls.physical.controls;
+    const followUps: [FormControl<string>, FormControl<string>[]][] = [
+      [history.previousDiagnosis, [history.diagnosisGroups, history.reportedDiagnosis]],
+      [history.inpatientAdmission, [history.inpatientDetails]],
+      [history.familyHistory, [history.familyHistoryDetails]],
+      [physical.allergies, [physical.allergyDetails]],
+      [risk.controls.selfHarmHistory, [risk.controls.selfHarmComment]],
+      [risk.controls.riskToOthersHistory, [risk.controls.riskToOthersComment]],
+      [risk.controls.safeguardingHistory, [risk.controls.safeguardingComment]],
+    ];
+    for (const [answer, details] of followUps) {
+      const apply = (value: string) => {
+        const needsDetail = value.startsWith('Yes') || value === 'Unsure';
+        for (const detail of details) {
+          if (needsDetail) {
+            detail.enable({ emitEvent: false });
+          } else {
+            detail.setValue('', { emitEvent: false });
+            detail.disable({ emitEvent: false });
+          }
+        }
+      };
+      apply(answer.value);
+      answer.valueChanges.pipe(takeUntilDestroyed()).subscribe(apply);
+    }
+
     // Spec §6.2: a Secondary referral must carry a subcategory.
     const referral = this.demographicsForm.controls.referral;
     referral.controls.referralType.valueChanges.pipe(takeUntilDestroyed()).subscribe((value) => {

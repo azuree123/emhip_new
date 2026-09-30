@@ -365,6 +365,7 @@ This form is completed once, at the first session. It is locked after submission
 | Consent | Tick "The guest confirmed their consent for this conversation to be recorded in their clinical record." | |
 
 - If **Immediate escalation required?** is a Yes answer, **Crisis notes** become required. Record the actions taken, who was notified and what was agreed.
+- A detail field opens only when its question is answered **Yes** or **Unsure**: diagnosis group and reported diagnosis, inpatient year and location, family history details, allergy details, and the comment beside each risk-history question. Answering **No** or **Unknown** clears the detail and greys it out.
 - Use the prompts to guide a natural conversation. Record the guest's own words where you can.
 - Prompt 1 is saved as the presenting problem. Everything else on this step is saved together as the conversation notes.
 
