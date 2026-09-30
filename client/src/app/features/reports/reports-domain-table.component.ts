@@ -14,7 +14,7 @@ interface DomainRow {
  * "Average DIALOG scores by domain" card — the domain table drawn on both the
  * report Overview (Desktop72) and the DIALOG Outcomes tab (Desktop47). The
  * source's header row reuses a generic table component (labelled Worker/Active/
- * On hold/Load); real column names are used here since the data is per-domain.
+ * Inactive/Load); real column names are used here since the data is per-domain.
  */
 @Component({
   selector: 'app-reports-domain-table',
@@ -26,9 +26,13 @@ interface DomainRow {
 export class ReportsDomainTableComponent {
   readonly outcomes = input.required<DialogOutcomesReportDto | null>();
   readonly loading = input(false);
+  /** Shown when there are no averages — the DIALOG tab words it for a filtered cohort. */
+  readonly emptyText = input('No DIALOG assessments recorded yet.');
 
   readonly rows = computed<DomainRow[]>(() => {
     const dims = this.outcomes()?.dimensions ?? [];
+    // Every domain comes back even with no assessments; all-blank rows are an empty state.
+    if (!dims.some((d) => d.baselineAverage !== null || d.latestAverage !== null)) return [];
     return dims.map((d) => {
       const both = d.baselineAverage !== null && d.latestAverage !== null;
       const delta = both ? d.latestAverage! - d.baselineAverage! : null;
@@ -65,7 +69,7 @@ export class ReportsDomainTableComponent {
   readonly subtitle = computed<string>(() => {
     const o = this.outcomes();
     if (!o) return '';
-    return `Baseline vs most recent · ${o.guestsWithFollowUp} guest${o.guestsWithFollowUp === 1 ? '' : 's'} with follow-up scores`;
+    return `Baseline vs most recent · ${o.guestsWithFollowUp} guest${o.guestsWithFollowUp === 1 ? '' : 's'} with a reassessment`;
   });
 
   private signed(value: number): string {

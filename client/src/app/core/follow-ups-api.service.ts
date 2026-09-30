@@ -10,8 +10,10 @@ export class FollowUpsApiService {
   private readonly http = inject(HttpClient);
   private readonly base = `${environment.apiBaseUrl}/followups`;
 
-  getQueue(opts: { overdue?: boolean; assignee?: string; cursor?: string; pageSize?: number }): Observable<KeysetPage<FollowUpQueueItemDto>> {
+  /** `open` limits the page to Scheduled and Overdue items (what the dashboards count). */
+  getQueue(opts: { overdue?: boolean; assignee?: string; open?: boolean; cursor?: string; pageSize?: number }): Observable<KeysetPage<FollowUpQueueItemDto>> {
     let params = new HttpParams();
+    if (opts.open) params = params.set('open', true);
     if (opts.overdue !== undefined) params = params.set('overdue', opts.overdue);
     if (opts.assignee) params = params.set('assignee', opts.assignee);
     if (opts.cursor) params = params.set('cursor', opts.cursor);

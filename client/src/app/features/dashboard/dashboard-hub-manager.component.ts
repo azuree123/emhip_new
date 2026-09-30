@@ -15,6 +15,12 @@ import {
   MonthlyStatDto,
   PathwayDistributionDto,
 } from '../../core/api-models';
+import {
+  GuestSegment,
+  clinicalPathwayFromLabel,
+  isGuestSegment,
+  segmentForClinicalIndicator,
+} from '../../core/guest-segments';
 import { GuestSeenCardComponent } from './guest-seen-card.component';
 import { KpiGuestsPanelComponent, KpiPanelVariant } from './kpi-guests-panel.component';
 
@@ -53,11 +59,13 @@ const DATA_QUALITY_HINTS: Record<string, string> = {
   missingPathway: 'Guest is registered but has no pathway — cannot become Active until resolved',
   missingInitialConversation: 'Status is New — DIALOG baseline and pathway cannot be assigned until completed',
   missingDialogBaseline: 'Initial conversation completed but DIALOG not recorded — outcome comparison not possible',
-  autoOnHold: 'No activity recorded in past 3 months — status changed automatically by the system',
+  autoOnHold: 'No activity recorded in past 3 months — status changed to Inactive automatically by the system',
 };
 
 interface DataQualityRow extends DataQualityIssueTileDto {
   hint: string | null;
+  /** The guest-list segment that lists the affected guests, when the key has one. */
+  segment: GuestSegment | null;
 }
 
 /** One "Caseload per CMHW" row — the report row plus the avatar initials and load bar width. */
@@ -134,7 +142,7 @@ export class DashboardHubManagerComponent {
     return latest.newGuests - latest.closedGuests;
   });
 
-  /** Guests closed (moved to on hold) this month — the On hold card's trend pill. */
+  /** Guests closed (moved to Inactive) this month — the Inactive card's trend pill. */
   protected readonly closedThisMonth = computed(() => this.latestMonth()?.closedGuests ?? null);
 
   /**
@@ -219,6 +227,7 @@ export class DashboardHubManagerComponent {
     (this.data()?.dataQuality ?? []).map((issue) => ({
       ...issue,
       hint: DATA_QUALITY_HINTS[issue.key] ?? null,
+      segment: isGuestSegment(issue.key) ? issue.key : null,
     })),
   );
 
@@ -238,7 +247,7 @@ export class DashboardHubManagerComponent {
 
     if (this.canViewFollowUps) {
       this.followUpsApi
-        .getQueue({ pageSize: 100 })
+        .getQueue({ open: true, pageSize: 100 })
         .pipe(catchError(() => of(null)))
         .subscribe((page) => {
           if (!page) {
@@ -256,12 +265,61 @@ export class DashboardHubManagerComponent {
     }
   }
 
-  protected toggleExpand(variant: KpiPanelVariant): void {
+  /**
+   * A KPI tile opens the full list behind its number (customer feedback: every count must link
+   * through to its guests). The chevron still previews the first rows inline.
+   */
+  protected openKpiList(variant: KpiPanelVariant): void {
+    if (variant === 'urgent') {
+      void this.router.navigate(['/urgent-cases']);
+      return;
+    }
+    if (!this.canViewGuests) return;
+    const status = variant === 'new' ? 'New' : variant === 'onHold' ? 'OnHold' : 'Active';
+    void this.router.navigate(['/guests'], { queryParams: { status } });
+  }
+
+  protected toggleExpand(variant: KpiPanelVariant, event?: Event): void {
+    event?.stopPropagation();
     if (!this.canViewGuests) {
       // No guests.view claim — fall back to nothing rather than an empty panel.
       return;
     }
     this.expanded.set(this.expanded() === variant ? null : variant);
+  }
+
+  /** Pathway distribution label ("Clinical Support") → the guest list's clinicalPathway value. */
+  protected pathwayValue(label: string): string | null {
+    return clinicalPathwayFromLabel(label);
+  }
+
+  protected indicatorSegment(label: string): GuestSegment | null {
+    return this.canViewGuests ? segmentForClinicalIndicator(label) : null;
+  }
+
+  /** A demographics bar → the guest list filtered to that group (same params as its filter drawer). */
+  protected demographicParams(groupKey: string, label: string): Record<string, string> {
+    switch (groupKey) {
+      case 'ageGroups':
+        return { ageBand: label };
+      case 'gender':
+        return { gender: label };
+      case 'countryOfOrigin':
+        return { countryOfOrigin: label };
+      default:
+        return { ethnicity: label };
+    }
+  }
+
+  protected openDataQuality(issue: DataQualityRow): void {
+    if (!issue.segment || issue.count === 0 || !this.canViewGuests) return;
+    void this.router.navigate(['/guests'], { queryParams: { segment: issue.segment } });
+  }
+
+  /** Row click opens the record; clicks on the row's own links are left to the link. */
+  protected onRowClick(event: MouseEvent, guestId: string): void {
+    if ((event.target as HTMLElement).closest('a, button')) return;
+    this.openGuest(guestId);
   }
 
   protected panelTotal(variant: KpiPanelVariant): number {
@@ -318,7 +376,7 @@ export class DashboardHubManagerComponent {
   }
 
   protected cpnStatusLabel(guest: CpnInvolvedGuestDto): string {
-    return guest.status === 'OnHold' ? 'On hold' : guest.status;
+    return guest.status === 'OnHold' ? 'Inactive' : guest.status;
   }
 
   protected formatDate(value: string | null): string {

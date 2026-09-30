@@ -8,6 +8,7 @@ import { GuestsApiService } from '../core/guests-api.service';
 import { IdleTimeoutService } from '../core/idle-timeout.service';
 import { Permissions } from '../core/permissions';
 import { MdtApiService } from '../core/mdt-api.service';
+import { SettingsApiService } from '../core/settings-api.service';
 import { UrgentCasesApiService } from '../core/urgent-cases-api.service';
 import { UrgentCasesHubService } from '../core/urgent-cases-hub.service';
 
@@ -19,6 +20,8 @@ interface NavItem {
   badge?: () => number | null;
   /** Any-of permission list — item is hidden unless the signed-in user holds at least one. Omit for items everyone with a session can see (e.g. Dashboard). */
   permissions?: string[];
+  /** Kept out of the menu while the route itself stays reachable (e.g. Documents). */
+  hidden?: boolean;
 }
 
 interface NavSection {
@@ -50,6 +53,7 @@ export class AppShellComponent implements OnInit {
   private readonly urgentCasesHub = inject(UrgentCasesHubService);
   private readonly guestsApi = inject(GuestsApiService);
   private readonly mdtApi = inject(MdtApiService);
+  private readonly settingsApi = inject(SettingsApiService);
   /** Automatic sign-out after inactivity — started with the shell, warned about in the header. */
   readonly idle = inject(IdleTimeoutService);
 
@@ -86,9 +90,12 @@ export class AppShellComponent implements OnInit {
   private readonly suggestQuery$ = new Subject<string>();
 
   constructor() {
-    // A live escalation may add a case — refresh the badge count when one arrives.
+    // A live escalation may add a case and a resolution removes one — refresh the badge count
+    // whenever either arrives.
     effect(() => {
-      if (this.urgentCasesHub.latestEscalation() && this.canViewUrgentCases) {
+      const escalation = this.urgentCasesHub.latestEscalation();
+      const resolution = this.urgentCasesHub.latestResolution();
+      if ((escalation || resolution) && this.canViewUrgentCases) {
         this.urgentCasesApi.getActive().subscribe((cases) => this.urgentCaseCount.set(cases.length));
       }
     });
@@ -113,7 +120,9 @@ export class AppShellComponent implements OnInit {
     this.allSections
       .map((section) => ({
         ...section,
-        items: section.items.filter((item) => !item.permissions || this.auth.hasAnyPermission(item.permissions)),
+        items: section.items.filter(
+          (item) => !item.hidden && (!item.permissions || this.auth.hasAnyPermission(item.permissions)),
+        ),
       }))
       .filter((section) => section.items.length > 0),
   );
@@ -130,7 +139,7 @@ export class AppShellComponent implements OnInit {
             'M 9.394 0 C 9.225 -0.005 9.061 0.059 8.94 0.177 C 8.818 0.294 8.75 0.456 8.75 0.625 L 8.75 7.289 C 8.75 7.634 9.03 7.914 9.375 7.914 L 16.039 7.914 C 16.208 7.914 16.369 7.845 16.487 7.724 C 16.605 7.603 16.668 7.439 16.663 7.27 C 16.545 3.308 13.356 0.118 9.394 0 Z M 10 6.664 L 10 1.302 C 12.785 1.673 14.991 3.879 15.362 6.664 L 10 6.664 Z M 7.5 2.317 C 7.5 2.141 7.426 1.974 7.297 1.855 C 7.167 1.737 6.994 1.678 6.819 1.694 C 2.996 2.039 0 5.251 0 9.164 C 0 13.306 3.358 16.664 7.5 16.664 C 11.413 16.664 14.625 13.668 14.969 9.845 C 14.985 9.67 14.927 9.497 14.808 9.367 C 14.69 9.237 14.523 9.164 14.347 9.164 L 7.5 9.164 L 7.5 2.317 Z M 1.25 9.164 C 1.25 6.14 3.397 3.617 6.25 3.039 L 6.25 9.789 C 6.25 10.134 6.53 10.414 6.875 10.414 L 13.625 10.414 C 13.046 13.266 10.524 15.414 7.5 15.414 C 4.048 15.414 1.25 12.615 1.25 9.164 Z',
         },
         // Per the design (nodes 356:1140/356:1438), "Guest" sits in the OVERVIEW section
-        // directly under Dashboard, before the CASE MANGEMENT heading.
+        // directly under Dashboard, before the CASE MANAGEMENT heading.
         {
           label: 'Guest',
           route: '/guests',
@@ -142,8 +151,8 @@ export class AppShellComponent implements OnInit {
       ],
     },
     {
-      // NOTE: "CASE MANGEMENT" is the exact (typo'd) label in the source Figma file.
-      label: 'CASE MANGEMENT',
+      // The source Figma file spells this "CASE MANGEMENT"; corrected at the customer's request.
+      label: 'CASE MANAGEMENT',
       items: [
         {
           label: 'Urgent Cases',
@@ -177,12 +186,15 @@ export class AppShellComponent implements OnInit {
         {
           // Outlined page with a folded corner — drawn as one filled path with an
           // opposite-wound inner subpath, matching the other nav glyphs.
+          // Hidden from the menu at the customer's request: documents are worked from a guest's
+          // Documents tab, where the guest link is automatic. The /documents page still exists.
           label: 'Documents',
           route: '/documents',
           iconViewBox: '0 0 16 16',
           iconPath:
             'M 3 0 L 9.8 0 L 14 4.2 L 14 16 L 3 16 Z M 4.2 1.2 L 4.2 14.8 L 12.8 14.8 L 12.8 5.4 L 9.2 5.4 L 9.2 1.2 Z',
           permissions: [Permissions.Documents.View],
+          hidden: true,
         },
       ],
     },
@@ -227,6 +239,9 @@ export class AppShellComponent implements OnInit {
   ];
 
   ngOnInit(): void {
+    // Display settings (idle sign-out minutes, upload limits, organisation name, urgent window)
+    // come from the server once per session; until they arrive the built-in defaults apply.
+    this.settingsApi.loadPublicSettings().subscribe({ error: () => undefined });
     this.idle.start();
     // The urgent-cases endpoints and hub are [Authorize]d — only touch them when permitted.
     if (this.canViewUrgentCases) {
@@ -319,7 +334,7 @@ export class AppShellComponent implements OnInit {
 
   /** Same humanization the guest data sheet's status pills use. */
   statusLabel(status: GuestStatus): string {
-    return status === 'OnHold' ? 'On hold' : status;
+    return status === 'OnHold' ? 'Inactive' : status;
   }
 
   submitSearch(): void {

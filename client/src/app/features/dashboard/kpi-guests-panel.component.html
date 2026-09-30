@@ -84,7 +84,7 @@
         <span class="drill-guest">
           <span class="drill-guest__avatar">{{ initials(g) }}</span>
           <span class="drill-guest__text">
-            <span class="drill-guest__name">{{ fullName(g) }}</span>
+            <a class="drill-guest__name drill-guest__name--link" [routerLink]="['/guests', g.id]" (click)="$event.stopPropagation()">{{ fullName(g) }}</a>
             <span class="drill-guest__id">{{ shortId(g) }}</span>
           </span>
         </span>
@@ -100,11 +100,11 @@
             <span class="drill-cell">{{ pathwayLabel(g) }}</span>
             <span class="drill-cell">{{ fullDate(g.lastContactAt) }}</span>
             <span class="drill-cell">{{ monthsInactive(g) }}</span>
-            <span class="drill-cell">{{ g.assignedCmhwName ?? '—' }}</span>
+            <span class="drill-cell drill-cell--name">{{ g.assignedCmhwName ?? '—' }}</span>
           }
           @default {
             <span class="drill-cell">{{ pathwayLabel(g) }}</span>
-            <span class="drill-cell">{{ g.assignedCmhwName ?? '—' }}</span>
+            <span class="drill-cell drill-cell--name">{{ g.assignedCmhwName ?? '—' }}</span>
             <span class="drill-cell">{{ dayMonth(g.lastContactAt) }}</span>
             <span class="drill-cell">{{ dayMonth(g.nextContactDue) }}</span>
           }

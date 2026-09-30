@@ -93,7 +93,7 @@ function niceAxisMax(max: number): number {
 
 /**
  * Report "Overview" tab body — KPI tiles, DIALOG outcome metrics, pathway
- * distribution, registrations-over-time chart, demographics and follow-up
+ * distribution, registrations-over-time chart, demographics and contact
  * activity, per Desktop72/73/74 in project/screens/Components.bundle.js.
  */
 @Component({
@@ -135,9 +135,9 @@ export class ReportsOverviewComponent {
    * GUESTS / IN ACTIVE / URGENT CASES (Desktop72); the trend chips ("+8% from
    * last month", "Avg res: 2.8 days") have no backing data and are omitted.
    *
-   * The engagement statuses are New / Active / On hold (spec §4.7) — the DTO's
-   * `pendingConversation` and `inactive` counters are those two buckets under
-   * their pre-rename field names. Urgency is a flag rather than a status, so
+   * The engagement statuses are New / Active / Inactive (spec §4.7; the OnHold
+   * status is displayed as "Inactive") — the DTO's `pendingConversation` and
+   * `inactive` counters are those two buckets under their pre-rename field names. Urgency is a flag rather than a status, so
    * "Urgent cases" counts guests in any status carrying the urgent flag.
    */
   readonly kpiTiles = computed<KpiTile[]>(() => {
@@ -146,23 +146,25 @@ export class ReportsOverviewComponent {
       { label: 'Total guests', value: c?.total ?? null },
       { label: 'New', value: c?.pendingConversation ?? null },
       { label: 'Active guests', value: c?.active ?? null },
-      { label: 'On hold', value: c?.inactive ?? null },
+      { label: 'Inactive', value: c?.inactive ?? null },
       { label: 'Urgent cases', value: c?.urgent ?? null },
     ];
   });
 
   /**
-   * "Follow-up activity" rows. The source card also lists "AFA contacts" and
-   * "Resolved episodes", which have no backing data — the four real metrics
-   * are rendered with the design's row styling instead.
+   * "Contact activity" rows (customer terminology: "Contact", not "Follow-up"). The
+   * source card also lists "AFA contacts" and "Resolved episodes", which have no
+   * backing data — the four real metrics are rendered with the design's row styling
+   * instead. `followUpEntries` counts scheduled contacts falling due in the period;
+   * `contactsRecorded` counts the contacts actually logged.
    */
   readonly activityRows = computed<ActivityRow[]>(() => {
     const a = this.report()?.activity ?? null;
     if (!a) return [];
     return [
       { label: 'Guests seen', value: a.guestsSeen },
-      { label: 'Total follow-up entries', value: a.followUpEntries },
-      { label: 'Contacts recorded', value: a.contactsRecorded },
+      { label: 'Total contacts recorded', value: a.contactsRecorded },
+      { label: 'Scheduled contacts due', value: a.followUpEntries },
       { label: 'Urgent flags raised', value: a.urgentFlagsRaised },
     ];
   });
@@ -191,9 +193,9 @@ export class ReportsOverviewComponent {
 
   /**
    * "DIALOG outcome metrics" card tiles (Desktop72). All five figures derive
-   * from the real outcomes DTO: total = baseline + follow-up counts, follow-up
-   * share, total-score improvement (sum of per-domain averages, most recent
-   * minus baseline) and guests still awaiting a follow-up assessment.
+   * from the real outcomes DTO: total = baseline + reassessment counts,
+   * reassessment share, total-score improvement (sum of per-domain averages,
+   * most recent minus baseline) and guests still awaiting a reassessment.
    */
   readonly dialogMetrics = computed<DialogMetrics | null>(() => {
     const o = this.outcomes();

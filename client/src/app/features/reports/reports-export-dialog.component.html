@@ -27,16 +27,22 @@
 
       <h3 class="export-dialog__section export-dialog__section--spaced">What you get</h3>
       <p class="export-dialog__note">
-        <strong>Excel</strong> — a workbook with all five sheets for the selected period:
+        <strong>Excel</strong> — a workbook with {{ workbookSheets.length }} sheets for the selected period,
+        including demographic (ethnicity, age group, gender, country of origin) and referral-source breakdowns:
       </p>
       <ul class="export-dialog__sheets">
         @for (sheet of workbookSheets; track sheet) {
           <li class="export-dialog__sheet">{{ sheet }}</li>
         }
       </ul>
+      @if (dialogCohortActive()) {
+        <p class="export-dialog__note export-dialog__note--cohort">
+          DIALOG outcomes sheet filtered to: <strong>{{ dialogCohortLabel() }}</strong> (from the DIALOG Outcomes tab).
+        </p>
+      }
       <p class="export-dialog__note">
-        <strong>CSV</strong> — a single file with the service report for the period: guest status
-        counts, pathway referral totals, monthly registrations, activity and demographic breakdowns.
+        <strong>CSV</strong> — one row per pathway referral in the period, with each guest's ethnicity,
+        age group, gender, country of origin, referral source and referral type.
       </p>
 
       @if (error()) {

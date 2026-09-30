@@ -60,8 +60,8 @@ const CATEGORY_META: Record<string, { name: string; hint: string }> = {
     hint: 'Urgency levels offered when a case is escalated.',
   },
   [LookupCategories.FollowUpCadence]: {
-    name: 'Follow-up cadences',
-    hint: 'How often a scheduled follow-up repeats.',
+    name: 'Contact cadences',
+    hint: 'How often a scheduled contact repeats.',
   },
   [LookupCategories.ContactRelationship]: {
     name: 'Emergency contact relationships',

@@ -5,7 +5,13 @@
     <div class="drawer__head">
       <div>
         <h2 class="drawer__title">Upload document</h2>
-        <p class="drawer__subtitle">Stored as version 1 and added to the document register.</p>
+        <p class="drawer__subtitle">
+          @if (guestFixed()) {
+            Stored as version 1 on this guest's record.
+          } @else {
+            Stored as version 1 and added to the document register.
+          }
+        </p>
       </div>
       <button type="button" class="icon-btn" (click)="close()" [disabled]="busy()" aria-label="Close">
         <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
@@ -151,7 +157,13 @@
         <span class="field__hint">Leave blank to use the hub's default retention period.</span>
       </label>
 
-      @if (canLinkGuest) {
+      @if (guestFixed()) {
+        <div class="field">
+          <span class="field__label">Linked guest</span>
+          <span><span class="chip">This guest</span></span>
+          <span class="field__hint">Filed on this guest's record automatically.</span>
+        </div>
+      } @else if (canLinkGuest) {
         <div class="field">
           <span class="field__label">Linked guest <span class="field__optional">(optional)</span></span>
           <!-- Shared type-ahead over /guests/suggest; cleared means "no guest link". -->

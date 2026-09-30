@@ -18,10 +18,10 @@ public sealed class FollowUpsController(IMediator mediator, ICurrentUser current
     [Authorize(Policy = Permissions.FollowUps.View)]
     public async Task<IActionResult> GetQueue(
         [FromQuery] bool overdue = false, [FromQuery] Guid? assignee = null, [FromQuery] string? cursor = null,
-        [FromQuery] int pageSize = 50, CancellationToken cancellationToken = default)
+        [FromQuery] int pageSize = 50, [FromQuery] bool open = false, CancellationToken cancellationToken = default)
     {
         var result = await mediator.Send(
-            new GetFollowUpQueueQuery(currentUser.HubId, overdue, assignee, cursor, Math.Clamp(pageSize, 1, 200)), cancellationToken);
+            new GetFollowUpQueueQuery(currentUser.HubId, overdue, assignee, cursor, Math.Clamp(pageSize, 1, 200), open), cancellationToken);
         return Ok(result);
     }
 

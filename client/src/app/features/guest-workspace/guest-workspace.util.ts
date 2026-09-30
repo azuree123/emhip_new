@@ -14,7 +14,7 @@ export interface StatusChip {
 const STATUS_CHIPS: Record<GuestStatus, StatusChip> = {
   New: { label: 'New', bg: '#fff9e4', fg: '#9d852d' },
   Active: { label: 'Active', bg: '#eafdee', fg: '#147129' },
-  OnHold: { label: 'On hold', bg: '#f0f0f0', fg: '#646464' },
+  OnHold: { label: 'Inactive', bg: '#f0f0f0', fg: '#646464' },
 };
 
 export function statusChip(status: GuestStatus | string): StatusChip {

@@ -21,20 +21,67 @@ namespace Emhip.Infrastructure.Reads;
 /// queries use EF Core `AsNoTracking()` projections, which is fast enough at guest-scoped
 /// cardinality and keeps the mapping code simpler.
 /// </summary>
-public sealed class GuestReadService(ISqlConnectionFactory connectionFactory, EmhipDbContext db) : IGuestReadService
+public sealed class GuestReadService(ISqlConnectionFactory connectionFactory, EmhipDbContext db, Emhip.Application.Abstractions.IAppSettingsService settings) : IGuestReadService
 {
     private sealed record GuestCursor(string LastName, string FirstName, Guid Id);
+
+    /// <summary>
+    /// The guest-list "segments" the dashboards and reports link through to — each one the exact
+    /// predicate behind a tile's count (Clinical complexity, CPN involvement, Data quality), so
+    /// the list a count opens holds the guests behind that number. Keys come from GuestSegments;
+    /// only these fixed snippets are ever spliced into the SQL, never caller text.
+    /// </summary>
+    private static readonly Dictionary<string, string> SegmentPredicates = new(StringComparer.OrdinalIgnoreCase)
+    {
+        [GuestSegments.Smi] = "EXISTS (SELECT 1 FROM GuestClinicalProfiles cp WHERE cp.GuestId = g.Id AND cp.SmiIndicator = 1)",
+        [GuestSegments.OnMedication] = "EXISTS (SELECT 1 FROM GuestClinicalProfiles cp WHERE cp.GuestId = g.Id AND cp.CurrentMedications IS NOT NULL AND cp.CurrentMedications <> '')",
+        [GuestSegments.TrustInvolvement] = "EXISTS (SELECT 1 FROM GuestClinicalProfiles cp WHERE cp.GuestId = g.Id AND cp.TrustInvolvement = 1)",
+        [GuestSegments.CpnInvolved] = "EXISTS (SELECT 1 FROM GuestClinicalProfiles cp WHERE cp.GuestId = g.Id AND cp.CpnInvolved = 1)",
+        [GuestSegments.CpnAssessment] = "EXISTS (SELECT 1 FROM CpnInitialAssessments a WHERE a.GuestId = g.Id AND a.Status = 'Submitted')",
+        [GuestSegments.CpnSessions30] = "EXISTS (SELECT 1 FROM CaseworkNotes n WHERE n.GuestId = g.Id AND n.IsCpnContact = 1 AND n.Status = 'Submitted' AND n.OccurredAt >= @Since30)",
+        [GuestSegments.CpnReferrals30] = "EXISTS (SELECT 1 FROM CaseworkNotes n WHERE n.GuestId = g.Id AND n.CpnReferralRequested = 1 AND n.Status = 'Submitted' AND n.SubmittedAt >= @Since30)",
+        // The dashboard's CPN involvement table: profile flag, a submitted Part 1, or a CPN contact.
+        [GuestSegments.CpnAny] =
+            "EXISTS (SELECT 1 FROM GuestClinicalProfiles cp WHERE cp.GuestId = g.Id AND cp.CpnInvolved = 1)"
+            + " OR EXISTS (SELECT 1 FROM CpnInitialAssessments a WHERE a.GuestId = g.Id AND a.Status = 'Submitted')"
+            + " OR EXISTS (SELECT 1 FROM CaseworkNotes n WHERE n.GuestId = g.Id AND n.IsCpnContact = 1 AND n.Status = 'Submitted')",
+        [GuestSegments.MissingPathway] = "g.Pathway IS NULL",
+        [GuestSegments.MissingInitialConversation] = "NOT EXISTS (SELECT 1 FROM InitialConversationRecords r WHERE r.GuestId = g.Id)",
+        [GuestSegments.MissingDialogBaseline] = "NOT EXISTS (SELECT 1 FROM DialogAssessments d WHERE d.GuestId = g.Id)",
+        [GuestSegments.MissingDemographics] = "NOT EXISTS (SELECT 1 FROM GuestDemographics dm WHERE dm.GuestId = g.Id)",
+        [GuestSegments.MissingCmhw] = "g.AssignedCmhwId IS NULL",
+        [GuestSegments.MissingReferralSource] = "g.ReferralSource IS NULL",
+        [GuestSegments.NoRecentContact] = "g.Status = 'Active' AND NOT EXISTS (SELECT 1 FROM Contacts c WHERE c.GuestId = g.Id AND c.OccurredAt >= @Since90)",
+        [GuestSegments.AutoInactive] = "g.Status = 'OnHold'",
+        [GuestSegments.PastRetention] = "ISNULL(g.LastActivityAt, g.RegisteredAt) < @RetentionCutoff",
+    };
 
     public async Task<KeysetPage<GuestListItemDto>> GetGuestListAsync(
         Guid hubId, string? searchText, GuestStatus? status, string? cursor, int pageSize,
         PathwayCategory? pathway = null, bool? hasRiskFlags = null, Guid? assignedCmhwId = null,
         int? lastActivityWithinDays = null, bool? urgentOnly = null,
         string? ethnicity = null, string? gender = null, string? countryOfOrigin = null,
-        int? ageMin = null, int? ageMax = null, CancellationToken cancellationToken = default)
+        int? ageMin = null, int? ageMax = null, string? segment = null, GuestPathway? clinicalPathway = null,
+        CancellationToken cancellationToken = default)
     {
         var decodedCursor = KeysetCursor.Decode<GuestCursor>(cursor);
 
-        const string sql = """
+        // An unknown segment key matches nothing rather than silently widening the list.
+        var segmentPredicate = segment is null
+            ? string.Empty
+            : "\n    AND " + (SegmentPredicates.TryGetValue(segment, out var predicate) ? $"({predicate})" : "1 = 0");
+        var retentionYears = string.Equals(segment, GuestSegments.PastRetention, StringComparison.OrdinalIgnoreCase)
+            ? await settings.GetIntAsync(Emhip.Application.Settings.SettingsCatalog.Keys.RecordRetentionYears, 20, cancellationToken)
+            : 0;
+        // The search box offers name, ID, phone and CMHW — "G-1001" / "1001" matches the guest number.
+        var numberMatch = searchText is null ? null : System.Text.RegularExpressions.Regex.Match(searchText, @"^\s*(?:[Gg]-?)?(\d{1,9})\s*$");
+        int? searchNumber = numberMatch is { Success: true } ? int.Parse(numberMatch.Groups[1].Value) : null;
+        var clinicalPathwayName = clinicalPathway?.ToString();
+        var since30 = DateTimeOffset.UtcNow.AddDays(-30);
+        var since90 = DateTimeOffset.UtcNow.AddDays(-90);
+        var retentionCutoff = DateTimeOffset.UtcNow.AddYears(-Math.Max(retentionYears, 1));
+
+        var sql = $"""
             SELECT TOP (@FetchSize)
                 g.Id, g.GuestNumber, g.FirstName, g.LastName, g.DateOfBirth, g.Status, g.IsUrgent,
                 s.DisplayName AS AssignedCmhwName, g.RegisteredAt, lc.OccurredAt AS LastContactAt,
@@ -55,11 +102,14 @@ public sealed class GuestReadService(ISqlConnectionFactory connectionFactory, Em
             ) rk
             OUTER APPLY (
                 SELECT TOP 1 f.DueDate FROM FollowUps f
-                WHERE f.GuestId = g.Id AND f.Status = 'Scheduled' ORDER BY f.DueDate
+                WHERE f.GuestId = g.Id AND f.Status IN ('Scheduled', 'Overdue') ORDER BY f.DueDate
             ) nf
             WHERE g.HubId = @HubId AND g.IsDeleted = 0
                 AND (@Status IS NULL OR g.Status = @Status)
-                AND (@SearchPattern IS NULL OR g.FirstName LIKE @SearchPattern OR g.LastName LIKE @SearchPattern)
+                AND (@SearchPattern IS NULL OR g.FirstName LIKE @SearchPattern OR g.LastName LIKE @SearchPattern
+                    OR (g.FirstName + ' ' + g.LastName) LIKE @SearchPattern OR g.GuestNumber = @SearchNumber
+                    OR g.ContactPhone LIKE @SearchPattern
+                    OR EXISTS (SELECT 1 FROM AspNetUsers su WHERE su.Id = g.AssignedCmhwId AND su.DisplayName LIKE @SearchPattern))
                 AND (@Pathway IS NULL OR pw.Category = @Pathway)
                 AND (@HasRiskFlags IS NULL OR ISNULL(rk.HasFlags, 0) = @HasRiskFlags)
                 AND (@AssignedCmhwId IS NULL OR g.AssignedCmhwId = @AssignedCmhwId)
@@ -72,6 +122,7 @@ public sealed class GuestReadService(ISqlConnectionFactory connectionFactory, Em
                 AND (@BornOnOrBefore IS NULL OR g.DateOfBirth <= @BornOnOrBefore)
                 AND (@BornOnOrAfter IS NULL OR g.DateOfBirth >= @BornOnOrAfter)
                 AND (@LastContactAfter IS NULL OR lc.OccurredAt >= @LastContactAfter)
+                AND (@ClinicalPathway IS NULL OR g.Pathway = @ClinicalPathway){segmentPredicate}
                 AND (
                     @HasCursor = 0
                     OR g.LastName > @LastName
@@ -87,6 +138,7 @@ public sealed class GuestReadService(ISqlConnectionFactory connectionFactory, Em
             HubId = hubId,
             Status = status?.ToString(),
             SearchPattern = string.IsNullOrWhiteSpace(searchText) ? null : $"%{searchText}%",
+            SearchNumber = searchNumber,
             Pathway = pathway?.ToString(),
             HasRiskFlags = hasRiskFlags,
             AssignedCmhwId = assignedCmhwId,
@@ -106,6 +158,10 @@ public sealed class GuestReadService(ISqlConnectionFactory connectionFactory, Em
             FirstName = decodedCursor?.FirstName ?? string.Empty,
             Id = decodedCursor?.Id ?? Guid.Empty,
             FetchSize = pageSize + 1,
+            ClinicalPathway = clinicalPathwayName,
+            Since30 = since30,
+            Since90 = since90,
+            RetentionCutoff = retentionCutoff,
         })).ToList();
 
         var hasMore = rows.Count > pageSize;
@@ -160,15 +216,20 @@ public sealed class GuestReadService(ISqlConnectionFactory connectionFactory, Em
                 FROM Guests g{applies}
                 WHERE g.HubId = @HubId AND g.IsDeleted = 0
                     AND (@Status IS NULL OR g.Status = @Status)
-                    AND (@SearchPattern IS NULL OR g.FirstName LIKE @SearchPattern OR g.LastName LIKE @SearchPattern)
+                    AND (@SearchPattern IS NULL OR g.FirstName LIKE @SearchPattern OR g.LastName LIKE @SearchPattern
+                    OR (g.FirstName + ' ' + g.LastName) LIKE @SearchPattern OR g.GuestNumber = @SearchNumber
+                    OR g.ContactPhone LIKE @SearchPattern
+                    OR EXISTS (SELECT 1 FROM AspNetUsers su WHERE su.Id = g.AssignedCmhwId AND su.DisplayName LIKE @SearchPattern))
                     AND (@AssignedCmhwId IS NULL OR g.AssignedCmhwId = @AssignedCmhwId)
-                    AND (@UrgentOnly IS NULL OR g.IsUrgent = @UrgentOnly){predicates}
+                    AND (@UrgentOnly IS NULL OR g.IsUrgent = @UrgentOnly)
+                    AND (@ClinicalPathway IS NULL OR g.Pathway = @ClinicalPathway){predicates}{segmentPredicate}
                 """;
             totalCount = await connection.ExecuteScalarAsync<int>(countSql, new
             {
                 HubId = hubId,
                 Status = status?.ToString(),
                 SearchPattern = string.IsNullOrWhiteSpace(searchText) ? null : $"%{searchText}%",
+                SearchNumber = searchNumber,
                 Pathway = pathway?.ToString(),
                 HasRiskFlags = hasRiskFlags,
                 AssignedCmhwId = assignedCmhwId,
@@ -183,6 +244,10 @@ public sealed class GuestReadService(ISqlConnectionFactory connectionFactory, Em
                 LastContactAfter = lastActivityWithinDays.HasValue
                     ? (DateTimeOffset?)DateTimeOffset.UtcNow.AddDays(-lastActivityWithinDays.Value)
                     : null,
+                ClinicalPathway = clinicalPathwayName,
+                Since30 = since30,
+                Since90 = since90,
+                RetentionCutoff = retentionCutoff,
             });
         }
 
@@ -208,6 +273,7 @@ public sealed class GuestReadService(ISqlConnectionFactory connectionFactory, Em
                 g.Id, g.GuestNumber, g.FirstName, g.LastName, g.DateOfBirth, g.Status, g.IsUrgent, g.ContactPhone, g.ContactEmail,
                 g.AddressLine1, g.PostCode, g.RegisteredAt,
                 g.Pathway, g.AfaSupportNeeded, g.ReferralSource,
+                g.UrgentSince, g.LastActivityAt, g.ReferralType, g.ReferralSubcategory,
                 AssignedCmhwName = db.Users.Where(s => s.Id == g.AssignedCmhwId).Select(s => s.DisplayName).FirstOrDefault(),
             })
             .FirstOrDefaultAsync(cancellationToken);
@@ -221,7 +287,7 @@ public sealed class GuestReadService(ISqlConnectionFactory connectionFactory, Em
             .FirstOrDefaultAsync(cancellationToken);
 
         var openFollowUps = await db.FollowUps.AsNoTracking()
-            .CountAsync(f => f.GuestId == guestId && f.Status == FollowUpStatus.Scheduled, cancellationToken);
+            .CountAsync(f => f.GuestId == guestId && (f.Status == FollowUpStatus.Scheduled || f.Status == FollowUpStatus.Overdue), cancellationToken);
 
         var pinnedNotes = await db.Notes.AsNoTracking()
             .Where(n => n.GuestId == guestId && n.IsPinned)
@@ -242,7 +308,8 @@ public sealed class GuestReadService(ISqlConnectionFactory connectionFactory, Em
         return new GuestOverviewDto(
             guest.Id, guest.GuestNumber, guest.FirstName, guest.LastName, guest.DateOfBirth, guest.Status,
             guest.ContactPhone, guest.ContactEmail, guest.AddressLine1, guest.PostCode, guest.AssignedCmhwName, guest.RegisteredAt,
-            hasRiskFlags, openFollowUps, guest.Pathway, guest.AfaSupportNeeded, guest.ReferralSource, pinnedNotes, recentContacts);
+            hasRiskFlags, openFollowUps, guest.Pathway, guest.AfaSupportNeeded, guest.ReferralSource, pinnedNotes, recentContacts,
+            guest.IsUrgent, guest.UrgentSince, guest.LastActivityAt, guest.ReferralType, guest.ReferralSubcategory);
     }
 
     public async Task<GuestDemographicsDto?> GetDemographicsAsync(Guid guestId, CancellationToken cancellationToken = default)
@@ -654,14 +721,19 @@ public sealed class GuestReadService(ISqlConnectionFactory connectionFactory, Em
         var inHub = await db.Guests.IgnoreQueryFilters().AsNoTracking().AnyAsync(g => g.Id == guestId && g.HubId == hubId, cancellationToken);
         if (!inHub) return [];
 
-        return await db.AuditEvents.AsNoTracking()
+        var entries = await db.AuditEvents.AsNoTracking()
             .Where(a => a.GuestId == guestId)
             .OrderByDescending(a => a.OccurredAt)
             .Take(limit)
             .Select(a => new Emhip.Application.Guests.Compliance.GuestAuditEntryDto(
                 a.Id, a.OccurredAt,
                 db.Users.Where(u => u.Id == a.ActorStaffId).Select(u => u.DisplayName).FirstOrDefault() ?? "System",
-                a.Action.ToString(), a.EntityName, a.EntityId, a.Details))
+                a.Action.ToString(), a.EntityName, a.EntityId, a.Details, ""))
             .ToListAsync(cancellationToken);
+
+        // Plain-English wording is derived in memory — it is not something SQL can translate.
+        return entries
+            .Select(e => e with { Description = Emhip.Application.Audit.AuditDescriptions.Describe(e.Action, e.EntityName, e.Details) })
+            .ToList();
     }
 }

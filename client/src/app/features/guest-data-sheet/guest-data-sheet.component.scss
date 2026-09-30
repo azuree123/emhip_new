@@ -429,6 +429,13 @@ $table-columns: minmax(0, 1fr) $col-status $col-pathway $col-cmhw $col-activity 
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    text-decoration: none;
+
+    &:hover,
+    &:focus-visible {
+      color: rgb(141, 27, 61);
+      text-decoration: underline;
+    }
   }
 
   &__id {
@@ -438,6 +445,53 @@ $table-columns: minmax(0, 1fr) $col-status $col-pathway $col-cmhw $col-activity 
     line-height: 18px;
     letter-spacing: normal;
     color: rgb(140, 140, 140);
+  }
+}
+
+// CMHW names are shown in full (customer feedback: "Gudrun Van..." was being cut off) — long
+// names wrap onto a second line inside the 72px row instead of truncating.
+.row .col.col--cmhw {
+  white-space: normal;
+  overflow: visible;
+  line-height: 18px;
+  overflow-wrap: anywhere;
+}
+
+// Drill-through banner — the dashboard/report count this list was opened from.
+.drill-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+  padding: 10px 14px;
+  border-radius: 6px;
+  background: rgb(253, 242, 244);
+  box-shadow: inset 0 0 0 1px rgb(240, 200, 208);
+  font-family: $font-stack;
+  font-size: 14px;
+  line-height: 20px;
+  color: rgb(42, 42, 42);
+
+  strong {
+    font-weight: 600;
+    color: rgb(141, 27, 61);
+  }
+
+  &__count {
+    color: rgb(110, 110, 110);
+  }
+
+  &__clear {
+    border: none;
+    background: none;
+    padding: 0;
+    font: inherit;
+    font-weight: 600;
+    color: rgb(141, 27, 61);
+    text-decoration: underline;
+    cursor: pointer;
   }
 }
 
@@ -511,6 +565,7 @@ $table-columns: minmax(0, 1fr) $col-status $col-pathway $col-cmhw $col-activity 
   line-height: 24px;
   letter-spacing: -0.005em;
   color: rgb(42, 42, 42);
+  text-decoration: none;
   cursor: pointer;
 
   &:hover {

@@ -1,6 +1,6 @@
 <div class="overview">
   <!-- KPI tile row (source: 4 tiles 277x114 at top 483) driven by statusCounts; a fifth
-       tile was added when the engagement statuses became New / Active / On hold. -->
+       tile was added when the engagement statuses became New / Active / Inactive. -->
   <section class="stat-row">
     @for (tile of kpiTiles(); track tile.label) {
       <div class="stat-card">
@@ -11,7 +11,7 @@
   </section>
 
   <!-- "DIALOG outcome metrics" card (Desktop72 top 619): 3 outlined tiles + a
-       green improvement tile and an amber no-follow-up tile. -->
+       green improvement tile and an amber no-reassessment tile. -->
   <section class="report-card">
     <h2 class="report-card__title">DIALOG outcome metrics</h2>
 
@@ -25,7 +25,7 @@
           <div class="dm-tile">
             <span class="dm-tile__label">Total DIALOG assessments completed</span>
             <span class="dm-tile__value">{{ m.total }}</span>
-            <span class="dm-tile__caption"><strong>Baseline +</strong> follow-up combined</span>
+            <span class="dm-tile__caption"><strong>Baseline +</strong> reassessments combined</span>
           </div>
           <div class="dm-tile">
             <span class="dm-tile__label">Baselines recorded</span>
@@ -33,7 +33,7 @@
             <span class="dm-tile__caption">Guests with a first assessment</span>
           </div>
           <div class="dm-tile">
-            <span class="dm-tile__label">Follow-up assessments</span>
+            <span class="dm-tile__label">Reassessments</span>
             <span class="dm-tile__value">{{ m.followUps }}</span>
             <span class="dm-tile__caption"><strong>{{ m.followUpPct }}%</strong>&nbsp;of guests with a baseline</span>
           </div>
@@ -50,12 +50,12 @@
               @if (m.improvement !== null) {
                 <strong>Baseline</strong>&nbsp;vs most recent · total across all domains
               } @else {
-                No follow-up scores yet — no comparison possible
+                No reassessment scores yet — no comparison possible
               }
             </span>
           </div>
           <div class="dm-tile dm-tile--amber">
-            <span class="dm-tile__label">Guests with no follow-up DIALOG yet</span>
+            <span class="dm-tile__label">Guests with no DIALOG reassessment yet</span>
             <span class="dm-tile__value dm-tile__value--accent">{{ m.noFollowUp }}</span>
             <span class="dm-tile__caption"><strong>Baseline</strong>&nbsp;only — no comparison possible yet</span>
           </div>
@@ -227,7 +227,7 @@
 
       <section class="report-card">
         <div class="report-card__head">
-          <h2 class="report-card__title">Follow-up activity</h2>
+          <h2 class="report-card__title">Contact activity</h2>
           <span class="report-card__corner">{{ rangeLabel() }}</span>
         </div>
 

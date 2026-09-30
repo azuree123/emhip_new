@@ -33,6 +33,93 @@
   }
 }
 
+// ---- Demographic cohort bar ("Showing: Black African · 18–24" + the shared
+// Demographics drawer trigger and its removable chips) ----------------------
+
+.cohort-bar {
+  box-sizing: border-box;
+  background: rgb(255, 255, 255);
+  border-radius: 12px;
+  padding: 14px 20px 14px 19px;
+  box-shadow: inset 3px 0 0 transparent;
+
+  // A coral edge marks that the figures below are a filtered cohort, not the whole hub.
+  &--active {
+    box-shadow: inset 3px 0 0 $coral;
+  }
+
+  &__row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px 24px;
+    flex-wrap: wrap;
+  }
+
+  &__summary {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin: 0;
+    min-width: 0;
+  }
+
+  &__caption {
+    font-weight: 600;
+    font-size: 14px;
+    line-height: 24px;
+    letter-spacing: -0.005em;
+    color: $ink-muted;
+  }
+
+  &__value {
+    font-weight: 600;
+    font-size: 16px;
+    line-height: 24px;
+    letter-spacing: -0.005em;
+    color: $ink;
+  }
+
+  &--active &__value {
+    color: $maroon;
+  }
+
+  &__count {
+    font-weight: 500;
+    font-size: 12px;
+    line-height: 24px;
+    color: $ink-muted;
+    white-space: nowrap;
+
+    &::before {
+      content: '·';
+      margin-right: 8px;
+    }
+  }
+
+  // The shared control renders its trigger and chips as flex siblings (host is display: contents).
+  &__filters {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  &__note {
+    margin: 8px 0 0;
+    font-weight: 500;
+    font-size: 12px;
+    line-height: 18px;
+    color: $ink-faint;
+
+    &--warn {
+      color: rgb(157, 106, 18);
+    }
+  }
+}
+
 // ---- "DIALOG SCORE TREND" chart (Desktop47: gold gradient area, coral dots,
 // dashed gridlines, 12/500 rgb(114,114,114) axis text, white r8 tooltip) ----
 
@@ -253,6 +340,10 @@
 @media (max-width: 720px) {
   .stat-row {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .cohort-bar__filters {
+    justify-content: flex-start;
   }
 
   .stat-card__label {

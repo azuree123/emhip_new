@@ -1,4 +1,6 @@
-<div class="drawer-overlay" (click)="close()">
+<!-- A stray click beside the form must not throw away a half-written clinical note, so the
+     backdrop does not close the drawer; the close button and Cancel do. -->
+<div class="drawer-overlay">
   <div
     class="drawer"
     role="dialog"
@@ -145,8 +147,8 @@
               [attr.aria-pressed]="header.sessionType === 'FollowUpSession'"
               (click)="setSessionType('FollowUpSession')"
             >
-              <span class="session-card__title">Follow-up session</span>
-              <span class="session-card__hint">SBAR — each follow-up contact</span>
+              <span class="session-card__title">Contact session</span>
+              <span class="session-card__hint">SBAR — each subsequent contact</span>
             </button>
           </div>
         </div>
@@ -168,7 +170,7 @@
         @if (submittedAssessment(); as done) {
           <p class="empty-state">
             Part 1 was submitted by {{ done.authorName }} and is part of the clinical record, so it
-            is shown here read-only. Record a follow-up session instead.
+            is shown here read-only. Record a contact session instead.
           </p>
         }
 
@@ -447,7 +449,7 @@
             </label>
             <div class="drawer__grid">
               <label class="field">
-                <span class="field__label">Follow-up frequency&nbsp;*</span>
+                <span class="field__label">Contact frequency&nbsp;*</span>
                 <select name="followUpFrequency" [(ngModel)]="assessment.followUpFrequency">
                   <option value="" disabled>Select....</option>
                   @for (item of options('CpnFollowUpFrequency'); track item.id) {
@@ -468,10 +470,10 @@
       @if (body === 'followUp') {
         <div class="banner">
           <p class="banner__text">
-            Part 2 — each follow-up contact creates a new SBAR block. Refer back to Part 1 for
+            Part 2 — each subsequent contact creates a new SBAR block. Refer back to Part 1 for
             baseline information — only record what is new or has changed.
           </p>
-          <span class="banner__caption">must be completed at every follow-up</span>
+          <span class="banner__caption">must be completed at every contact</span>
         </div>
 
         <div class="session-head">
@@ -753,7 +755,7 @@
         <label class="field field--narrow">
           <span class="field__label">Next contact date</span>
           <input type="date" name="nextContactDate" [(ngModel)]="followUp.nextContactDate" />
-          <span class="field__hint">Scheduled as a follow-up when the note is submitted.</span>
+          <span class="field__hint">Scheduled as the next contact when the note is submitted.</span>
         </label>
 
         <div class="toggle-row">
@@ -860,7 +862,7 @@
       @if (body === 'sessionChoice') {
         <p class="empty-state">
           Choose a session type above. The initial assessment is written once at the first CPN
-          contact; every contact after that is a follow-up session.
+          contact; every contact after that is a contact session.
         </p>
       }
 
@@ -868,12 +870,11 @@
       <p class="submit-note">
         @if (body === 'assessment') {
           Submitting files Part 1 on the clinical record and logs the matching contact. The next
-          appointment date is scheduled as a follow-up. It can be saved as a draft and resumed until
+          appointment date is scheduled as the next contact. It can be saved as a draft and resumed until
           it is submitted — after that it cannot be created again for this guest.
         } @else {
           Submitting files this note on the clinical record and logs the matching contact. Any
-          actions listed above become guest actions, and a next contact date is scheduled as a
-          follow-up. Drafts can be reopened and re-saved from the Notes tab until they are
+          actions listed above become guest actions, and the next contact date is scheduled. Drafts can be reopened and re-saved from the Notes tab until they are
           submitted.
         }
       </p>

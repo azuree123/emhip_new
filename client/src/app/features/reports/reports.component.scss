@@ -78,6 +78,14 @@
     color: $ink-faint;
   }
 
+  // Names the DIALOG tab's cohort when one is applied, so the export's scope is never a surprise.
+  &__export-cohort {
+    display: block;
+    margin-top: 2px;
+    font-weight: 600;
+    color: $maroon;
+  }
+
   &__export-error {
     margin-top: 10px;
   }
@@ -89,19 +97,106 @@
   }
 }
 
+// ---- Tab strip: the scrolling tab bar plus overflow cues. When the sections don't fit
+// (1280px and narrower) an edge fade and a round arrow button sit over whichever end has
+// hidden tabs. Both are absolutely positioned, so showing them never changes the bar's
+// width (which would change the overflow they are reacting to). ---------------------
+
+$tab-bar-bg: rgb(246, 246, 246);
+
+.tab-strip {
+  position: relative;
+
+  // Edge fades — the bar's own grey fading out over the clipped tabs.
+  &::before,
+  &::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    z-index: 1;
+    width: 64px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+  }
+
+  &::before {
+    left: 0;
+    border-radius: 4px 0 0 4px;
+    background: linear-gradient(to right, $tab-bar-bg 40%, rgba(246, 246, 246, 0));
+  }
+
+  &::after {
+    right: 0;
+    border-radius: 0 4px 4px 0;
+    background: linear-gradient(to left, $tab-bar-bg 40%, rgba(246, 246, 246, 0));
+  }
+
+  &--more-start::before,
+  &--more-end::after {
+    opacity: 1;
+  }
+
+  &__arrow {
+    position: absolute;
+    top: 50%;
+    z-index: 2;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: rgb(255, 255, 255);
+    box-shadow:
+      0 1px 4px rgba(0, 0, 0, 0.16),
+      inset 0 0 0 1px $line-soft;
+    color: $ink;
+    cursor: pointer;
+    transform: translateY(-50%);
+
+    &:hover {
+      background: rgb(255, 240, 241);
+      color: $red;
+    }
+
+    &--start {
+      left: 4px;
+    }
+
+    &--end {
+      right: 4px;
+    }
+  }
+}
+
 // ---- Tab bar (1124x36, r4, rgb(246,246,246); active pill 32px r6 red) ----
 
 .tab-bar {
+  // Positioned so each tab's offsetLeft is measured from the bar (revealTab()).
+  position: relative;
   display: flex;
   align-items: center;
   height: 36px;
   padding: 2px;
   border-radius: 4px;
-  background: rgb(246, 246, 246);
+  background: $tab-bar-bg;
   box-sizing: border-box;
   overflow-x: auto;
+  // The arrows and fades are the scroll affordance; a native scrollbar would squeeze the
+  // 36px bar on platforms that always show one. Swipe/shift-wheel scrolling still works.
+  scrollbar-width: none;
+  overscroll-behavior-x: contain;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
 
   &__tab {
+    flex-shrink: 0;
     height: 32px;
     padding: 0 31px;
     border: none;
@@ -124,6 +219,11 @@
     &--active {
       background: $red;
       color: rgb(255, 255, 255);
+    }
+
+    &:focus-visible {
+      outline: 2px solid $maroon;
+      outline-offset: -2px;
     }
   }
 
@@ -208,6 +308,11 @@
 
   .header-card__top {
     flex-direction: column;
+  }
+
+  // In the stacked layout the intro's 320px flex-basis would become a height and open a gap.
+  .header-card__intro {
+    flex-basis: auto;
   }
 
   .filters__label {

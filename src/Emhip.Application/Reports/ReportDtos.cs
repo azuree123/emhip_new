@@ -25,11 +25,16 @@ public sealed record ReportActivityDto(int GuestsSeen, int UrgentFlagsRaised, in
 /// <summary>"Ethnicity breakdown" chart slice (from recorded guest demographics).</summary>
 public sealed record BreakdownSliceDto(string Label, int Count, double Percentage);
 
-/// <summary>"Outcome dimensions" report — hub-wide average DIALOG score per domain, baseline vs latest follow-up.</summary>
+/// <summary>
+/// "Outcome dimensions" report — average DIALOG score per domain, baseline vs latest reassessment,
+/// over the hub's guests or a demographic cohort of them (<see cref="ReportCohortFilter"/>).
+/// </summary>
 public sealed record DialogOutcomesReportDto(
     int GuestsWithBaseline,
     int GuestsWithFollowUp,
-    IReadOnlyList<DialogDimensionDto> Dimensions);
+    IReadOnlyList<DialogDimensionDto> Dimensions,
+    /// <summary>Guests in the cohort the figures were computed over — every hub guest when unfiltered.</summary>
+    int CohortGuests);
 
 /// <summary>Averages are null when no assessments exist for that cohort.</summary>
 public sealed record DialogDimensionDto(string Key, string Label, double? BaselineAverage, double? LatestAverage);
@@ -78,13 +83,39 @@ public sealed record DialogTrendPointDto(int Year, int Month, double AverageTota
 public sealed record ExportHistoryItemDto(
     Guid Id, DateTimeOffset ExportedAt, string ExportedByName, string ExportType, DateOnly FromDate, DateOnly ToDate);
 
-/// <summary>One row of the streamed CSV export.</summary>
+/// <summary>One row of the streamed CSV export — the referral plus the guest's demographics and referral source.</summary>
 public sealed record ReportExportRowDto(
     Guid GuestId,
     string GuestName,
     string Category,
     string Status,
-    DateTimeOffset ReferredAt);
+    DateTimeOffset ReferredAt,
+    string? Ethnicity,
+    /// <summary>Age group on the export date (<see cref="ReportAgeBands"/>).</summary>
+    string AgeGroup,
+    string? Gender,
+    string? CountryOfOrigin,
+    string? ReferralSource,
+    string? ReferralType);
+
+/// <summary>
+/// Demographic and referral-source breakdowns every Excel export carries (feedback: "required for
+/// every report"). Each row counts all current guests and, separately, the guests registered in
+/// the export period; blanks are reported as "Not recorded" rather than dropped.
+/// </summary>
+public sealed record ReportBreakdownsDto(
+    int TotalGuests,
+    int RegisteredInPeriod,
+    IReadOnlyList<ReportBreakdownRowDto> Ethnicity,
+    IReadOnlyList<ReportBreakdownRowDto> AgeGroups,
+    IReadOnlyList<ReportBreakdownRowDto> Gender,
+    IReadOnlyList<ReportBreakdownRowDto> CountryOfOrigin,
+    IReadOnlyList<ReportBreakdownRowDto> ReferralSources,
+    IReadOnlyList<ReportBreakdownRowDto> ReferralTypes,
+    /// <summary>Subcategories of Secondary referrals only (spec §6.2).</summary>
+    IReadOnlyList<ReportBreakdownRowDto> SecondaryReferralSubcategories);
+
+public sealed record ReportBreakdownRowDto(string Label, int AllGuests, int RegisteredInPeriod);
 
 /// <summary>"CPN Activity" reports tab (design Desktop 86): the CPN referral pipeline and the guests on the CPN caseload.</summary>
 public sealed record CpnActivityReportDto(

@@ -67,11 +67,14 @@ export class ReportsGuestReportComponent implements OnInit, OnDestroy {
   /** Preselected CMHW filter — set by the Caseload tab's "View" drill-down. */
   readonly initialCmhw = input('');
 
-  /** Engagement statuses only (spec §4.7) — urgency is a separate flag, not a status. */
+  /**
+   * Engagement statuses only (spec §4.7) — urgency is a separate flag, not a status.
+   * OnHold is displayed as "Inactive"; the query value stays OnHold.
+   */
   readonly statusOptions: { value: GuestStatus; label: string }[] = [
     { value: 'New', label: 'New' },
     { value: 'Active', label: 'Active' },
-    { value: 'OnHold', label: 'On hold' },
+    { value: 'OnHold', label: 'Inactive' },
   ];
 
   readonly pathwayOptions: { value: PathwayCategory; label: string }[] = (

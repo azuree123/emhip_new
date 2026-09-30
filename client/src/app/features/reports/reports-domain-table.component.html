@@ -7,7 +7,7 @@
   @if (loading()) {
     <div class="report-card__state">Loading DIALOG domain averages…</div>
   } @else if (rows().length === 0) {
-    <div class="report-card__state">No DIALOG assessments recorded yet.</div>
+    <div class="report-card__state">{{ emptyText() }}</div>
   } @else {
     <div class="table-scroll">
       <table class="rpt-table domain-table">

@@ -82,7 +82,7 @@ export class GuestCpnRecordTabComponent {
 
   sessionTitle(s: CpnSessionSummaryDto): string {
     if (s.sessionType === 'InitialAssessment') return 'Initial assessment';
-    return s.sessionNumber ? `Follow-up session ${s.sessionNumber}` : 'CPN session';
+    return s.sessionNumber ? `Contact session ${s.sessionNumber}` : 'CPN session';
   }
 
   riskLabel(level: string): string {

@@ -551,3 +551,13 @@
     gap: 10px;
   }
 }
+
+.contact-guest__name--link {
+  text-decoration: none;
+
+  &:hover,
+  &:focus-visible {
+    color: #8d1b3d;
+    text-decoration: underline;
+  }
+}

@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { catchError, of } from 'rxjs';
 import { AuthService } from '../../core/auth.service';
 import { DashboardsApiService } from '../../core/dashboards-api.service';
@@ -8,6 +8,7 @@ import { GuestsApiService } from '../../core/guests-api.service';
 import { Permissions } from '../../core/permissions';
 import { PATHWAY_CATEGORY_OPTIONS, pathwayCategoryLabel } from '../../core/demographic-options';
 import { CmhwDashboardDto, FollowUpQueueItemDto, GuestListItemDto, GuestStatus, PathwayCategory } from '../../core/api-models';
+import { GuestSegment, segmentForClinicalIndicator } from '../../core/guest-segments';
 import { GuestSeenCardComponent } from './guest-seen-card.component';
 
 /** "Contact Status" pill filters in the design's Filter contacts card. */
@@ -58,7 +59,7 @@ function isoDay(date: Date): string {
   selector: 'app-dashboard-cmhw',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [GuestSeenCardComponent],
+  imports: [GuestSeenCardComponent, RouterLink],
   templateUrl: './dashboard-cmhw.component.html',
   styleUrl: './dashboard-cmhw.component.scss',
 })
@@ -206,7 +207,8 @@ export class DashboardCmhwComponent {
 
     if (this.auth.hasPermission(Permissions.FollowUps.View)) {
       this.followUpsApi
-        .getQueue({ pageSize: 100 })
+        // The worker's own outstanding contacts — not the hub's, and not completed ones.
+        .getQueue({ assignee: this.auth.current().staffId, open: true, pageSize: 200 })
         .pipe(catchError(() => of(null)))
         .subscribe((page) => {
           if (!page) {
@@ -269,6 +271,29 @@ export class DashboardCmhwComponent {
     this.chip.set(chip);
   }
 
+  /** The signed-in worker — the "Active caseload" tile opens the guest list filtered to them. */
+  protected readonly staffId = this.auth.current().staffId;
+
+  /** "Due today" / "Overdue contacts" tiles: filter the caseload table below and bring it into view. */
+  protected showChip(chip: ContactChip): void {
+    this.setChip(chip);
+    this.scrollToSection('cmhw-caseload');
+  }
+
+  protected scrollToSection(id: string): void {
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  protected indicatorSegment(label: string): GuestSegment | null {
+    return this.canViewGuests ? segmentForClinicalIndicator(label) : null;
+  }
+
+  /** Row click opens the record; clicks on the row's own links/buttons are left to them. */
+  protected onRowClick(event: MouseEvent, guestId: string): void {
+    if ((event.target as HTMLElement).closest('a, button')) return;
+    this.openGuest(guestId);
+  }
+
   protected onPathwayChange(value: string): void {
     this.pathwayFilter.set(value as '' | PathwayCategory);
     this.loadCaseload();
@@ -292,7 +317,7 @@ export class DashboardCmhwComponent {
   }
 
   protected statusLabel(status: GuestStatus): string {
-    return status === 'OnHold' ? 'On hold' : status;
+    return status === 'OnHold' ? 'Inactive' : status;
   }
 
   /** Next-contact cell — red when overdue, gold when due today or this week. */

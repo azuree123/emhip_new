@@ -120,7 +120,7 @@ public static class Permissions
             Guests.NotesView, Guests.NotesAdd, Guests.ContactsAdd, Guests.CpnContactsLog,
             Guests.AuditView, Guests.Export, Guests.Erase,
         ],
-        ["Follow-ups"] = [FollowUps.View, FollowUps.Manage],
+        ["Scheduled contacts"] = [FollowUps.View, FollowUps.Manage],
         ["Urgent Cases"] = [UrgentCases.View],
         ["MDT"] = [Mdt.Manage],
         ["Reports"] = [Reports.View, Reports.Export],

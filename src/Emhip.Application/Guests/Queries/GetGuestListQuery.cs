@@ -14,7 +14,11 @@ public sealed record GetGuestListQuery(
     string? Gender = null,
     string? CountryOfOrigin = null,
     int? AgeMin = null,
-    int? AgeMax = null)
+    int? AgeMax = null,
+    // Dashboard/report drill-throughs: a GuestSegments key, and the clinical pathway (distinct
+    // from the practical-support referral category that `Pathway` filters on).
+    string? Segment = null,
+    GuestPathway? ClinicalPathway = null)
     : IRequest<KeysetPage<GuestListItemDto>>;
 
 public sealed class GetGuestListQueryHandler(IGuestReadService reads) : IRequestHandler<GetGuestListQuery, KeysetPage<GuestListItemDto>>
@@ -23,7 +27,8 @@ public sealed class GetGuestListQueryHandler(IGuestReadService reads) : IRequest
         reads.GetGuestListAsync(
             request.HubId, request.SearchText, request.Status, request.Cursor, request.PageSize,
             request.Pathway, request.HasRiskFlags, request.AssignedCmhwId, request.LastActivityWithinDays, request.UrgentOnly,
-            request.Ethnicity, request.Gender, request.CountryOfOrigin, request.AgeMin, request.AgeMax, cancellationToken);
+            request.Ethnicity, request.Gender, request.CountryOfOrigin, request.AgeMin, request.AgeMax,
+            request.Segment, request.ClinicalPathway, cancellationToken);
 }
 
 public sealed record GetHubCmhwsQuery(Guid HubId) : IRequest<IReadOnlyList<CmhwOptionDto>>;

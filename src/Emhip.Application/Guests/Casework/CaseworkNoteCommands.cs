@@ -169,6 +169,12 @@ public sealed class SaveCaseworkNoteCommandHandler(IAppDbContext db, ICurrentUse
             db.Contacts.Add(contact);
             note.Submit(contact.Id);
 
+            // A submitted note is a contact, so it is activity too: it stamps the last activity
+            // date and brings an Inactive guest back to Active (spec §4.6 / §4.7), exactly as
+            // AddContactCommand does for a logged contact.
+            var guest = await db.Guests.FirstOrDefaultAsync(g => g.Id == request.GuestId, cancellationToken);
+            guest?.RecordActivity(input.OccurredAt);
+
             foreach (var action in input.Actions)
             {
                 db.GuestActions.Add(new GuestAction(
@@ -209,7 +215,7 @@ public sealed class SaveCaseworkNoteCommandHandler(IAppDbContext db, ICurrentUse
     {
         var parts = new List<string>
         {
-            input.IsCpnContact ? "CPN follow-up session" : $"{input.Category} note",
+            input.IsCpnContact ? "CPN contact session" : $"{input.Category} note",
         };
         if (!string.IsNullOrWhiteSpace(input.Assessment)) parts.Add($"Assessment: {input.Assessment}");
         if (!string.IsNullOrWhiteSpace(input.Recommendation)) parts.Add($"Recommendation: {input.Recommendation}");

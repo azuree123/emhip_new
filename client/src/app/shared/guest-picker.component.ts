@@ -313,7 +313,7 @@ export class GuestPickerComponent implements ControlValueAccessor {
   }
 
   statusLabel(status: GuestStatus): string {
-    return status === 'OnHold' ? 'On hold' : status;
+    return status === 'OnHold' ? 'Inactive' : status;
   }
 
   @HostListener('document:click', ['$event'])

@@ -12,7 +12,7 @@ interface CaseloadRow extends CaseloadReportRowDto {
  * "Caseload Reports" tab — Desktop67 (project/screens/Components.bundle.js
  * lines 99305-101566): KPI tiles + "Caseload per CMHW" table with load bars.
  * The source's "Unassigned guests / Require allocation" tile has no field in
- * the caseload DTO, so the fourth tile reports the real overdue-follow-ups
+ * the caseload DTO, so the fourth tile reports the real overdue-contacts
  * total instead. Each row's "View" opens the Guest Report tab filtered to that
  * CMHW (the design's Desktop69 drill-down, served by the real guest list).
  */

@@ -93,12 +93,18 @@ public sealed class ReportReadService(EmhipDbContext db, Emhip.Application.Abstr
             statusCounts, monthlyRegistrations, activity, ethnicityBreakdown);
     }
 
-    public async Task<DialogOutcomesReportDto> GetDialogOutcomesAsync(Guid hubId, CancellationToken cancellationToken = default)
+    public async Task<DialogOutcomesReportDto> GetDialogOutcomesAsync(
+        Guid hubId, ReportCohortFilter? cohort = null, CancellationToken cancellationToken = default)
     {
+        // Every figure below is computed over the same guest set, so a demographic cohort
+        // (e.g. Black African, 18–24) narrows the counts and the per-domain averages alike.
+        var cohortGuests = CohortGuests(hubId, cohort);
+        var cohortSize = await cohortGuests.CountAsync(cancellationToken);
+
         // Baselines = version 1; follow-up cohort = each guest's highest version above 1.
         // Guest-scoped cardinality (a handful of versions per guest), so a live aggregate is fine here.
         var baseline = await db.DialogAssessments.AsNoTracking()
-            .Where(d => d.Version == 1 && db.Guests.Any(g => g.Id == d.GuestId && g.HubId == hubId && !g.IsDeleted))
+            .Where(d => d.Version == 1 && cohortGuests.Any(g => g.Id == d.GuestId))
             .GroupBy(_ => 1)
             .Select(g => new
             {
@@ -120,7 +126,7 @@ public sealed class ReportReadService(EmhipDbContext db, Emhip.Application.Abstr
         var latest = await db.DialogAssessments.AsNoTracking()
             .Where(d => d.Version > 1
                 && d.Version == db.DialogAssessments.Where(x => x.GuestId == d.GuestId).Max(x => x.Version)
-                && db.Guests.Any(g => g.Id == d.GuestId && g.HubId == hubId && !g.IsDeleted))
+                && cohortGuests.Any(g => g.Id == d.GuestId))
             .GroupBy(_ => 1)
             .Select(g => new
             {
@@ -158,7 +164,35 @@ public sealed class ReportReadService(EmhipDbContext db, Emhip.Application.Abstr
                 Dim("practicalHelp", "Practical help", baseline?.PracticalHelp, latest?.PracticalHelp),
                 Dim("medication", "Medication", baseline?.Medication, latest?.Medication),
                 Dim("meetingsWithMhStaff", "Meetings with MH staff", baseline?.MeetingsWithMhStaff, latest?.MeetingsWithMhStaff),
-            ]);
+            ],
+            cohortSize);
+    }
+
+    /// <summary>
+    /// The hub's guests narrowed to a demographic cohort — the EF twin of the guest list's Dapper
+    /// predicates (GuestReadService.GetGuestListAsync): exact matches on the recorded ethnicity,
+    /// country of origin and gender, and the same birth-date window for the age band. EF binds
+    /// DateOnly natively, so the window is compared as DateOnly here (Dapper needs DateTime).
+    /// </summary>
+    private IQueryable<Domain.Entities.Guest> CohortGuests(Guid hubId, ReportCohortFilter? cohort)
+    {
+        var guests = db.Guests.AsNoTracking().Where(g => g.HubId == hubId && !g.IsDeleted);
+        if (cohort is null || cohort.IsEmpty) return guests;
+
+        if (cohort.Ethnicity is { } ethnicity)
+            guests = guests.Where(g => db.GuestDemographics.Any(d => d.GuestId == g.Id && d.Ethnicity == ethnicity));
+        if (cohort.CountryOfOrigin is { } country)
+            guests = guests.Where(g => db.GuestDemographics.Any(d => d.GuestId == g.Id && d.CountryOfOrigin == country));
+        if (cohort.Gender is { } gender)
+            guests = guests.Where(g => g.Gender == gender);
+
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        if (cohort.BornOnOrBefore(today) is { } latestBirth)
+            guests = guests.Where(g => g.DateOfBirth <= latestBirth);
+        if (cohort.BornOnOrAfter(today) is { } earliestBirth)
+            guests = guests.Where(g => g.DateOfBirth >= earliestBirth);
+
+        return guests;
     }
 
     public async Task<PathwayAnalyticsDto> GetPathwayAnalyticsAsync(Guid hubId, CancellationToken cancellationToken = default)
@@ -210,7 +244,9 @@ public sealed class ReportReadService(EmhipDbContext db, Emhip.Application.Abstr
                 db.Guests.Count(g => g.AssignedCmhwId == u.Id),
                 db.Guests.Count(g => g.AssignedCmhwId == u.Id && g.Status == Domain.Enums.GuestStatus.Active),
                 db.Guests.Count(g => g.AssignedCmhwId == u.Id && g.IsUrgent),
-                db.FollowUps.Count(f => f.AssigneeStaffId == u.Id && f.Status == Domain.Enums.FollowUpStatus.Scheduled && f.DueDate < today),
+                // Past-due items are 'Overdue' once FollowUpSchedulerWorker has run, 'Scheduled' until then.
+                db.FollowUps.Count(f => f.AssigneeStaffId == u.Id && (f.Status == Domain.Enums.FollowUpStatus.Overdue
+                    || (f.Status == Domain.Enums.FollowUpStatus.Scheduled && f.DueDate < today))),
                 db.Contacts.Count(c => c.CreatedByStaffId == u.Id && c.OccurredAt >= thirtyDaysAgo)))
             .ToListAsync(cancellationToken);
 
@@ -344,10 +380,12 @@ public sealed class ReportReadService(EmhipDbContext db, Emhip.Application.Abstr
             byOutcome.OrderByDescending(o => o.Count).Select(o => new BreakdownSliceDto(o.Label.ToString(), o.Count, Pct(o.Count))).ToList());
     }
 
-    public async Task<IReadOnlyList<DialogTrendPointDto>> GetDialogTrendAsync(Guid hubId, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<DialogTrendPointDto>> GetDialogTrendAsync(
+        Guid hubId, ReportCohortFilter? cohort = null, CancellationToken cancellationToken = default)
     {
+        var cohortGuests = CohortGuests(hubId, cohort);
         var points = await db.DialogAssessments.AsNoTracking()
-            .Where(d => db.Guests.Any(g => g.Id == d.GuestId && g.HubId == hubId))
+            .Where(d => cohortGuests.Any(g => g.Id == d.GuestId))
             .GroupBy(d => new { d.AssessedAt.Year, d.AssessedAt.Month })
             .Select(grp => new
             {
@@ -376,6 +414,67 @@ public sealed class ReportReadService(EmhipDbContext db, Emhip.Application.Abstr
             .ToList();
     }
 
+    public async Task<ReportBreakdownsDto> GetBreakdownsAsync(Guid hubId, DateOnly from, DateOnly to, CancellationToken cancellationToken = default)
+    {
+        var fromTs = new DateTimeOffset(from.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
+        var toTs = new DateTimeOffset(to.ToDateTime(TimeOnly.MaxValue), TimeSpan.Zero);
+
+        // One narrow row per guest, bucketed in memory — the same shape the dashboard demographics
+        // card is built from. Only runs on an explicit export, never on a page load.
+        var rows = await CohortGuests(hubId, null)
+            .Select(g => new
+            {
+                g.DateOfBirth,
+                g.Gender,
+                g.RegisteredAt,
+                g.ReferralSource,
+                g.ReferralType,
+                g.ReferralSubcategory,
+                Ethnicity = db.GuestDemographics.Where(d => d.GuestId == g.Id).Select(d => d.Ethnicity).FirstOrDefault(),
+                Country = db.GuestDemographics.Where(d => d.GuestId == g.Id).Select(d => d.CountryOfOrigin).FirstOrDefault(),
+            })
+            .ToListAsync(cancellationToken);
+
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var inPeriod = rows.Where(r => r.RegisteredAt >= fromTs && r.RegisteredAt <= toTs).ToList();
+
+        const string notRecorded = "Not recorded";
+        static string Label(string? value) => string.IsNullOrWhiteSpace(value) ? notRecorded : value.Trim();
+
+        // Largest first, with "Not recorded" last so the gaps are visible but don't lead the list.
+        IReadOnlyList<ReportBreakdownRowDto> Breakdown<T>(IEnumerable<T> all, IEnumerable<T> period, Func<T, string> key)
+        {
+            var periodCounts = period.GroupBy(key).ToDictionary(g => g.Key, g => g.Count());
+            return all.GroupBy(key)
+                .Select(g => new ReportBreakdownRowDto(g.Key, g.Count(), periodCounts.GetValueOrDefault(g.Key)))
+                .OrderBy(r => r.Label == notRecorded)
+                .ThenByDescending(r => r.AllGuests)
+                .ThenBy(r => r.Label, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+        }
+
+        // Age groups keep the band order and list empty bands too, so every export has the same rows.
+        var ageAll = rows.GroupBy(r => ReportAgeBands.LabelFor(r.DateOfBirth, today)).ToDictionary(g => g.Key, g => g.Count());
+        var agePeriod = inPeriod.GroupBy(r => ReportAgeBands.LabelFor(r.DateOfBirth, today)).ToDictionary(g => g.Key, g => g.Count());
+        var ageGroups = ReportAgeBands.Labels
+            .Select(band => new ReportBreakdownRowDto(band, ageAll.GetValueOrDefault(band), agePeriod.GetValueOrDefault(band)))
+            .ToList();
+
+        var secondary = rows.Where(r => r.ReferralType == Domain.Enums.ReferralType.Secondary);
+        var secondaryInPeriod = inPeriod.Where(r => r.ReferralType == Domain.Enums.ReferralType.Secondary);
+
+        return new ReportBreakdownsDto(
+            rows.Count,
+            inPeriod.Count,
+            Breakdown(rows, inPeriod, r => Label(r.Ethnicity)),
+            ageGroups,
+            Breakdown(rows, inPeriod, r => Label(r.Gender)),
+            Breakdown(rows, inPeriod, r => Label(r.Country)),
+            Breakdown(rows, inPeriod, r => Label(r.ReferralSource)),
+            Breakdown(rows, inPeriod, r => Label(r.ReferralType?.ToString())),
+            Breakdown(secondary, secondaryInPeriod, r => Label(r.ReferralSubcategory)));
+    }
+
     public async Task<IReadOnlyList<ExportHistoryItemDto>> GetExportHistoryAsync(Guid hubId, CancellationToken cancellationToken = default) =>
         await db.ExportRecords.AsNoTracking()
             .Where(e => e.HubId == hubId)
@@ -393,19 +492,36 @@ public sealed class ReportReadService(EmhipDbContext db, Emhip.Application.Abstr
         var fromOffset = new DateTimeOffset(from.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
         var toOffset = new DateTimeOffset(to.ToDateTime(TimeOnly.MaxValue), TimeSpan.Zero);
 
+        // Inner join on Guests keeps the hub scope (and the soft-delete query filter) the previous
+        // Any() check applied, while also supplying the guest columns each row now carries.
         var query = db.PathwayReferrals.AsNoTracking()
-            .Where(p => p.ReferredAt >= fromOffset && p.ReferredAt <= toOffset
-                && db.Guests.Any(g => g.Id == p.GuestId && g.HubId == hubId))
-            .OrderBy(p => p.ReferredAt)
-            .Select(p => new ReportExportRowDto(
+            .Where(p => p.ReferredAt >= fromOffset && p.ReferredAt <= toOffset)
+            .Join(db.Guests.AsNoTracking().Where(g => g.HubId == hubId), p => p.GuestId, g => g.Id, (p, g) => new
+            {
                 p.GuestId,
-                db.Guests.Where(g => g.Id == p.GuestId).Select(g => g.FirstName + " " + g.LastName).FirstOrDefault() ?? "Unknown",
-                p.Category.ToString(), p.Status.ToString(), p.ReferredAt))
+                GuestName = g.FirstName + " " + g.LastName,
+                p.Category,
+                p.Status,
+                p.ReferredAt,
+                // Demographics and referral source ride along on every row (customer feedback #9),
+                // so the CSV can be pivoted by ethnicity, age group, gender, country or source.
+                g.DateOfBirth,
+                g.Gender,
+                g.ReferralSource,
+                g.ReferralType,
+                Ethnicity = db.GuestDemographics.Where(d => d.GuestId == g.Id).Select(d => d.Ethnicity).FirstOrDefault(),
+                CountryOfOrigin = db.GuestDemographics.Where(d => d.GuestId == g.Id).Select(d => d.CountryOfOrigin).FirstOrDefault(),
+            })
+            .OrderBy(r => r.ReferredAt)
             .AsAsyncEnumerable();
 
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
         await foreach (var row in query.WithCancellation(cancellationToken))
         {
-            yield return row;
+            yield return new ReportExportRowDto(
+                row.GuestId, row.GuestName, row.Category.ToString(), row.Status.ToString(), row.ReferredAt,
+                row.Ethnicity, ReportAgeBands.LabelFor(row.DateOfBirth, today), row.Gender, row.CountryOfOrigin,
+                row.ReferralSource, row.ReferralType?.ToString());
         }
     }
 }

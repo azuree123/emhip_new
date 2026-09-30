@@ -98,8 +98,8 @@ public static class SettingsCatalog
 
     public static readonly IReadOnlyList<SettingDefinition> All =
     [
-        new(Keys.OrganisationName, "General", "Organisation name", "Shown in the portal header and on exported files.", SettingKind.Text, "EMHIP"),
-        new(Keys.SupportEmail, "General", "Support email", "Displayed to staff who need help signing in.", SettingKind.Text, null),
+        new(Keys.OrganisationName, "General", "Organisation name", "Used in emails, on the Excel report export and on the Documents page.", SettingKind.Text, "EMHIP"),
+        new(Keys.SupportEmail, "General", "Support email", "Included in the footer of emails sent by EMHIP.", SettingKind.Text, null),
         new(Keys.DateFormat, "General", "Date format", "How dates are rendered across the portal.", SettingKind.Select, "dd MMM yyyy",
             [new("dd MMM yyyy", "31 Dec 2026"), new("dd/MM/yyyy", "31/12/2026"), new("yyyy-MM-dd", "2026-12-31")]),
 
@@ -130,8 +130,8 @@ public static class SettingsCatalog
         new(Keys.DefaultRetentionYears, "Uploads", "Default retention (years)", "Pre-fills the retention date on new documents; 0 means no default.", SettingKind.Number, "7"),
 
         new(Keys.UrgentResponseHours, "Clinical", "Urgent response window (hours)", "Drives the countdown on urgent cases.", SettingKind.Number, "72"),
-        new(Keys.InactivityDays, "Clinical", "Inactivity threshold (days)", "Guests with no contact in this period are flagged in Data Quality.", SettingKind.Number, "90"),
-        new(Keys.FollowUpDefaultDays, "Clinical", "Default follow-up interval (days)", "Pre-fills the due date when scheduling a follow-up.", SettingKind.Number, "14"),
+        new(Keys.InactivityDays, "Clinical", "Inactivity threshold (days)", "Active guests with no activity for this many days are moved to Inactive automatically (checked every 6 hours). Any new contact makes them Active again.", SettingKind.Number, "90"),
+        new(Keys.FollowUpDefaultDays, "Clinical", "Default contact interval (days)", "Pre-fills the due date when scheduling a contact.", SettingKind.Number, "14"),
         new(Keys.DialogReviewWeeks, "Clinical", "DIALOG review interval (weeks)", "Used to suggest when the next DIALOG assessment is due.", SettingKind.Number, "12"),
 
         new(Keys.GuestListPageSize, "Interface", "Guest list page size", "Rows fetched per page in the guest list.", SettingKind.Number, "50"),
@@ -173,7 +173,7 @@ public static class SettingsCatalog
             VisibleWhenKey: Keys.EmailProvider, VisibleWhenValues: ["Mailgun"]),
         new(Keys.NotifyUrgentCase, EmailSection, "Email the worker when a case becomes urgent", "Uses the \"Urgent case raised\" template.", SettingKind.Boolean, "true",
             VisibleWhenKey: Keys.EmailProvider, VisibleWhenValues: EmailProviders),
-        new(Keys.NotifyOverdueFollowUps, EmailSection, "Email workers about overdue follow-ups", "Daily summary using the \"Follow-up overdue\" template.", SettingKind.Boolean, "true",
+        new(Keys.NotifyOverdueFollowUps, EmailSection, "Email workers about overdue contacts", "When a scheduled contact becomes overdue (checked every 15 minutes), each worker with overdue contacts is emailed their list, using the \"Contact overdue\" template.", SettingKind.Boolean, "true",
             VisibleWhenKey: Keys.EmailProvider, VisibleWhenValues: EmailProviders),
     ];
 

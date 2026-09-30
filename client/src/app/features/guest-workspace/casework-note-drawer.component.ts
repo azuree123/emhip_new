@@ -320,7 +320,7 @@ export class CaseworkNoteDrawerComponent implements OnInit {
    */
   readonly sessionHeading = computed(() => {
     const n = this.note()?.sessionNumber;
-    return n ? `Follow-up session ${n}` : 'Follow-up session';
+    return n ? `Contact session ${n}` : 'Contact session';
   });
 
   readonly entryBadge = computed(() => (this.noteId() ? 'Draft' : 'New Entry'));
@@ -846,7 +846,7 @@ export class CaseworkNoteDrawerComponent implements OnInit {
     if (!this.header.occurredOn) return 'Enter the date this contact happened.';
 
     if (this.header.isCpnContact && !this.header.sessionType) {
-      return 'Choose whether this is the initial assessment or a follow-up session.';
+      return 'Choose whether this is the initial assessment or a contact session.';
     }
     if (!this.header.isCpnContact && submit && !this.header.category) {
       return 'Select a contact type.';
@@ -862,7 +862,7 @@ export class CaseworkNoteDrawerComponent implements OnInit {
       if (missingMse) return `${missingMse.label} is required to submit the initial assessment.`;
       if (!a.clinicalFormulation.trim()) return 'A clinical formulation is required to submit the initial assessment.';
       if (!a.recommendedPlan.trim()) return 'A recommended clinical plan is required to submit the initial assessment.';
-      if (!a.followUpFrequency) return 'Choose a follow-up frequency.';
+      if (!a.followUpFrequency) return 'Choose a contact frequency.';
       if (!a.nextAppointmentDate) return 'Enter the next appointment date.';
       return null;
     }
@@ -876,10 +876,10 @@ export class CaseworkNoteDrawerComponent implements OnInit {
 
     if (submit && this.body === 'followUp') {
       if (!this.followUp.assessment.trim()) {
-        return 'Your clinical assessment of the current presentation is required to submit a follow-up session.';
+        return 'Your clinical assessment of the current presentation is required to submit a contact session.';
       }
       if (!this.followUp.recommendation.trim()) {
-        return 'A recommendation — what needs to happen next — is required to submit a follow-up session.';
+        return 'A recommendation — what needs to happen next — is required to submit a contact session.';
       }
     }
     if (submit && this.body === 'contactType' && !this.followUp.assessment.trim()) {

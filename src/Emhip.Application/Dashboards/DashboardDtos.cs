@@ -38,7 +38,12 @@ public sealed record PathwayDistributionDto(string Category, int Count, double P
 
 public sealed record MonthlyStatDto(int Year, int Month, int NewGuests, int ClosedGuests, int Contacts);
 
-public sealed record RecentActivityDto(string Description, string ActorName, DateTimeOffset OccurredAt);
+/// <summary>
+/// One "Staff activity" line: a plain-English description (AuditDescriptions) plus the guest it
+/// concerns, so the manager sees whose record was opened and can click through to it.
+/// </summary>
+public sealed record RecentActivityDto(
+    string Description, string ActorName, DateTimeOffset OccurredAt, Guid? GuestId, string? GuestName, int? GuestNumber);
 
 /// <summary>"Guest demographics" dashboard card (design: ethnicity, age groups, country of origin).</summary>
 public sealed record GuestDemographicsBreakdownDto(

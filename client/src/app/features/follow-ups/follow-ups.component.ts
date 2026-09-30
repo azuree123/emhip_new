@@ -263,7 +263,7 @@ export class FollowUpsComponent implements OnInit {
           this.loading.set(false);
         },
         error: () => {
-          this.loadError.set('Could not load the follow-up queue. The API may be unavailable.');
+          this.loadError.set('Could not load the scheduled contacts. The API may be unavailable.');
           this.loading.set(false);
         },
       });
@@ -284,7 +284,7 @@ export class FollowUpsComponent implements OnInit {
     this.followUpsApi.complete(item.id).subscribe({
       next: () =>
         this.items.update((cur) => cur.map((i) => (i.id === item.id ? { ...i, status: 'Completed', isOverdue: false } : i))),
-      error: () => this.loadError.set('Could not mark this follow-up complete.'),
+      error: () => this.loadError.set('Could not mark this scheduled contact complete.'),
     });
   }
 
@@ -369,8 +369,8 @@ export class FollowUpsComponent implements OnInit {
         notes: this.scheduleForm.notes || null,
       };
       this.guestsApi.scheduleFollowUp(guestId, req).subscribe({
-        next: ({ id }) => this.saveExtras(panel, id, 'The follow-up was scheduled', done),
-        error: () => fail('Could not schedule the follow-up.'),
+        next: ({ id }) => this.saveExtras(panel, id, 'The contact was scheduled', done),
+        error: () => fail('Could not schedule the contact.'),
       });
     } else {
       if (!this.contactForm.occurredAt) {
@@ -442,7 +442,7 @@ export class FollowUpsComponent implements OnInit {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'follow-up-log.csv';
+      a.download = 'scheduled-contacts.csv';
       a.click();
       URL.revokeObjectURL(url);
     } finally {

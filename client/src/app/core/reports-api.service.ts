@@ -15,6 +15,30 @@ import {
   PathwayReportDto,
 } from './api-models';
 
+/**
+ * A demographic cohort to cross-filter a report by — the same query params (and meaning) as
+ * GET /guests, so `demographicFilterParams()` from the shared filter drawer produces one directly.
+ */
+export interface ReportCohortParams {
+  ethnicity?: string;
+  gender?: string;
+  countryOfOrigin?: string;
+  /** Inclusive age bounds in years, derived from date of birth server-side. */
+  ageMin?: number;
+  ageMax?: number;
+}
+
+/** Adds the set cohort filters to `params`; unset ones are left off the query string. */
+function withCohort(params: HttpParams, cohort?: ReportCohortParams): HttpParams {
+  if (!cohort) return params;
+  if (cohort.ethnicity) params = params.set('ethnicity', cohort.ethnicity);
+  if (cohort.gender) params = params.set('gender', cohort.gender);
+  if (cohort.countryOfOrigin) params = params.set('countryOfOrigin', cohort.countryOfOrigin);
+  if (cohort.ageMin !== undefined) params = params.set('ageMin', cohort.ageMin);
+  if (cohort.ageMax !== undefined) params = params.set('ageMax', cohort.ageMax);
+  return params;
+}
+
 /** Maps 1:1 to ReportsController. */
 @Injectable({ providedIn: 'root' })
 export class ReportsApiService {
@@ -26,9 +50,10 @@ export class ReportsApiService {
     return this.http.get<PathwayReportDto>(`${this.base}/pathways`, { params });
   }
 
-  /** "Outcome dimensions" — hub-wide DIALOG averages, baseline vs latest follow-up. */
-  getDialogOutcomes(): Observable<DialogOutcomesReportDto> {
-    return this.http.get<DialogOutcomesReportDto>(`${this.base}/dialog-outcomes`);
+  /** "Outcome dimensions" — DIALOG averages, baseline vs latest reassessment, for the hub or a cohort. */
+  getDialogOutcomes(cohort?: ReportCohortParams): Observable<DialogOutcomesReportDto> {
+    const params = withCohort(new HttpParams(), cohort);
+    return this.http.get<DialogOutcomesReportDto>(`${this.base}/dialog-outcomes`, { params });
   }
 
   /** "Pathway Analytics" tab — per-pathway totals, statuses, AFA and DIALOG averages. */
@@ -58,9 +83,10 @@ export class ReportsApiService {
     return this.http.get<ContactsBreakdownReportDto>(`${this.base}/contacts-breakdown`, { params });
   }
 
-  /** "DIALOG score trend" — monthly average total score. */
-  getDialogTrend(): Observable<DialogTrendPointDto[]> {
-    return this.http.get<DialogTrendPointDto[]>(`${this.base}/dialog-trend`);
+  /** "DIALOG score trend" — monthly average total score, for the hub or a cohort. */
+  getDialogTrend(cohort?: ReportCohortParams): Observable<DialogTrendPointDto[]> {
+    const params = withCohort(new HttpParams(), cohort);
+    return this.http.get<DialogTrendPointDto[]>(`${this.base}/dialog-trend`, { params });
   }
 
   /** "Referral sources" breakdown. */
@@ -73,13 +99,17 @@ export class ReportsApiService {
     return this.http.get<ExportHistoryItemDto[]>(`${this.base}/exports`);
   }
 
-  /** Multi-sheet Excel workbook: summary, pathways, caseload, DIALOG outcomes, data quality. */
-  exportWorkbook(from: string, to: string): Observable<Blob> {
-    const params = new HttpParams().set('from', from).set('to', to);
+  /**
+   * Multi-sheet Excel workbook (sheets listed in WORKBOOK_SHEETS). `dialogCohort` is the DIALOG
+   * Outcomes tab's demographic filter — it narrows the workbook's DIALOG outcomes sheet only.
+   */
+  exportWorkbook(from: string, to: string, dialogCohort?: ReportCohortParams): Observable<Blob> {
+    const params = withCohort(new HttpParams().set('from', from).set('to', to), dialogCohort);
     return this.http.get(`${this.base}/export.xlsx`, { params, responseType: 'blob' });
   }
 
-  /** CSV export — fetched via HttpClient so the auth interceptor attaches the JWT
+  /** CSV export — one row per pathway referral in the range, with each guest's demographics and
+   *  referral source. Fetched via HttpClient so the auth interceptor attaches the JWT
    *  (a plain browser navigation would send no Authorization header and get a 401). */
   exportCsv(from: string, to: string): Observable<Blob> {
     const params = new HttpParams().set('from', from).set('to', to);

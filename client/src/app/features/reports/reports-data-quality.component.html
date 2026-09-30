@@ -35,6 +35,7 @@
               <th>Issue</th>
               <th class="dq-table__num">Number of guests</th>
               <th class="dq-table__num">Share of guests</th>
+              <th class="dq-table__num" aria-label="Affected guests"></th>
             </tr>
           </thead>
           <tbody>
@@ -43,6 +44,12 @@
                 <td class="dq-table__label">{{ row.label }}</td>
                 <td class="dq-table__num dq-table__strong">{{ row.count }}</td>
                 <td class="dq-table__num">{{ row.share }}</td>
+                <td class="dq-table__num">
+                  <!-- Each issue opens the guests it counts (same drill-through as the dashboard). -->
+                  @if (canViewGuests && row.count > 0 && hasSegment(row.key)) {
+                    <a class="dq-table__link" routerLink="/guests" [queryParams]="{ segment: row.key }">View guests →</a>
+                  }
+                </td>
               </tr>
             }
           </tbody>

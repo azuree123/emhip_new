@@ -20,9 +20,10 @@
     </div>
   </header>
 
+  @let s = summary();
+
   <!-- Stat tiles (design: Total contacts / Casework / Activity / AFA & Hospitality). -->
   <section class="stat-row">
-    @let s = summary();
     <div class="stat-card">
       <span class="stat-card__label">Total contacts</span>
       <span class="stat-card__value">{{ s ? s.totalContacts : '—' }}</span>
@@ -41,8 +42,47 @@
     <div class="stat-card">
       <span class="stat-card__label">AFA &amp; Hospitality</span>
       <span class="stat-card__value">{{ s ? s.afaAndHospitality : '—' }}</span>
-      <span class="stat-card__caption">{{ s ? s.cpnSessions + ' CPN session' + (s.cpnSessions === 1 ? '' : 's') : 'Advice & hospitality' }}</span>
+      <span class="stat-card__caption">{{ s ? s.afa + ' AFA · ' + s.hospitality + ' hospitality' : 'Advice & hospitality' }}</span>
     </div>
+  </section>
+
+  <!-- CPN activity — its own section, never part of the AFA & Hospitality tile (unrelated pathways). -->
+  <section class="cpn-card" aria-labelledby="cpn-activity-title">
+    <div class="cpn-card__head">
+      <div class="cpn-card__heading">
+        <h2 class="cpn-card__title" id="cpn-activity-title">CPN activity</h2>
+        <p class="cpn-card__subtitle">Community Psychiatric Nurse contacts · {{ periodLabel() }}</p>
+      </div>
+      <button
+        type="button"
+        class="filter-chip"
+        [class.filter-chip--on]="cpnOnly()"
+        [attr.aria-pressed]="cpnOnly()"
+        title="Only guests with CPN contacts"
+        (click)="toggleCpnOnly()"
+      >
+        <span class="filter-chip__dot" aria-hidden="true"></span>
+        {{ cpnOnly() ? 'Showing CPN contacts only' : 'Show CPN contacts only' }}
+      </button>
+    </div>
+    <dl class="cpn-card__figures">
+      <div class="cpn-figure">
+        <dt class="cpn-figure__label">CPN contacts</dt>
+        <dd class="cpn-figure__value">{{ s ? s.cpnSessions + s.cpnAssessments : '—' }}</dd>
+      </div>
+      <div class="cpn-figure">
+        <dt class="cpn-figure__label">Sessions</dt>
+        <dd class="cpn-figure__value">{{ s ? s.cpnSessions : '—' }}</dd>
+      </div>
+      <div class="cpn-figure">
+        <dt class="cpn-figure__label">Initial assessments</dt>
+        <dd class="cpn-figure__value">{{ s ? s.cpnAssessments : '—' }}</dd>
+      </div>
+      <div class="cpn-figure">
+        <dt class="cpn-figure__label">Guests seen by CPN</dt>
+        <dd class="cpn-figure__value">{{ s ? s.cpnGuests : '—' }}</dd>
+      </div>
+    </dl>
   </section>
 
   <section class="card">
@@ -139,7 +179,7 @@
 
             <span class="row__counts">
               @for (chip of countChips(row); track chip.key) {
-                <span class="count-chip" [attr.data-kind]="chip.key">
+                <span class="count-chip" [attr.data-kind]="chip.key" [attr.title]="chip.title ?? null">
                   <span class="count-chip__n">{{ chip.count }}</span> {{ chip.label }}
                 </span>
               } @empty {

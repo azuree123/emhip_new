@@ -172,7 +172,7 @@ public static class UrgentEpisodeRecordText
         sb.AppendLine($"  Status:                    {(r.IsResolved ? "Resolved" : "Open")}");
         sb.AppendLine($"  Within {r.ResponseHours} hours:           {(r.ResolvedWithinWindow is null ? "Pending" : YesNo(r.ResolvedWithinWindow.Value))}");
         sb.AppendLine($"  Duration:                  {Duration(r.DurationMinutes)}");
-        sb.AppendLine($"  Follow-ups logged:         {r.FollowUpsLogged}");
+        sb.AppendLine($"  Contacts logged:           {r.FollowUpsLogged}");
         sb.AppendLine($"  Escalation to CMHT:        {YesNo(r.EscalatedToCmhtAt is not null)}");
         sb.AppendLine($"  Inpatient admission:       {YesNo(r.InpatientAdmission)}");
         sb.AppendLine();

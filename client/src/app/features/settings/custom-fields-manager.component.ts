@@ -35,8 +35,8 @@ const SCOPES: readonly ScopeTab[] = [
   },
   {
     key: 'FollowUp',
-    name: 'Follow-ups',
-    hint: 'Extra details captured on a scheduled follow-up.',
+    name: 'Scheduled contacts',
+    hint: 'Extra details captured on a scheduled contact.',
   },
   {
     key: 'GuestAction',

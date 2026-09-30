@@ -171,8 +171,8 @@ public sealed class UrgentCaseReadService(EmhipDbContext db) : IUrgentCaseReadSe
         {
             new("flag", "Urgent flag raised",
                 flags.Count > 0
-                    ? $"Risk identified — {string.Join(", ", flags)}. {responseHours}-hour follow-up window opened."
-                    : $"{responseHours}-hour follow-up window opened.",
+                    ? $"Risk identified — {string.Join(", ", flags)}. {responseHours}-hour contact window opened."
+                    : $"{responseHours}-hour contact window opened.",
                 intake?.Notes, episode.RaisedAt, raisedByName),
         };
         timeline.AddRange(crisisNotes.Select(n => new UrgentEpisodeTimelineEntryDto("note", "Crisis note added", n.Body, null, n.CreatedAt, n.Author)));
@@ -183,11 +183,11 @@ public sealed class UrgentCaseReadService(EmhipDbContext db) : IUrgentCaseReadSe
                 episode.EscalationNotes, escalatedAt, Name(episode.EscalatedToCmhtByStaffId)));
         }
         timeline.AddRange(contacts.Select(c => new UrgentEpisodeTimelineEntryDto(
-            "contact", "Follow-up note logged",
+            "contact", "Contact logged",
             $"{Pretty(c.Type.ToString())} — {Pretty(c.Outcome.ToString())}",
             FirstNonBlank(c.Assessment, c.Notes, c.Recommendation), c.OccurredAt, c.Author)));
         timeline.AddRange(completedFollowUps.Select(f => new UrgentEpisodeTimelineEntryDto(
-            "followup", "Scheduled follow-up completed", $"Due {f.DueDate:dd MMM yyyy}", f.Notes, f.CompletedAt!.Value, f.Assignee)));
+            "followup", "Scheduled contact completed", $"Due {f.DueDate:dd MMM yyyy}", f.Notes, f.CompletedAt!.Value, f.Assignee)));
         timeline.AddRange(pathwayChanges
             .Where(p => p.CreatedAt >= windowStart && p.CreatedAt <= windowEnd)
             .Select(p => new UrgentEpisodeTimelineEntryDto(
@@ -211,7 +211,7 @@ public sealed class UrgentCaseReadService(EmhipDbContext db) : IUrgentCaseReadSe
         {
             var first = contacts[0].OccurredAt;
             var last = contacts[^1].OccurredAt;
-            audit.Add(new("blue", $"{contacts.Count} follow-up note{(contacts.Count == 1 ? "" : "s")} logged",
+            audit.Add(new("blue", $"{contacts.Count} contact{(contacts.Count == 1 ? "" : "s")} logged",
                 contacts.Count == 1 ? $"{first:dd MMM yyyy · HH:mm}{Suffix(contacts[0].Author)}" : $"{first:dd MMM · HH:mm} & {last:dd MMM · HH:mm}", last));
         }
         if (episode.EscalatedToCmhtAt is { } ea)

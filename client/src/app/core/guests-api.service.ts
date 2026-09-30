@@ -70,6 +70,10 @@ export class GuestsApiService {
     /** Inclusive age bounds in years, derived from date of birth server-side. */
     ageMin?: number;
     ageMax?: number;
+    /** A GuestSegments key — the drill-through behind a dashboard/report count. */
+    segment?: string;
+    /** Clinical pathway (MentalWellbeing / ClinicalSupport / CommunityRecovery) — not `pathway`. */
+    clinicalPathway?: string;
     cursor?: string;
     pageSize?: number;
   }): Observable<KeysetPage<GuestListItemDto>> {
@@ -87,6 +91,8 @@ export class GuestsApiService {
     if (opts.countryOfOrigin) params = params.set('countryOfOrigin', opts.countryOfOrigin);
     if (opts.ageMin !== undefined) params = params.set('ageMin', opts.ageMin);
     if (opts.ageMax !== undefined) params = params.set('ageMax', opts.ageMax);
+    if (opts.segment) params = params.set('segment', opts.segment);
+    if (opts.clinicalPathway) params = params.set('clinicalPathway', opts.clinicalPathway);
     if (opts.cursor) params = params.set('cursor', opts.cursor);
     if (opts.pageSize) params = params.set('pageSize', opts.pageSize);
     return this.http.get<KeysetPage<GuestListItemDto>>(this.base, { params });

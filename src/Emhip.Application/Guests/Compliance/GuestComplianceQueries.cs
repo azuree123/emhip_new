@@ -13,7 +13,8 @@ namespace Emhip.Application.Guests.Compliance;
 
 /// <summary>One line of a guest's access log: who did what to the record, and when.</summary>
 public sealed record GuestAuditEntryDto(
-    Guid Id, DateTimeOffset OccurredAt, string ActorName, string Action, string EntityName, string EntityId, string? Details);
+    Guid Id, DateTimeOffset OccurredAt, string ActorName, string Action, string EntityName, string EntityId, string? Details,
+    string Description = "");
 
 /// <summary>
 /// Per-guest access log (UK GDPR Art. 5(2) accountability, Art. 15 "recipients"): every read,

@@ -21,7 +21,14 @@ public sealed record GuestOverviewDto(
     bool AfaSupportNeeded,
     string? ReferralSource,
     IReadOnlyList<GuestNoteDto> PinnedNotes,
-    IReadOnlyList<GuestContactSummaryDto> RecentContacts);
+    IReadOnlyList<GuestContactSummaryDto> RecentContacts,
+    // The workspace header's Urgent badge ("since …"), its "Last activity" line and the
+    // Overview's "Days since last activity" tile, plus the referral detail shown on Demographics.
+    bool IsUrgent = false,
+    DateTimeOffset? UrgentSince = null,
+    DateTimeOffset? LastActivityAt = null,
+    ReferralType? ReferralType = null,
+    string? ReferralSubcategory = null);
 
 public sealed record GuestNoteDto(Guid Id, string Body, string Color, bool IsPinned, string AuthorName, DateTimeOffset CreatedAt);
 

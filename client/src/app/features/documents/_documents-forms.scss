@@ -1,6 +1,5 @@
-// Form controls shared by the document drawers and the confirmation dialog. Kept out of
-// _documents-shared.scss so the register page — which has no forms beyond its filter chips —
-// doesn't ship them.
+// Form controls shared by the document drawers and the confirmation dialog, layered on the
+// base chrome in _documents-shared.scss.
 @import 'documents-shared';
 
 .field {

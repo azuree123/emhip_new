@@ -258,7 +258,7 @@
                 </div>
                 <div class="rows__row"><dt>Within {{ r.responseHours }} hours</dt><dd>{{ r.resolvedWithinWindow === null ? 'PENDING' : r.resolvedWithinWindow ? 'YES' : 'NO' }}</dd></div>
                 <div class="rows__row"><dt>Duration</dt><dd>{{ durationLabel(r) }}</dd></div>
-                <div class="rows__row"><dt>Follow-ups logged</dt><dd>{{ r.followUpsLogged }}</dd></div>
+                <div class="rows__row"><dt>Contacts logged</dt><dd>{{ r.followUpsLogged }}</dd></div>
                 <div class="rows__row"><dt>Escalation to CMHT</dt><dd>{{ r.escalatedToCmhtAt ? 'YES' : 'NO' }}</dd></div>
                 <div class="rows__row"><dt>Inpatient admission</dt><dd>{{ r.inpatientAdmission ? 'YES' : 'NO' }}</dd></div>
               </dl>

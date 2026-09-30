@@ -1,6 +1,10 @@
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { DataQualityIssueDto, DataQualityReportDto } from '../../core/api-models';
 import { ReportsApiService } from '../../core/reports-api.service';
+import { RouterLink } from '@angular/router';
+import { AuthService } from '../../core/auth.service';
+import { Permissions } from '../../core/permissions';
+import { isGuestSegment } from '../../core/guest-segments';
 
 interface IssueRow extends DataQualityIssueDto {
   /** Share of all guests affected, e.g. "12%". */
@@ -11,17 +15,25 @@ interface IssueRow extends DataQualityIssueDto {
  * "Data Quality" tab — Desktop48 (project/screens/Components.bundle.js lines
  * 107266-109360): KPI tiles + "Data quality issues" table. The issue list is
  * backend-defined (key/label/count), so the source's hard-coded per-issue
- * descriptions and its per-row "View" drill-down (Desktop70's guest list per
- * issue) are omitted — there is no per-issue guest list endpoint.
+ * descriptions are omitted. Each row's "View guests" opens the guest list with the
+ * issue key as its segment (GET /guests?segment=…) — the Desktop70 drill-down.
  */
 @Component({
   selector: 'app-reports-data-quality',
   standalone: true,
+  imports: [RouterLink],
   templateUrl: './reports-data-quality.component.html',
   styleUrl: './reports-data-quality.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ReportsDataQualityComponent implements OnInit {
+  /** Issue rows link to the affected guests when the viewer can open the guest list. */
+  protected readonly canViewGuests = inject(AuthService).hasPermission(Permissions.Guests.View);
+
+  protected hasSegment(key: string): boolean {
+    return isGuestSegment(key);
+  }
+
   private readonly reportsApi = inject(ReportsApiService);
 
   readonly data = signal<DataQualityReportDto | null>(null);

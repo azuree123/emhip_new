@@ -34,7 +34,8 @@ public sealed record ContactHistoryFilter(
 
 /// <summary>
 /// One row of the Contact History screen (design Desktop 89): a guest with the number of
-/// submitted casework notes per contact type, their CPN sessions, and their last contact.
+/// submitted casework notes per contact type, their CPN work (sessions and the Part 1 initial
+/// assessment, counted apart from the contact types), and their last contact.
 /// </summary>
 public sealed record ContactsByGuestRowDto(
     Guid GuestId,
@@ -49,6 +50,7 @@ public sealed record ContactsByGuestRowDto(
     int HospitalityCount,
     int AfaCount,
     int CpnSessionCount,
+    int CpnAssessmentCount,
     DateTimeOffset? LastContactAt);
 
 /// <summary>Filters for the per-guest view. <paramref name="Category"/> keeps guests with at least one note of that type.</summary>
@@ -66,14 +68,23 @@ public enum ContactHistoryCategory
     Activity = 1,
     Hospitality = 2,
     Afa = 3,
+    /// <summary>CPN contacts — follow-up sessions and the Part 1 initial assessment.</summary>
     Cpn = 4,
 }
 
-/// <summary>The screen's stat tiles — computed over the same caseload scope as the list.</summary>
+/// <summary>
+/// The screen's stat tiles — computed over the same caseload scope as the list. CPN work is
+/// reported on its own (sessions, initial assessments, guests seen) and is never part of the
+/// AFA &amp; Hospitality figure: the two are unrelated pathways.
+/// </summary>
 public sealed record ContactHistorySummaryDto(
     int TotalContacts,
     int Casework,
     int Activity,
     int AfaAndHospitality,
+    int Afa,
+    int Hospitality,
     int CpnSessions,
+    int CpnAssessments,
+    int CpnGuests,
     int GuestsWithContacts);

@@ -132,10 +132,13 @@ public sealed class ContactReadService(EmhipDbContext db) : IContactReadService
         var decoded = KeysetCursor.Decode<RecentCursor>(cursor);
         var (fromTs, toTs) = Range(filter);
 
-        // Only submitted notes count — a draft is not yet a contact (see CaseworkNote).
+        // Only submitted notes count — a draft is not yet a contact (see CaseworkNote). CPN notes
+        // are split out: they never count towards a contact type, even if one was stored on them.
         var notes = db.CaseworkNotes.AsNoTracking()
             .Where(n => n.Status == CaseworkNoteStatus.Submitted
                 && (fromTs == null || n.OccurredAt >= fromTs) && (toTs == null || n.OccurredAt <= toTs));
+        var typedNotes = notes.Where(n => !n.IsCpnContact);
+        var cpnAssessments = SubmittedCpnAssessments(fromTs, toTs);
         var contacts = db.Contacts.AsNoTracking()
             .Where(c => (fromTs == null || c.OccurredAt >= fromTs) && (toTs == null || c.OccurredAt <= toTs));
 
@@ -146,18 +149,19 @@ public sealed class ContactReadService(EmhipDbContext db) : IContactReadService
                 g.Id, g.GuestNumber, g.FirstName, g.LastName, g.Status, g.Pathway, g.AssignedCmhwId,
                 AssignedCmhwName = db.Users.Where(u => u.Id == g.AssignedCmhwId).Select(u => u.DisplayName).FirstOrDefault(),
                 Total = contacts.Count(c => c.GuestId == g.Id),
-                Casework = notes.Count(n => n.GuestId == g.Id && n.Category == CaseworkNoteCategory.Casework),
-                Activity = notes.Count(n => n.GuestId == g.Id && n.Category == CaseworkNoteCategory.Activity),
-                Hospitality = notes.Count(n => n.GuestId == g.Id && n.Category == CaseworkNoteCategory.Hospitality),
-                Afa = notes.Count(n => n.GuestId == g.Id && n.Category == CaseworkNoteCategory.Afa),
+                Casework = typedNotes.Count(n => n.GuestId == g.Id && n.Category == CaseworkNoteCategory.Casework),
+                Activity = typedNotes.Count(n => n.GuestId == g.Id && n.Category == CaseworkNoteCategory.Activity),
+                Hospitality = typedNotes.Count(n => n.GuestId == g.Id && n.Category == CaseworkNoteCategory.Hospitality),
+                Afa = typedNotes.Count(n => n.GuestId == g.Id && n.Category == CaseworkNoteCategory.Afa),
                 Cpn = notes.Count(n => n.GuestId == g.Id && n.IsCpnContact),
+                CpnAssessments = cpnAssessments.Count(a => a.GuestId == g.Id),
                 LastContactAt = contacts.Where(c => c.GuestId == g.Id).Max(c => (DateTimeOffset?)c.OccurredAt),
-                // Sort key: a submitted note always has its linked Contact, so the contact
-                // timestamp covers both; guests with nothing logged are excluded below anyway.
+                // Sort key: a submitted note or CPN assessment always has its linked Contact, so the
+                // contact timestamp covers all of them; guests with nothing logged are excluded below.
                 SortAt = contacts.Where(c => c.GuestId == g.Id).Max(c => (DateTimeOffset?)c.OccurredAt) ?? DateTimeOffset.MinValue,
             })
             // "All guest contacts across your caseload": a guest with nothing logged has no row.
-            .Where(x => x.Total > 0 || x.Casework + x.Activity + x.Hospitality + x.Afa + x.Cpn > 0);
+            .Where(x => x.Total > 0 || x.Casework + x.Activity + x.Hospitality + x.Afa + x.Cpn + x.CpnAssessments > 0);
 
         if (filter.AssignedCmhwId is not null)
         {
@@ -177,7 +181,7 @@ public sealed class ContactReadService(EmhipDbContext db) : IContactReadService
             ContactHistoryCategory.Activity => query.Where(x => x.Activity > 0),
             ContactHistoryCategory.Hospitality => query.Where(x => x.Hospitality > 0),
             ContactHistoryCategory.Afa => query.Where(x => x.Afa > 0),
-            ContactHistoryCategory.Cpn => query.Where(x => x.Cpn > 0),
+            ContactHistoryCategory.Cpn => query.Where(x => x.Cpn + x.CpnAssessments > 0),
             _ => query,
         };
 
@@ -199,7 +203,7 @@ public sealed class ContactReadService(EmhipDbContext db) : IContactReadService
         var page = rows.Take(pageSize)
             .Select(r => new ContactsByGuestRowDto(
                 r.Id, r.GuestNumber, r.FirstName + " " + r.LastName, r.Status.ToString(), r.Pathway, r.AssignedCmhwName,
-                r.Total, r.Casework, r.Activity, r.Hospitality, r.Afa, r.Cpn, r.LastContactAt))
+                r.Total, r.Casework, r.Activity, r.Hospitality, r.Afa, r.Cpn, r.CpnAssessments, r.LastContactAt))
             .ToList();
         var last = rows.Take(pageSize).LastOrDefault();
 
@@ -226,16 +230,49 @@ public sealed class ContactReadService(EmhipDbContext db) : IContactReadService
             .Where(n => n.Status == CaseworkNoteStatus.Submitted
                 && (fromTs == null || n.OccurredAt >= fromTs) && (toTs == null || n.OccurredAt <= toTs)
                 && guests.Any(g => g.Id == n.GuestId));
+        var cpnAssessments = SubmittedCpnAssessments(fromTs, toTs).Where(a => guests.Any(g => g.Id == a.GuestId));
         var contacts = db.Contacts.AsNoTracking()
             .Where(c => (fromTs == null || c.OccurredAt >= fromTs) && (toTs == null || c.OccurredAt <= toTs)
                 && guests.Any(g => g.Id == c.GuestId));
 
+        // One round trip for every note tile. The contact types exclude CPN notes, so a CPN session
+        // can never inflate the AFA & Hospitality figure — CPN has its own section on the screen.
+        var noteCounts = await notes
+            .GroupBy(_ => 1)
+            .Select(g => new
+            {
+                Casework = g.Count(n => !n.IsCpnContact && n.Category == CaseworkNoteCategory.Casework),
+                Activity = g.Count(n => !n.IsCpnContact && n.Category == CaseworkNoteCategory.Activity),
+                Afa = g.Count(n => !n.IsCpnContact && n.Category == CaseworkNoteCategory.Afa),
+                Hospitality = g.Count(n => !n.IsCpnContact && n.Category == CaseworkNoteCategory.Hospitality),
+                CpnSessions = g.Count(n => n.IsCpnContact),
+            })
+            .FirstOrDefaultAsync(cancellationToken);
+
+        var assessmentCount = await cpnAssessments.CountAsync(cancellationToken);
+        var cpnGuests = await guests.CountAsync(
+            g => notes.Any(n => n.GuestId == g.Id && n.IsCpnContact) || cpnAssessments.Any(a => a.GuestId == g.Id),
+            cancellationToken);
+
         return new ContactHistorySummaryDto(
             await contacts.CountAsync(cancellationToken),
-            await notes.CountAsync(n => n.Category == CaseworkNoteCategory.Casework, cancellationToken),
-            await notes.CountAsync(n => n.Category == CaseworkNoteCategory.Activity, cancellationToken),
-            await notes.CountAsync(n => n.Category == CaseworkNoteCategory.Afa || n.Category == CaseworkNoteCategory.Hospitality, cancellationToken),
-            await notes.CountAsync(n => n.IsCpnContact, cancellationToken),
+            noteCounts?.Casework ?? 0,
+            noteCounts?.Activity ?? 0,
+            (noteCounts?.Afa ?? 0) + (noteCounts?.Hospitality ?? 0),
+            noteCounts?.Afa ?? 0,
+            noteCounts?.Hospitality ?? 0,
+            noteCounts?.CpnSessions ?? 0,
+            assessmentCount,
+            cpnGuests,
             await contacts.Select(c => c.GuestId).Distinct().CountAsync(cancellationToken));
     }
+
+    /// <summary>
+    /// Submitted CPN Part 1 assessments in the range. Each one wrote its own Contact on
+    /// submission, so it is CPN activity alongside the follow-up session notes.
+    /// </summary>
+    private IQueryable<Domain.Entities.CpnInitialAssessment> SubmittedCpnAssessments(DateTimeOffset? fromTs, DateTimeOffset? toTs) =>
+        db.CpnInitialAssessments.AsNoTracking()
+            .Where(a => a.Status == CpnAssessmentStatus.Submitted
+                && (fromTs == null || a.OccurredAt >= fromTs) && (toTs == null || a.OccurredAt <= toTs));
 }

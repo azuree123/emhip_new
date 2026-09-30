@@ -15,7 +15,7 @@ function emptyForm(): RoleForm {
   return { name: '', description: '', permissions: [] };
 }
 
-const BUILT_IN_ROLES = ['Cmhw', 'HubManager', 'Admin'];
+const BUILT_IN_ROLES = ['Cmhw', 'Cpn', 'HubManager', 'Admin'];
 
 /**
  * Admin-only "Roles & Permissions" screen — the editor for the granular permission catalog

@@ -1,36 +1,48 @@
-import { ChangeDetectionStrategy, Component, EventEmitter, Output, computed, effect, inject, input, signal } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import { ChangeDetectionStrategy, Component, EventEmitter, Output, computed, effect, inject, input, signal, untracked } from '@angular/core';
 import { DocumentDetailDto, DocumentListItemDto, LookupItemDto } from '../../core/api-models';
 import { AuthService } from '../../core/auth.service';
 import { DocumentsApiService, documentErrorMessage } from '../../core/documents-api.service';
 import { Permissions } from '../../core/permissions';
 import { LookupCategories, SettingsApiService } from '../../core/settings-api.service';
+import { DocumentConfirmDialogComponent } from '../documents/document-confirm-dialog.component';
+import { DocumentDetailDrawerComponent } from '../documents/document-detail-drawer.component';
+import { DocumentUploadDrawerComponent } from '../documents/document-upload-drawer.component';
+import { formatBytes, saveBlob, splitTags } from '../documents/documents.util';
 import { formatDate, formatDateTime, humanize } from './guest-workspace.util';
 
-/** Draft of the "Upload document" form — plain object so the template can use [(ngModel)]. */
-interface UploadForm {
+/** Rows per keyset page. */
+const PAGE_SIZE = 50;
+/** The phrase an operator must type before a purge runs (same as the old register). */
+const PURGE_PHRASE = 'DELETE';
+
+/** A destructive action waiting on the shared confirmation dialog. */
+interface ConfirmState {
+  kind: 'delete' | 'purge';
+  id: string;
   title: string;
-  category: string;
-  description: string;
-  tags: string;
 }
 
 /**
  * Documents tab — this guest's files, listed from DocumentsApiService.getList({ guestId }).
- * Same card/table/pill language as the other workspace tabs (guest-tab-shared.scss): a single
- * white card with the red "Upload document" header button, an inline upload panel with
- * drag-and-drop + live progress bar, and a Title / Category / Version / Size / Uploaded table
- * whose rows expand into the document's version history (getDetail) with per-version download
- * and an "Upload new version" form for documents.edit holders.
  *
- * Every action is gated on the permission the API enforces (documents.view/upload/edit/delete);
- * uploads are validated client-side against the documents.upload.* settings before they are sent
- * so an oversized or blocked file never round-trips.
+ * This is the only place documents are managed: there is no hub-wide Documents page, so every
+ * upload is filed on this guest automatically (customer feedback — the guest link must never be
+ * a manual choice). The tab reuses the Document Management drawers and dialog rather than
+ * keeping its own copies:
+ *  - "Upload document" opens DocumentUploadDrawerComponent with `linkedGuestId`, which hides
+ *    the guest picker;
+ *  - a document's title / "View details" opens DocumentDetailDrawerComponent — metadata edit,
+ *    version history with per-version download, "Upload new version", check-out;
+ *  - Delete (with an optional reason) and Permanently delete go through
+ *    DocumentConfirmDialogComponent.
+ * Restore/purge holders also get a "Recycle bin" toggle that lists this guest's deleted files.
+ *
+ * Every action is gated on the permission the API enforces (Permissions.Documents.*).
  */
 @Component({
   selector: 'emhip-guest-documents-tab',
   standalone: true,
-  imports: [FormsModule],
+  imports: [DocumentUploadDrawerComponent, DocumentDetailDrawerComponent, DocumentConfirmDialogComponent],
   templateUrl: './guest-documents-tab.component.html',
   styleUrl: './guest-documents-tab.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -41,13 +53,17 @@ export class GuestDocumentsTabComponent {
   private readonly auth = inject(AuthService);
 
   readonly guestId = input.required<string>();
-  /** Emitted after an upload/delete so the workspace header can refresh its counters. */
+  /** Emitted after an upload/delete/restore so the workspace header can refresh its counters. */
   @Output() readonly refresh = new EventEmitter<void>();
 
   readonly canView = this.auth.hasPermission(Permissions.Documents.View);
   readonly canUpload = this.auth.hasPermission(Permissions.Documents.Upload);
   readonly canEdit = this.auth.hasPermission(Permissions.Documents.Edit);
   readonly canDelete = this.auth.hasPermission(Permissions.Documents.Delete);
+  readonly canRestore = this.auth.hasPermission(Permissions.Documents.Restore);
+  readonly canPurge = this.auth.hasPermission(Permissions.Documents.Purge);
+  /** Only these users get the recycle-bin toggle — nobody else can act on what's in there. */
+  readonly canSeeRecycleBin = this.canRestore || this.canPurge;
 
   readonly documents = signal<DocumentListItemDto[] | null>(null);
   readonly loading = signal(true);
@@ -55,59 +71,57 @@ export class GuestDocumentsTabComponent {
   /** Keyset cursor for the "Load more" button; null once the last page is in. */
   readonly nextCursor = signal<string | null>(null);
   readonly loadingMore = signal(false);
+  /** The API sends the total on the first page only; carried across "Load more". */
+  readonly totalCount = signal<number | null>(null);
+  /** Recycle-bin view: this guest's soft-deleted documents instead of the live ones. */
+  readonly deletedOnly = signal(false);
 
   readonly categories = signal<LookupItemDto[]>([]);
 
-  // ---- upload panel ----
-  readonly showUpload = signal(false);
-  readonly selectedFile = signal<File | null>(null);
-  readonly dragging = signal(false);
-  readonly uploading = signal(false);
-  readonly uploadPercent = signal(0);
-  readonly uploadError = signal<string | null>(null);
-  form: UploadForm = this.emptyForm();
+  // ---- Overlays ----
+  readonly uploadOpen = signal(false);
+  readonly detailId = signal<string | null>(null);
+  /** True when the drawer was opened from "Edit details", so the metadata form opens straight away. */
+  readonly detailEdit = signal(false);
+  readonly confirmState = signal<ConfirmState | null>(null);
+  readonly confirmBusy = signal(false);
+  readonly confirmError = signal<string | null>(null);
+  readonly openMenuId = signal<string | null>(null);
+  readonly purgePhrase = PURGE_PHRASE;
 
-  // ---- expanded row (version history) ----
-  readonly expandedId = signal<string | null>(null);
-  readonly detail = signal<DocumentDetailDto | null>(null);
-  readonly detailLoading = signal(false);
-  readonly detailError = signal<string | null>(null);
-
-  // ---- "Upload new version" inside the expanded row ----
-  readonly showVersionForm = signal(false);
-  readonly versionFile = signal<File | null>(null);
-  readonly versionUploading = signal(false);
-  readonly versionPercent = signal(0);
-  readonly versionError = signal<string | null>(null);
-  versionNote = '';
-
-  /** Id of the row whose download/delete is in flight, so its buttons disable. */
+  /** Id of the row whose download/restore is in flight, so its buttons disable. */
   readonly busyId = signal<string | null>(null);
   readonly rowError = signal<string | null>(null);
+  /** Transient success note above the table ("Document uploaded.", "Document restored.", …). */
+  readonly flash = signal<string | null>(null);
 
   readonly maxUploadMb = this.settingsApi.maxUploadMb;
   readonly allowedExtensions = this.settingsApi.allowedExtensions;
-  /** `accept` for the file inputs — omitted when the hub allows any extension. */
-  readonly acceptAttr = computed(() => {
-    const extensions = this.allowedExtensions();
-    return extensions.length ? extensions.map((e) => `.${e}`).join(',') : null;
-  });
-  readonly uploadHint = computed(() => {
-    const extensions = this.allowedExtensions();
-    const size = `Up to ${this.maxUploadMb()} MB`;
-    return extensions.length ? `${size} · ${extensions.join(', ')}` : size;
+
+  /** "3 documents" / "1 document in the recycle bin" — the total when the API sent one. */
+  readonly heading = computed(() => {
+    const count = this.totalCount() ?? this.documents()?.length ?? 0;
+    const noun = count === 1 ? 'document' : 'documents';
+    return this.deletedOnly() ? `${count} ${noun} in the recycle bin` : `${count} ${noun}`;
   });
 
   readonly formatDate = formatDate;
   readonly formatDateTime = formatDateTime;
+  readonly formatSize = formatBytes;
+  readonly splitTags = splitTags;
 
   constructor() {
+    // Re-runs only when the guest changes — load() reads deletedOnly(), so it must not be tracked
+    // here or toggling the recycle bin would re-fire this and switch it straight back off.
     effect((onCleanup) => {
       const id = this.guestId();
       let cancelled = false;
       onCleanup(() => (cancelled = true));
-      this.resetPanels();
-      this.load(id, () => cancelled);
+      untracked(() => {
+        this.resetOverlays();
+        this.deletedOnly.set(false);
+        this.load(id, () => cancelled);
+      });
     });
     if (this.canView) {
       this.settingsApi.getLookups(LookupCategories.DocumentCategory).subscribe({
@@ -117,14 +131,12 @@ export class GuestDocumentsTabComponent {
     }
   }
 
-  private emptyForm(): UploadForm {
-    return { title: '', category: '', description: '', tags: '' };
-  }
-
-  private resetPanels(): void {
-    this.showUpload.set(false);
-    this.expandedId.set(null);
-    this.detail.set(null);
+  private resetOverlays(): void {
+    this.uploadOpen.set(false);
+    this.detailId.set(null);
+    this.detailEdit.set(false);
+    this.confirmState.set(null);
+    this.openMenuId.set(null);
     this.rowError.set(null);
   }
 
@@ -135,11 +147,13 @@ export class GuestDocumentsTabComponent {
     }
     this.loading.set(true);
     this.error.set(null);
-    this.documentsApi.getList({ guestId, pageSize: 50 }).subscribe({
+    this.openMenuId.set(null);
+    this.documentsApi.getList({ guestId, deletedOnly: this.deletedOnly() || undefined, pageSize: PAGE_SIZE }).subscribe({
       next: (page) => {
         if (isCancelled()) return;
         this.documents.set(page.items);
         this.nextCursor.set(page.hasMore ? page.nextCursor : null);
+        this.totalCount.set(page.totalCount);
         this.loading.set(false);
       },
       error: () => {
@@ -150,18 +164,33 @@ export class GuestDocumentsTabComponent {
     });
   }
 
+  /** Re-reads the first page after anything changed, and tells the workspace header. */
+  private reload(): void {
+    this.load(this.guestId(), () => false);
+    this.refresh.emit();
+  }
+
   loadMore(): void {
     const cursor = this.nextCursor();
     if (!cursor || this.loadingMore()) return;
     this.loadingMore.set(true);
-    this.documentsApi.getList({ guestId: this.guestId(), cursor, pageSize: 50 }).subscribe({
-      next: (page) => {
-        this.documents.update((current) => [...(current ?? []), ...page.items]);
-        this.nextCursor.set(page.hasMore ? page.nextCursor : null);
-        this.loadingMore.set(false);
-      },
-      error: () => this.loadingMore.set(false),
-    });
+    this.documentsApi
+      .getList({ guestId: this.guestId(), deletedOnly: this.deletedOnly() || undefined, cursor, pageSize: PAGE_SIZE })
+      .subscribe({
+        next: (page) => {
+          this.documents.update((current) => [...(current ?? []), ...page.items]);
+          this.nextCursor.set(page.hasMore ? page.nextCursor : null);
+          this.loadingMore.set(false);
+        },
+        error: () => this.loadingMore.set(false),
+      });
+  }
+
+  toggleRecycleBin(): void {
+    this.deletedOnly.update((on) => !on);
+    this.rowError.set(null);
+    this.documents.set(null);
+    this.load(this.guestId(), () => false);
   }
 
   /** Lookup label for a stored category code, falling back to the raw value. */
@@ -169,244 +198,64 @@ export class GuestDocumentsTabComponent {
     return this.categories().find((c) => c.code === category)?.label ?? humanize(category);
   }
 
-  /** "812 KB" / "3.4 MB" — the table shows one size per row. */
-  formatSize(bytes: number): string {
-    if (bytes < 1024) return `${bytes} B`;
-    const kb = bytes / 1024;
-    if (kb < 1024) return `${Math.round(kb)} KB`;
-    return `${(kb / 1024).toFixed(1)} MB`;
+  // ---- Row menu ----
+
+  toggleMenu(documentId: string): void {
+    this.openMenuId.update((open) => (open === documentId ? null : documentId));
   }
 
-  splitTags(tags: string | null): string[] {
-    return (tags ?? '')
-      .split(',')
-      .map((t) => t.trim())
-      .filter(Boolean);
+  closeMenu(): void {
+    this.openMenuId.set(null);
   }
 
-  // ---- upload ----
+  // ---- Upload drawer ----
 
-  toggleUpload(): void {
-    if (this.showUpload()) {
-      this.closeUpload();
-      return;
-    }
-    this.form = this.emptyForm();
-    this.selectedFile.set(null);
-    this.uploadError.set(null);
-    this.uploadPercent.set(0);
-    this.showUpload.set(true);
+  openUpload(): void {
+    this.uploadOpen.set(true);
   }
 
   closeUpload(): void {
-    this.showUpload.set(false);
-    this.selectedFile.set(null);
-    this.uploadError.set(null);
-    this.dragging.set(false);
+    this.uploadOpen.set(false);
   }
 
-  onFileInput(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    this.pickFile(input.files?.[0] ?? null);
-    // Allow re-picking the same file after a rejection.
-    input.value = '';
+  onUploaded(): void {
+    this.uploadOpen.set(false);
+    this.notify('Document uploaded.');
+    // A new upload is live, so leave the recycle bin to show it.
+    this.deletedOnly.set(false);
+    this.reload();
   }
 
-  onDragOver(event: DragEvent): void {
-    event.preventDefault();
-    this.dragging.set(true);
+  // ---- Detail drawer (view / edit details / versions) ----
+
+  openDetail(documentId: string, edit = false): void {
+    this.closeMenu();
+    this.detailEdit.set(edit);
+    this.detailId.set(documentId);
   }
 
-  onDragLeave(event: DragEvent): void {
-    event.preventDefault();
-    this.dragging.set(false);
+  closeDetail(): void {
+    this.detailId.set(null);
+    this.detailEdit.set(false);
   }
 
-  onDrop(event: DragEvent): void {
-    event.preventDefault();
-    this.dragging.set(false);
-    this.pickFile(event.dataTransfer?.files?.[0] ?? null);
+  /** The drawer saved something (details, a new version, a restore) — the list behind it is stale. */
+  onDetailChanged(): void {
+    this.reload();
   }
 
-  private pickFile(file: File | null): void {
-    if (!file) return;
-    const problem = this.validateFile(file);
-    if (problem) {
-      this.selectedFile.set(null);
-      this.uploadError.set(problem);
-      return;
-    }
-    this.uploadError.set(null);
-    this.selectedFile.set(file);
-    // Seed the title from the file name (without extension) when the user hasn't typed one.
-    if (!this.form.title.trim()) this.form.title = file.name.replace(/\.[^.]+$/, '');
-  }
-
-  /** Client-side mirror of the server's upload rules (documents.upload.* settings). */
-  private validateFile(file: File): string | null {
-    const maxMb = this.maxUploadMb();
-    if (maxMb > 0 && file.size > maxMb * 1024 * 1024) {
-      return `"${file.name}" is ${this.formatSize(file.size)} — the limit is ${maxMb} MB.`;
-    }
-    const allowed = this.allowedExtensions();
-    if (allowed.length) {
-      const extension = file.name.includes('.') ? file.name.split('.').pop()!.toLowerCase() : '';
-      if (!allowed.includes(extension)) {
-        return `${extension ? `.${extension}` : 'That file type'} is not allowed. Accepted types: ${allowed.join(', ')}.`;
-      }
-    }
-    return null;
-  }
-
-  submitUpload(): void {
-    const file = this.selectedFile();
-    if (!file) {
-      this.uploadError.set('Choose a file to upload.');
-      return;
-    }
-    if (!this.form.title.trim()) {
-      this.uploadError.set('A title is required.');
-      return;
-    }
-    if (!this.form.category) {
-      this.uploadError.set('Choose a category.');
-      return;
-    }
-
-    this.uploading.set(true);
-    this.uploadPercent.set(0);
-    this.uploadError.set(null);
-    this.documentsApi
-      .upload({
-        file,
-        title: this.form.title.trim(),
-        category: this.form.category,
-        guestId: this.guestId(),
-        description: this.form.description.trim() || null,
-        tags: this.form.tags.trim() || null,
-      })
-      .subscribe({
-        next: (progress) => {
-          if (progress.state === 'progress') {
-            this.uploadPercent.set(progress.percent);
-            return;
-          }
-          this.uploading.set(false);
-          this.uploadPercent.set(100);
-          this.form = this.emptyForm();
-          this.selectedFile.set(null);
-          this.showUpload.set(false);
-          this.load(this.guestId(), () => false);
-          this.refresh.emit();
-        },
-        error: (err: unknown) => {
-          this.uploading.set(false);
-          this.uploadError.set(documentErrorMessage(err, 'Could not upload this document. Please try again.'));
-        },
-      });
-  }
-
-  // ---- version history ----
-
-  toggleExpand(doc: DocumentListItemDto): void {
-    if (this.expandedId() === doc.id) {
-      this.expandedId.set(null);
-      this.detail.set(null);
-      this.showVersionForm.set(false);
-      return;
-    }
-    this.expandedId.set(doc.id);
-    this.detail.set(null);
-    this.showVersionForm.set(false);
-    this.versionError.set(null);
-    this.loadDetail(doc.id);
-  }
-
-  private loadDetail(documentId: string): void {
-    this.detailLoading.set(true);
-    this.detailError.set(null);
-    this.documentsApi.getDetail(documentId).subscribe({
-      next: (dto) => {
-        // A second row may have been expanded while this request was in flight.
-        if (this.expandedId() !== documentId) return;
-        this.detail.set(dto);
-        this.detailLoading.set(false);
-      },
-      error: () => {
-        if (this.expandedId() !== documentId) return;
-        this.detailError.set('Could not load the version history for this document.');
-        this.detailLoading.set(false);
-      },
-    });
-  }
-
-  toggleVersionForm(): void {
-    this.showVersionForm.update((v) => !v);
-    this.versionFile.set(null);
-    this.versionNote = '';
-    this.versionError.set(null);
-    this.versionPercent.set(0);
-  }
-
-  onVersionFileInput(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    const file = input.files?.[0] ?? null;
-    input.value = '';
-    if (!file) return;
-    const problem = this.validateFile(file);
-    if (problem) {
-      this.versionFile.set(null);
-      this.versionError.set(problem);
-      return;
-    }
-    this.versionError.set(null);
-    this.versionFile.set(file);
-  }
-
-  submitVersion(): void {
-    const documentId = this.expandedId();
-    const file = this.versionFile();
-    if (!documentId) return;
-    if (!file) {
-      this.versionError.set('Choose the replacement file.');
-      return;
-    }
-
-    this.versionUploading.set(true);
-    this.versionPercent.set(0);
-    this.versionError.set(null);
-    this.documentsApi.addVersion(documentId, file, this.versionNote.trim() || null).subscribe({
-      next: (progress) => {
-        if (progress.state === 'progress') {
-          this.versionPercent.set(progress.percent);
-          return;
-        }
-        this.versionUploading.set(false);
-        this.versionFile.set(null);
-        this.versionNote = '';
-        this.showVersionForm.set(false);
-        this.loadDetail(documentId);
-        this.load(this.guestId(), () => false);
-        this.refresh.emit();
-      },
-      error: (err: unknown) => {
-        this.versionUploading.set(false);
-        this.versionError.set(documentErrorMessage(err, 'Could not upload this version. Please try again.'));
-      },
-    });
-  }
-
-  // ---- download / delete ----
+  // ---- Download ----
 
   /** The API streams the file as a Blob (so the JWT interceptor applies) — save it via an object URL. */
-  download(doc: DocumentListItemDto, version?: number, fileName?: string): void {
+  download(doc: DocumentListItemDto): void {
+    this.closeMenu();
     if (this.busyId()) return;
     this.busyId.set(doc.id);
     this.rowError.set(null);
-    this.documentsApi.download(doc.id, version).subscribe({
+    this.documentsApi.download(doc.id).subscribe({
       next: (blob) => {
         this.busyId.set(null);
-        this.saveBlob(blob, fileName ?? doc.fileName);
+        saveBlob(blob, doc.fileName);
       },
       error: (err: unknown) => {
         this.busyId.set(null);
@@ -415,34 +264,77 @@ export class GuestDocumentsTabComponent {
     });
   }
 
-  private saveBlob(blob: Blob, fileName: string): void {
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement('a');
-    anchor.href = url;
-    anchor.download = fileName;
-    anchor.click();
-    URL.revokeObjectURL(url);
+  // ---- Delete / purge (confirmed) and restore ----
+
+  askDelete(doc: DocumentListItemDto | DocumentDetailDto): void {
+    this.closeMenu();
+    this.confirmError.set(null);
+    this.confirmState.set({ kind: 'delete', id: doc.id, title: doc.title });
   }
 
-  /** Soft delete — the document stays recoverable from the recycle bin in Documents. */
-  deleteDocument(doc: DocumentListItemDto): void {
+  askPurge(doc: DocumentListItemDto | DocumentDetailDto): void {
+    this.closeMenu();
+    this.confirmError.set(null);
+    this.confirmState.set({ kind: 'purge', id: doc.id, title: doc.title });
+  }
+
+  cancelConfirm(): void {
+    this.confirmState.set(null);
+    this.confirmError.set(null);
+  }
+
+  onConfirmed(reason: string | null): void {
+    const state = this.confirmState();
+    if (!state || this.confirmBusy()) return;
+    this.confirmBusy.set(true);
+    this.confirmError.set(null);
+
+    const request = state.kind === 'delete' ? this.documentsApi.delete(state.id, reason) : this.documentsApi.purge(state.id);
+    request.subscribe({
+      next: () => {
+        this.confirmBusy.set(false);
+        this.confirmState.set(null);
+        // Both actions take the document out of the current view, so drop the drawer with it.
+        if (this.detailId() === state.id) this.closeDetail();
+        this.notify(state.kind === 'delete' ? 'Document moved to the recycle bin.' : 'Document permanently deleted.');
+        this.reload();
+      },
+      error: (err: unknown) => {
+        this.confirmBusy.set(false);
+        this.confirmError.set(
+          documentErrorMessage(err, state.kind === 'delete' ? 'This document could not be deleted.' : 'This document could not be purged.'),
+        );
+      },
+    });
+  }
+
+  /** Restoring needs no confirmation — it only ever puts a document back. */
+  restore(doc: DocumentListItemDto): void {
+    this.closeMenu();
     if (this.busyId()) return;
     this.busyId.set(doc.id);
     this.rowError.set(null);
-    this.documentsApi.delete(doc.id).subscribe({
+    this.documentsApi.restore(doc.id).subscribe({
       next: () => {
         this.busyId.set(null);
-        if (this.expandedId() === doc.id) {
-          this.expandedId.set(null);
-          this.detail.set(null);
-        }
-        this.load(this.guestId(), () => false);
-        this.refresh.emit();
+        this.notify('Document restored.');
+        this.reload();
       },
       error: (err: unknown) => {
         this.busyId.set(null);
-        this.rowError.set(documentErrorMessage(err, 'Could not delete this document.'));
+        this.rowError.set(documentErrorMessage(err, 'This document could not be restored.'));
       },
     });
+  }
+
+  private notify(message: string): void {
+    this.flash.set(message);
+    setTimeout(() => {
+      if (this.flash() === message) this.flash.set(null);
+    }, 4000);
+  }
+
+  dismissFlash(): void {
+    this.flash.set(null);
   }
 }

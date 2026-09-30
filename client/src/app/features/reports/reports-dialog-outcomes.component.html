@@ -1,5 +1,37 @@
 <div class="dialog-tab">
-  <!-- KPI row (Desktop47 top 428): Baselines / Follow-ups / Avg change / Missing. -->
+  <!-- Demographic cross-filter: the shared drawer (ethnicity / age group / gender / country of
+       origin). Every figure below — KPIs, trend, radar, domain table — is recomputed server-side
+       for the cohort, and the "Showing" line keeps the active cohort in view. -->
+  <section class="cohort-bar" [class.cohort-bar--active]="cohortActive()">
+    <div class="cohort-bar__row">
+      <p class="cohort-bar__summary" aria-live="polite">
+        <span class="cohort-bar__caption">Showing:</span>
+        <span class="cohort-bar__value">{{ cohortText() }}</span>
+        @if (outcomes(); as o) {
+          <span class="cohort-bar__count">{{ o.cohortGuests }} guest{{ o.cohortGuests === 1 ? '' : 's' }}</span>
+        }
+      </p>
+      <div class="cohort-bar__filters">
+        <emhip-demographic-filters [value]="cohort()" (valueChange)="onCohortChange($event)" />
+      </div>
+    </div>
+    @if (cohortActive()) {
+      <p class="cohort-bar__note">
+        Figures cover only guests matching this cohort. Export to Excel uses the same cohort for its DIALOG outcomes sheet.
+      </p>
+    }
+    @if (smallCohort()) {
+      <p class="cohort-bar__note cohort-bar__note--warn">
+        Small cohort — fewer than 5 guests have a reassessment, so these averages can move on a single score.
+      </p>
+    }
+  </section>
+
+  @if (error()) {
+    <div class="error-banner">Couldn't load DIALOG outcome data — {{ error() }}</div>
+  }
+
+  <!-- KPI row (Desktop47 top 428): Baselines / Reassessments / Avg change / Missing. -->
   <section class="stat-row">
     <div class="stat-card">
       <span class="stat-card__label">Baselines recorded</span>
@@ -7,7 +39,7 @@
       <span class="stat-card__caption">Guests with a first assessment</span>
     </div>
     <div class="stat-card">
-      <span class="stat-card__label">Follow-up assessments</span>
+      <span class="stat-card__label">Reassessments</span>
       <span class="stat-card__value">{{ outcomes()?.guestsWithFollowUp ?? '—' }}</span>
       <span class="stat-card__caption"><strong>{{ followUpPct() }}%</strong>&nbsp;of guests with a baseline</span>
     </div>
@@ -19,7 +51,7 @@
     <div class="stat-card">
       <span class="stat-card__label">Missing assessments</span>
       <span class="stat-card__value">{{ outcomes() ? missingFollowUps() : '—' }}</span>
-      <span class="stat-card__caption stat-card__caption--maroon">No follow-up yet</span>
+      <span class="stat-card__caption stat-card__caption--maroon">No reassessment yet</span>
     </div>
   </section>
 
@@ -96,12 +128,12 @@
               }
             </svg>
           } @else {
-            <div class="report-card__state">No DIALOG assessments recorded yet.</div>
+            <div class="report-card__state">{{ emptyText() }}</div>
           }
         }
       </section>
 
-      <app-reports-domain-table [outcomes]="outcomes()" [loading]="loading()" />
+      <app-reports-domain-table [outcomes]="outcomes()" [loading]="loading()" [emptyText]="emptyText()" />
     </div>
 
     <!-- "Outcome dimensions" radar (Desktop47, right column card 466x399):
@@ -113,8 +145,8 @@
 
       @if (loading()) {
         <div class="report-card__state">Loading outcome dimensions…</div>
-      } @else if (!radar()) {
-        <div class="report-card__state">No DIALOG assessments recorded yet.</div>
+      } @else if (!radar() || (outcomes()?.guestsWithBaseline ?? 0) + (outcomes()?.guestsWithFollowUp ?? 0) === 0) {
+        <div class="report-card__state">{{ emptyText() }}</div>
       } @else {
         @if (radar(); as chart) {
           <svg

@@ -7,17 +7,20 @@
         <div
           class="kpi-card kpi-card--interactive"
           [class.kpi-card--expanded]="expanded() === 'active'"
-          role="button"
+          role="link"
           tabindex="0"
-          (click)="toggleExpand('active')"
-          (keydown.enter)="toggleExpand('active')"
+          title="Open the list of active guests"
+          (click)="openKpiList('active')"
+          (keydown.enter)="openKpiList('active')"
         >
           <button
             type="button"
             class="kpi-card__expand"
             [class.kpi-card__expand--open]="expanded() === 'active'"
-            aria-label="Expand active guests"
-            tabindex="-1"
+            [attr.aria-expanded]="expanded() === 'active'"
+            title="Preview here"
+            (click)="toggleExpand('active', $event)"
+            aria-label="Preview active guests"
           >
             <svg width="8" height="13" viewBox="0 0 7.364 12.728" fill="none" aria-hidden="true">
               <path
@@ -51,17 +54,20 @@
         <div
           class="kpi-card kpi-card--interactive"
           [class.kpi-card--expanded]="expanded() === 'new'"
-          role="button"
+          role="link"
           tabindex="0"
-          (click)="toggleExpand('new')"
-          (keydown.enter)="toggleExpand('new')"
+          title="Open the list of new guests awaiting an initial conversation"
+          (click)="openKpiList('new')"
+          (keydown.enter)="openKpiList('new')"
         >
           <button
             type="button"
             class="kpi-card__expand"
             [class.kpi-card__expand--open]="expanded() === 'new'"
-            aria-label="Expand new guests awaiting initial conversation"
-            tabindex="-1"
+            [attr.aria-expanded]="expanded() === 'new'"
+            title="Preview here"
+            (click)="toggleExpand('new', $event)"
+            aria-label="Preview new guests awaiting initial conversation"
           >
             <svg width="8" height="13" viewBox="0 0 7.364 12.728" fill="none" aria-hidden="true">
               <path
@@ -86,17 +92,20 @@
         <div
           class="kpi-card kpi-card--interactive"
           [class.kpi-card--expanded]="expanded() === 'onHold'"
-          role="button"
+          role="link"
           tabindex="0"
-          (click)="toggleExpand('onHold')"
-          (keydown.enter)="toggleExpand('onHold')"
+          title="Open the list of inactive guests"
+          (click)="openKpiList('onHold')"
+          (keydown.enter)="openKpiList('onHold')"
         >
           <button
             type="button"
             class="kpi-card__expand"
             [class.kpi-card__expand--open]="expanded() === 'onHold'"
-            aria-label="Expand on hold guests"
-            tabindex="-1"
+            [attr.aria-expanded]="expanded() === 'onHold'"
+            title="Preview here"
+            (click)="toggleExpand('onHold', $event)"
+            aria-label="Preview inactive guests"
           >
             <svg width="8" height="13" viewBox="0 0 7.364 12.728" fill="none" aria-hidden="true">
               <path
@@ -106,7 +115,7 @@
               />
             </svg>
           </button>
-          <div class="kpi-card__label">On hold</div>
+          <div class="kpi-card__label">Inactive</div>
           <div class="kpi-card__number">{{ d.inactiveGuests }}</div>
           @let closed = closedThisMonth();
           @if (closed !== null) {
@@ -126,17 +135,20 @@
         <div
           class="kpi-card kpi-card--interactive"
           [class.kpi-card--expanded]="expanded() === 'urgent'"
-          role="button"
+          role="link"
           tabindex="0"
-          (click)="toggleExpand('urgent')"
-          (keydown.enter)="toggleExpand('urgent')"
+          title="Open the list of urgent cases"
+          (click)="openKpiList('urgent')"
+          (keydown.enter)="openKpiList('urgent')"
         >
           <button
             type="button"
             class="kpi-card__expand"
             [class.kpi-card__expand--open]="expanded() === 'urgent'"
-            aria-label="Expand urgent guests"
-            tabindex="-1"
+            [attr.aria-expanded]="expanded() === 'urgent'"
+            title="Preview here"
+            (click)="toggleExpand('urgent', $event)"
+            aria-label="Preview urgent cases"
           >
             <svg width="8" height="13" viewBox="0 0 7.364 12.728" fill="none" aria-hidden="true">
               <path
@@ -151,9 +163,9 @@
           <div class="kpi-card__pill kpi-card__pill--pink">
             <span class="dot"></span>
             @if (queueState() === 'ready' && overdueCount() > 0) {
-              {{ overdueCount() }} follow-up overdue
+              {{ overdueCount() }} contact{{ overdueCount() === 1 ? '' : 's' }} overdue
             } @else {
-              needs follow-up
+              needs contact
             }
           </div>
         </div>
@@ -175,7 +187,12 @@
 
       <div class="pathway-rows">
         @for (row of pathwayRows(); track row.category) {
-          <div class="pathway-row">
+          <a
+            class="pathway-row pathway-row--link"
+            routerLink="/guests"
+            [queryParams]="{ clinicalPathway: pathwayValue(row.category) }"
+            [title]="'Open guests on the ' + row.category + ' pathway'"
+          >
             <div class="pathway-row__top">
               <span class="pathway-row__icon" aria-hidden="true">
                 @switch (row.icon) {
@@ -213,7 +230,7 @@
             <div class="pathway-row__track">
               <div class="pathway-row__fill" [style.width.%]="row.percentage" [style.background]="row.color"></div>
             </div>
-          </div>
+          </a>
         } @empty {
           <div class="empty">No pathway allocations recorded yet.</div>
         }
@@ -236,10 +253,23 @@
 
       <div class="indicator-grid">
         @for (indicator of d.clinicalComplexity; track indicator.label) {
-          <div class="indicator-tile">
-            <div class="indicator-tile__label">{{ indicator.label }}</div>
-            <div class="indicator-tile__number">{{ indicator.count }}</div>
-          </div>
+          @if (indicatorSegment(indicator.label); as segment) {
+            <a
+              class="indicator-tile indicator-tile--link"
+              routerLink="/guests"
+              [queryParams]="{ segment: segment }"
+              [title]="'Open guests with ' + indicator.label + ' recorded'"
+            >
+              <div class="indicator-tile__label">{{ indicator.label }}</div>
+              <div class="indicator-tile__number">{{ indicator.count }}</div>
+              <span class="indicator-tile__cta">View guests →</span>
+            </a>
+          } @else {
+            <div class="indicator-tile">
+              <div class="indicator-tile__label">{{ indicator.label }}</div>
+              <div class="indicator-tile__number">{{ indicator.count }}</div>
+            </div>
+          }
         } @empty {
           <div class="empty">No clinical complexity data recorded yet.</div>
         }
@@ -269,7 +299,12 @@
 
             <div class="demo-panel__rows">
               @for (slice of group.slices; track slice.label) {
-                <div class="demo-row">
+                <a
+                  class="demo-row demo-row--link"
+                  routerLink="/guests"
+                  [queryParams]="demographicParams(group.key, slice.label)"
+                  [title]="'Open guests: ' + group.title + ' — ' + slice.label"
+                >
                   <div class="demo-row__top">
                     <span class="demo-row__label" [title]="slice.label">{{ slice.label }}</span>
                     <span class="demo-row__meta">
@@ -282,7 +317,7 @@
                   <div class="demo-row__track">
                     <div class="demo-row__fill" [style.width.%]="slice.percentage" [style.background]="group.color"></div>
                   </div>
-                </div>
+                </a>
               } @empty {
                 <div class="demo-panel__empty">No data recorded yet.</div>
               }
@@ -310,22 +345,26 @@
         </div>
 
         <div class="indicator-grid">
-          <div class="indicator-tile">
+          <a class="indicator-tile indicator-tile--link" routerLink="/guests" [queryParams]="{ segment: 'cpnInvolved' }">
             <div class="indicator-tile__label">Guests with CPN involved</div>
             <div class="indicator-tile__number">{{ cpn.guestsWithCpnInvolved }}</div>
-          </div>
-          <div class="indicator-tile">
+            <span class="indicator-tile__cta">View guests →</span>
+          </a>
+          <a class="indicator-tile indicator-tile--link" routerLink="/guests" [queryParams]="{ segment: 'cpnAssessment' }">
             <div class="indicator-tile__label">Initial assessments completed</div>
             <div class="indicator-tile__number">{{ cpn.initialAssessmentsSubmitted }}</div>
-          </div>
-          <div class="indicator-tile">
+            <span class="indicator-tile__cta">View guests →</span>
+          </a>
+          <a class="indicator-tile indicator-tile--link" routerLink="/guests" [queryParams]="{ segment: 'cpnSessions30' }">
             <div class="indicator-tile__label">CPN sessions · last 30 days</div>
             <div class="indicator-tile__number">{{ cpn.followUpSessionsLast30Days }}</div>
-          </div>
-          <div class="indicator-tile">
+            <span class="indicator-tile__cta">View guests →</span>
+          </a>
+          <a class="indicator-tile indicator-tile--link" routerLink="/guests" [queryParams]="{ segment: 'cpnReferrals30' }">
             <div class="indicator-tile__label">Referred to CPN · last 30 days</div>
             <div class="indicator-tile__number">{{ cpn.cpnReferralsLast30Days }}</div>
-          </div>
+            <span class="indicator-tile__cta">View guests →</span>
+          </a>
         </div>
 
         <div class="mini-table mini-table--cpn">
@@ -338,18 +377,18 @@
             <span>Last CPN contact</span>
           </div>
           @for (g of cpn.guests; track g.guestId) {
-            <div class="mini-table__row" (click)="openGuest(g.guestId)">
+            <div class="mini-table__row" title="Open {{ g.name }}'s record" (click)="onRowClick($event, g.guestId)">
               <span class="mini-guest">
                 <span class="mini-guest__avatar">{{ initials(g.name) }}</span>
                 <span class="mini-guest__text">
-                  <span class="mini-guest__name">{{ g.name }}</span>
+                  <a class="mini-guest__name mini-guest__name--link" [routerLink]="['/guests', g.guestId]">{{ g.name }}</a>
                   <span class="mini-guest__id">ID: G-{{ g.guestNumber }}</span>
                 </span>
               </span>
               <span class="mini-cell">
                 <span class="status-pill" [attr.data-status]="g.status">{{ cpnStatusLabel(g) }}</span>
               </span>
-              <span class="mini-cell">{{ g.assignedCmhwName ?? '—' }}</span>
+              <span class="mini-cell mini-cell--wrap">{{ g.assignedCmhwName ?? '—' }}</span>
               <span class="mini-cell" [class.mini-cell--green]="g.hasInitialAssessment">
                 {{ g.hasInitialAssessment ? 'Completed' : 'Not yet' }}
               </span>
@@ -360,6 +399,12 @@
             <div class="empty">No guests with CPN involvement recorded yet.</div>
           }
         </div>
+
+        @if (cpn.guests.length > 0) {
+          <div class="cpn-card__footer">
+            <a class="link-red" routerLink="/guests" [queryParams]="{ segment: 'cpnAny' }">View all guests with CPN involvement →</a>
+          </div>
+        }
       </div>
     }
 
@@ -389,22 +434,39 @@
           <span class="mini-table__num">Assigned</span>
           <span class="mini-table__num">Active</span>
           <span class="mini-table__num">Urgent</span>
-          <span class="mini-table__num">Overdue follow-ups</span>
+          <span class="mini-table__num">Overdue contacts</span>
           <span class="mini-table__num">Contacts (30d)</span>
           <span>Load</span>
           <span>Actions</span>
         </div>
         @for (row of caseloadRows(); track row.staffId) {
-          <div class="mini-table__row mini-table__row--static">
+          <div
+            class="mini-table__row"
+            [class.mini-table__row--static]="!canViewGuests"
+            [title]="canViewGuests ? 'Open ' + row.displayName + '’s guest list' : ''"
+            (click)="canViewGuests && viewCaseload(row.staffId)"
+          >
             <span class="mini-guest">
               <span class="mini-guest__avatar">{{ row.initials }}</span>
               <span class="mini-guest__text">
-                <span class="mini-guest__name">{{ row.displayName }}</span>
+                <span class="mini-guest__name mini-guest__name--full">{{ row.displayName }}</span>
               </span>
             </span>
             <span class="mini-cell mini-table__num mini-cell--strong">{{ row.assignedGuests }}</span>
-            <span class="mini-cell mini-table__num">{{ row.activeGuests }}</span>
-            <span class="mini-cell mini-table__num" [class.mini-cell--red]="row.urgentGuests > 0">{{ row.urgentGuests }}</span>
+            <span class="mini-cell mini-table__num">
+              @if (canViewGuests && row.activeGuests > 0) {
+                <a class="count-link" routerLink="/guests" [queryParams]="{ cmhw: row.staffId, status: 'Active' }" (click)="$event.stopPropagation()">{{ row.activeGuests }}</a>
+              } @else {
+                {{ row.activeGuests }}
+              }
+            </span>
+            <span class="mini-cell mini-table__num" [class.mini-cell--red]="row.urgentGuests > 0">
+              @if (canViewGuests && row.urgentGuests > 0) {
+                <a class="count-link" routerLink="/guests" [queryParams]="{ cmhw: row.staffId, urgent: true }" (click)="$event.stopPropagation()">{{ row.urgentGuests }}</a>
+              } @else {
+                {{ row.urgentGuests }}
+              }
+            </span>
             <span class="mini-cell mini-table__num" [class.mini-cell--red]="row.overdueFollowUps > 0">{{ row.overdueFollowUps }}</span>
             <span class="mini-cell mini-table__num">{{ row.contactsLast30Days }}</span>
             <span class="mini-cell">
@@ -415,7 +477,7 @@
             </span>
             <span class="mini-cell">
               @if (canViewGuests) {
-                <button type="button" class="mini-action" (click)="viewCaseload(row.staffId)">View</button>
+                <button type="button" class="mini-action" (click)="$event.stopPropagation(); viewCaseload(row.staffId)">View</button>
               }
             </span>
           </div>
@@ -429,7 +491,7 @@
           {{ caseloadTotals().workers }} worker{{ caseloadTotals().workers === 1 ? '' : 's' }} ·
           <span>{{ caseloadTotals().assigned }}</span> assigned ·
           <span>{{ caseloadTotals().urgent }}</span> urgent ·
-          <span>{{ caseloadTotals().overdue }}</span> overdue follow-ups
+          <span>{{ caseloadTotals().overdue }}</span> overdue contacts
         </div>
       }
     </div>
@@ -458,7 +520,7 @@
                   <span class="team-row__dot-core"></span>
                 </span>
                 <div class="team-row__text">
-                  <div class="team-row__title">Follow-up — {{ item.guestName }}</div>
+                  <div class="team-row__title">Contact due — {{ item.guestName }}</div>
                   <div class="team-row__sub">Assigned to {{ item.assigneeName }}</div>
                 </div>
                 <span class="team-row__status" [class.team-row__status--red]="status.tone === 'red'">{{ status.text }}</span>
@@ -466,9 +528,9 @@
             </div>
           } @empty {
             @if (queueState() === 'loading') {
-              <div class="empty">Loading follow-ups…</div>
+              <div class="empty">Loading scheduled contacts…</div>
             } @else if (queueState() === 'unavailable') {
-              <div class="empty">The follow-up queue is unavailable right now.</div>
+              <div class="empty">Scheduled contacts are unavailable right now.</div>
             } @else {
               <div class="empty">No outstanding team actions.</div>
             }
@@ -487,7 +549,20 @@
             <div class="avatar-circle staff-row__avatar">{{ initials(item.actorName) }}</div>
             <div class="staff-row__text">
               <div class="staff-row__name">{{ item.actorName }}</div>
-              <div class="staff-row__detail">{{ item.description }}</div>
+              <div class="staff-row__detail">
+                {{ item.description }}
+                @if (item.guestId && item.guestName) {
+                  ·
+                  @if (canViewGuests) {
+                    <a class="staff-row__guest" [routerLink]="['/guests', item.guestId]">{{ item.guestName }}</a>
+                  } @else {
+                    <span class="staff-row__guest">{{ item.guestName }}</span>
+                  }
+                  @if (item.guestNumber) {
+                    <span class="staff-row__ref">(G-{{ item.guestNumber }})</span>
+                  }
+                }
+              </div>
             </div>
             <span class="staff-row__when">{{ formatDateTime(item.occurredAt) }}</span>
           </div>
@@ -509,7 +584,16 @@
 
       <div class="quality-card__list">
         @for (issue of dataQualityRows(); track issue.key) {
-          <div class="list-row quality-row" [class.quality-row--clear]="issue.count === 0">
+          <div
+            class="list-row quality-row"
+            [class.quality-row--clear]="issue.count === 0"
+            [class.quality-row--link]="issue.segment && issue.count > 0 && canViewGuests"
+            [attr.role]="issue.segment && issue.count > 0 && canViewGuests ? 'link' : null"
+            [attr.tabindex]="issue.segment && issue.count > 0 && canViewGuests ? 0 : null"
+            [title]="issue.segment && issue.count > 0 && canViewGuests ? 'Open the affected guests' : ''"
+            (click)="openDataQuality(issue)"
+            (keydown.enter)="openDataQuality(issue)"
+          >
             <span class="quality-row__icon" aria-hidden="true">
               @if (issue.count === 0) {
                 <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
@@ -536,6 +620,9 @@
             <span class="quality-row__count">
               <span class="quality-row__number">{{ issue.count }}</span>
               <span class="quality-row__unit">{{ issue.count === 1 ? 'guest' : 'guests' }}</span>
+              @if (issue.segment && issue.count > 0 && canViewGuests) {
+                <span class="quality-row__cta" aria-hidden="true">→</span>
+              }
             </span>
           </div>
         } @empty {

@@ -1,15 +1,28 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   OnInit,
   computed,
   inject,
-  input,
+  model,
   signal,
 } from '@angular/core';
+import { Subscription } from 'rxjs';
 import { DialogOutcomesReportDto, DialogTrendPointDto } from '../../core/api-models';
 import { ReportsApiService } from '../../core/reports-api.service';
+import {
+  DemographicFilterValue,
+  DemographicFiltersComponent,
+  EMPTY_DEMOGRAPHIC_FILTERS,
+  demographicFilterCount,
+  demographicFilterParams,
+} from '../../shared/demographic-filters.component';
+import { cohortLabel } from './report-meta';
 import { ReportsDomainTableComponent } from './reports-domain-table.component';
+
+/** Below this many reassessed guests, a cohort's averages can swing on a single score. */
+const SMALL_COHORT = 5;
 
 interface RadarPoint {
   x: number;
@@ -89,11 +102,17 @@ const T_POINT_INSET = 8;
  * (lines 103895-107266): KPI tiles, the "DIALOG SCORE TREND" line chart
  * (monthly average total score from the real /reports/dialog-trend endpoint),
  * the "Outcome dimensions" radar and the per-domain averages table.
+ *
+ * Every figure can be cross-filtered by demographics (ethnicity, age group, gender,
+ * country of origin) through the shared drawer the Guest page uses; the server
+ * recomputes the outcomes and the trend for that cohort. The cohort is a two-way
+ * model so the Reports page keeps it across tab switches and feeds it into the
+ * Excel export's DIALOG outcomes sheet.
  */
 @Component({
   selector: 'app-reports-dialog-outcomes',
   standalone: true,
-  imports: [ReportsDomainTableComponent],
+  imports: [ReportsDomainTableComponent, DemographicFiltersComponent],
   templateUrl: './reports-dialog-outcomes.component.html',
   styleUrl: './reports-dialog-outcomes.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -101,8 +120,12 @@ const T_POINT_INSET = 8;
 export class ReportsDialogOutcomesComponent implements OnInit {
   private readonly reportsApi = inject(ReportsApiService);
 
-  readonly outcomes = input.required<DialogOutcomesReportDto | null>();
-  readonly loading = input(false);
+  /** Demographic cohort every figure on the tab is computed for; empty = all guests. */
+  readonly cohort = model<DemographicFilterValue>(EMPTY_DEMOGRAPHIC_FILTERS);
+
+  readonly outcomes = signal<DialogOutcomesReportDto | null>(null);
+  readonly loading = signal(false);
+  readonly error = signal<string | null>(null);
 
   readonly radarViewBox = `0 0 ${VB_W} ${VB_H}`;
   readonly trendViewBox = `0 0 ${T_VB_W} ${T_VB_H}`;
@@ -112,9 +135,67 @@ export class ReportsDialogOutcomesComponent implements OnInit {
   /** Index into trendChart().points of the month the pointer is over, or null. */
   readonly hoveredTrend = signal<number | null>(null);
 
+  readonly cohortActive = computed(() => demographicFilterCount(this.cohort()) > 0);
+
+  /** "Showing: Black African · 18–24" line above the figures. */
+  readonly cohortText = computed(() => cohortLabel(this.cohort()));
+
+  /** Empty-state copy — "none recorded" reads wrong when it's only this cohort that has none. */
+  readonly emptyText = computed(() =>
+    this.cohortActive() ? 'No DIALOG assessments for guests in this cohort.' : 'No DIALOG assessments recorded yet.',
+  );
+
+  /** A filtered cohort whose reassessed guests are too few for the averages to mean much. */
+  readonly smallCohort = computed(() => {
+    const o = this.outcomes();
+    return this.cohortActive() && !!o && o.guestsWithBaseline > 0 && o.guestsWithFollowUp < SMALL_COHORT;
+  });
+
+  // In-flight requests, cancelled when the cohort changes so a slow earlier response can't
+  // overwrite the figures for the cohort now selected.
+  private outcomesSub?: Subscription;
+  private trendSub?: Subscription;
+
+  constructor() {
+    inject(DestroyRef).onDestroy(() => {
+      this.outcomesSub?.unsubscribe();
+      this.trendSub?.unsubscribe();
+    });
+  }
+
   ngOnInit(): void {
+    this.load();
+  }
+
+  /** The drawer's Apply / Clear all / chip "×" — re-query everything for the new cohort. */
+  onCohortChange(value: DemographicFilterValue): void {
+    this.cohort.set(value);
+    this.load();
+  }
+
+  private load(): void {
+    const params = demographicFilterParams(this.cohort());
+
+    this.outcomesSub?.unsubscribe();
+    this.outcomes.set(null);
+    this.loading.set(true);
+    this.error.set(null);
+    this.outcomesSub = this.reportsApi.getDialogOutcomes(params).subscribe({
+      next: (outcomes) => {
+        this.outcomes.set(outcomes);
+        this.loading.set(false);
+      },
+      error: (err) => {
+        this.outcomes.set(null);
+        this.error.set(err?.message ?? 'Unable to load DIALOG outcome data.');
+        this.loading.set(false);
+      },
+    });
+
+    this.trendSub?.unsubscribe();
+    this.hoveredTrend.set(null);
     this.trendLoading.set(true);
-    this.reportsApi.getDialogTrend().subscribe({
+    this.trendSub = this.reportsApi.getDialogTrend(params).subscribe({
       next: (points) => {
         this.trend.set(points);
         this.trendLoading.set(false);
@@ -132,7 +213,7 @@ export class ReportsDialogOutcomesComponent implements OnInit {
     return Math.round((o.guestsWithFollowUp / o.guestsWithBaseline) * 100);
   });
 
-  /** Guests with a baseline but no follow-up assessment yet. */
+  /** Guests with a baseline but no reassessment yet. */
   readonly missingFollowUps = computed<number>(() => {
     const o = this.outcomes();
     if (!o) return 0;

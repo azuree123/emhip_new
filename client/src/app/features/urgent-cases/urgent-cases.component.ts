@@ -289,9 +289,9 @@ export class UrgentCasesComponent implements OnInit, OnDestroy {
     const time = formatDate(deadline, 'HH:mm', 'en-US');
     const today = new Date();
     const tomorrow = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
-    if (this.sameDay(deadline, today)) return `Follow-up by ${time} today`;
-    if (this.sameDay(deadline, tomorrow)) return `Follow-up by ${time} tomorrow`;
-    return `Follow-up by ${time}, ${formatDate(deadline, 'd MMM', 'en-US')}`;
+    if (this.sameDay(deadline, today)) return `Contact by ${time} today`;
+    if (this.sameDay(deadline, tomorrow)) return `Contact by ${time} tomorrow`;
+    return `Contact by ${time}, ${formatDate(deadline, 'd MMM', 'en-US')}`;
   }
 
   private sameDay(a: Date, b: Date): boolean {
@@ -582,6 +582,12 @@ export class UrgentCasesComponent implements OnInit, OnDestroy {
   openCrisisEpisode(c: UrgentCaseDto, event?: Event): void {
     event?.stopPropagation();
     this.recordTarget.set({ guestId: c.guestId, episodeId: null });
+  }
+
+  /** A resolved row opens its episode record; the row's own links/buttons keep their action. */
+  onResolvedRowClick(ep: UrgentEpisodeDto, event: Event): void {
+    if ((event.target as HTMLElement).closest('a, button')) return;
+    this.openEpisodeRecord(ep);
   }
 
   /** Resolved row "View Episode": that specific episode. */

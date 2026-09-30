@@ -78,16 +78,25 @@ public sealed class DashboardReadService(EmhipDbContext db, IUrgentCaseReadServi
             .Select(g => new ActiveGuestRowDto(
                 g.Id, g.FirstName + " " + g.LastName, g.Status.ToString(),
                 db.Contacts.Where(c => c.GuestId == g.Id).OrderByDescending(c => c.OccurredAt).Select(c => (DateTimeOffset?)c.OccurredAt).FirstOrDefault(),
-                db.FollowUps.Where(f => f.GuestId == g.Id && f.Status == FollowUpStatus.Scheduled).OrderBy(f => f.DueDate).Select(f => (DateOnly?)f.DueDate).FirstOrDefault()))
+                db.FollowUps.Where(f => f.GuestId == g.Id && (f.Status == FollowUpStatus.Scheduled || f.Status == FollowUpStatus.Overdue)).OrderBy(f => f.DueDate).Select(f => (DateOnly?)f.DueDate).FirstOrDefault()))
             .ToListAsync(cancellationToken);
 
         var urgentBanner = await urgentCases.GetActiveUrgentCasesAsync(hubId, cancellationToken);
 
+        // The worker's own caseload counts — live, and narrow (one indexed GROUP BY over the
+        // guests assigned to them) — rather than the hub-wide snapshot the Hub Manager sees.
+        var mine = await db.Guests.AsNoTracking()
+            .Where(g => g.HubId == hubId && g.AssignedCmhwId == staffId)
+            .GroupBy(g => g.Status)
+            .Select(g => new { Status = g.Key, Count = g.Count(), Urgent = g.Count(x => x.IsUrgent) })
+            .ToListAsync(cancellationToken);
+        int CountOf(GuestStatus status) => mine.FirstOrDefault(m => m.Status == status)?.Count ?? 0;
+
         return new CmhwDashboardDto(
-            snapshot?.TotalActiveGuests ?? 0,
-            snapshot?.PendingConversationGuests ?? 0,
-            snapshot?.InactiveGuests ?? 0,
-            snapshot?.UrgentGuests ?? 0,
+            CountOf(GuestStatus.Active),
+            CountOf(GuestStatus.New),
+            CountOf(GuestStatus.OnHold),
+            mine.Sum(m => m.Urgent),
             activeGuests,
             urgentBanner.Take(5).ToList(),
             DeserializeClinicalComplexity(snapshot));
@@ -111,15 +120,40 @@ public sealed class DashboardReadService(EmhipDbContext db, IUrgentCaseReadServi
             ? []
             : JsonSerializer.Deserialize<List<MonthlyStatDto>>(snapshot.MonthlyStatsJson) ?? [];
 
-        var recentActivity = await db.AuditEvents.AsNoTracking()
+        // Opening one record logs a read per tab it loads, so read a wider window and collapse
+        // consecutive repeats (same person, same guest, same wording) into one line.
+        var auditRows = await db.AuditEvents.AsNoTracking()
             .Where(a => a.GuestId != null && db.Guests.Any(g => g.Id == a.GuestId && g.HubId == hubId))
             .OrderByDescending(a => a.OccurredAt)
-            .Take(15)
-            .Select(a => new RecentActivityDto(
-                a.Action.ToString() + " " + a.EntityName,
-                db.Users.Where(s => s.Id == a.ActorStaffId).Select(s => s.DisplayName).FirstOrDefault() ?? "System",
-                a.OccurredAt))
+            .Take(200)
+            .Select(a => new
+            {
+                Action = a.Action.ToString(),
+                a.EntityName,
+                a.Details,
+                a.OccurredAt,
+                a.GuestId,
+                ActorName = db.Users.Where(s => s.Id == a.ActorStaffId).Select(s => s.DisplayName).FirstOrDefault() ?? "System",
+                Guest = db.Guests.Where(g => g.Id == a.GuestId)
+                    .Select(g => new { Name = g.FirstName + " " + g.LastName, g.GuestNumber }).FirstOrDefault(),
+            })
             .ToListAsync(cancellationToken);
+
+        var recentActivity = new List<RecentActivityDto>();
+        foreach (var row in auditRows)
+        {
+            var description = Emhip.Application.Audit.AuditDescriptions.Describe(row.Action, row.EntityName, row.Details);
+            var previous = recentActivity.Count > 0 ? recentActivity[^1] : null;
+            if (previous is not null && previous.GuestId == row.GuestId
+                && previous.ActorName == row.ActorName && previous.Description == description)
+            {
+                continue;
+            }
+
+            recentActivity.Add(new RecentActivityDto(
+                description, row.ActorName, row.OccurredAt, row.GuestId, row.Guest?.Name, row.Guest?.GuestNumber));
+            if (recentActivity.Count == 15) break;
+        }
 
         return new HubManagerDashboardDto(
             snapshot?.TotalGuestsAcrossHub ?? 0,

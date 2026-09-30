@@ -16,7 +16,8 @@ public interface IGuestReadService
         PathwayCategory? pathway = null, bool? hasRiskFlags = null, Guid? assignedCmhwId = null,
         int? lastActivityWithinDays = null, bool? urgentOnly = null,
         string? ethnicity = null, string? gender = null, string? countryOfOrigin = null,
-        int? ageMin = null, int? ageMax = null, CancellationToken cancellationToken = default);
+        int? ageMin = null, int? ageMax = null, string? segment = null, GuestPathway? clinicalPathway = null,
+        CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<CmhwOptionDto>> GetHubCmhwsAsync(Guid hubId, CancellationToken cancellationToken = default);
 

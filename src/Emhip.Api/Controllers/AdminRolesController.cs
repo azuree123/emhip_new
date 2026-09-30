@@ -97,7 +97,7 @@ public sealed class AdminRolesController(RoleManager<ApplicationRole> roleManage
         var role = await roleManager.FindByIdAsync(roleId.ToString());
         if (role is null) return NotFound();
 
-        if (role.Name is IdentitySeeder.CmhwRole or IdentitySeeder.HubManagerRole or IdentitySeeder.AdminRole)
+        if (role.Name is IdentitySeeder.CmhwRole or IdentitySeeder.CpnRole or IdentitySeeder.HubManagerRole or IdentitySeeder.AdminRole)
         {
             return BadRequest(new { message = "Built-in roles cannot be deleted." });
         }

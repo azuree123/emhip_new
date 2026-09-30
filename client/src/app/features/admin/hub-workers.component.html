@@ -95,7 +95,7 @@
         @if (!editingUserId()) {
           <label class="field">
             <span>Temporary password</span>
-            <input type="text" [(ngModel)]="form.temporaryPassword" placeholder="At least 8 characters" />
+            <input type="text" [(ngModel)]="form.temporaryPassword" placeholder="10+ characters, upper and lower case, a number" />
           </label>
         } @else {
           <label class="field field--checkbox">
@@ -141,12 +141,17 @@
       <div class="modal__body">
         <label class="field">
           <span>New temporary password</span>
-          <input type="text" [(ngModel)]="resetPasswordValue" placeholder="At least 8 characters" />
+          <input type="text" [(ngModel)]="resetPasswordValue" placeholder="10+ characters, upper and lower case, a number" />
         </label>
+        @if (resetError()) {
+          <div class="banner banner--error">{{ resetError() }}</div>
+        }
       </div>
       <div class="modal__footer">
         <button type="button" class="btn btn--ghost" (click)="closeResetPassword()">Cancel</button>
-        <button type="button" class="btn btn--primary" (click)="submitResetPassword()">Reset</button>
+        <button type="button" class="btn btn--primary" [disabled]="resetting()" (click)="submitResetPassword()">
+          {{ resetting() ? 'Resetting…' : 'Reset' }}
+        </button>
       </div>
     </div>
   </div>

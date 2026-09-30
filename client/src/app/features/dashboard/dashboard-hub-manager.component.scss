@@ -765,3 +765,106 @@
     display: none;
   }
 }
+
+// ---- Drill-throughs (customer feedback: every count links to the guests behind it) ----
+
+.kpi-card--interactive {
+  cursor: pointer;
+}
+
+.pathway-row--link,
+.demo-row--link {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: background-color 120ms ease;
+
+  &:hover,
+  &:focus-visible {
+    background: #fbf3f5;
+  }
+
+  &:focus-visible {
+    outline: 2px solid #8d1b3d;
+    outline-offset: 2px;
+  }
+}
+
+.pathway-row--link,
+.demo-row--link {
+  margin: -4px -8px;
+  padding: 4px 8px;
+}
+
+
+// Names are shown in full: long CMHW / guest names wrap instead of being cut off.
+.mini-guest__name--full,
+.mini-cell--wrap {
+  white-space: normal;
+  overflow: visible;
+  overflow-wrap: anywhere;
+  line-height: 18px;
+}
+
+.mini-guest__name--link {
+  color: #2a2a2a;
+  text-decoration: none;
+
+  &:hover,
+  &:focus-visible {
+    color: #8d1b3d;
+    text-decoration: underline;
+  }
+}
+
+.count-link {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+
+  &:hover {
+    color: #8d1b3d;
+  }
+}
+
+.cpn-card__footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 14px;
+}
+
+.staff-row__detail {
+  white-space: normal;
+}
+
+.staff-row__guest {
+  color: #2a2a2a;
+  font-weight: 600;
+  text-decoration: none;
+
+  &:is(a):hover {
+    color: #8d1b3d;
+    text-decoration: underline;
+  }
+}
+
+.staff-row__ref {
+  margin-left: 4px;
+}
+
+.quality-row--link {
+  cursor: pointer;
+
+  &:hover,
+  &:focus-visible {
+    background: #fbf3f5;
+  }
+}
+
+.quality-row__cta {
+  margin-left: 8px;
+  font-weight: 600;
+  color: #8d1b3d;
+}

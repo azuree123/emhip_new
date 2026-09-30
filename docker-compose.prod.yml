@@ -43,6 +43,9 @@ services:
 
   workers:
     restart: unless-stopped
+    environment:
+      # Links in the urgent-case and overdue-contact emails point at the public site.
+      Frontend__BaseUrl: "${PUBLIC_ORIGIN}"
 
   client:
     restart: unless-stopped

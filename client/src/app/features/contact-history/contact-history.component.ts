@@ -26,7 +26,7 @@ const CATEGORY_OPTIONS: { value: '' | ContactHistoryCategory; label: string }[] 
   { value: 'Activity', label: 'Activity' },
   { value: 'Hospitality', label: 'Hospitality' },
   { value: 'Afa', label: 'AFA' },
-  { value: 'Cpn', label: 'CPN sessions' },
+  { value: 'Cpn', label: 'CPN contacts' },
 ];
 
 const PERIOD_OPTIONS: { value: PeriodFilter; label: string }[] = [
@@ -35,6 +35,11 @@ const PERIOD_OPTIONS: { value: PeriodFilter; label: string }[] = [
   { value: '30', label: 'Last 30 days' },
   { value: '90', label: 'Last 90 days' },
 ];
+
+/** "1 CPN session" / "2 CPN sessions". */
+function plural(count: number, noun: string): string {
+  return `${count} ${noun}${count === 1 ? '' : 's'}`;
+}
 
 /** yyyy-MM-dd for a Date in local time. */
 function isoDay(date: Date): string {
@@ -48,15 +53,21 @@ interface CountChip {
   key: ContactHistoryCategory;
   label: string;
   count: number;
+  /** Hover breakdown — only the CPN chip needs one (sessions vs. the initial assessment). */
+  title?: string;
 }
 
 /**
  * "Contact history" nav screen — design Desktop 89/90 ("EMHIP - Additional Changes"): all guest
  * contacts across your caseload, filtered and searchable. One row per guest showing how many
  * contacts of each type have been logged (Casework / Activity / AFA / Hospitality, plus CPN
- * sessions), the last contact date, and "View Note" / "Open" actions; four stat tiles above;
+ * contacts), the last contact date, and "View Note" / "Open" actions; four stat tiles above;
  * search, the "All contacts" type dropdown, a CMHW filter and a date range; Export; and the
  * design's Prev / Next pager ("Showing 1 to 10 of 11 entries").
+ *
+ * CPN work has its own "CPN activity" section under the tiles (customer feedback: it is
+ * unrelated to AFA & Hospitality, so it is never shown on that tile). Its chip narrows the list
+ * to guests with CPN contacts — the same filter as "CPN contacts" in the type dropdown.
  *
  * Backed by GET /contacts/by-guest (chronological — most recent contact first — and keyset-paged,
  * so Prev is a cursor stack, not page numbers) and GET /contacts/summary for the tiles. Hub Managers open on the whole hub;
@@ -97,7 +108,13 @@ export class ContactHistoryComponent {
 
   protected searchTerm = '';
   protected readonly category = signal<'' | ContactHistoryCategory>('');
+  /** The CPN section's chip is just the "CPN contacts" type filter, so the two stay in sync. */
+  protected readonly cpnOnly = computed(() => this.category() === 'Cpn');
   protected readonly period = signal<PeriodFilter>('all');
+  /** "Last 30 days" etc. — tells the reader which window the CPN figures cover. */
+  protected readonly periodLabel = computed(
+    () => PERIOD_OPTIONS.find((option) => option.value === this.period())?.label ?? 'All dates',
+  );
   /** Assigned CMHW — a staff id, or null for all. Ignored while "My caseload" is on. */
   protected readonly cmhwFilter = signal<string | null>(null);
 
@@ -132,6 +149,10 @@ export class ContactHistoryComponent {
   protected onCategoryChange(value: string): void {
     this.category.set(value as '' | ContactHistoryCategory);
     this.resetAndLoad();
+  }
+
+  protected toggleCpnOnly(): void {
+    this.onCategoryChange(this.cpnOnly() ? '' : 'Cpn');
   }
 
   protected onPeriodChange(value: string): void {
@@ -255,17 +276,24 @@ export class ContactHistoryComponent {
   }
 
   protected countChips(row: ContactsByGuestRowDto): CountChip[] {
-    return [
-      { key: 'Casework' as const, label: 'Casework', count: row.caseworkCount },
-      { key: 'Activity' as const, label: 'Activity', count: row.activityCount },
-      { key: 'Afa' as const, label: 'AFA', count: row.afaCount },
-      { key: 'Hospitality' as const, label: 'Hospitality', count: row.hospitalityCount },
-      { key: 'Cpn' as const, label: 'CPN', count: row.cpnSessionCount },
-    ].filter((chip) => chip.count > 0);
+    const chips: CountChip[] = [
+      { key: 'Casework', label: 'Casework', count: row.caseworkCount },
+      { key: 'Activity', label: 'Activity', count: row.activityCount },
+      { key: 'Afa', label: 'AFA', count: row.afaCount },
+      { key: 'Hospitality', label: 'Hospitality', count: row.hospitalityCount },
+      {
+        key: 'Cpn',
+        label: 'CPN',
+        count: row.cpnSessionCount + row.cpnAssessmentCount,
+        title: `${plural(row.cpnSessionCount, 'CPN session')} · ${plural(row.cpnAssessmentCount, 'initial assessment')}`,
+      },
+    ];
+    return chips.filter((chip) => chip.count > 0);
   }
 
+  /** The OnHold enum value reads as "Inactive" everywhere a user sees it. */
   protected statusLabel(status: GuestStatus): string {
-    return status === 'OnHold' ? 'On hold' : status;
+    return status === 'OnHold' ? 'Inactive' : status;
   }
 
   /** "View Note" — the guest's casework notes (the design's Desktop 90 note view). */
@@ -302,7 +330,10 @@ export class ContactHistoryComponent {
         return;
       }
     }
-    const header = ['Guest ID', 'Guest', 'Status', 'Pathway', 'Assigned CMHW', 'Total contacts', 'Casework', 'Activity', 'AFA', 'Hospitality', 'CPN sessions', 'Last contact'];
+    const header = [
+      'Guest ID', 'Guest', 'Status', 'Pathway', 'Assigned CMHW', 'Total contacts', 'Casework', 'Activity', 'AFA', 'Hospitality',
+      'CPN sessions', 'CPN initial assessments', 'Last contact',
+    ];
     const escape = (value: string | number | null): string => {
       const s = value === null ? '' : String(value);
       return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
@@ -313,7 +344,7 @@ export class ContactHistoryComponent {
         [
           `G-${r.guestNumber}`, r.guestName, this.statusLabel(r.guestStatus), guestPathwayLabel(r.pathway) ?? '',
           r.assignedCmhwName ?? '', r.totalContacts, r.caseworkCount, r.activityCount, r.afaCount, r.hospitalityCount,
-          r.cpnSessionCount, r.lastContactAt ?? '',
+          r.cpnSessionCount, r.cpnAssessmentCount, r.lastContactAt ?? '',
         ].map(escape).join(','),
       );
     }

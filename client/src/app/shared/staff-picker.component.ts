@@ -26,7 +26,7 @@ import { StaffDirectoryService } from './staff-directory.service';
         aria-haspopup="listbox"
         (click)="toggle()"
       >
-        <span class="picker__value" [class.picker__value--empty]="!selectedLabel()">
+        <span class="picker__value" [class.picker__value--empty]="!selectedLabel()" [attr.title]="selectedLabel() || null">
           {{ selectedLabel() || placeholder() }}
         </span>
         @if (selectedLabel() && allowClear()) {

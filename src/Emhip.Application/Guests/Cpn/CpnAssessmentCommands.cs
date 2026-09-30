@@ -164,7 +164,7 @@ public sealed class SaveCpnAssessmentCommandHandler(IAppDbContext db, ICurrentUs
         else if (assessment.IsSubmitted)
         {
             throw new InvalidOperationException(
-                "This guest already has a submitted CPN initial assessment. Record a follow-up session instead.");
+                "This guest already has a submitted CPN initial assessment. Record a contact session instead.");
         }
 
         assessment.Update(new CpnInitialAssessmentFields(
@@ -193,6 +193,10 @@ public sealed class SaveCpnAssessmentCommandHandler(IAppDbContext db, ICurrentUs
             db.Contacts.Add(new Contact(
                 request.GuestId, input.ContactMethod, ContactOutcome.Successful, input.OccurredAt,
                 currentUser.StaffId, BuildContactSummary(input)));
+
+            // ...and, like any contact, it is activity on the record (spec §4.6 / §4.7).
+            var guest = await db.Guests.FirstOrDefaultAsync(g => g.Id == request.GuestId, cancellationToken);
+            guest?.RecordActivity(input.OccurredAt);
 
             if (input.NextAppointmentDate is not null)
             {

@@ -78,7 +78,7 @@
 
     <div class="field-row allocation-row">
       <label class="field">
-        <span class="field__label">Follow-up contact date{{ oneToOnePathway ? ' *' : '' }}</span>
+        <span class="field__label">Next contact date{{ oneToOnePathway ? ' *' : '' }}</span>
         <input class="field__input" type="date" formControlName="nextContactDate" />
         <span class="field__hint">
           <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
@@ -87,7 +87,7 @@
               fill="currentColor"
             />
           </svg>
-          The follow-up is scheduled automatically when the initial conversation is submitted
+          The next contact is scheduled automatically when the initial conversation is submitted
         </span>
         @if (invalid('nextContactDate')) {
           <span class="field__error">A next contact date is required for this pathway.</span>

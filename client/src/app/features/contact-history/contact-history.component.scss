@@ -251,6 +251,75 @@ $pager-font-stack: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
   }
 }
 
+// ---- CPN activity (its own section under the tiles; CPN maroon accent, same label/value type) ----
+
+.cpn-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: -12px;
+  padding: 14px 19px 16px;
+  border-radius: 12px;
+  border-left: 4px solid rgb(148, 28, 60);
+  background: rgb(255, 255, 255);
+  box-sizing: border-box;
+
+  &__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  &__title {
+    margin: 0;
+    font-weight: 600;
+    font-size: 16px;
+    line-height: 24px;
+    color: rgb(42, 42, 42);
+  }
+
+  &__subtitle {
+    margin: 0;
+    font-weight: 500;
+    font-size: 12px;
+    line-height: 18px;
+    color: rgb(140, 140, 140);
+  }
+
+  &__figures {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 23px;
+    margin: 0;
+  }
+}
+
+.cpn-figure {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+
+  &__label {
+    font-family: 'Wix Madefor Display', sans-serif;
+    font-weight: 600;
+    font-size: 10px;
+    line-height: 24px;
+    letter-spacing: -0.005em;
+    text-transform: uppercase;
+    color: rgb(42, 42, 42);
+  }
+
+  &__value {
+    margin: 0;
+    font-weight: 600;
+    font-size: 24px;
+    line-height: 28px;
+    color: rgb(148, 28, 60);
+  }
+}
+
 .page-header__actions {
   display: flex;
   align-items: center;
@@ -575,6 +644,11 @@ $pager-font-stack: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
 
 @media (max-width: 1279px) {
   .stat-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+  }
+
+  .cpn-card__figures {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 14px;
   }

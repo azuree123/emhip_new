@@ -12,8 +12,8 @@
   gap: 23px;
 }
 
-// Five status tiles (Total / New / Active / On hold / Urgent) rather than the shared
-// four-up default — the engagement vocabulary needs both New and On hold.
+// Five status tiles (Total / New / Active / Inactive / Urgent) rather than the shared
+// four-up default — the engagement vocabulary needs both New and Inactive.
 .stat-row {
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 16px;
@@ -308,7 +308,7 @@
   margin-top: 26px;
 }
 
-// ---- "Follow-up activity" rows (label 14/600, value 14/400, 1px dividers) --
+// ---- "Contact activity" rows (label 14/600, value 14/400, 1px dividers) --
 
 .activity-list {
   margin-top: 30px;

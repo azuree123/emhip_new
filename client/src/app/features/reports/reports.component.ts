@@ -1,7 +1,26 @@
-import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  ElementRef,
+  OnInit,
+  afterNextRender,
+  computed,
+  inject,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { BreakdownSliceDto, DialogOutcomesReportDto, PathwayReportDto } from '../../core/api-models';
 import { ReportsApiService } from '../../core/reports-api.service';
-import { WORKBOOK_SHEETS, downloadBlob, toIsoDate } from './report-meta';
+import { AuthService } from '../../core/auth.service';
+import { Permissions } from '../../core/permissions';
+import {
+  DemographicFilterValue,
+  EMPTY_DEMOGRAPHIC_FILTERS,
+  demographicFilterCount,
+  demographicFilterParams,
+} from '../../shared/demographic-filters.component';
+import { WORKBOOK_SHEETS, cohortLabel, downloadBlob, toIsoDate } from './report-meta';
 import { ReportsCaseloadComponent } from './reports-caseload.component';
 import { ReportsCpnActivityComponent } from './reports-cpn-activity.component';
 import { ReportsDataQualityComponent } from './reports-data-quality.component';
@@ -26,6 +45,9 @@ interface ReportTab {
   id: ReportTabId;
   label: string;
 }
+
+/** Room left beside a revealed tab so it clears the scroll arrow and edge fade (px) — the fade is 64px wide. */
+const TAB_REVEAL_INSET = 64;
 
 /**
  * "Reports & Analytics" — ported from the report screens in
@@ -56,6 +78,9 @@ interface ReportTab {
 })
 export class ReportsComponent implements OnInit {
   private readonly reportsApi = inject(ReportsApiService);
+  /** Export to Excel / CSV need reports.export — hidden rather than failing with a 403. */
+  protected readonly canExport = inject(AuthService).hasPermission(Permissions.Reports.Export);
+  private readonly tabBar = viewChild<ElementRef<HTMLElement>>('tabBar');
 
   readonly tabs: ReportTab[] = [
     { id: 'overview', label: 'Overview' },
@@ -69,6 +94,11 @@ export class ReportsComponent implements OnInit {
   ];
 
   readonly activeTab = signal<ReportTabId>('overview');
+
+  // The tab bar scrolls sideways when the sections don't fit (1280px and narrower); these
+  // drive the arrow buttons and edge fades that show more sections exist in that direction.
+  readonly canScrollStart = signal(false);
+  readonly canScrollEnd = signal(false);
 
   readonly maxDate = toIsoDate(new Date());
   readonly todayLabel = new Date().toLocaleDateString('en-GB', {
@@ -105,6 +135,14 @@ export class ReportsComponent implements OnInit {
   /** Caseload "View" drill-down: preselects this CMHW on the Guest Report tab. */
   readonly guestReportCmhw = signal('');
 
+  /**
+   * DIALOG Outcomes tab's demographic cohort. Held here so it survives tab switches and
+   * flows into the Excel export, whose DIALOG outcomes sheet is computed for it.
+   */
+  readonly dialogCohort = signal<DemographicFilterValue>(EMPTY_DEMOGRAPHIC_FILTERS);
+  readonly dialogCohortActive = computed(() => demographicFilterCount(this.dialogCohort()) > 0);
+  readonly dialogCohortLabel = computed(() => cohortLabel(this.dialogCohort()));
+
   readonly exportOpen = signal(false);
 
   /** Header "Export Excel" — the multi-sheet workbook for the applied date range. */
@@ -112,6 +150,26 @@ export class ReportsComponent implements OnInit {
   readonly workbookSheetList = WORKBOOK_SHEETS.join(', ');
   readonly excelBusy = signal(false);
   readonly excelError = signal<string | null>(null);
+
+  constructor() {
+    const destroyRef = inject(DestroyRef);
+    // Re-measure whenever the bar or a tab changes size (window resize, sidebar collapse,
+    // web font swap) — none of those fire a scroll event — and keep the active tab in view,
+    // since narrowing the bar can leave it under the fade.
+    afterNextRender(() => {
+      const bar = this.tabBar()?.nativeElement;
+      if (!bar) return;
+      this.updateTabOverflow();
+      if (typeof ResizeObserver === 'undefined') return;
+      const observer = new ResizeObserver(() => {
+        this.revealTab(this.activeTab(), 'instant');
+        this.updateTabOverflow();
+      });
+      observer.observe(bar);
+      for (const tab of Array.from(bar.children)) observer.observe(tab);
+      destroyRef.onDestroy(() => observer.disconnect());
+    });
+  }
 
   ngOnInit(): void {
     this.loadReport();
@@ -122,12 +180,49 @@ export class ReportsComponent implements OnInit {
   selectTab(id: ReportTabId): void {
     this.guestReportCmhw.set('');
     this.activeTab.set(id);
+    this.revealTab(id);
   }
 
   /** Caseload row "View" — open the Guest Report tab filtered to that CMHW. */
   openCmhwGuests(staffId: string): void {
     this.guestReportCmhw.set(staffId);
     this.activeTab.set('guest-report');
+    this.revealTab('guest-report');
+  }
+
+  /** Scroll/resize handler — shows an arrow + fade only on a side with hidden tabs. */
+  updateTabOverflow(): void {
+    const bar = this.tabBar()?.nativeElement;
+    if (!bar) return;
+    const maxScroll = bar.scrollWidth - bar.clientWidth;
+    this.canScrollStart.set(bar.scrollLeft > 1);
+    this.canScrollEnd.set(bar.scrollLeft < maxScroll - 1);
+  }
+
+  /** Arrow buttons — page the bar by most of its visible width. */
+  scrollTabs(direction: -1 | 1): void {
+    const bar = this.tabBar()?.nativeElement;
+    if (!bar) return;
+    bar.scrollBy({ left: direction * Math.max(bar.clientWidth * 0.7, 120), behavior: 'smooth' });
+  }
+
+  /**
+   * Scrolls the bar just enough that the tab sits clear of the arrow and fade on either
+   * side — used for the active tab and for tabs reached by keyboard focus.
+   */
+  revealTab(id: ReportTabId, behavior: ScrollBehavior = 'smooth'): void {
+    const bar = this.tabBar()?.nativeElement;
+    const tab = bar?.querySelector<HTMLElement>(`[data-tab="${id}"]`);
+    if (!bar || !tab) return;
+    // offsetLeft is relative to the (positioned) bar's content, independent of its scroll.
+    const start = tab.offsetLeft - TAB_REVEAL_INSET;
+    const end = tab.offsetLeft + tab.offsetWidth + TAB_REVEAL_INSET;
+    if (start < bar.scrollLeft) {
+      bar.scrollTo({ left: Math.max(start, 0), behavior });
+    } else if (end > bar.scrollLeft + bar.clientWidth) {
+      // A tab wider than the visible bar lines up with its start rather than its end.
+      bar.scrollTo({ left: Math.min(end - bar.clientWidth, Math.max(start, 0)), behavior });
+    }
   }
 
   onDraftFromChange(event: Event): void {
@@ -148,8 +243,8 @@ export class ReportsComponent implements OnInit {
   }
 
   /**
-   * Downloads the multi-sheet Excel workbook (summary, pathways, caseload, DIALOG
-   * outcomes, data quality — spec §5.4) for the currently applied date range.
+   * Downloads the multi-sheet Excel workbook (WORKBOOK_SHEETS — spec §5.4) for the
+   * currently applied date range, with the DIALOG outcomes sheet for the DIALOG tab's cohort.
    */
   exportExcel(): void {
     if (this.excelBusy()) return;
@@ -157,7 +252,7 @@ export class ReportsComponent implements OnInit {
     const to = this.to();
     this.excelBusy.set(true);
     this.excelError.set(null);
-    this.reportsApi.exportWorkbook(from, to).subscribe({
+    this.reportsApi.exportWorkbook(from, to, demographicFilterParams(this.dialogCohort())).subscribe({
       next: (blob) => {
         downloadBlob(blob, `emhip-report-${from}-to-${to}.xlsx`);
         this.excelBusy.set(false);

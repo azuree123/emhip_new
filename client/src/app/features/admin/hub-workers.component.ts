@@ -49,6 +49,8 @@ export class HubWorkersComponent implements OnInit {
 
   readonly resetPasswordUserId = signal<string | null>(null);
   resetPasswordValue = '';
+  readonly resetError = signal<string | null>(null);
+  readonly resetting = signal(false);
 
   ngOnInit(): void {
     this.load();
@@ -130,7 +132,9 @@ export class HubWorkersComponent implements OnInit {
       },
       error: (err: HttpErrorResponse) => {
         this.saving.set(false);
-        this.saveError.set(err.error?.message ?? 'Could not save this hub worker.');
+        // Identity sends the specific rule that failed (password length, duplicate email) in `errors`.
+        const detail = (err.error?.errors as string[] | undefined)?.join(' ');
+        this.saveError.set(detail || err.error?.message || 'Could not save this hub worker.');
       },
     });
   }
@@ -143,15 +147,33 @@ export class HubWorkersComponent implements OnInit {
   openResetPassword(user: UserSummaryDto): void {
     this.resetPasswordUserId.set(user.id);
     this.resetPasswordValue = '';
+    this.resetError.set(null);
   }
 
   closeResetPassword(): void {
     this.resetPasswordUserId.set(null);
   }
 
+  /** The server's Identity rules (10+ characters) are the authority; show why a reset was refused. */
   submitResetPassword(): void {
     const userId = this.resetPasswordUserId();
-    if (!userId || !this.resetPasswordValue) return;
-    this.usersApi.resetPassword(userId, this.resetPasswordValue).subscribe(() => this.closeResetPassword());
+    if (!userId || this.resetting()) return;
+    if (this.resetPasswordValue.length < 10) {
+      this.resetError.set('The temporary password must be at least 10 characters, with upper- and lower-case letters and a number.');
+      return;
+    }
+    this.resetting.set(true);
+    this.resetError.set(null);
+    this.usersApi.resetPassword(userId, this.resetPasswordValue).subscribe({
+      next: () => {
+        this.resetting.set(false);
+        this.closeResetPassword();
+      },
+      error: (err: HttpErrorResponse) => {
+        this.resetting.set(false);
+        const detail = (err.error?.errors as string[] | undefined)?.join(' ');
+        this.resetError.set(detail || err.error?.message || 'Could not reset the password.');
+      },
+    });
   }
 }

@@ -74,6 +74,8 @@ export const routes: Routes = [
         canActivate: [permissionGuard],
       },
       {
+        // Not in the menu (see AppShellComponent): staff reach documents from a guest's Documents
+        // tab. The hub-wide page stays available at this URL.
         path: 'documents',
         loadComponent: () => import('./features/documents/documents.component').then((m) => m.DocumentsComponent),
         data: { permission: Permissions.Documents.View },

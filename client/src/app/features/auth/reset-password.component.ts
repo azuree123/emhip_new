@@ -33,7 +33,7 @@ export class ResetPasswordComponent {
 
   readonly form = this.fb.nonNullable.group(
     {
-      newPassword: ['', [Validators.required, Validators.minLength(8)]],
+      newPassword: ['', [Validators.required, Validators.minLength(10)]],
       confirmPassword: ['', Validators.required],
     },
     { validators: passwordsMatch },
@@ -52,7 +52,10 @@ export class ResetPasswordComponent {
       next: () => this.submitted.set(true),
       error: (err: HttpErrorResponse) => {
         this.submitting.set(false);
-        this.errorMessage.set(err.error?.message ?? 'This reset link is invalid or has expired.');
+        // Identity names the rule a new password broke (upper case, digit…) in `errors`; an
+        // expired or tampered link comes back as "Invalid token", which the message covers.
+        const rules = ((err.error?.errors as string[] | undefined) ?? []).filter((e) => !/invalid token/i.test(e));
+        this.errorMessage.set(rules.length ? rules.join(' ') : (err.error?.message ?? 'This reset link is invalid or has expired.'));
       },
     });
   }

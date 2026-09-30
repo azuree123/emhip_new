@@ -1,7 +1,13 @@
-import { ChangeDetectionStrategy, Component, OnInit, inject, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, computed, inject, input, output, signal } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ReportsApiService } from '../../core/reports-api.service';
-import { WORKBOOK_SHEETS, downloadBlob, toIsoDate } from './report-meta';
+import {
+  DemographicFilterValue,
+  EMPTY_DEMOGRAPHIC_FILTERS,
+  demographicFilterCount,
+  demographicFilterParams,
+} from '../../shared/demographic-filters.component';
+import { WORKBOOK_SHEETS, cohortLabel, downloadBlob, toIsoDate } from './report-meta';
 
 /** Which download the user pressed — only one runs at a time. */
 type ExportFormat = 'xlsx' | 'csv';
@@ -27,7 +33,12 @@ export class ReportsExportDialogComponent implements OnInit {
   /** Initial reporting period — seeded from the report page's applied range. */
   readonly from = input.required<string>();
   readonly to = input.required<string>();
+  /** The DIALOG Outcomes tab's demographic cohort — applied to the workbook's DIALOG outcomes sheet. */
+  readonly dialogCohort = input<DemographicFilterValue>(EMPTY_DEMOGRAPHIC_FILTERS);
   readonly closed = output<void>();
+
+  readonly dialogCohortActive = computed(() => demographicFilterCount(this.dialogCohort()) > 0);
+  readonly dialogCohortLabel = computed(() => cohortLabel(this.dialogCohort()));
 
   readonly maxDate = toIsoDate(new Date());
   readonly workbookSheets = WORKBOOK_SHEETS;
@@ -60,11 +71,12 @@ export class ReportsExportDialogComponent implements OnInit {
     return this.busyFormat() !== null;
   }
 
-  /** Multi-sheet workbook: summary, pathways, caseload, DIALOG outcomes, data quality. */
+  /** Multi-sheet workbook (WORKBOOK_SHEETS), DIALOG outcomes sheet for the DIALOG tab's cohort. */
   downloadExcel(): void {
     const from = this.draftFrom();
     const to = this.draftTo();
-    this.run('xlsx', this.reportsApi.exportWorkbook(from, to), `emhip-report-${from}-to-${to}.xlsx`);
+    const cohort = demographicFilterParams(this.dialogCohort());
+    this.run('xlsx', this.reportsApi.exportWorkbook(from, to, cohort), `emhip-report-${from}-to-${to}.xlsx`);
   }
 
   downloadCsv(): void {

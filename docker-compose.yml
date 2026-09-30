@@ -53,6 +53,8 @@ services:
       ConnectionStrings__Emhip: "Server=sqlserver;Database=Emhip;User Id=sa;Password=${MSSQL_SA_PASSWORD};TrustServerCertificate=True;"
       Api__BaseUrl: "http://api:8080/"
       Internal__SharedSecret: "${INTERNAL_SHARED_SECRET:?Set INTERNAL_SHARED_SECRET in .env}"
+      # Links in the urgent-case and overdue-contact emails the workers send.
+      Frontend__BaseUrl: "http://localhost:8080"
 
   client:
     build:

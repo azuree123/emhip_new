@@ -198,7 +198,7 @@ public class CpnInitialAssessment : AggregateRoot
         Require(Perceptions, "the perceptions observation");
         Require(ClinicalFormulation, "a clinical formulation");
         Require(RecommendedPlan, "a recommended clinical plan");
-        Require(FollowUpFrequency, "a follow-up frequency");
+        Require(FollowUpFrequency, "a contact frequency");
 
         if (NextAppointmentDate is null)
         {

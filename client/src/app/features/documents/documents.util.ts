@@ -1,6 +1,6 @@
-// Formatting/helpers shared by the Document Management screen and its drawers.
-// Kept out of the components so the register table, the upload drawer and the detail
-// drawer all render sizes/dates/status pills identically.
+// Formatting/helpers shared by the Document Management screen, the guest workspace's Documents
+// tab and their drawers. Kept out of the components so the tables, the upload drawer and the
+// detail drawer all render sizes/dates/status pills identically.
 
 import { DocumentStatus } from '../../core/api-models';
 

@@ -170,7 +170,7 @@ export class KpiGuestsPanelComponent {
       case 'new':
         return `New guests — awaiting initial conversation (${this.total()})`;
       case 'onHold':
-        return `On hold guests — no activity 3+ months (${this.total()})`;
+        return `Inactive guests — no activity 3+ months (${this.total()})`;
       case 'urgent':
         return `Urgent guests — flagged for immediate attention (${this.total()})`;
       default:
@@ -183,7 +183,7 @@ export class KpiGuestsPanelComponent {
       case 'new':
         return 'new guests';
       case 'onHold':
-        return 'on hold guests';
+        return 'inactive guests';
       case 'urgent':
         return 'urgent guests';
       default:

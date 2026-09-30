@@ -2,7 +2,7 @@
   <header class="page-header">
     <div class="page-header__text">
       <h1 class="page-header__title">Guest</h1>
-      <p class="page-header__subtitle">Manage active, on hold, new, and urgent guest records.</p>
+      <p class="page-header__subtitle">Manage active, inactive, new, and urgent guest records.</p>
     </div>
     <div class="page-header__actions">
       @if (exportError()) {
@@ -149,6 +149,18 @@
       </div>
     </div>
 
+    @if (drillThroughLabel(); as label) {
+      <div class="drill-banner" role="status">
+        <span class="drill-banner__text">
+          Showing guests: <strong>{{ label }}</strong>
+          @if (totalCount() !== null) {
+            <span class="drill-banner__count">· {{ totalCount() }} {{ totalCount() === 1 ? 'guest' : 'guests' }}</span>
+          }
+        </span>
+        <button type="button" class="drill-banner__clear" (click)="clearDrillThrough()">Show all guests</button>
+      </div>
+    }
+
     <div class="table-head">
       <span class="col col--name">Guest Name</span>
       <span class="col col--status">Status</span>
@@ -177,12 +189,13 @@
         <div
           class="row"
           *cdkVirtualFor="let guest of guests(); trackBy: trackGuest"
-          (click)="openGuest(guest.id)"
+          title="Open {{ guest.firstName }} {{ guest.lastName }}'s record"
+          (click)="onRowClick($event, guest.id)"
         >
           <span class="col col--name name-cell">
             <span class="avatar">{{ initials(guest) }}</span>
             <span class="name-block">
-              <span class="name-block__name">{{ guest.firstName }} {{ guest.lastName }}</span>
+              <a class="name-block__name" [routerLink]="['/guests', guest.id]">{{ guest.firstName }} {{ guest.lastName }}</a>
               <span class="name-block__id">ID: G-{{ guest.guestNumber }}</span>
             </span>
           </span>
@@ -196,12 +209,12 @@
           </span>
 
           <span class="col col--pathway">{{ pathwayLabel(guest.pathwayCategory) }}</span>
-          <span class="col col--cmhw">{{ guest.assignedCmhwName ?? '—' }}</span>
+          <span class="col col--cmhw" [title]="guest.assignedCmhwName ?? ''">{{ guest.assignedCmhwName ?? '—' }}</span>
           <span class="col col--activity">{{ formatActivity(guest.lastContactAt) }}</span>
           <span class="col col--next">{{ formatDate(guest.nextContactDue) }}</span>
 
           <span class="col col--actions">
-            <button type="button" class="open-btn" (click)="$event.stopPropagation(); openGuest(guest.id)">
+            <a class="open-btn" [routerLink]="['/guests', guest.id]" (click)="$event.stopPropagation()">
               Open
               <svg width="14" height="14" viewBox="0 0 13.5 13.5" fill="none">
                 <path
@@ -209,7 +222,7 @@
                   fill="currentColor"
                 />
               </svg>
-            </button>
+            </a>
           </span>
         </div>
       </cdk-virtual-scroll-viewport>
@@ -236,4 +249,3 @@
   </section>
 </div>
 
-<router-outlet />

@@ -462,9 +462,14 @@ export interface MonthlyStatDto {
 }
 
 export interface RecentActivityDto {
+  /** Plain English, e.g. "Opened guest record" / "Viewed urgent case". */
   description: string;
   actorName: string;
   occurredAt: string;
+  /** The guest the activity concerns — shown by name and linked to their record. */
+  guestId: string | null;
+  guestName: string | null;
+  guestNumber: number | null;
 }
 
 export interface HubManagerDashboardDto {
@@ -727,6 +732,8 @@ export interface DialogOutcomesReportDto {
   guestsWithBaseline: number;
   guestsWithFollowUp: number;
   dimensions: DialogDimensionDto[];
+  /** Guests in the demographic cohort the figures cover — every hub guest when unfiltered. */
+  cohortGuests: number;
 }
 
 /** Averages are null when no assessments exist for that cohort. */
@@ -857,6 +864,8 @@ export interface GuestAuditEntryDto {
   entityName: string;
   entityId: string;
   details: string | null;
+  /** Plain-English wording from the server, e.g. "Opened guest record". */
+  description: string;
 }
 
 // ---- New report tabs ----
@@ -1385,17 +1394,27 @@ export interface ContactsByGuestRowDto {
   activityCount: number;
   hospitalityCount: number;
   afaCount: number;
+  /** CPN work is counted apart from the contact types above: sessions, plus the Part 1 assessment. */
   cpnSessionCount: number;
+  cpnAssessmentCount: number;
   lastContactAt: string | null;
 }
 
-/** The Contact History screen's stat tiles, over the same caseload scope as the list. */
+/**
+ * The Contact History screen's stat tiles, over the same caseload scope as the list. The CPN
+ * figures feed their own section — they are never part of `afaAndHospitality`.
+ */
 export interface ContactHistorySummaryDto {
   totalContacts: number;
   casework: number;
   activity: number;
   afaAndHospitality: number;
+  afa: number;
+  hospitality: number;
   cpnSessions: number;
+  cpnAssessments: number;
+  /** Distinct guests with a CPN session or initial assessment in the period. */
+  cpnGuests: number;
   guestsWithContacts: number;
 }
 

@@ -1,27 +1,28 @@
 <div class="dashboard">
   @if (data(); as d) {
-    <!-- Static KPI row — design note "Static KPI cards - no interaction" (GuestDataSheet). -->
+    <!-- KPI row. The design shipped these as static cards; customer feedback asked for every
+         count to lead to the guests behind it, so each one now opens or filters its list. -->
     <div class="kpi-row">
-      <div class="kpi-card">
+      <a class="kpi-card kpi-card--link" routerLink="/guests" [queryParams]="{ cmhw: staffId, status: 'Active' }" title="Open your active guests">
         <div class="kpi-card__label">Active caseload</div>
         <div class="kpi-card__number">{{ d.totalActiveGuests }}</div>
         <div class="kpi-card__foot">All guests assigned to you</div>
-      </div>
-      <div class="kpi-card">
+      </a>
+      <button type="button" class="kpi-card kpi-card--link" title="Show guests due today" (click)="showChip('today')">
         <div class="kpi-card__label">Due today</div>
         <div class="kpi-card__number">{{ queueCount('today') }}</div>
         <div class="kpi-card__foot">next contact = today</div>
-      </div>
-      <div class="kpi-card">
+      </button>
+      <button type="button" class="kpi-card kpi-card--link" title="Show guests overdue for contact" (click)="showChip('overdue')">
         <div class="kpi-card__label">Overdue contacts</div>
         <div class="kpi-card__number">{{ queueCount('overdue') }}</div>
         <div class="kpi-card__foot">persist until actioned</div>
-      </div>
-      <div class="kpi-card">
+      </button>
+      <button type="button" class="kpi-card kpi-card--link" title="Show actions pending today" (click)="scrollToSection('cmhw-actions')">
         <div class="kpi-card__label">Actions pending today</div>
         <div class="kpi-card__number">{{ queueCount('pending') }}</div>
         <div class="kpi-card__foot">open and due today</div>
-      </div>
+      </button>
     </div>
 
     @if (d.urgentBanner.length > 0) {
@@ -36,7 +37,7 @@
           </svg>
           <div class="banner__text">
             <div class="banner__heading">
-              {{ d.urgentBanner.length }} urgent case{{ d.urgentBanner.length === 1 ? ' needs' : 's need' }} attention — review the follow-up window
+              {{ d.urgentBanner.length }} urgent case{{ d.urgentBanner.length === 1 ? ' needs' : 's need' }} attention — review the 72-hour contact window
             </div>
             <div class="banner__detail">
               {{ d.urgentBanner[0].guestName }} · Flag raised {{ formatDayMonth(d.urgentBanner[0].escalatedAt) }}
@@ -80,7 +81,7 @@
     }
 
     <!-- Filter contacts card (design y=390). -->
-    <div class="panel-card filter-card">
+    <div class="panel-card filter-card" id="cmhw-caseload">
       <div class="panel-card__title">Filter contacts</div>
 
       <div class="filter-card__tools">
@@ -168,11 +169,11 @@
           <span></span>
         </div>
         @for (g of filteredGuests(); track g.id) {
-          <div class="contact-table__row" (click)="openGuest(g.id)">
+          <div class="contact-table__row" title="Open {{ guestName(g) }}'s record" (click)="onRowClick($event, g.id)">
             <span class="contact-guest">
               <span class="contact-guest__avatar">{{ initials(guestName(g)) }}</span>
               <span class="contact-guest__text">
-                <span class="contact-guest__name">{{ guestName(g) }}</span>
+                <a class="contact-guest__name contact-guest__name--link" [routerLink]="['/guests', g.id]">{{ guestName(g) }}</a>
                 <span class="contact-guest__id">ID: G-{{ g.guestNumber }}</span>
               </span>
             </span>
@@ -225,10 +226,23 @@
 
       <div class="indicator-grid">
         @for (indicator of d.clinicalComplexity; track indicator.label) {
-          <div class="indicator-tile">
-            <div class="indicator-tile__label">{{ indicator.label }}</div>
-            <div class="indicator-tile__number">{{ indicator.count }}</div>
-          </div>
+          @if (indicatorSegment(indicator.label); as segment) {
+            <a
+              class="indicator-tile indicator-tile--link"
+              routerLink="/guests"
+              [queryParams]="{ segment: segment }"
+              [title]="'Open guests with ' + indicator.label + ' recorded'"
+            >
+              <div class="indicator-tile__label">{{ indicator.label }}</div>
+              <div class="indicator-tile__number">{{ indicator.count }}</div>
+              <span class="indicator-tile__cta">View guests →</span>
+            </a>
+          } @else {
+            <div class="indicator-tile">
+              <div class="indicator-tile__label">{{ indicator.label }}</div>
+              <div class="indicator-tile__number">{{ indicator.count }}</div>
+            </div>
+          }
         } @empty {
           <div class="empty">No clinical complexity data recorded yet.</div>
         }
@@ -236,7 +250,7 @@
     </div>
 
     <!-- Actions pending today (design y=1251) — the open follow-up queue. -->
-    <div class="panel-card actions-card">
+    <div class="panel-card actions-card" id="cmhw-actions">
       <div class="panel-card__title">Actions pending today</div>
       <div class="panel-card__subtitle">Open actions due today or overdue</div>
 
@@ -245,7 +259,7 @@
           <div class="list-row action-row" (click)="openGuest(item.guestId)">
             <div class="avatar-circle">{{ initials(item.guestName) }}</div>
             <div class="action-row__text">
-              <div class="action-row__title">Follow-up — {{ item.guestName }}</div>
+              <div class="action-row__title">Contact due — {{ item.guestName }}</div>
               @if (statusFor(item); as status) {
                 <div class="action-row__status" [class.action-row__status--red]="status.tone === 'red'">
                   {{ status.text }}
@@ -275,9 +289,9 @@
           </div>
         } @empty {
           @if (queueState() === 'loading') {
-            <div class="empty">Loading follow-ups…</div>
+            <div class="empty">Loading scheduled contacts…</div>
           } @else if (queueState() === 'unavailable') {
-            <div class="empty">The follow-up queue is unavailable right now.</div>
+            <div class="empty">Scheduled contacts are unavailable right now.</div>
           } @else {
             <div class="empty">No open actions — nothing pending today.</div>
           }

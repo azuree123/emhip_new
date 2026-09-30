@@ -11,7 +11,8 @@ public sealed class FollowUpReadService(ISqlConnectionFactory connectionFactory)
     private sealed record FollowUpCursor(DateOnly DueDate, Guid Id);
 
     public async Task<KeysetPage<FollowUpQueueItemDto>> GetQueueAsync(
-        Guid hubId, bool overdueOnly, Guid? assigneeStaffId, string? cursor, int pageSize, CancellationToken cancellationToken = default)
+        Guid hubId, bool overdueOnly, Guid? assigneeStaffId, string? cursor, int pageSize, bool openOnly = false,
+        CancellationToken cancellationToken = default)
     {
         var decodedCursor = KeysetCursor.Decode<FollowUpCursor>(cursor);
 
@@ -19,12 +20,15 @@ public sealed class FollowUpReadService(ISqlConnectionFactory connectionFactory)
             SELECT TOP (@FetchSize)
                 f.Id, f.GuestId, g.FirstName + ' ' + g.LastName AS GuestName, g.GuestNumber, f.DueDate, f.Status,
                 s.DisplayName AS AssigneeName,
-                CASE WHEN f.Status = 'Scheduled' AND f.DueDate < CAST(SYSUTCDATETIME() AS date) THEN 1 ELSE 0 END AS IsOverdue
+                -- FollowUpSchedulerWorker moves past-due items to 'Overdue' every 15 minutes; until it
+                -- runs, a 'Scheduled' item with a past due date is overdue too.
+                CASE WHEN f.Status = 'Overdue' OR (f.Status = 'Scheduled' AND f.DueDate < CAST(SYSUTCDATETIME() AS date)) THEN 1 ELSE 0 END AS IsOverdue
             FROM FollowUps f
             JOIN Guests g ON g.Id = f.GuestId
             JOIN AspNetUsers s ON s.Id = f.AssigneeStaffId
             WHERE g.HubId = @HubId
                 AND (@AssigneeStaffId IS NULL OR f.AssigneeStaffId = @AssigneeStaffId)
+                AND (@OpenOnly = 0 OR f.Status IN ('Scheduled', 'Overdue'))
                 AND (
                     @OverdueOnly = 0
                     OR (f.Status = 'Scheduled' AND f.DueDate < CAST(SYSUTCDATETIME() AS date))
@@ -44,6 +48,7 @@ public sealed class FollowUpReadService(ISqlConnectionFactory connectionFactory)
             HubId = hubId,
             AssigneeStaffId = assigneeStaffId,
             OverdueOnly = overdueOnly,
+            OpenOnly = openOnly,
             HasCursor = decodedCursor is not null,
             // NULL when there's no cursor — DateTime.MinValue overflows the sql `datetime`
             // parameter type (min 1753-01-01); @HasCursor = 0 already bypasses the comparison.

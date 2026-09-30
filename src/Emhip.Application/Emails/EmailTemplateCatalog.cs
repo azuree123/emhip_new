@@ -82,16 +82,16 @@ public static class EmailTemplateCatalog
                 """)),
 
         new(Keys.FollowUpOverdue,
-            "Follow-up overdue",
-            "Sent to a worker when their scheduled follow-ups pass their due date.",
+            "Contact overdue",
+            "Sent to a worker when their scheduled contacts pass their due date.",
             ["recipientName", "overdueCount", "followUpList", "portalUrl"],
-            "You have {{overdueCount}} overdue follow-up(s)",
-            Layout("Overdue follow-ups", """
+            "You have {{overdueCount}} overdue contact(s)",
+            Layout("Overdue contacts", """
                 <p>Hello {{recipientName}},</p>
-                <p>You have <strong>{{overdueCount}}</strong> follow-up(s) that have passed their due date:</p>
+                <p>You have <strong>{{overdueCount}}</strong> scheduled contact(s) that have passed their due date:</p>
                 {{followUpList}}
                 <p style="text-align:center;margin:32px 0;">
-                  <a href="{{portalUrl}}/followups" style="background:#e12628;color:#ffffff;text-decoration:none;padding:12px 24px;border-radius:8px;display:inline-block;font-weight:600;">Review follow-ups</a>
+                  <a href="{{portalUrl}}/followups" style="background:#e12628;color:#ffffff;text-decoration:none;padding:12px 24px;border-radius:8px;display:inline-block;font-weight:600;">Review scheduled contacts</a>
                 </p>
                 """)),
 

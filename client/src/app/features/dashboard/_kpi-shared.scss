@@ -289,3 +289,53 @@
     grid-template-columns: 1fr;
   }
 }
+
+// Clickable KPI cards and indicator tiles (customer feedback: every count opens the guests
+// behind it). The cards can be <a> or <button>, so reset both to look like the static card.
+.kpi-card--link {
+  display: block;
+  width: 100%;
+  border: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+  transition: box-shadow 120ms ease;
+
+  &:hover {
+    box-shadow: 0 0 0 1px #e3b9c4, 0 4px 14px rgba(141, 27, 61, 0.08);
+  }
+
+  &:focus-visible {
+    outline: 2px solid #8d1b3d;
+    outline-offset: 2px;
+  }
+}
+
+.indicator-tile--link {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+  cursor: pointer;
+
+  &:hover,
+  &:focus-visible {
+    background: #fbf3f5;
+    box-shadow: inset 0 0 0 1px #e3b9c4;
+  }
+
+  &:focus-visible {
+    outline: 2px solid #8d1b3d;
+    outline-offset: 2px;
+  }
+}
+
+.indicator-tile__cta {
+  display: inline-block;
+  margin-top: 6px;
+  font-weight: 600;
+  font-size: 12px;
+  line-height: 18px;
+  color: #8d1b3d;
+}

@@ -6,67 +6,112 @@
         <p class="header-card__subtitle">Monitor service performance, engagement trends, outcomes, and operational activity.</p>
         <span class="header-card__today">Today:&nbsp;{{ todayLabel }}</span>
       </div>
-      <div class="header-card__actions">
-        <!-- The source header offers "Export Excel" + "Export CSV": Excel downloads the
-             multi-sheet workbook for the applied range straight away, CSV opens the
-             export dialog where the period can be re-picked. -->
-        <button
-          type="button"
-          class="btn btn--secondary"
-          [disabled]="excelBusy()"
-          [title]="'Multi-sheet workbook: ' + workbookSheetList"
-          (click)="exportExcel()"
-        >
-          <span class="btn__icon" aria-hidden="true">
-            <svg width="12" height="15" viewBox="0 0 12 15" fill="none">
-              <path
-                d="M 6 0 C 6.31 0 6.563 0.252 6.563 0.563 L 6.563 9.545 L 9.352 6.757 C 9.571 6.537 9.928 6.537 10.147 6.757 C 10.367 6.976 10.367 7.333 10.147 7.552 L 6.398 11.302 C 6.178 11.522 5.822 11.522 5.602 11.302 L 1.853 7.552 C 1.633 7.333 1.633 6.976 1.853 6.757 C 2.072 6.537 2.429 6.537 2.648 6.757 L 5.438 9.545 L 5.438 0.563 C 5.438 0.252 5.69 0 6 0 Z M 0.563 13.5 L 11.438 13.5 C 11.748 13.5 12 13.752 12 14.063 C 12 14.373 11.748 14.625 11.438 14.625 L 0.563 14.625 C 0.252 14.625 0 14.373 0 14.063 C 0 13.752 0.252 13.5 0.563 13.5 Z"
-                fill="currentColor"
-                fill-rule="nonzero"
-              />
-            </svg>
-          </span>
-          {{ excelBusy() ? 'Building…' : 'Export to Excel' }}
-        </button>
-        <button type="button" class="btn btn--primary" (click)="exportOpen.set(true)">
-          <span class="btn__icon" aria-hidden="true">
-            <svg width="14" height="15" viewBox="0 0 13.5 15" fill="none">
-              <path
-                d="M 12.938 2.25 C 10.94 2.25 8.994 1.542 7.087 0.113 C 6.887 -0.037 6.613 -0.037 6.413 0.113 C 4.506 1.542 2.56 2.25 0.563 2.25 C 0.252 2.25 0 2.502 0 2.813 L 0 6.75 C 0 10.501 2.218 13.257 6.544 14.961 C 6.676 15.013 6.824 15.013 6.956 14.961 C 11.282 13.257 13.5 10.501 13.5 6.75 L 13.5 2.813 C 13.5 2.502 13.248 2.25 12.938 2.25 Z M 1.125 3.358 C 3.058 3.244 4.936 2.541 6.75 1.258 C 8.564 2.541 10.442 3.244 12.375 3.358 L 12.375 6.75 C 12.375 9.942 10.535 12.284 6.75 13.831 C 2.965 12.284 1.125 9.942 1.125 6.75 L 1.125 3.358 Z M 7.307 4.239 C 7.27 3.964 7.035 3.753 6.75 3.753 C 6.439 3.753 6.188 4.005 6.188 4.315 L 6.188 9.189 L 6.193 9.266 C 6.23 9.54 6.465 9.752 6.75 9.752 C 7.061 9.752 7.313 9.5 7.313 9.189 L 7.313 4.315 L 7.307 4.239 Z M 6.75 12 C 7.164 12 7.5 11.664 7.5 11.25 C 7.5 10.836 7.164 10.5 6.75 10.5 C 6.336 10.5 6 10.836 6 11.25 C 6 11.664 6.336 12 6.75 12 Z"
-                fill="currentColor"
-                fill-rule="nonzero"
-              />
-            </svg>
-          </span>
-          Export CSV
-        </button>
-      </div>
+      @if (canExport) {
+        <div class="header-card__actions">
+          <!-- The source header offers "Export Excel" + "Export CSV": Excel downloads the
+               multi-sheet workbook for the applied range straight away, CSV opens the
+               export dialog where the period can be re-picked. -->
+          <button
+            type="button"
+            class="btn btn--secondary"
+            [disabled]="excelBusy()"
+            [title]="'Multi-sheet workbook: ' + workbookSheetList"
+            (click)="exportExcel()"
+          >
+            <span class="btn__icon" aria-hidden="true">
+              <svg width="12" height="15" viewBox="0 0 12 15" fill="none">
+                <path
+                  d="M 6 0 C 6.31 0 6.563 0.252 6.563 0.563 L 6.563 9.545 L 9.352 6.757 C 9.571 6.537 9.928 6.537 10.147 6.757 C 10.367 6.976 10.367 7.333 10.147 7.552 L 6.398 11.302 C 6.178 11.522 5.822 11.522 5.602 11.302 L 1.853 7.552 C 1.633 7.333 1.633 6.976 1.853 6.757 C 2.072 6.537 2.429 6.537 2.648 6.757 L 5.438 9.545 L 5.438 0.563 C 5.438 0.252 5.69 0 6 0 Z M 0.563 13.5 L 11.438 13.5 C 11.748 13.5 12 13.752 12 14.063 C 12 14.373 11.748 14.625 11.438 14.625 L 0.563 14.625 C 0.252 14.625 0 14.373 0 14.063 C 0 13.752 0.252 13.5 0.563 13.5 Z"
+                  fill="currentColor"
+                  fill-rule="nonzero"
+                />
+              </svg>
+            </span>
+            {{ excelBusy() ? 'Building…' : 'Export to Excel' }}
+          </button>
+          <button type="button" class="btn btn--primary" (click)="exportOpen.set(true)">
+            <span class="btn__icon" aria-hidden="true">
+              <svg width="14" height="15" viewBox="0 0 13.5 15" fill="none">
+                <path
+                  d="M 12.938 2.25 C 10.94 2.25 8.994 1.542 7.087 0.113 C 6.887 -0.037 6.613 -0.037 6.413 0.113 C 4.506 1.542 2.56 2.25 0.563 2.25 C 0.252 2.25 0 2.502 0 2.813 L 0 6.75 C 0 10.501 2.218 13.257 6.544 14.961 C 6.676 15.013 6.824 15.013 6.956 14.961 C 11.282 13.257 13.5 10.501 13.5 6.75 L 13.5 2.813 C 13.5 2.502 13.248 2.25 12.938 2.25 Z M 1.125 3.358 C 3.058 3.244 4.936 2.541 6.75 1.258 C 8.564 2.541 10.442 3.244 12.375 3.358 L 12.375 6.75 C 12.375 9.942 10.535 12.284 6.75 13.831 C 2.965 12.284 1.125 9.942 1.125 6.75 L 1.125 3.358 Z M 7.307 4.239 C 7.27 3.964 7.035 3.753 6.75 3.753 C 6.439 3.753 6.188 4.005 6.188 4.315 L 6.188 9.189 L 6.193 9.266 C 6.23 9.54 6.465 9.752 6.75 9.752 C 7.061 9.752 7.313 9.5 7.313 9.189 L 7.313 4.315 L 7.307 4.239 Z M 6.75 12 C 7.164 12 7.5 11.664 7.5 11.25 C 7.5 10.836 7.164 10.5 6.75 10.5 C 6.336 10.5 6 10.836 6 11.25 C 6 11.664 6.336 12 6.75 12 Z"
+                  fill="currentColor"
+                  fill-rule="nonzero"
+                />
+              </svg>
+            </span>
+            Export CSV
+          </button>
+        </div>
+      }
+
     </div>
 
-    <p class="header-card__export-note">
-      The Excel workbook contains all five sheets — {{ workbookSheetList }} — for the applied
-      reporting period.
-    </p>
+    <!-- Exports need reports.export (Hub Manager, Admin); other roles only view the tabs. -->
+    @if (canExport) {
+      <p class="header-card__export-note">
+        The Excel workbook contains {{ workbookSheets.length }} sheets — {{ workbookSheetList }} — for the
+        applied reporting period. Demographics and referral sources are included in every export.
+        @if (dialogCohortActive()) {
+          <span class="header-card__export-cohort">DIALOG outcomes sheet filtered to: {{ dialogCohortLabel() }}</span>
+        }
+      </p>
+    }
     @if (excelError()) {
       <div class="error-banner header-card__export-error" role="alert">{{ excelError() }}</div>
     }
 
     <div class="header-card__divider"></div>
 
-    <div class="tab-bar" role="tablist" aria-label="Report sections">
-      @for (tab of tabs; track tab.id; let first = $first) {
-        @if (!first) {
-          <span class="tab-bar__sep" aria-hidden="true"></span>
-        }
+    <!-- The sections scroll sideways when they don't fit: an arrow and an edge fade appear on
+         whichever side has hidden tabs, and the active tab is scrolled clear of them. -->
+    <div class="tab-strip" [class.tab-strip--more-start]="canScrollStart()" [class.tab-strip--more-end]="canScrollEnd()">
+      @if (canScrollStart()) {
         <button
           type="button"
-          class="tab-bar__tab"
-          [class.tab-bar__tab--active]="tab.id === activeTab()"
-          role="tab"
-          [attr.aria-selected]="tab.id === activeTab()"
-          (click)="selectTab(tab.id)"
+          class="tab-strip__arrow tab-strip__arrow--start"
+          tabindex="-1"
+          aria-label="Show earlier report sections"
+          title="More sections"
+          (click)="scrollTabs(-1)"
         >
-          {{ tab.label }}
+          <svg width="8" height="12" viewBox="0 0 8 12" fill="none" aria-hidden="true">
+            <path d="M 6.5 1 L 1.5 6 L 6.5 11" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        </button>
+      }
+
+      <div #tabBar class="tab-bar" role="tablist" aria-label="Report sections" (scroll)="updateTabOverflow()">
+        @for (tab of tabs; track tab.id; let first = $first) {
+          @if (!first) {
+            <span class="tab-bar__sep" aria-hidden="true"></span>
+          }
+          <button
+            type="button"
+            class="tab-bar__tab"
+            [class.tab-bar__tab--active]="tab.id === activeTab()"
+            role="tab"
+            [attr.data-tab]="tab.id"
+            [attr.aria-selected]="tab.id === activeTab()"
+            (click)="selectTab(tab.id)"
+            (focus)="revealTab(tab.id)"
+          >
+            {{ tab.label }}
+          </button>
+        }
+      </div>
+
+      @if (canScrollEnd()) {
+        <button
+          type="button"
+          class="tab-strip__arrow tab-strip__arrow--end"
+          tabindex="-1"
+          aria-label="Show more report sections"
+          title="More sections"
+          (click)="scrollTabs(1)"
+        >
+          <svg width="8" height="12" viewBox="0 0 8 12" fill="none" aria-hidden="true">
+            <path d="M 1.5 1 L 6.5 6 L 1.5 11" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
         </button>
       }
     </div>
@@ -99,7 +144,9 @@
   @if (activeTab() === 'overview' && error()) {
     <div class="error-banner">Couldn't load report data — {{ error() }}</div>
   }
-  @if (activeTab() === 'dialog-outcomes' && outcomesError()) {
+  <!-- The DIALOG Outcomes tab loads (and reports errors for) its own cohort-filtered data;
+       these hub-wide outcomes feed the Overview's DIALOG cards. -->
+  @if (activeTab() === 'overview' && outcomesError()) {
     <div class="error-banner">Couldn't load DIALOG outcome data — {{ outcomesError() }}</div>
   }
 
@@ -126,7 +173,7 @@
       <app-reports-caseload (viewGuests)="openCmhwGuests($event)" />
     }
     @case ('dialog-outcomes') {
-      <app-reports-dialog-outcomes [outcomes]="outcomes()" [loading]="outcomesLoading()" />
+      <app-reports-dialog-outcomes [(cohort)]="dialogCohort" />
     }
     @case ('data-quality') {
       <app-reports-data-quality />
@@ -141,5 +188,5 @@
 </div>
 
 @if (exportOpen()) {
-  <app-reports-export-dialog [from]="from()" [to]="to()" (closed)="exportOpen.set(false)" />
+  <app-reports-export-dialog [from]="from()" [to]="to()" [dialogCohort]="dialogCohort()" (closed)="exportOpen.set(false)" />
 }

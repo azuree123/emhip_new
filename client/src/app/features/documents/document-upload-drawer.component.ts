@@ -13,6 +13,10 @@ import { fileExtension, formatBytes } from './documents.util';
 /**
  * "Upload document" drawer — the single entry point for adding a document to the register.
  *
+ * Staff upload from a guest's profile (Documents tab), which passes `linkedGuestId`: the file is
+ * then filed on that guest automatically and the guest picker is not shown. The hub-wide
+ * Document Management page (hidden from the menu) opens it without one and keeps the picker.
+ *
  * The file is validated against the hub's own upload rules (SettingsApiService.maxUploadMb /
  * allowedExtensions, passed in by the parent) *before* anything is sent, so an oversized or
  * blocked file never costs the operator an upload. Once accepted, the request is streamed with
@@ -42,6 +46,8 @@ export class DocumentUploadDrawerComponent {
   readonly maxUploadMb = input.required<number>();
   /** documents.upload.allowedExtensions, dot-stripped and lowercased; empty means "any". */
   readonly allowedExtensions = input.required<string[]>();
+  /** The guest whose profile opened the drawer — fixes the link and hides the guest picker. */
+  readonly linkedGuestId = input<string | null>(null);
 
   readonly closed = output<void>();
   /** Emitted once the upload succeeds so the parent can refresh the register and the stats. */
@@ -85,6 +91,8 @@ export class DocumentUploadDrawerComponent {
 
   /** The picker is pointless (and would 403) without permission to read guests. */
   protected readonly canLinkGuest = this.auth.hasPermission(Permissions.Guests.View);
+  /** Opened from a guest's profile: the link is automatic, so there is nothing to pick. */
+  protected readonly guestFixed = computed(() => !!this.linkedGuestId());
 
   protected readonly maxBytes = computed(() => {
     const mb = this.maxUploadMb();
@@ -271,7 +279,7 @@ export class DocumentUploadDrawerComponent {
         file,
         title: this.title().trim(),
         category: this.category(),
-        guestId: this.guestId(),
+        guestId: this.linkedGuestId() ?? this.guestId(),
         description: this.description().trim() || null,
         tags: this.tags().length ? this.tags().join(', ') : null,
         retainUntil: this.retainUntil() || null,

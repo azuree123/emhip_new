@@ -1,4 +1,5 @@
 import { GuestStatus } from '../../core/api-models';
+import { DemographicFilterValue } from '../../shared/demographic-filters.component';
 
 /**
  * Display metadata (label + chart color) for each PathwayCategory enum value.
@@ -27,25 +28,42 @@ export function pathwayCategoryLabel(category: string | null): string {
  * Engagement-status pill label + modifier class (spec §4.7), colors per the design's
  * pill family (Desktop66). Urgency is a separate flag (GuestListItemDto.isUrgent), not
  * a status — it renders as its own `status-pill--urgent` badge beside these pills.
+ * The OnHold status is displayed as "Inactive" (customer terminology); the enum value
+ * and API contract are unchanged.
  */
 export const STATUS_META: Record<GuestStatus, { label: string; pillClass: string }> = {
   New: { label: 'New', pillClass: 'status-pill--new' },
   Active: { label: 'Active', pillClass: 'status-pill--active' },
-  OnHold: { label: 'On hold', pillClass: 'status-pill--onhold' },
+  OnHold: { label: 'Inactive', pillClass: 'status-pill--onhold' },
 };
 
 export function toIsoDate(date: Date): string {
   return date.toISOString().slice(0, 10);
 }
 
-/** The five worksheets in the Excel workbook returned by ReportsApiService.exportWorkbook. */
+/**
+ * The worksheets in the Excel workbook returned by ReportsApiService.exportWorkbook, in order —
+ * kept in step with ExcelWorkbookBuilder. Demographics and referral sources are on every export.
+ */
 export const WORKBOOK_SHEETS = [
   'Summary',
+  'Demographics',
+  'Referral sources',
   'Pathways',
   'Caseload',
   'DIALOG outcomes',
   'Data quality',
 ];
+
+/**
+ * "Black African · 18–24 · Female · Somalia" — the active demographic cohort as one line, in
+ * the drawer's field order; "All guests" when nothing is filtered. The server labels the Excel
+ * DIALOG outcomes sheet the same way (ReportCohortFilter.Describe).
+ */
+export function cohortLabel(value: DemographicFilterValue): string {
+  const parts = [value.ethnicity, value.ageBand, value.gender, value.countryOfOrigin].filter((p) => !!p);
+  return parts.length ? parts.join(' · ') : 'All guests';
+}
 
 /** Saves an export Blob under `filename` — shared by the header actions and the export dialog. */
 export function downloadBlob(blob: Blob, filename: string): void {

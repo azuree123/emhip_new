@@ -24,12 +24,18 @@ public sealed class ReportsController(
         return Ok(result);
     }
 
-    /// <summary>"Outcome dimensions" report — hub-wide DIALOG averages, baseline vs latest follow-up.</summary>
+    /// <summary>
+    /// "Outcome dimensions" report — DIALOG averages, baseline vs latest reassessment. The optional
+    /// demographic filters (same names and meaning as GET /guests) narrow every figure to a cohort.
+    /// </summary>
     [HttpGet("dialog-outcomes")]
     [Authorize(Policy = Permissions.Reports.View)]
-    public async Task<IActionResult> GetDialogOutcomes(CancellationToken cancellationToken)
+    public async Task<IActionResult> GetDialogOutcomes(
+        [FromQuery] string? ethnicity = null, [FromQuery] string? gender = null, [FromQuery] string? countryOfOrigin = null,
+        [FromQuery] int? ageMin = null, [FromQuery] int? ageMax = null, CancellationToken cancellationToken = default)
     {
-        var result = await mediator.Send(new GetDialogOutcomesReportQuery(currentUser.HubId), cancellationToken);
+        var cohort = ReportCohortFilter.From(ethnicity, gender, countryOfOrigin, ageMin, ageMax);
+        var result = await mediator.Send(new GetDialogOutcomesReportQuery(currentUser.HubId, cohort), cancellationToken);
         return Ok(result);
     }
 
@@ -63,11 +69,15 @@ public sealed class ReportsController(
     public async Task<IActionResult> GetContactsBreakdown([FromQuery] DateOnly from, [FromQuery] DateOnly to, CancellationToken cancellationToken) =>
         Ok(await mediator.Send(new GetContactsBreakdownQuery(currentUser.HubId, from, to), cancellationToken));
 
-    /// <summary>"DIALOG score trend" — monthly average total score.</summary>
+    /// <summary>"DIALOG score trend" — monthly average total score, optionally for a demographic cohort.</summary>
     [HttpGet("dialog-trend")]
     [Authorize(Policy = Permissions.Reports.View)]
-    public async Task<IActionResult> GetDialogTrend(CancellationToken cancellationToken) =>
-        Ok(await mediator.Send(new GetDialogTrendQuery(currentUser.HubId), cancellationToken));
+    public async Task<IActionResult> GetDialogTrend(
+        [FromQuery] string? ethnicity = null, [FromQuery] string? gender = null, [FromQuery] string? countryOfOrigin = null,
+        [FromQuery] int? ageMin = null, [FromQuery] int? ageMax = null, CancellationToken cancellationToken = default) =>
+        Ok(await mediator.Send(
+            new GetDialogTrendQuery(currentUser.HubId, ReportCohortFilter.From(ethnicity, gender, countryOfOrigin, ageMin, ageMax)),
+            cancellationToken));
 
     /// <summary>"Referral sources" breakdown.</summary>
     [HttpGet("referral-sources")]
@@ -81,12 +91,20 @@ public sealed class ReportsController(
     public async Task<IActionResult> GetExportHistory(CancellationToken cancellationToken) =>
         Ok(await mediator.Send(new GetExportHistoryQuery(currentUser.HubId), cancellationToken));
 
-    /// <summary>Multi-sheet Excel workbook: summary, pathways, caseload, DIALOG outcomes and data quality (spec §5.4).</summary>
+    /// <summary>
+    /// Multi-sheet Excel workbook: summary, demographics, referral sources, pathways, caseload, DIALOG
+    /// outcomes and data quality (spec §5.4). The optional demographic filters are the DIALOG
+    /// Outcomes tab's cohort and apply to the DIALOG outcomes sheet only.
+    /// </summary>
     [HttpGet("export.xlsx")]
     [Authorize(Policy = Permissions.Reports.Export)]
-    public async Task<IActionResult> ExportWorkbook([FromQuery] DateOnly from, [FromQuery] DateOnly to, CancellationToken cancellationToken)
+    public async Task<IActionResult> ExportWorkbook(
+        [FromQuery] DateOnly from, [FromQuery] DateOnly to,
+        [FromQuery] string? ethnicity = null, [FromQuery] string? gender = null, [FromQuery] string? countryOfOrigin = null,
+        [FromQuery] int? ageMin = null, [FromQuery] int? ageMax = null, CancellationToken cancellationToken = default)
     {
-        var report = await mediator.Send(new GetServiceReportExportQuery(currentUser.HubId, from, to), cancellationToken);
+        var cohort = ReportCohortFilter.From(ethnicity, gender, countryOfOrigin, ageMin, ageMax);
+        var report = await mediator.Send(new GetServiceReportExportQuery(currentUser.HubId, from, to, cohort), cancellationToken);
         var bytes = workbookBuilder.BuildServiceReport(report);
 
         await mediator.Send(new RecordExportCommand("ServiceWorkbookXlsx", from, to), cancellationToken);
@@ -107,7 +125,11 @@ public sealed class ReportsController(
         Response.ContentType = "text/csv";
         Response.Headers.ContentDisposition = $"attachment; filename=\"pathway-report-{from:yyyy-MM-dd}-{to:yyyy-MM-dd}.csv\"";
 
-        await Response.WriteAsync("GuestId,GuestName,Category,Status,ReferredAt\n", cancellationToken);
+        // The demographic and referral columns are appended after the original five, so anything
+        // reading the file by position keeps working.
+        await Response.WriteAsync(
+            "GuestId,GuestName,Category,Status,ReferredAt,Ethnicity,AgeGroup,Gender,CountryOfOrigin,ReferralSource,ReferralType\n",
+            cancellationToken);
 
         await foreach (var row in reportReads.StreamExportAsync(currentUser.HubId, from, to, cancellationToken))
         {
@@ -116,7 +138,13 @@ public sealed class ReportsController(
                 .Append(CsvEscape(row.GuestName)).Append(',')
                 .Append(row.Category).Append(',')
                 .Append(row.Status).Append(',')
-                .Append(row.ReferredAt.ToString("O", CultureInfo.InvariantCulture))
+                .Append(row.ReferredAt.ToString("O", CultureInfo.InvariantCulture)).Append(',')
+                .Append(CsvEscape(row.Ethnicity ?? string.Empty)).Append(',')
+                .Append(CsvEscape(row.AgeGroup)).Append(',')
+                .Append(CsvEscape(row.Gender ?? string.Empty)).Append(',')
+                .Append(CsvEscape(row.CountryOfOrigin ?? string.Empty)).Append(',')
+                .Append(CsvEscape(row.ReferralSource ?? string.Empty)).Append(',')
+                .Append(row.ReferralType ?? string.Empty)
                 .Append('\n');
 
             await Response.WriteAsync(line.ToString(), cancellationToken);
@@ -127,7 +155,7 @@ public sealed class ReportsController(
     }
 
     private static string CsvEscape(string value) =>
-        value.Contains(',') || value.Contains('"')
+        value.IndexOfAny([',', '"', '\n', '\r']) >= 0
             ? $"\"{value.Replace("\"", "\"\"")}\""
             : value;
 }

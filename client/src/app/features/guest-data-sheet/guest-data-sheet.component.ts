@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/cor
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ScrollingModule } from '@angular/cdk/scrolling';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, Router, RouterOutlet } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Subject, firstValueFrom, of } from 'rxjs';
 import { catchError, debounceTime } from 'rxjs/operators';
 
@@ -15,6 +15,8 @@ import {
   demographicFilterParams,
 } from '../../shared/demographic-filters.component';
 import { StaffPickerComponent } from '../../shared/staff-picker.component';
+import { AGE_BANDS } from '../../core/api-models';
+import { GuestSegment, clinicalPathwayLabel, guestSegmentLabel, isGuestSegment } from '../../core/guest-segments';
 
 type StatusFilterValue = GuestStatus | 'All';
 type PathwayFilterValue = PathwayCategory | 'All';
@@ -40,7 +42,7 @@ const STATUS_OPTIONS: { value: StatusFilterValue; label: string }[] = [
   { value: 'All', label: 'Status' },
   { value: 'New', label: 'New' },
   { value: 'Active', label: 'Active' },
-  { value: 'OnHold', label: 'On hold' },
+  { value: 'OnHold', label: 'Inactive' },
 ];
 
 const PATHWAY_OPTIONS: { value: PathwayFilterValue; label: string }[] = [
@@ -82,7 +84,7 @@ const ACTIVITY_OPTIONS: { value: ActivityFilterValue; label: string }[] = [
 @Component({
   selector: 'app-guest-data-sheet',
   standalone: true,
-  imports: [ScrollingModule, RouterOutlet, FormsModule, StaffPickerComponent, DemographicFiltersComponent],
+  imports: [ScrollingModule, RouterLink, FormsModule, StaffPickerComponent, DemographicFiltersComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './guest-data-sheet.component.html',
   styleUrl: './guest-data-sheet.component.scss',
@@ -116,6 +118,12 @@ export class GuestDataSheetComponent {
   protected readonly activityFilter = signal<ActivityFilterValue>('All');
   /** Ethnicity / age group / gender / country of origin from the shared demographic drawer. */
   protected readonly demographics = signal<DemographicFilterValue>(EMPTY_DEMOGRAPHIC_FILTERS);
+  /**
+   * Dashboard / report drill-through (?segment=smi, ?clinicalPathway=ClinicalSupport): the exact
+   * set of guests behind the count that was clicked, shown as a removable banner over the table.
+   */
+  protected readonly segment = signal<GuestSegment | null>(null);
+  protected readonly clinicalPathway = signal<string | null>(null);
   protected readonly exporting = signal(false);
   protected readonly exportError = signal<string | null>(null);
 
@@ -141,9 +149,11 @@ export class GuestDataSheetComponent {
 
     // The header search bar navigates here with ?q=…, the dashboard KPI cards with
     // ?status=… or ?urgent=true (urgency is a flag, not a status) plus their toolbar's
-    // pathway / cmhw / activity, and "Caseload per CMHW" with ?cmhw=… — including while this
-    // screen is already active, so track the params instead of reading them once. The
-    // first (synchronous) emission doubles as the initial load.
+    // pathway / cmhw / activity, "Caseload per CMHW" with ?cmhw=…, the demographics card with
+    // ?ethnicity= / ?gender= / ?countryOfOrigin= / ?ageBand=, and the other dashboard and report
+    // counts with ?segment= / ?clinicalPathway= — including while this screen is already
+    // active, so track the params instead of reading them once. The first (synchronous)
+    // emission doubles as the initial load.
     this.route.queryParamMap.pipe(takeUntilDestroyed()).subscribe((params) => {
       const q = params.get('q') ?? '';
       const statusParam = params.get('status');
@@ -157,19 +167,39 @@ export class GuestDataSheetComponent {
       const activityParam = params.get('activity');
       const activity: ActivityFilterValue =
         activityParam && ACTIVITY_OPTIONS.some((o) => o.value === activityParam) ? (activityParam as ActivityFilterValue) : 'All';
+      const segmentParam = params.get('segment');
+      const segment = isGuestSegment(segmentParam) ? segmentParam : null;
+      const clinicalPathway = params.get('clinicalPathway');
+      const ageBandParam = params.get('ageBand') ?? '';
+      const demographics: DemographicFilterValue = {
+        ethnicity: params.get('ethnicity') ?? '',
+        gender: params.get('gender') ?? '',
+        countryOfOrigin: params.get('countryOfOrigin') ?? '',
+        ageBand: AGE_BANDS.some((b) => b.label === ageBandParam) ? ageBandParam : '',
+      };
+      const current = this.demographics();
       const changed =
         q !== this.searchTerm ||
         status !== this.statusFilter() ||
         urgent !== this.urgentOnly() ||
         pathway !== this.pathwayFilter() ||
         cmhw !== this.cmhwFilter() ||
-        activity !== this.activityFilter();
+        activity !== this.activityFilter() ||
+        segment !== this.segment() ||
+        clinicalPathway !== this.clinicalPathway() ||
+        demographics.ethnicity !== current.ethnicity ||
+        demographics.gender !== current.gender ||
+        demographics.countryOfOrigin !== current.countryOfOrigin ||
+        demographics.ageBand !== current.ageBand;
       this.searchTerm = q;
       this.statusFilter.set(status);
       this.urgentOnly.set(urgent);
       this.pathwayFilter.set(pathway);
       this.cmhwFilter.set(cmhw);
       this.activityFilter.set(activity);
+      this.segment.set(segment);
+      this.clinicalPathway.set(clinicalPathway);
+      this.demographics.set(demographics);
       if (changed || !this.initialized) {
         this.initialized = true;
         this.resetAndLoad();
@@ -226,6 +256,30 @@ export class GuestDataSheetComponent {
     this.cmhwFilter.set(null);
     this.activityFilter.set('All');
     this.demographics.set(EMPTY_DEMOGRAPHIC_FILTERS);
+    this.segment.set(null);
+    this.clinicalPathway.set(null);
+    this.resetAndLoad();
+  }
+
+  /** Banner text for the drill-through the list was opened with, e.g. "SMI recorded". */
+  protected drillThroughLabel(): string | null {
+    const parts: string[] = [];
+    const segment = this.segment();
+    if (segment) parts.push(guestSegmentLabel(segment));
+    const clinicalPathway = this.clinicalPathway();
+    if (clinicalPathway) parts.push(`${clinicalPathwayLabel(clinicalPathway)} pathway`);
+    return parts.length ? parts.join(' · ') : null;
+  }
+
+  /** "Show all guests" on the drill-through banner — drops the segment but keeps other filters. */
+  protected clearDrillThrough(): void {
+    this.segment.set(null);
+    this.clinicalPathway.set(null);
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { segment: null, clinicalPathway: null },
+      queryParamsHandling: 'merge',
+    });
     this.resetAndLoad();
   }
 
@@ -266,6 +320,8 @@ export class GuestDataSheetComponent {
     countryOfOrigin?: string;
     ageMin?: number;
     ageMax?: number;
+    segment?: string;
+    clinicalPathway?: string;
   } {
     const status = this.statusFilter();
     const pathway = this.pathwayFilter();
@@ -280,6 +336,8 @@ export class GuestDataSheetComponent {
       // Only ever narrows to urgent guests — the chip has no "non-urgent only" state.
       urgent: this.urgentOnly() ? true : undefined,
       ...demographicFilterParams(this.demographics()),
+      segment: this.segment() ?? undefined,
+      clinicalPathway: this.clinicalPathway() ?? undefined,
     };
   }
 
@@ -422,7 +480,7 @@ export class GuestDataSheetComponent {
   }
 
   protected statusLabel(status: GuestStatus): string {
-    return status === 'OnHold' ? 'On hold' : status;
+    return status === 'OnHold' ? 'Inactive' : status;
   }
 
   /** Humanizes a PathwayCategory enum name — "HousingAdvice" → "Housing Advice". */
@@ -465,8 +523,18 @@ export class GuestDataSheetComponent {
     return this.formatDate(value);
   }
 
+  /**
+   * Anywhere on the row opens the record. The name and "Open" are real links (so Ctrl/Cmd-click
+   * and middle-click open a new tab, and keyboard users can tab to them); clicks that land on a
+   * link are left to the link itself.
+   */
+  protected onRowClick(event: MouseEvent, guestId: string): void {
+    if ((event.target as HTMLElement).closest('a, button')) return;
+    this.openGuest(guestId);
+  }
+
   protected openGuest(guestId: string): void {
-    this.router.navigate(['/guests', guestId]);
+    void this.router.navigate(['/guests', guestId]);
   }
 
   protected registerGuest(): void {

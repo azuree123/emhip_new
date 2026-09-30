@@ -250,7 +250,7 @@ public sealed class ReportMaterializerWorker(IServiceScopeFactory scopeFactory, 
                 await guests.CountAsync(g => !db.InitialConversationRecords.Any(r => r.GuestId == g.Id), cancellationToken)),
             new("missingDialogBaseline", "Missing DIALOG baseline score",
                 await guests.CountAsync(g => !db.DialogAssessments.Any(d => d.GuestId == g.Id), cancellationToken)),
-            new("autoOnHold", "Guests auto-moved to On hold",
+            new("autoOnHold", "Guests automatically moved to Inactive",
                 await guests.CountAsync(g => g.Status == GuestStatus.OnHold, cancellationToken)),
         ];
     }

@@ -152,6 +152,11 @@
     font-size: 12px;
     line-height: 20px;
     color: $ink-soft;
+
+    &--cohort {
+      margin-top: 12px;
+      color: $maroon;
+    }
   }
 
   &__error {

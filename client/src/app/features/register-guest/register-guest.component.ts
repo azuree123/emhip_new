@@ -171,7 +171,7 @@ export class RegisterGuestComponent {
     register: 'Register guest',
     customFields: 'Additional information',
     // One call, four effects: allocation, urgent flag, next-contact follow-up and actions.
-    conversation: 'Initial conversation (allocation, follow-up & actions)',
+    conversation: 'Initial conversation (allocation, next contact & actions)',
     dialog: 'DIALOG assessment',
     demographics: 'Demographics (ethnicity)',
     risk: 'Risk assessment (Urgent Cases escalation)',

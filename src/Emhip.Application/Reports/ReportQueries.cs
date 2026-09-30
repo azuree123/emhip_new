@@ -34,11 +34,11 @@ public sealed class GetContactsBreakdownQueryHandler(IReportReadService reads) :
         reads.GetContactsBreakdownAsync(request.HubId, request.From, request.To, cancellationToken);
 }
 
-public sealed record GetDialogTrendQuery(Guid HubId) : IRequest<IReadOnlyList<DialogTrendPointDto>>;
+public sealed record GetDialogTrendQuery(Guid HubId, ReportCohortFilter? Cohort = null) : IRequest<IReadOnlyList<DialogTrendPointDto>>;
 public sealed class GetDialogTrendQueryHandler(IReportReadService reads) : IRequestHandler<GetDialogTrendQuery, IReadOnlyList<DialogTrendPointDto>>
 {
     public Task<IReadOnlyList<DialogTrendPointDto>> Handle(GetDialogTrendQuery request, CancellationToken cancellationToken) =>
-        reads.GetDialogTrendAsync(request.HubId, cancellationToken);
+        reads.GetDialogTrendAsync(request.HubId, request.Cohort, cancellationToken);
 }
 
 public sealed record GetReferralSourcesQuery(Guid HubId) : IRequest<IReadOnlyList<BreakdownSliceDto>>;

@@ -35,10 +35,11 @@ public sealed class GuestsController(IMediator mediator, ICurrentUser currentUse
         [FromQuery] PathwayCategory? pathway = null, [FromQuery] bool? risk = null, [FromQuery] Guid? cmhw = null,
         [FromQuery] int? lastActivityDays = null, [FromQuery] bool? urgent = null,
         [FromQuery] string? ethnicity = null, [FromQuery] string? gender = null, [FromQuery] string? countryOfOrigin = null,
-        [FromQuery] int? ageMin = null, [FromQuery] int? ageMax = null, CancellationToken cancellationToken = default)
+        [FromQuery] int? ageMin = null, [FromQuery] int? ageMax = null,
+        [FromQuery] string? segment = null, [FromQuery] GuestPathway? clinicalPathway = null, CancellationToken cancellationToken = default)
     {
         var result = await mediator.Send(
-            new GetGuestListQuery(currentUser.HubId, q, status, cursor, Math.Clamp(pageSize, 1, 200), pathway, risk, cmhw, lastActivityDays, urgent, ethnicity, gender, countryOfOrigin, ageMin, ageMax),
+            new GetGuestListQuery(currentUser.HubId, q, status, cursor, Math.Clamp(pageSize, 1, 200), pathway, risk, cmhw, lastActivityDays, urgent, ethnicity, gender, countryOfOrigin, ageMin, ageMax, segment, clinicalPathway),
             cancellationToken);
         return Ok(result);
     }
