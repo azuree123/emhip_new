@@ -198,6 +198,20 @@
     color: #fff;
   }
 
+  // A recorded step: green tick in place of its number.
+  &__item--done &__index {
+    background: #eafdee;
+    color: #147129;
+  }
+
+  &__complete {
+    margin: 16px 0 0;
+    font-family: t.$font-primary;
+    font-size: 12px;
+    line-height: 18px;
+    color: #147129;
+  }
+
   &__text {
     display: flex;
     flex-direction: column;

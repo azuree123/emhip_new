@@ -57,6 +57,7 @@ Found while fixing the feedback items or while preparing the handover documents.
 - **The CMHW dashboard shows the worker's own numbers.** Active caseload, Due today, Overdue contacts and Actions pending today now count only the signed-in worker's guests and scheduled contacts. Before, they mixed in the whole hub's figures and completed items.
 - **Clicking outside the Add Contact form no longer closes it** and throws away what was typed. It closes with the × or Cancel.
 - **Guest search** now matches the G-number (for example G-1001), phone number and CMHW name, as the search box says. Before, only names matched.
+- **Guest record → Demographics → Next steps** reflects what has been recorded. Before, it always pointed at the initial conversation, even when that was completed during registration. It now ticks off the initial conversation and DIALOG baseline with their dates, and its main button leads to the first step still to do.
 - **Register New Guest, step 2:** a detail field (allergy details, family history details, inpatient year and location, diagnosis group and reported diagnosis, and the risk-history comments) is cleared and greyed out when its question is answered **No** or **Unknown**, and opens again for **Yes** or **Unsure**. Before, a detail typed earlier stayed and was saved against a "No".
 
 **Settings and administration**

@@ -69,6 +69,7 @@ All 13 items in the feedback sheet are fixed and ready to retest. Numbers match 
 - **Email links** in urgent-case and overdue-contact emails open the website.
 - **Only three pathways:** Mental Wellbeing, Clinical Support and Community Recovery are the only pathways in every filter, column, report and export, with the same names on every screen. The practical-support categories (Housing Advice and so on) and the Support Referrals card are removed.
 - **Filters set by a link show in the dropdown:** opening the guest list from a dashboard count now shows the chosen Status or Pathway in its dropdown.
+- **Next steps on the Demographics tab:** for a guest registered with the full five steps, it shows the initial conversation and DIALOG baseline as done (with dates) instead of always offering "Continue to Initial conversation".
 - **Registration detail fields:** in step 2, answering **No** (or **Unknown**) to allergies, family history, inpatient admission, previous diagnosis or a risk-history question clears and greys out its detail field; **Yes** or **Unsure** opens it again.
 
 ## Workflows

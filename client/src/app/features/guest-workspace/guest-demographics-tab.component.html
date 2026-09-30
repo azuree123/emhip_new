@@ -366,36 +366,86 @@
           </div>
         </section>
 
-        <!-- The flow continues here: demographics → initial conversation → DIALOG scores. -->
+        <!-- The flow continues here: demographics → initial conversation → DIALOG scores. Each
+             step reads what has actually been recorded (the initial conversation is often done
+             during registration), and the main button leads to the first step still to do. -->
         <section class="card next-steps">
           <h2 class="card__title">Next steps</h2>
           <ol class="next-steps__list">
-            <li class="next-steps__item next-steps__item--current">
-              <span class="next-steps__index">1</span>
+            <li class="next-steps__item" [class.next-steps__item--done]="allComplete()">
+              <span class="next-steps__index">
+                @if (allComplete()) { &#10003; } @else { 1 }
+              </span>
               <span class="next-steps__text">
                 <span class="next-steps__label">Demographics</span>
                 <span class="next-steps__hint">{{ allComplete() ? 'All sections complete' : 'Complete when you have time with the guest' }}</span>
               </span>
             </li>
-            <li class="next-steps__item">
-              <span class="next-steps__index">2</span>
+            <li
+              class="next-steps__item"
+              [class.next-steps__item--done]="initialDone()"
+              [class.next-steps__item--current]="nextStep() === 'initial'"
+            >
+              <span class="next-steps__index">
+                @if (initialDone()) { &#10003; } @else { 2 }
+              </span>
               <span class="next-steps__text">
                 <span class="next-steps__label">Initial conversation</span>
-                <span class="next-steps__hint">Presenting issues, risk screening, pathway &amp; allocation</span>
+                @if (progress().initialConversation; as done) {
+                  <span class="next-steps__hint">Completed {{ stepDate(done.at) }} by {{ done.by }}</span>
+                } @else {
+                  <span class="next-steps__hint">Presenting issues, risk screening, pathway &amp; allocation</span>
+                }
               </span>
             </li>
-            <li class="next-steps__item">
-              <span class="next-steps__index">3</span>
+            <li
+              class="next-steps__item"
+              [class.next-steps__item--done]="dialogDone()"
+              [class.next-steps__item--current]="nextStep() === 'dialog'"
+            >
+              <span class="next-steps__index">
+                @if (dialogDone()) { &#10003; } @else { 3 }
+              </span>
               <span class="next-steps__text">
                 <span class="next-steps__label">DIALOG scores</span>
-                <span class="next-steps__hint">Baseline across the 11 life areas</span>
+                @if (progress().dialog; as done) {
+                  <span class="next-steps__hint">
+                    Baseline recorded {{ stepDate(done.baselineAt) }}{{ done.count > 1 ? ' · ' + done.count + ' assessments' : '' }}
+                  </span>
+                } @else {
+                  <span class="next-steps__hint">Baseline across the 11 life areas</span>
+                }
               </span>
             </li>
           </ol>
-          <div class="next-steps__actions">
-            <button type="button" class="btn-primary" (click)="goTo('initial')">Continue to Initial conversation</button>
-            <button type="button" class="btn-ghost" (click)="goTo('dialog')">Go to DIALOG scores</button>
-          </div>
+          @switch (nextStep()) {
+            @case ('initial') {
+              <div class="next-steps__actions">
+                <button type="button" class="btn-primary" (click)="goTo('initial')">Continue to Initial conversation</button>
+                <button type="button" class="btn-ghost" (click)="goTo('dialog')">Go to DIALOG scores</button>
+              </div>
+            }
+            @case ('dialog') {
+              <div class="next-steps__actions">
+                <button type="button" class="btn-primary" (click)="goTo('dialog')">Record DIALOG baseline</button>
+                <button type="button" class="btn-ghost" (click)="goTo('initial')">View initial conversation</button>
+              </div>
+            }
+            @case ('done') {
+              <p class="next-steps__complete">Initial conversation and DIALOG baseline are recorded.</p>
+              <div class="next-steps__actions">
+                <button type="button" class="btn-primary" (click)="goTo('dialog')">View DIALOG scores</button>
+                <button type="button" class="btn-ghost" (click)="goTo('initial')">View initial conversation</button>
+              </div>
+            }
+            @default {
+              <!-- Progress still loading (or not readable): offer both without claiming either. -->
+              <div class="next-steps__actions">
+                <button type="button" class="btn-ghost" (click)="goTo('initial')">Initial conversation</button>
+                <button type="button" class="btn-ghost" (click)="goTo('dialog')">DIALOG scores</button>
+              </div>
+            }
+          }
         </section>
       </aside>
     </div>

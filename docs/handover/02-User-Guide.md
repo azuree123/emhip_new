@@ -473,7 +473,7 @@ The tabs are Overview, Demographics, Initial Conversation, Clinical Details, DIA
 2. Fill in the fields.
 3. Select **Save section**. "Saved" appears and the section shows Completed when every field is filled.
 
-The **Profile completion** card shows the percentage complete. The **Relationship to other services** card shows service involvement from Clinical Details; select **Edit in Clinical Details** to change it. **Continue to Initial conversation** and **Go to DIALOG scores** move you on to the next part of the record.
+The **Profile completion** card shows the percentage complete. The **Relationship to other services** card shows service involvement from Clinical Details; select **Edit in Clinical Details** to change it. The **Next steps** card ticks off the initial conversation and the DIALOG baseline once they are recorded (with the date), highlights the first step still to do, and its main button takes you there: **Continue to Initial conversation**, **Record DIALOG baseline**, or **View DIALOG scores** once both are done.
 
 > **Tip:** If a list such as Living situation is empty, its options have not been set up yet. Ask your Administrator.
 

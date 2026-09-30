@@ -1,7 +1,8 @@
 import { Component, computed, effect, inject, input, output, signal, WritableSignal } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { catchError, of } from 'rxjs';
+import { HttpErrorResponse } from '@angular/common/http';
+import { catchError, map, of } from 'rxjs';
 import {
   ClinicalProfileDto,
   GuestDemographicsDto,
@@ -30,6 +31,17 @@ interface CompletionSection {
 export type DemographicsNextStep = 'initial' | 'dialog' | 'clinical';
 
 /**
+ * How far the guest's record has got, for the "Next steps" card. `null` = not known (still
+ * loading, or the caller cannot read that part of the record).
+ */
+interface RecordProgress {
+  /** When the initial conversation was recorded, or false if it has not been. */
+  initialConversation: { at: string; by: string } | false | null;
+  /** The DIALOG baseline date and how many assessments exist, or false if none yet. */
+  dialog: { baselineAt: string; count: number } | false | null;
+}
+
+/**
  * Demographics tab — design "Guest - Demographics Tab" (EMHIP - Additional Changes): a wide
  * column of section cards beside a "Profile completion" summary card.
  *
@@ -50,8 +62,9 @@ export type DemographicsNextStep = 'initial' | 'dialog' | 'clinical';
  * guests.demographics.edit permission (the design's "Only managers can edit guest profiles"
  * note, made role-configurable); without it every section is read-only.
  *
- * The side card carries the flow on: "Continue to Initial conversation" hands off to the
- * next workspace section (then DIALOG scores), where the clinical record starts.
+ * The side card carries the flow on. "Next steps" reads what has actually been recorded — the
+ * initial conversation (often completed during registration) and the DIALOG baseline — marks
+ * those steps done, and points its main button at the first step still to do.
  */
 @Component({
   selector: 'app-guest-demographics-tab',
@@ -78,6 +91,17 @@ export class GuestDemographicsTabComponent {
   readonly canEdit = this.auth.hasPermission(Permissions.Guests.DemographicsEdit);
 
   readonly demographics = signal<GuestDemographicsDto | null>(null);
+  readonly progress = signal<RecordProgress>({ initialConversation: null, dialog: null });
+  readonly initialDone = computed(() => !!this.progress().initialConversation);
+  readonly dialogDone = computed(() => !!this.progress().dialog);
+  /** The step the main button leads to: the first of initial conversation → DIALOG still to do. */
+  readonly nextStep = computed<'initial' | 'dialog' | 'done' | null>(() => {
+    const { initialConversation, dialog } = this.progress();
+    if (initialConversation === null) return null;
+    if (!initialConversation) return 'initial';
+    if (dialog === null) return null;
+    return dialog ? 'done' : 'dialog';
+  });
   readonly clinical = signal<ClinicalProfileDto | null>(null);
   readonly loading = signal(true);
   readonly error = signal<string | null>(null);
@@ -170,6 +194,7 @@ export class GuestDemographicsTabComponent {
       let cancelled = false;
       onCleanup(() => (cancelled = true));
       this.load(id, () => cancelled, this.startEditing());
+      this.loadProgress(id, () => cancelled);
     });
     this.loadLookup(LookupCategories.Ethnicity, this.ethnicityLookup);
     this.loadLookup(LookupCategories.CountryOfOrigin, this.countryOfOriginOptions);
@@ -223,6 +248,39 @@ export class GuestDemographicsTabComponent {
       .subscribe((profile) => {
         if (!isCancelled()) this.clinical.set(profile);
       });
+  }
+
+  /**
+   * "Next steps": has the initial conversation been recorded (a 404 means not yet), and is
+   * there a DIALOG baseline? Any other failure leaves that step unknown rather than guessing.
+   */
+  private loadProgress(guestId: string, isCancelled: () => boolean): void {
+    this.progress.set({ initialConversation: null, dialog: null });
+    this.guestsApi
+      .getInitialConversation(guestId)
+      .pipe(
+        map((dto) => ({ at: dto.conductedAt, by: dto.conductedByName }) as RecordProgress['initialConversation']),
+        catchError((err: HttpErrorResponse) => of(err.status === 404 ? (false as const) : null)),
+      )
+      .subscribe((initialConversation) => {
+        if (!isCancelled()) this.progress.update((p) => ({ ...p, initialConversation }));
+      });
+    this.guestsApi
+      .getDialog(guestId)
+      .pipe(
+        map((dto) =>
+          dto.baseline ? { baselineAt: dto.baseline.assessedAt, count: dto.history.length } : (false as const),
+        ),
+        catchError(() => of(null)),
+      )
+      .subscribe((dialog) => {
+        if (!isCancelled()) this.progress.update((p) => ({ ...p, dialog }));
+      });
+  }
+
+  /** "12 Sep 2026" for the step hints. */
+  stepDate(value: string): string {
+    return formatDate(value);
   }
 
   isEditing(key: DemographicsSectionKey): boolean {
