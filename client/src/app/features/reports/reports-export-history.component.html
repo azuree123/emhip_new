@@ -1,6 +1,6 @@
 <section class="report-card">
   <h2 class="report-card__title">Export History</h2>
-  <p class="report-card__subtitle">Track previously generated reports.</p>
+  <p class="report-card__subtitle">Reports generated {{ periodLabel() }}.</p>
 
   @if (error()) {
     <div class="error-banner export-history__error">Couldn't load export history — {{ error() }}</div>
@@ -9,7 +9,7 @@
   @if (loading()) {
     <div class="report-card__state">Loading export history…</div>
   } @else if (rows().length === 0) {
-    <div class="report-card__state">No exports recorded yet — use Export CSV in the header to create one.</div>
+    <div class="report-card__state">No exports in this period — use Export CSV in the header to create one.</div>
   } @else {
     <div class="table-scroll">
       <table class="rpt-table history-table">

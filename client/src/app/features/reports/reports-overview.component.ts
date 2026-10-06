@@ -1,26 +1,38 @@
-import { ChangeDetectionStrategy, Component, computed, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import {
   BreakdownSliceDto,
   DialogOutcomesReportDto,
   PathwayCategoryTotalDto,
   PathwayReportDto,
 } from '../../core/api-models';
+import { AuthService } from '../../core/auth.service';
+import { GuestSegments } from '../../core/guest-segments';
+import { Permissions } from '../../core/permissions';
 import { PATHWAY_META } from './report-meta';
+import { GuestDrill, periodDrill, registeredDrill } from './report-drill';
 import { ReportsDomainTableComponent } from './reports-domain-table.component';
+
+/** Breakdown slices label blanks "Not recorded" (ReportReadService). */
+const NOT_RECORDED = 'Not recorded';
 
 interface CategoryRow extends PathwayCategoryTotalDto {
   label: string;
   color: string;
+  link: GuestDrill | null;
 }
 
 interface KpiTile {
   label: string;
   value: number | null;
+  caption: string;
+  link: GuestDrill | null;
 }
 
 interface ActivityRow {
   label: string;
   value: number;
+  link: GuestDrill | null;
 }
 
 interface EthnicityRow {
@@ -29,6 +41,7 @@ interface EthnicityRow {
   percentage: number;
   /** Bar length relative to the largest slice (largest slice fills the track). */
   barPct: number;
+  link: GuestDrill | null;
 }
 
 interface DialogMetrics {
@@ -39,6 +52,9 @@ interface DialogMetrics {
   /** Total-score change across all domains, or null when no comparison is possible. */
   improvement: number | null;
   noFollowUp: number;
+  baselinesLink: GuestDrill | null;
+  followUpsLink: GuestDrill | null;
+  noFollowUpLink: GuestDrill | null;
 }
 
 interface RegChartPoint {
@@ -95,11 +111,19 @@ function niceAxisMax(max: number): number {
  * Report "Overview" tab body — KPI tiles, DIALOG outcome metrics, pathway
  * distribution, registrations-over-time chart, demographics and contact
  * activity, per Desktop72/73/74 in project/screens/Components.bundle.js.
+ *
+ * Every card follows the reporting period: the tiles, pathway distribution, demographics and
+ * referral sources cover the guests registered in it (the rows of the CSV export), the DIALOG
+ * metrics the assessments recorded in it, and the chart and contact activity what happened in it.
+ *
+ * Every count of guests opens the guest list filtered to exactly those guests (the dashboard's
+ * drill-through mechanism, with the reporting period carried along). Counts of events — contacts
+ * recorded, scheduled contacts due, urgent flags raised — and averages have no guest list to open.
  */
 @Component({
   selector: 'app-reports-overview',
   standalone: true,
-  imports: [ReportsDomainTableComponent],
+  imports: [ReportsDomainTableComponent, RouterLink],
   templateUrl: './reports-overview.component.html',
   styleUrl: './reports-overview.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -114,6 +138,18 @@ export class ReportsOverviewComponent {
   readonly from = input.required<string>();
   readonly to = input.required<string>();
 
+  /** Counts link to the guest list only for roles that can open it. */
+  private readonly canViewGuests = inject(AuthService).hasPermission(Permissions.Guests.View);
+
+  /** The drill-through for a count, or null when it isn't clickable (no permission, or nothing to show). */
+  private link(count: number | null | undefined, params: () => GuestDrill): GuestDrill | null {
+    return this.canViewGuests && !!count ? params() : null;
+  }
+
+  private registered(extra: GuestDrill = {}): GuestDrill {
+    return registeredDrill(this.from(), this.to(), extra);
+  }
+
   /** Index into regChart().points of the month the pointer is over, or null. */
   readonly hoveredPoint = signal<number | null>(null);
 
@@ -123,6 +159,7 @@ export class ReportsOverviewComponent {
       ...ct,
       label: PATHWAY_META[ct.category as keyof typeof PATHWAY_META]?.label ?? ct.category,
       color: PATHWAY_META[ct.category as keyof typeof PATHWAY_META]?.color ?? 'rgb(114, 114, 114)',
+      link: this.link(ct.count, () => this.registered({ clinicalPathway: ct.category })),
     })),
   );
 
@@ -138,15 +175,18 @@ export class ReportsOverviewComponent {
    * status is displayed as "Inactive") — the DTO's `pendingConversation` and
    * `inactive` counters are those two buckets under their pre-rename field names. Urgency is a flag rather than a status, so
    * "Urgent cases" counts guests in any status carrying the urgent flag.
+   *
+   * All five count the guests registered in the reporting period — Total is all of them, the
+   * others split them by the status (or flag) they have today.
    */
   readonly kpiTiles = computed<KpiTile[]>(() => {
     const c = this.report()?.statusCounts ?? null;
     return [
-      { label: 'Total guests', value: c?.total ?? null },
-      { label: 'New', value: c?.pendingConversation ?? null },
-      { label: 'Active guests', value: c?.active ?? null },
-      { label: 'Inactive', value: c?.inactive ?? null },
-      { label: 'Urgent cases', value: c?.urgent ?? null },
+      { label: 'Total guests', value: c?.total ?? null, caption: 'Registered in the period', link: this.link(c?.total, () => this.registered()) },
+      { label: 'New', value: c?.pendingConversation ?? null, caption: 'Status today', link: this.link(c?.pendingConversation, () => this.registered({ status: 'New' })) },
+      { label: 'Active guests', value: c?.active ?? null, caption: 'Status today', link: this.link(c?.active, () => this.registered({ status: 'Active' })) },
+      { label: 'Inactive', value: c?.inactive ?? null, caption: 'Status today', link: this.link(c?.inactive, () => this.registered({ status: 'OnHold' })) },
+      { label: 'Urgent cases', value: c?.urgent ?? null, caption: 'Flagged today', link: this.link(c?.urgent, () => this.registered({ urgent: true })) },
     ];
   });
 
@@ -161,10 +201,14 @@ export class ReportsOverviewComponent {
     const a = this.report()?.activity ?? null;
     if (!a) return [];
     return [
-      { label: 'Guests seen', value: a.guestsSeen },
-      { label: 'Total contacts recorded', value: a.contactsRecorded },
-      { label: 'Scheduled contacts due', value: a.followUpEntries },
-      { label: 'Urgent flags raised', value: a.urgentFlagsRaised },
+      {
+        label: 'Guests seen',
+        value: a.guestsSeen,
+        link: this.link(a.guestsSeen, () => periodDrill(GuestSegments.ContactInPeriod, this.from(), this.to())),
+      },
+      { label: 'Total contacts recorded', value: a.contactsRecorded, link: null },
+      { label: 'Scheduled contacts due', value: a.followUpEntries, link: null },
+      { label: 'Urgent flags raised', value: a.urgentFlagsRaised, link: null },
     ];
   });
 
@@ -176,7 +220,11 @@ export class ReportsOverviewComponent {
   readonly ethnicityRows = computed<EthnicityRow[]>(() => {
     const rows = [...(this.report()?.ethnicityBreakdown ?? [])].sort((a, b) => b.count - a.count);
     const max = rows[0]?.count ?? 0;
-    return rows.map((r) => ({ ...r, barPct: max > 0 ? (r.count / max) * 100 : 0 }));
+    return rows.map((r) => ({
+      ...r,
+      barPct: max > 0 ? (r.count / max) * 100 : 0,
+      link: this.link(r.count, () => this.registered({ ethnicity: r.label })),
+    }));
   });
 
   /**
@@ -184,10 +232,17 @@ export class ReportsOverviewComponent {
    * scaled to the largest slice, as in the source card; the printed percentage
    * is the true share.
    */
-  readonly referralRows = computed<(BreakdownSliceDto & { barPct: number })[]>(() => {
+  readonly referralRows = computed<(BreakdownSliceDto & { barPct: number; link: GuestDrill | null })[]>(() => {
     const rows = [...this.referralSources()].sort((a, b) => b.count - a.count);
     const max = rows[0]?.count ?? 0;
-    return rows.map((r) => ({ ...r, barPct: max > 0 ? (r.count / max) * 100 : 0 }));
+    return rows.map((r) => ({
+      ...r,
+      barPct: max > 0 ? (r.count / max) * 100 : 0,
+      // Blanks are grouped as "Not recorded" — the same guests as the missing-source check.
+      link: this.link(r.count, () =>
+        this.registered(r.label === NOT_RECORDED ? { segment: GuestSegments.MissingReferralSource } : { referralSource: r.label }),
+      ),
+    }));
   });
 
   /**
@@ -206,6 +261,8 @@ export class ReportsOverviewComponent {
       comparable.length > 0
         ? comparable.reduce((sum, d) => sum + (d.latestAverage! - d.baselineAverage!), 0)
         : null;
+    const inPeriod = (segment: (typeof GuestSegments)[keyof typeof GuestSegments]) => () =>
+      periodDrill(segment, this.from(), this.to());
     return {
       total: o.guestsWithBaseline + o.guestsWithFollowUp,
       baselines: o.guestsWithBaseline,
@@ -215,7 +272,10 @@ export class ReportsOverviewComponent {
           ? Math.round((o.guestsWithFollowUp / o.guestsWithBaseline) * 100)
           : 0,
       improvement,
-      noFollowUp: Math.max(o.guestsWithBaseline - o.guestsWithFollowUp, 0),
+      noFollowUp: o.guestsAwaitingReassessment,
+      baselinesLink: this.link(o.guestsWithBaseline, inPeriod(GuestSegments.DialogBaselineInPeriod)),
+      followUpsLink: this.link(o.guestsWithFollowUp, inPeriod(GuestSegments.DialogReassessedInPeriod)),
+      noFollowUpLink: this.link(o.guestsAwaitingReassessment, inPeriod(GuestSegments.DialogAwaitingReassessment)),
     };
   });
 

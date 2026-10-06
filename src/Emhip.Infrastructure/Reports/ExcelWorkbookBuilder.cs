@@ -7,6 +7,8 @@ namespace Emhip.Infrastructure.Reports;
 /// Builds the multi-sheet .xlsx export the spec asks for (§5.4): pathway, caseload and outcome
 /// data in one workbook, so a manager gets the whole picture in a single download instead of
 /// three separate CSVs. Demographics and referral sources are on every export (customer feedback).
+/// Every sheet follows the reporting period the Reports screen was showing, so the workbook and
+/// the screen agree; figures that are inherently current (a CMHW's caseload) say so in their header.
 /// Sheet names must stay in step with WORKBOOK_SHEETS in client/src/app/features/reports/report-meta.ts.
 /// </summary>
 public sealed class ExcelWorkbookBuilder : IExcelWorkbookBuilder
@@ -38,15 +40,22 @@ public sealed class ExcelWorkbookBuilder : IExcelWorkbookBuilder
         sheet.Cell(3, 1).Value = $"Generated {report.GeneratedAt:dd MMM yyyy HH:mm} UTC";
         sheet.Cell(4, 1).Value = $"DIALOG outcomes cohort: {report.OutcomesCohort}";
 
-        // "Inactive" is the display name of the OnHold engagement status (customer terminology).
-        var rows = new (string Label, int Value)[]
+        // The Overview tab's KPI tiles and contact activity for the same period. Guest counts are
+        // the guests registered in the period, by their status now; "Inactive" is the display name
+        // of the OnHold engagement status (customer terminology).
+        var rows = new (string Label, int? Value)[]
         {
-            ("Total guests", report.StatusCounts.Total),
-            ("Active", report.StatusCounts.Active),
-            ("New (initial conversation outstanding)", report.StatusCounts.PendingConversation),
-            ("Inactive", report.StatusCounts.Inactive),
-            ("Urgent", report.StatusCounts.Urgent),
-            ("Registered in period", report.Breakdowns.RegisteredInPeriod),
+            ("Guests registered in period", report.StatusCounts.Total),
+            ("  of which New (initial conversation outstanding)", report.StatusCounts.PendingConversation),
+            ("  of which Active", report.StatusCounts.Active),
+            ("  of which Inactive", report.StatusCounts.Inactive),
+            ("  of which currently urgent", report.StatusCounts.Urgent),
+            ("", null),
+            ("Activity in period", null),
+            ("Guests seen", report.Activity.GuestsSeen),
+            ("Contacts recorded", report.Activity.ContactsRecorded),
+            ("Scheduled contacts due", report.Activity.FollowUpEntries),
+            ("Urgent flags raised", report.Activity.UrgentFlagsRaised),
         };
 
         var row = 5;
@@ -58,7 +67,8 @@ public sealed class ExcelWorkbookBuilder : IExcelWorkbookBuilder
         {
             row++;
             sheet.Cell(row, 1).Value = label;
-            sheet.Cell(row, 2).Value = value;
+            if (value is { } count) sheet.Cell(row, 2).Value = count;
+            else if (label.Length > 0) sheet.Cell(row, 1).Style.Font.Bold = true;
         }
 
         sheet.Columns().AdjustToContents();
@@ -141,14 +151,16 @@ public sealed class ExcelWorkbookBuilder : IExcelWorkbookBuilder
 
     private static void BuildPathwaySheet(XLWorkbook workbook, ServiceReportExportDto report)
     {
+        // Guests registered in the period, by the pathway they are on now; the DIALOG average is
+        // their latest assessment recorded in the period.
         var sheet = workbook.Worksheets.Add("Pathways");
         sheet.Cell(1, 1).Value = "Pathway";
-        sheet.Cell(1, 2).Value = "Total guests";
+        sheet.Cell(1, 2).Value = "Guests registered in period";
         sheet.Cell(1, 3).Value = "Active";
         sheet.Cell(1, 4).Value = "Urgent";
         sheet.Cell(1, 5).Value = "Inactive";
         sheet.Cell(1, 6).Value = "AFA support";
-        sheet.Cell(1, 7).Value = "Avg latest DIALOG (/77)";
+        sheet.Cell(1, 7).Value = "Avg latest DIALOG in period (/77)";
         HeaderRow(sheet, 1, 7);
 
         var row = 1;
@@ -169,13 +181,14 @@ public sealed class ExcelWorkbookBuilder : IExcelWorkbookBuilder
 
     private static void BuildCaseloadSheet(XLWorkbook workbook, ServiceReportExportDto report)
     {
+        // A caseload is who is assigned now; the two contact columns follow the period.
         var sheet = workbook.Worksheets.Add("Caseload");
         sheet.Cell(1, 1).Value = "CMHW";
-        sheet.Cell(1, 2).Value = "Assigned guests";
-        sheet.Cell(1, 3).Value = "Active";
-        sheet.Cell(1, 4).Value = "Urgent";
-        sheet.Cell(1, 5).Value = "Overdue contacts";
-        sheet.Cell(1, 6).Value = "Contacts (30 days)";
+        sheet.Cell(1, 2).Value = "Assigned guests (current)";
+        sheet.Cell(1, 3).Value = "Active (current)";
+        sheet.Cell(1, 4).Value = "Urgent (current)";
+        sheet.Cell(1, 5).Value = "Overdue contacts due in period";
+        sheet.Cell(1, 6).Value = "Contacts recorded in period";
         HeaderRow(sheet, 1, 6);
 
         var row = 1;
@@ -187,7 +200,7 @@ public sealed class ExcelWorkbookBuilder : IExcelWorkbookBuilder
             sheet.Cell(row, 3).Value = worker.ActiveGuests;
             sheet.Cell(row, 4).Value = worker.UrgentGuests;
             sheet.Cell(row, 5).Value = worker.OverdueFollowUps;
-            sheet.Cell(row, 6).Value = worker.ContactsLast30Days;
+            sheet.Cell(row, 6).Value = worker.ContactsInPeriod;
         }
 
         sheet.Columns().AdjustToContents();
@@ -204,6 +217,9 @@ public sealed class ExcelWorkbookBuilder : IExcelWorkbookBuilder
         sheet.Cell(2, 1).Value = "Guests in cohort";
         sheet.Cell(2, 1).Style.Font.Bold = true;
         sheet.Cell(2, 2).Value = report.Outcomes.CohortGuests;
+        sheet.Cell(3, 1).Value = "Assessments recorded";
+        sheet.Cell(3, 1).Style.Font.Bold = true;
+        sheet.Cell(3, 2).Value = $"{report.From:dd MMM yyyy} to {report.To:dd MMM yyyy}";
 
         sheet.Cell(4, 1).Value = "Domain";
         sheet.Cell(4, 2).Value = "Baseline average";
@@ -225,20 +241,23 @@ public sealed class ExcelWorkbookBuilder : IExcelWorkbookBuilder
         }
 
         row += 2;
-        sheet.Cell(row, 1).Value = "Guests with a baseline";
+        sheet.Cell(row, 1).Value = "Guests with a baseline in period";
         sheet.Cell(row, 2).Value = report.Outcomes.GuestsWithBaseline;
-        sheet.Cell(row + 1, 1).Value = "Guests with a reassessment";
+        sheet.Cell(row + 1, 1).Value = "Guests with a reassessment in period";
         sheet.Cell(row + 1, 2).Value = report.Outcomes.GuestsWithFollowUp;
+        sheet.Cell(row + 2, 1).Value = "Guests baselined in period, not yet reassessed";
+        sheet.Cell(row + 2, 2).Value = report.Outcomes.GuestsAwaitingReassessment;
 
         sheet.Columns().AdjustToContents();
     }
 
     private static void BuildDataQualitySheet(XLWorkbook workbook, ServiceReportExportDto report)
     {
+        // Completeness of the records registered in the period.
         var sheet = workbook.Worksheets.Add("Data quality");
         sheet.Cell(1, 1).Value = "Issue";
         sheet.Cell(1, 2).Value = "Guests affected";
-        sheet.Cell(1, 3).Value = "% of guests";
+        sheet.Cell(1, 3).Value = "% of guests registered in period";
         HeaderRow(sheet, 1, 3);
 
         var row = 1;

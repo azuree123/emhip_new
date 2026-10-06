@@ -1,7 +1,11 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { CpnActivityReportDto, CpnCaseloadRowDto, GuestStatus } from '../../core/api-models';
+import { AuthService } from '../../core/auth.service';
+import { GuestSegment, GuestSegments } from '../../core/guest-segments';
+import { Permissions } from '../../core/permissions';
 import { ReportsApiService } from '../../core/reports-api.service';
+import { GuestDrill, periodDrill } from './report-drill';
 import { guestPathwayLabel } from '../guest-workspace/guest-workspace.util';
 import { STATUS_META, shortDay } from './report-meta';
 
@@ -14,6 +18,10 @@ import { STATUS_META, shortDay } from './report-meta';
  * Backed by GET /reports/cpn-activity, which reads the MDT queue's CPN referrals, the clinical
  * profile's CPN flag and the CPN-tagged casework notes. Referrals are internal (the design's
  * note) and are not counted in the external referral-source report.
+ *
+ * The guest counts (guests seen, the caseload, and each referral stage) open the guest list
+ * filtered to those guests. A referral stage lists each guest once, so a guest referred twice in
+ * the period is one row there.
  */
 @Component({
   selector: 'app-reports-cpn-activity',
@@ -28,6 +36,26 @@ export class ReportsCpnActivityComponent {
 
   readonly from = input.required<string>();
   readonly to = input.required<string>();
+
+  private readonly canViewGuests = inject(AuthService).hasPermission(Permissions.Guests.View);
+
+  /** A segment over the reporting period — or null when the count isn't clickable. */
+  private drill(count: number | undefined, segment: GuestSegment): GuestDrill | null {
+    return this.canViewGuests && count ? periodDrill(segment, this.from(), this.to()) : null;
+  }
+
+  readonly seenLink = computed(() => this.drill(this.data()?.guestsSeenByCpn, GuestSegments.CpnSeenInPeriod));
+  /** The CPN caseload is current, so it carries no period. */
+  readonly caseloadLink = computed<GuestDrill | null>(() =>
+    this.canViewGuests && this.data()?.activeCpnCaseload ? { segment: GuestSegments.CpnCaseload } : null,
+  );
+  readonly referredLink = computed(() => this.drill(this.data()?.newCpnReferrals, GuestSegments.CpnReferredInPeriod));
+  readonly confirmedLink = computed(() =>
+    this.drill(this.data()?.referralsConfirmedAtMdt, GuestSegments.CpnConfirmedInPeriod),
+  );
+  readonly declinedLink = computed(() =>
+    this.drill(this.data()?.referralsDeclinedAtMdt, GuestSegments.CpnDeclinedInPeriod),
+  );
 
   readonly data = signal<CpnActivityReportDto | null>(null);
   readonly loading = signal(false);
@@ -48,13 +76,13 @@ export class ReportsCpnActivityComponent {
     const d = this.data();
     if (!d) return [];
     const stages = [
-      { key: 'requested', label: 'New referrals requested', count: d.newCpnReferrals, tone: 'maroon' },
-      { key: 'confirmed', label: 'Confirmed at MDT', count: d.referralsConfirmedAtMdt, tone: 'green' },
-      { key: 'declined', label: 'Declined at MDT', count: d.referralsDeclinedAtMdt, tone: 'red' },
-      { key: 'pending', label: 'Pending review', count: d.referralsPendingReview, tone: 'gold' },
+      { key: 'requested', label: 'New referrals requested', count: d.newCpnReferrals, tone: 'maroon', segment: GuestSegments.CpnReferredInPeriod },
+      { key: 'confirmed', label: 'Confirmed at MDT', count: d.referralsConfirmedAtMdt, tone: 'green', segment: GuestSegments.CpnConfirmedInPeriod },
+      { key: 'declined', label: 'Declined at MDT', count: d.referralsDeclinedAtMdt, tone: 'red', segment: GuestSegments.CpnDeclinedInPeriod },
+      { key: 'pending', label: 'Pending review', count: d.referralsPendingReview, tone: 'gold', segment: GuestSegments.CpnPendingInPeriod },
     ];
     const max = Math.max(1, ...stages.map((s) => s.count));
-    return stages.map((s) => ({ ...s, pct: Math.round((s.count / max) * 100) }));
+    return stages.map((s) => ({ ...s, pct: Math.round((s.count / max) * 100), link: this.drill(s.count, s.segment) }));
   });
 
   readonly caseload = computed<CpnCaseloadRowDto[]>(() => this.data()?.caseload ?? []);

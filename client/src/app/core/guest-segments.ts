@@ -22,6 +22,18 @@ export const GuestSegments = {
   NoRecentContact: 'noRecentContact',
   AutoInactive: 'autoOnHold',
   PastRetention: 'pastRetention',
+  // Reports screen KPIs; the "…InPeriod" ones take the reporting period as periodFrom / periodTo.
+  AfaSupport: 'afaSupport',
+  ContactInPeriod: 'contactInPeriod',
+  DialogBaselineInPeriod: 'dialogBaselineInPeriod',
+  DialogReassessedInPeriod: 'dialogReassessedInPeriod',
+  DialogAwaitingReassessment: 'dialogAwaitingReassessment',
+  CpnSeenInPeriod: 'cpnSeenInPeriod',
+  CpnCaseload: 'cpnCaseload',
+  CpnReferredInPeriod: 'cpnReferredInPeriod',
+  CpnConfirmedInPeriod: 'cpnConfirmedInPeriod',
+  CpnDeclinedInPeriod: 'cpnDeclinedInPeriod',
+  CpnPendingInPeriod: 'cpnPendingInPeriod',
 } as const;
 
 export type GuestSegment = (typeof GuestSegments)[keyof typeof GuestSegments];
@@ -44,6 +56,17 @@ const SEGMENT_LABELS: Record<GuestSegment, string> = {
   noRecentContact: 'Active, but no contact in the last 90 days',
   autoOnHold: 'Automatically moved to Inactive',
   pastRetention: 'Due for retention review',
+  afaSupport: 'AFA support needed',
+  contactInPeriod: 'Contact recorded',
+  dialogBaselineInPeriod: 'DIALOG baseline recorded',
+  dialogReassessedInPeriod: 'DIALOG reassessment recorded',
+  dialogAwaitingReassessment: 'DIALOG baseline, no reassessment yet',
+  cpnSeenInPeriod: 'Seen by the CPN',
+  cpnCaseload: 'On the CPN caseload',
+  cpnReferredInPeriod: 'Referred to the CPN',
+  cpnConfirmedInPeriod: 'CPN referral confirmed at MDT',
+  cpnDeclinedInPeriod: 'CPN referral declined at MDT',
+  cpnPendingInPeriod: 'CPN referral pending MDT review',
 };
 
 export function isGuestSegment(value: string | null | undefined): value is GuestSegment {

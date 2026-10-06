@@ -750,6 +750,8 @@ export interface DialogOutcomesReportDto {
   dimensions: DialogDimensionDto[];
   /** Guests in the demographic cohort the figures cover — every hub guest when unfiltered. */
   cohortGuests: number;
+  /** Guests baselined in the period with no reassessment in it (the dialogAwaitingReassessment segment). */
+  guestsAwaitingReassessment: number;
 }
 
 /** Averages are null when no assessments exist for that cohort. */
@@ -908,7 +910,8 @@ export interface CaseloadReportRowDto {
   activeGuests: number;
   urgentGuests: number;
   overdueFollowUps: number;
-  contactsLast30Days: number;
+  /** Contacts recorded in the reporting period (the dashboard's live view: the last 30 days). */
+  contactsInPeriod: number;
 }
 
 export interface DataQualityReportDto {

@@ -24,7 +24,7 @@ There are four built-in roles. Each role adds to the one above it. An Admin can 
 | Hub Manager | Hub Manager dashboard (whole hub) | MDT Queue; export reports; delete and restore documents; Settings (view); a guest's Access Log; Export Record (the full guest record) |
 | Admin | Hub Manager dashboard | Everything: Hub Workers, Roles & Permissions, all Settings, permanently delete documents, Anonymise record |
 
-Some buttons appear for every role but only work with the right permission, for example **Raise Urgent Flag** and **Actions & Reminders**. With the built-in roles every user has the permissions those buttons need.
+Some buttons appear for every role but only work with the right permission, for example **Actions & Reminders**. **Raise Urgent Flag** shows only to roles that can edit clinical details. With the built-in roles every user has the permissions those buttons need.
 
 **Left menu by role**
 
@@ -176,7 +176,7 @@ Expected results after **Submit**:
 The header shows the guest's status, an Urgent badge when flagged, their pathway, reference (G-number), registration date, last activity and assigned CMHW. Header buttons:
 
 - **Add Contact** opens the contact form (see the next part).
-- **Raise Urgent Flag** opens Clinical Details with the risk form ready. The guest is only flagged once an assessment with at least one risk ticked is saved.
+- **Raise Urgent Flag** opens a quick panel on the right: tick at least one risk, add optional notes and select **Raise urgent flag**. The guest is flagged straight away and the panel closes. It is saved as a risk assessment, so it also shows on Clinical Details. If the guest is already urgent, the panel says so.
 - **Export Record** (Hub Manager, Admin) downloads the complete record as a file. The export is written to the Access Log.
 - **Anonymise record** (Admin) needs a reason of at least 10 characters and typing ANONYMISE. The guest then disappears from lists. Resolve any open urgent case first.
 
@@ -198,7 +198,7 @@ The header shows the guest's status, an Urgent badge when flagged, their pathway
 
 ### Add Contact
 
-**Add Contact** is on the guest record and on each urgent case. For CPN staff it starts with **Is this a CPN contact?**
+**Add Contact** is on the guest record and in each urgent case's details panel. For CPN staff it starts with **Is this a CPN contact?**
 
 - **Ordinary contact:** the contact type changes the form.
     - **Activity:** date, **Activity** (from the Hub activities list) or **Describe the occasion** (one is required), Observation notes and **Risk check**. Button **Save activity contact**.
@@ -228,7 +228,7 @@ A guest becomes urgent when a risk assessment ticks any risk, or when immediate 
     - Crisis notes: **Add Crisis Note**.
     - Episode timeline.
     - Buttons: **Add contact**, **Open full episode record**, **Mark episode as resolved**, **Escalate to CMHT**, **Open full guest record**.
-- **Row buttons:** **Open Guest**, **Add contact** and **Open Crisis Episode**.
+- **Row buttons:** **Open Guest** and **View Crisis Episode**. Add a contact from the details panel.
 - **Click a resolved case** (or **View Episode**) to open its full episode record. **Export Record** downloads it as a text file.
 - **Escalate to CMHT** needs the team, a reason, an urgency and notes. CMHT notified then shows YES.
 - **Mark episode as resolved:**
@@ -269,24 +269,27 @@ Opened from **view all actions** on the Hub Manager dashboard.
 Every role can view reports; exporting needs the Hub Manager or Admin role.
 
 - **Tab bar:** when tabs do not fit, a round arrow appears on the side with hidden tabs and that edge fades. Click the arrow to scroll; the selected tab always scrolls into view.
-- **Date range:** From and To with **Apply**, on Overview and CPN Activity. The default is the last 6 months, and To cannot be in the future.
+- **Reporting period:** From and To with **Apply**, on every tab. One period is shared by all the tabs and by both exports. The default is the last 6 months, and To cannot be in the future. Guest counts cover the guests registered in the period; activity covers what was recorded in it. Figures that are always current (a worker's caseload, the CPN caseload) are labelled.
 
 | Tab | What it shows |
 | --- | --- |
-| Overview | Totals by status (New, Active, Inactive, Urgent), DIALOG outcomes, guests on each of the three pathways, monthly registrations, contact activity, referral sources, ethnicity |
-| Guest Report | A filterable guest table: status, pathway, last activity, CMHW and the demographics drawer |
-| Pathway Analytics | Per clinical pathway: guests, active, inactive, urgent, AFA support, average DIALOG score |
-| Caseload Reports | Per worker: assigned, active, urgent, contacts in 30 days, overdue contacts, load; **View** opens that worker's guests |
-| DIALOG Outcomes | Baselines, reassessments, average score change, trend and per-domain scores, all of which can be filtered by demographics (below) |
-| Data Quality | Each issue with its count and share; **View guests** opens the affected guests |
+| Overview | Guests registered in the period by status today (New, Active, Inactive, Urgent), DIALOG outcomes, their pathways, monthly registrations, contact activity, referral sources, ethnicity |
+| Guest Report | A filterable guest table, limited to guests registered in the period by a removable **Registered** chip: status, pathway, last activity, CMHW and the demographics drawer |
+| Pathway Analytics | Per clinical pathway, for guests registered in the period: guests, active, inactive, urgent, AFA support, average DIALOG score |
+| Caseload Reports | Per worker: assigned, active, urgent (current), contacts in the period, overdue contacts due in the period, load; **View** opens that worker's whole caseload |
+| DIALOG Outcomes | Baselines, reassessments, average score change, trend and per-domain scores for assessments in the period, all of which can be filtered by demographics (below) |
+| Data Quality | Each issue for guests registered in the period, with its count and share; **View guests** opens the same guests |
 | CPN Activity | Guests seen by the CPN, referrals, MDT confirmations, the referral pipeline and the CPN caseload |
-| Export History | Who exported which report and when |
+| Export History | Who exported which report and when, for exports taken in the period |
+
+**Clickable counts.** As on the dashboards, the counts of guests on every report tab open the guest list filtered to exactly those guests, for the same reporting period. The guest list banner names the count and the period, and its total matches the count. This covers the Overview tiles, DIALOG tiles and pathway, ethnicity and referral rows; the Pathway Analytics table; each worker's Assigned, Active and Urgent counts; the DIALOG Outcomes tiles (keeping the demographic group); the Data Quality tiles and rows; and the CPN Activity tiles and pipeline. Counts of contacts or flags, and averages, are not clickable.
 
 **DIALOG by demographics.** On DIALOG Outcomes, open **Demographics** and choose any mix of ethnicity, age group, gender and country of origin, then **Apply**. A bar reads, for example, "Showing: Black African · 18–24 · 23 guests". Every figure on the tab recalculates for that group only. A note warns when fewer than 5 guests in the group have been reassessed. The group stays selected when you change tabs, and it carries into the Excel export.
 
 **Exports.**
 
-- **Export to Excel** downloads a workbook with these sheets: Summary, Pathways, Caseload, DIALOG outcomes, Data quality, **Demographics** and **Referral sources**.
+- Both exports use the applied reporting period. **Export CSV** shows the period it will use instead of its own date fields.
+- **Export to Excel** downloads a workbook with these sheets, each for the reporting period: Summary (the Overview tiles and contact activity), Pathways, Caseload, DIALOG outcomes, Data quality, **Demographics** and **Referral sources**.
     - Demographics covers ethnicity, age group, gender and country of origin.
     - Referral sources covers source, type and subcategory.
     - Each row gives counts and percentages for all current guests and for guests registered in the period.
@@ -362,6 +365,8 @@ Work through this in order: each part creates the data the next part needs. Tick
 **Urgent case**
 
 - [ ] On Clinical Details, record an assessment with one risk ticked; the guest shows Urgent and appears on Urgent Cases (check a second browser updates without refreshing)
+- [ ] On another guest's record, select **Raise Urgent Flag**, tick one risk and raise it; the Urgent badge appears without leaving the tab and the guest is on Urgent Cases
+- [ ] Urgent Cases rows show **Open Guest** and **View Crisis Episode** only
 - [ ] Click the case: add a crisis note, add a contact, escalate to CMHT, and open the full episode record and export it
 - [ ] Resolve the episode with a new pathway and a next contact date; the flag clears and the guest's status is unchanged
 - [ ] Click the resolved case; its episode record opens
@@ -373,7 +378,10 @@ Work through this in order: each part creates the data the next part needs. Tick
 - [ ] Staff activity shows plain English with guest names; clicking a name opens the record
 - [ ] Guest record: Access Log shows the actions above in plain English; **Export Record** downloads the file
 - [ ] Contact History: tiles, the CPN activity section, **Show CPN contacts only**, each filter, and Export
-- [ ] Reports: open every tab and check the tab-bar arrows at a narrow window; apply a date range
+- [ ] Reports: open every tab and check the tab-bar arrows at a narrow window
+- [ ] Reports: apply a shorter reporting period; it shows on every tab, and the Overview tiles, Pathway Analytics, Caseload contacts, DIALOG Outcomes, Data Quality, CPN Activity and Export History all change; switching tabs keeps the period
+- [ ] Export to Excel and Export CSV after applying a period: the files are named for that period and their figures match the tabs
+- [ ] Reports: click a count on every tab (Overview tile and rows, a Pathway Analytics cell, a Caseload count, a DIALOG tile with a demographic group set, a Data Quality tile, a CPN pipeline stage); the guest list opens with a banner naming it and the same total; **Show all guests** clears it
 - [ ] DIALOG Outcomes: filter to one ethnicity and one age group; every figure changes and the Showing bar is correct
 - [ ] Export to Excel: Demographics and Referral sources sheets are present and the DIALOG sheet names the group; Export CSV has the new columns
 - [ ] Data Quality: **View guests** on a row opens the matching list

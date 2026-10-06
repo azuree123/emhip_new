@@ -1,24 +1,36 @@
 <div class="overview">
   <!-- KPI tile row (source: 4 tiles 277x114 at top 483) driven by statusCounts; a fifth
-       tile was added when the engagement statuses became New / Active / Inactive. -->
+       tile was added when the engagement statuses became New / Active / Inactive. The tiles
+       count the guests registered in the reporting period, by the status they have today. -->
+  <p class="overview__scope">Guests registered {{ rangeLabel() }}, by their status today</p>
   <section class="stat-row">
+    <!-- Each tile opens the guest list filtered to exactly the guests it counts. -->
     @for (tile of kpiTiles(); track tile.label) {
-      <div class="stat-card">
+      <a
+        class="stat-card"
+        [routerLink]="tile.link ? '/guests' : null"
+        [queryParams]="tile.link"
+        [attr.title]="tile.link ? 'Open these guests in the guest list' : null"
+      >
         <span class="stat-card__label">{{ tile.label }}</span>
-        <span class="stat-card__value">{{ tile.value ?? '—' }}</span>
-      </div>
+        <span class="stat-card__value">{{ loading() ? '—' : (tile.value ?? '—') }}</span>
+        <span class="stat-card__caption">{{ tile.caption }}</span>
+      </a>
     }
   </section>
 
   <!-- "DIALOG outcome metrics" card (Desktop72 top 619): 3 outlined tiles + a
        green improvement tile and an amber no-reassessment tile. -->
   <section class="report-card">
-    <h2 class="report-card__title">DIALOG outcome metrics</h2>
+    <div class="report-card__head">
+      <h2 class="report-card__title">DIALOG outcome metrics</h2>
+      <span class="report-card__corner">Assessments {{ rangeLabel() }}</span>
+    </div>
 
     @if (outcomesLoading()) {
       <div class="report-card__state">Loading DIALOG outcome metrics…</div>
     } @else if (!dialogMetrics()) {
-      <div class="report-card__state">No DIALOG assessments recorded yet.</div>
+      <div class="report-card__state">No DIALOG assessments recorded in this period.</div>
     } @else {
       @if (dialogMetrics(); as m) {
         <div class="dm-tiles">
@@ -27,16 +39,26 @@
             <span class="dm-tile__value">{{ m.total }}</span>
             <span class="dm-tile__caption"><strong>Baseline +</strong> reassessments combined</span>
           </div>
-          <div class="dm-tile">
+          <a
+            class="dm-tile"
+            [routerLink]="m.baselinesLink ? '/guests' : null"
+            [queryParams]="m.baselinesLink"
+            [attr.title]="m.baselinesLink ? 'Open these guests in the guest list' : null"
+          >
             <span class="dm-tile__label">Baselines recorded</span>
             <span class="dm-tile__value">{{ m.baselines }}</span>
             <span class="dm-tile__caption">Guests with a first assessment</span>
-          </div>
-          <div class="dm-tile">
+          </a>
+          <a
+            class="dm-tile"
+            [routerLink]="m.followUpsLink ? '/guests' : null"
+            [queryParams]="m.followUpsLink"
+            [attr.title]="m.followUpsLink ? 'Open these guests in the guest list' : null"
+          >
             <span class="dm-tile__label">Reassessments</span>
             <span class="dm-tile__value">{{ m.followUps }}</span>
             <span class="dm-tile__caption"><strong>{{ m.followUpPct }}%</strong>&nbsp;of guests with a baseline</span>
-          </div>
+          </a>
         </div>
         <div class="dm-tiles dm-tiles--wide">
           <div
@@ -54,11 +76,16 @@
               }
             </span>
           </div>
-          <div class="dm-tile dm-tile--amber">
+          <a
+            class="dm-tile dm-tile--amber"
+            [routerLink]="m.noFollowUpLink ? '/guests' : null"
+            [queryParams]="m.noFollowUpLink"
+            [attr.title]="m.noFollowUpLink ? 'Open these guests in the guest list' : null"
+          >
             <span class="dm-tile__label">Guests with no DIALOG reassessment yet</span>
             <span class="dm-tile__value dm-tile__value--accent">{{ m.noFollowUp }}</span>
-            <span class="dm-tile__caption"><strong>Baseline</strong>&nbsp;only — no comparison possible yet</span>
-          </div>
+            <span class="dm-tile__caption"><strong>Baseline</strong>&nbsp;in the period, no reassessment in it yet</span>
+          </a>
         </div>
       }
     }
@@ -73,32 +100,39 @@
             <h2 class="report-card__title">Pathway distribution</h2>
             <p class="report-card__subtitle">
               @if (totalAllocated() !== null) {
-                {{ totalAllocated() }} guests currently allocated to a pathway
+                {{ totalAllocated() }} of the guests registered in the period are on a pathway now
               } @else {
                 Guests on each pathway
               }
             </p>
           </div>
-          <span class="report-card__corner">Current</span>
+          <span class="report-card__corner">{{ rangeLabel() }}</span>
         </div>
 
         @if (loading()) {
           <div class="report-card__state">Loading pathway report…</div>
         } @else if (categoryRows().length === 0) {
-          <div class="report-card__state">No guests allocated to a pathway yet.</div>
+          <div class="report-card__state">No guests registered in this period are allocated to a pathway.</div>
         } @else {
           @for (row of categoryRows(); track row.category) {
             <div class="pathway-row">
-              <div class="pathway-row__top">
-                <span class="pathway-row__label">{{ row.label }}</span>
-                <span class="pathway-row__count">{{ row.count }}</span>
-                <span class="pathway-row__unit">GUESTS</span>
-                <span class="pathway-row__dot" aria-hidden="true"></span>
-                <span class="pathway-row__percentage" [style.color]="row.color">{{ row.percentage }}%</span>
-              </div>
-              <div class="pathway-row__track">
-                <div class="pathway-row__fill" [style.width.%]="row.percentage" [style.background]="row.color"></div>
-              </div>
+              <a
+                class="drill-row drill-row--inset drill-row--block"
+                [routerLink]="row.link ? '/guests' : null"
+                [queryParams]="row.link"
+                [attr.title]="row.link ? 'Open these guests in the guest list' : null"
+              >
+                <div class="pathway-row__top">
+                  <span class="pathway-row__label">{{ row.label }}</span>
+                  <span class="pathway-row__count">{{ row.count }}</span>
+                  <span class="pathway-row__unit">GUESTS</span>
+                  <span class="pathway-row__dot" aria-hidden="true"></span>
+                  <span class="pathway-row__percentage" [style.color]="row.color">{{ row.percentage }}%</span>
+                </div>
+                <div class="pathway-row__track">
+                  <div class="pathway-row__fill" [style.width.%]="row.percentage" [style.background]="row.color"></div>
+                </div>
+              </a>
             </div>
           }
         }
@@ -172,7 +206,7 @@
 
       <section class="report-card">
         <h2 class="report-card__title">Guest demographics</h2>
-        <p class="report-card__subtitle">Ethnicity breakdown</p>
+        <p class="report-card__subtitle">Ethnicity of the guests registered {{ rangeLabel() }}</p>
 
         @if (loading()) {
           <div class="report-card__state">Loading demographics…</div>
@@ -181,18 +215,25 @@
         } @else {
           @for (row of ethnicityRows(); track row.label) {
             <div class="ethnic-row">
-              <div class="ethnic-row__top">
-                <span class="ethnic-row__label">{{ row.label }}</span>
-                <span class="ethnic-row__meta">
-                  <span class="ethnic-row__count">{{ row.count }}</span>
-                  <span class="ethnic-row__unit">GUEST{{ row.count === 1 ? '' : 'S' }}</span>
-                  <span class="ethnic-row__dot" aria-hidden="true"></span>
-                  <span class="ethnic-row__percentage">{{ row.percentage }}%</span>
-                </span>
-              </div>
-              <div class="ethnic-row__track">
-                <div class="ethnic-row__fill" [style.width.%]="row.barPct"></div>
-              </div>
+              <a
+                class="drill-row drill-row--inset drill-row--block"
+                [routerLink]="row.link ? '/guests' : null"
+                [queryParams]="row.link"
+                [attr.title]="row.link ? 'Open these guests in the guest list' : null"
+              >
+                <div class="ethnic-row__top">
+                  <span class="ethnic-row__label">{{ row.label }}</span>
+                  <span class="ethnic-row__meta">
+                    <span class="ethnic-row__count">{{ row.count }}</span>
+                    <span class="ethnic-row__unit">GUEST{{ row.count === 1 ? '' : 'S' }}</span>
+                    <span class="ethnic-row__dot" aria-hidden="true"></span>
+                    <span class="ethnic-row__percentage">{{ row.percentage }}%</span>
+                  </span>
+                </div>
+                <div class="ethnic-row__track">
+                  <div class="ethnic-row__fill" [style.width.%]="row.barPct"></div>
+                </div>
+              </a>
             </div>
           }
         }
@@ -205,21 +246,27 @@
       <!-- "Referral sources" card (Desktop72 side column, top 1348). -->
       <section class="report-card">
         <h2 class="report-card__title">Referral sources</h2>
+        <p class="report-card__subtitle">Guests registered {{ rangeLabel() }}</p>
 
         @if (referralSourcesLoading()) {
           <div class="report-card__state">Loading referral sources…</div>
         } @else if (referralRows().length === 0) {
-          <div class="report-card__state">No referral sources recorded yet.</div>
+          <div class="report-card__state">No guests registered in this period.</div>
         } @else {
           <div class="referral-rows">
             @for (row of referralRows(); track row.label) {
-              <div class="breakdown-row">
+              <a
+                class="breakdown-row drill-row drill-row--inset"
+                [routerLink]="row.link ? '/guests' : null"
+                [queryParams]="row.link"
+                [attr.title]="row.link ? 'Open these guests in the guest list' : null"
+              >
                 <span class="breakdown-row__label">{{ row.label }}</span>
                 <div class="breakdown-row__track">
                   <div class="breakdown-row__fill" [style.width.%]="row.barPct"></div>
                 </div>
                 <span class="breakdown-row__value">{{ row.percentage }}%</span>
-              </div>
+              </a>
             }
           </div>
         }
@@ -238,10 +285,15 @@
         } @else {
           <div class="activity-list">
             @for (row of activityRows(); track row.label) {
-              <div class="activity-row">
+              <a
+                class="activity-row drill-row drill-row--inset"
+                [routerLink]="row.link ? '/guests' : null"
+                [queryParams]="row.link"
+                [attr.title]="row.link ? 'Open these guests in the guest list' : null"
+              >
                 <span class="activity-row__label">{{ row.label }}</span>
                 <span class="activity-row__value">{{ row.value }}</span>
-              </div>
+              </a>
             }
           </div>
         }

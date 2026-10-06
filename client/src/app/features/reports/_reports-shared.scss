@@ -118,6 +118,79 @@ $green: rgb(20, 113, 41);
   }
 }
 
+// ---- Drill-throughs: a count that opens the guests behind it (/guests?…) ----
+// Linked counts are <a> elements; one without an href (no guests.view, or a zero count) is
+// plain text, so the hover states key off [href].
+
+$drill-hover: rgb(251, 243, 245);
+
+a.stat-card {
+  color: inherit;
+  text-decoration: none;
+}
+
+.stat-card[href] {
+  cursor: pointer;
+  transition: box-shadow 120ms ease;
+
+  &:hover {
+    box-shadow: inset 0 0 0 1px $maroon;
+  }
+
+  &:focus-visible {
+    outline: 2px solid $maroon;
+    outline-offset: 2px;
+  }
+}
+
+// Table cells: an underlined number, as on the dashboard's caseload table.
+.count-link {
+  color: inherit;
+
+  &[href] {
+    text-decoration: underline;
+    text-underline-offset: 2px;
+
+    &:hover {
+      color: $maroon;
+    }
+  }
+}
+
+// A whole breakdown row. --inset pads it so the hover tint clears the text; --block is for a
+// link wrapped inside an existing row.
+.drill-row {
+  color: inherit;
+  text-decoration: none;
+  border-radius: 6px;
+
+  &[href] {
+    cursor: pointer;
+    transition: background-color 120ms ease;
+
+    &:hover,
+    &:focus-visible {
+      background: $drill-hover;
+    }
+
+    &:focus-visible {
+      outline: 2px solid $maroon;
+      outline-offset: 2px;
+    }
+  }
+
+  &.drill-row--inset {
+    margin-inline: -8px;
+    padding-inline: 8px;
+  }
+
+  &.drill-row--block {
+    display: block;
+    margin-block: -4px;
+    padding-block: 4px;
+  }
+}
+
 // ---- Buttons (red primary r4 h36, white secondary with inset border) ------
 
 .btn {

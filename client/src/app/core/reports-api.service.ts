@@ -28,6 +28,19 @@ export interface ReportCohortParams {
   ageMax?: number;
 }
 
+/**
+ * The Reports screen's reporting period (inclusive, yyyy-MM-dd) — one range shared by every tab
+ * and by the exports.
+ */
+export interface ReportPeriod {
+  from: string;
+  to: string;
+}
+
+function periodParams(period: ReportPeriod): HttpParams {
+  return new HttpParams().set('from', period.from).set('to', period.to);
+}
+
 /** Adds the set cohort filters to `params`; unset ones are left off the query string. */
 function withCohort(params: HttpParams, cohort?: ReportCohortParams): HttpParams {
   if (!cohort) return params;
@@ -50,25 +63,28 @@ export class ReportsApiService {
     return this.http.get<PathwayReportDto>(`${this.base}/pathways`, { params });
   }
 
-  /** "Outcome dimensions" — DIALOG averages, baseline vs latest reassessment, for the hub or a cohort. */
-  getDialogOutcomes(cohort?: ReportCohortParams): Observable<DialogOutcomesReportDto> {
-    const params = withCohort(new HttpParams(), cohort);
+  /**
+   * "Outcome dimensions" — DIALOG averages, baseline vs latest reassessment, over the assessments
+   * recorded in the period, for the hub or a cohort.
+   */
+  getDialogOutcomes(period: ReportPeriod, cohort?: ReportCohortParams): Observable<DialogOutcomesReportDto> {
+    const params = withCohort(periodParams(period), cohort);
     return this.http.get<DialogOutcomesReportDto>(`${this.base}/dialog-outcomes`, { params });
   }
 
-  /** "Pathway Analytics" tab — per-pathway totals, statuses, AFA and DIALOG averages. */
-  getPathwayAnalytics(): Observable<PathwayAnalyticsDto> {
-    return this.http.get<PathwayAnalyticsDto>(`${this.base}/pathway-analytics`);
+  /** "Pathway Analytics" tab — per-pathway totals, statuses, AFA and DIALOG averages for the guests registered in the period. */
+  getPathwayAnalytics(period: ReportPeriod): Observable<PathwayAnalyticsDto> {
+    return this.http.get<PathwayAnalyticsDto>(`${this.base}/pathway-analytics`, { params: periodParams(period) });
   }
 
-  /** "Caseload Reports" tab — per-CMHW caseload rows. */
-  getCaseload(): Observable<CaseloadReportRowDto[]> {
-    return this.http.get<CaseloadReportRowDto[]>(`${this.base}/caseload`);
+  /** "Caseload Reports" tab — current per-CMHW caseload, with the overdue and recorded contacts of the period. */
+  getCaseload(period: ReportPeriod): Observable<CaseloadReportRowDto[]> {
+    return this.http.get<CaseloadReportRowDto[]>(`${this.base}/caseload`, { params: periodParams(period) });
   }
 
-  /** "Data Quality" tab — record-completeness issue counts. */
-  getDataQuality(): Observable<DataQualityReportDto> {
-    return this.http.get<DataQualityReportDto>(`${this.base}/data-quality`);
+  /** "Data Quality" tab — record-completeness issue counts for the guests registered in the period. */
+  getDataQuality(period: ReportPeriod): Observable<DataQualityReportDto> {
+    return this.http.get<DataQualityReportDto>(`${this.base}/data-quality`, { params: periodParams(period) });
   }
 
   /** "CPN Activity" tab — the CPN referral pipeline and the guests on the CPN caseload (yyyy-MM-dd). */
@@ -83,24 +99,24 @@ export class ReportsApiService {
     return this.http.get<ContactsBreakdownReportDto>(`${this.base}/contacts-breakdown`, { params });
   }
 
-  /** "DIALOG score trend" — monthly average total score, for the hub or a cohort. */
-  getDialogTrend(cohort?: ReportCohortParams): Observable<DialogTrendPointDto[]> {
-    const params = withCohort(new HttpParams(), cohort);
+  /** "DIALOG score trend" — monthly average total score in the period, for the hub or a cohort. */
+  getDialogTrend(period: ReportPeriod, cohort?: ReportCohortParams): Observable<DialogTrendPointDto[]> {
+    const params = withCohort(periodParams(period), cohort);
     return this.http.get<DialogTrendPointDto[]>(`${this.base}/dialog-trend`, { params });
   }
 
-  /** "Referral sources" breakdown. */
-  getReferralSources(): Observable<BreakdownSliceDto[]> {
-    return this.http.get<BreakdownSliceDto[]>(`${this.base}/referral-sources`);
+  /** "Referral sources" breakdown of the guests registered in the period. */
+  getReferralSources(period: ReportPeriod): Observable<BreakdownSliceDto[]> {
+    return this.http.get<BreakdownSliceDto[]>(`${this.base}/referral-sources`, { params: periodParams(period) });
   }
 
-  /** "Export history" tab — most recent exports for the hub. */
-  getExportHistory(): Observable<ExportHistoryItemDto[]> {
-    return this.http.get<ExportHistoryItemDto[]>(`${this.base}/exports`);
+  /** "Export history" tab — the hub's most recent exports taken in the period. */
+  getExportHistory(period: ReportPeriod): Observable<ExportHistoryItemDto[]> {
+    return this.http.get<ExportHistoryItemDto[]>(`${this.base}/exports`, { params: periodParams(period) });
   }
 
   /**
-   * Multi-sheet Excel workbook (sheets listed in WORKBOOK_SHEETS). `dialogCohort` is the DIALOG
+   * Multi-sheet Excel workbook (sheets listed in WORKBOOK_SHEETS), every sheet for the period. `dialogCohort` is the DIALOG
    * Outcomes tab's demographic filter — it narrows the workbook's DIALOG outcomes sheet only.
    */
   exportWorkbook(from: string, to: string, dialogCohort?: ReportCohortParams): Observable<Blob> {

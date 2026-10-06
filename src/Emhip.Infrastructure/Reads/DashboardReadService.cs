@@ -175,7 +175,7 @@ public sealed class DashboardReadService(EmhipDbContext db, IUrgentCaseReadServi
             await BuildCpnInvolvementAsync(hubId, cancellationToken),
             // "Caseload per CMHW" — the same per-worker rows the Caseload report shows, so the
             // manager sees every worker's assigned cases without leaving the dashboard.
-            await reports.GetCaseloadReportAsync(hubId, cancellationToken));
+            await reports.GetCaseloadReportAsync(hubId, cancellationToken: cancellationToken));
     }
 
     /// <summary>

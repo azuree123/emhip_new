@@ -176,9 +176,29 @@
     </div>
   </div>
 
-  <!-- Applied demographic filters stay visible as removable chips once the drawer closes. -->
-  @if (activeChips().length > 0) {
-    <div class="chip-row">
+  <!-- The reporting period and the applied demographic filters stay visible as removable chips. -->
+  <div class="chip-row">
+    @if (periodScoped()) {
+      <span class="chip">
+        <span class="chip__caption">Registered:</span>
+        <span class="chip__value">{{ periodLabel() }}</span>
+        <button
+          type="button"
+          class="chip__remove"
+          aria-label="Show guests registered at any time"
+          (click)="setPeriodScoped(false)"
+        >
+          <svg width="9" height="9" viewBox="0 0 10 10" fill="none" aria-hidden="true">
+            <path d="M 1 1 L 9 9 M 9 1 L 1 9" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+          </svg>
+        </button>
+      </span>
+    } @else {
+      <button type="button" class="chip-row__clear" (click)="setPeriodScoped(true)">
+        Only guests registered {{ periodLabel() }}
+      </button>
+    }
+    @if (activeChips().length > 0) {
       @for (chip of activeChips(); track chip.key) {
         <span class="chip">
           <span class="chip__caption">{{ chip.caption }}:</span>
@@ -196,8 +216,8 @@
         </span>
       }
       <button type="button" class="chip-row__clear" (click)="clearDemographics()">Clear all</button>
-    </div>
-  }
+    }
+  </div>
 
   @if (error()) {
     <div class="error-banner guest-report__error">Couldn't load the guest list — {{ error() }}</div>

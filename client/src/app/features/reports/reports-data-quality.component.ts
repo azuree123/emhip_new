@@ -1,6 +1,8 @@
-import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal, untracked } from '@angular/core';
+import { Subscription } from 'rxjs';
 import { DataQualityIssueDto, DataQualityReportDto } from '../../core/api-models';
-import { ReportsApiService } from '../../core/reports-api.service';
+import { ReportPeriod, ReportsApiService } from '../../core/reports-api.service';
+import { formatPeriod } from './report-meta';
 import { RouterLink } from '@angular/router';
 import { AuthService } from '../../core/auth.service';
 import { Permissions } from '../../core/permissions';
@@ -17,6 +19,9 @@ interface IssueRow extends DataQualityIssueDto {
  * backend-defined (key/label/count), so the source's hard-coded per-issue
  * descriptions are omitted. Each row's "View guests" opens the guest list with the
  * issue key as its segment (GET /guests?segment=…) — the Desktop70 drill-down.
+ *
+ * The audit covers the records registered in the reporting period, and the drill-down carries
+ * the same registration window (?registeredFrom=…&registeredTo=…) so its list matches the count.
  */
 @Component({
   selector: 'app-reports-data-quality',
@@ -26,7 +31,7 @@ interface IssueRow extends DataQualityIssueDto {
   styleUrl: './reports-data-quality.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ReportsDataQualityComponent implements OnInit {
+export class ReportsDataQualityComponent {
   /** Issue rows link to the affected guests when the viewer can open the guest list. */
   protected readonly canViewGuests = inject(AuthService).hasPermission(Permissions.Guests.View);
 
@@ -35,6 +40,23 @@ export class ReportsDataQualityComponent implements OnInit {
   }
 
   private readonly reportsApi = inject(ReportsApiService);
+
+  /** The Reports screen's applied reporting period (yyyy-MM-dd). */
+  readonly from = input.required<string>();
+  readonly to = input.required<string>();
+  readonly periodLabel = computed(() => formatPeriod(this.from(), this.to()));
+
+  /** Query params for a row's "View guests" — the issue's segment within the same registration window. */
+  protected drillParams(key: string): Record<string, string> {
+    return { segment: key, registeredFrom: this.from(), registeredTo: this.to() };
+  }
+
+  /** A tile's drill-through: the issue's guests, or (no key) every guest audited — null when not clickable. */
+  protected tileLink(count: number | null, key?: string): Record<string, string> | null {
+    if (!this.canViewGuests || !count) return null;
+    if (key === undefined) return { registeredFrom: this.from(), registeredTo: this.to() };
+    return this.hasSegment(key) ? this.drillParams(key) : null;
+  }
 
   readonly data = signal<DataQualityReportDto | null>(null);
   readonly loading = signal(false);
@@ -59,10 +81,19 @@ export class ReportsDataQualityComponent implements OnInit {
 
   readonly totalGuests = computed<number | null>(() => this.data()?.totalGuests ?? null);
 
-  ngOnInit(): void {
+  constructor() {
+    // Reload whenever a new period is applied; the cleanup drops a still-running older request.
+    effect((onCleanup) => {
+      const period: ReportPeriod = { from: this.from(), to: this.to() };
+      const sub = untracked(() => this.load(period));
+      onCleanup(() => sub.unsubscribe());
+    });
+  }
+
+  private load(period: ReportPeriod): Subscription {
     this.loading.set(true);
     this.error.set(null);
-    this.reportsApi.getDataQuality().subscribe({
+    return this.reportsApi.getDataQuality(period).subscribe({
       next: (data) => {
         this.data.set(data);
         this.loading.set(false);

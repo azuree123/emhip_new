@@ -5,26 +5,41 @@
 
   <!-- KPI row (Desktop48 top 428): guests audited + the three largest issues. -->
   <section class="stat-row">
-    <div class="stat-card">
+    <!-- Each tile opens the guests it counts, like the table's "View guests". -->
+    @let auditedLink = tileLink(totalGuests());
+    <a
+      class="stat-card"
+      [routerLink]="auditedLink ? '/guests' : null"
+      [queryParams]="auditedLink"
+      [attr.title]="auditedLink ? 'Open these guests in the guest list' : null"
+    >
       <span class="stat-card__label">Guests audited</span>
       <span class="stat-card__value">{{ loading() ? '—' : (totalGuests() ?? '—') }}</span>
-      <span class="stat-card__caption">All registered guests</span>
-    </div>
+      <span class="stat-card__caption">Registered {{ periodLabel() }}</span>
+    </a>
     @for (issue of tileIssues(); track issue.key) {
-      <div class="stat-card">
+      @let issueLink = tileLink(issue.count, issue.key);
+      <a
+        class="stat-card"
+        [routerLink]="issueLink ? '/guests' : null"
+        [queryParams]="issueLink"
+        [attr.title]="issueLink ? 'Open these guests in the guest list' : null"
+      >
         <span class="stat-card__label">{{ issue.label }}</span>
         <span class="stat-card__value">{{ issue.count }}</span>
-        <span class="stat-card__caption stat-card__caption--maroon">{{ issue.share }} of guests affected</span>
-      </div>
+        <span class="stat-card__caption stat-card__caption--maroon">{{ issue.share }} of guests audited</span>
+      </a>
     }
   </section>
 
   <section class="report-card">
     <h2 class="report-card__title">Data quality issues</h2>
-    <p class="report-card__subtitle">Record completeness across the hub's guests</p>
+    <p class="report-card__subtitle">Record completeness for the guests registered {{ periodLabel() }}</p>
 
     @if (loading()) {
       <div class="report-card__state">Auditing guest records…</div>
+    } @else if ((totalGuests() ?? 0) === 0) {
+      <div class="report-card__state">No guests were registered in this period.</div>
     } @else if (rows().length === 0) {
       <div class="report-card__state">No data-quality issues found — all records are complete.</div>
     } @else {
@@ -47,7 +62,7 @@
                 <td class="dq-table__num">
                   <!-- Each issue opens the guests it counts (same drill-through as the dashboard). -->
                   @if (canViewGuests && row.count > 0 && hasSegment(row.key)) {
-                    <a class="dq-table__link" routerLink="/guests" [queryParams]="{ segment: row.key }">View guests →</a>
+                    <a class="dq-table__link" routerLink="/guests" [queryParams]="drillParams(row.key)">View guests →</a>
                   }
                 </td>
               </tr>

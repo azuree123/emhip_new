@@ -9,9 +9,11 @@ import {
   WritableSignal,
   afterNextRender,
   computed,
+  effect,
   inject,
   input,
   signal,
+  untracked,
   viewChild,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -26,7 +28,7 @@ import {
 import { GuestsApiService } from '../../core/guests-api.service';
 import { LookupCategories, SettingsApiService } from '../../core/settings-api.service';
 import { StaffPickerComponent } from '../../shared/staff-picker.component';
-import { PATHWAY_META, STATUS_META, pathwayLabel, shortDay } from './report-meta';
+import { PATHWAY_META, STATUS_META, formatPeriod, pathwayLabel, shortDay } from './report-meta';
 
 const PAGE_SIZE = 10;
 
@@ -48,6 +50,10 @@ type LookupState = 'loading' | 'ready' | 'empty' | 'error';
  * carries the demographic filters (ethnicity, age group, gender, country of
  * origin) that the endpoint accepts alongside the inline status/pathway/CMHW/date
  * dropdowns.
+ *
+ * The list follows the reporting period: it shows the guests registered in it (the same rows
+ * as the CSV export), as a removable "Registered" chip. The Caseload "View" drill-down opens
+ * without it, since a caseload is who is assigned now; applying a new period scopes it again.
  */
 @Component({
   selector: 'app-reports-guest-report',
@@ -66,6 +72,12 @@ export class ReportsGuestReportComponent implements OnInit, OnDestroy {
 
   /** Preselected CMHW filter — set by the Caseload tab's "View" drill-down. */
   readonly initialCmhw = input('');
+  /** The Reports screen's applied reporting period (yyyy-MM-dd). */
+  readonly from = input.required<string>();
+  readonly to = input.required<string>();
+  readonly periodLabel = computed(() => formatPeriod(this.from(), this.to()));
+  /** Whether the list is narrowed to the guests registered in the period (the "Registered" chip). */
+  readonly periodScoped = signal(true);
 
   /**
    * Engagement statuses only (spec §4.7) — urgency is a separate flag, not a status.
@@ -159,10 +171,32 @@ export class ReportsGuestReportComponent implements OnInit, OnDestroy {
   private prevCursors: (string | undefined)[] = [];
   private searchTimer: ReturnType<typeof setTimeout> | undefined;
 
+  constructor() {
+    // A newly applied period scopes the list to it again (even after the chip was removed).
+    // The first run is the initial render, which ngOnInit loads.
+    let initial = true;
+    effect(() => {
+      this.from();
+      this.to();
+      if (initial) {
+        initial = false;
+        return;
+      }
+      untracked(() => {
+        this.periodScoped.set(true);
+        this.resetAndLoad();
+      });
+    });
+  }
+
   ngOnInit(): void {
     // The Caseload drill-down hands over a staff id; the shared picker resolves it to that
-    // person's name from the cached staff directory, so no options are fetched here.
-    if (this.initialCmhw()) this.cmhw.set(this.initialCmhw());
+    // person's name from the cached staff directory, so no options are fetched here. It lists
+    // the worker's whole current caseload, so the period chip starts off.
+    if (this.initialCmhw()) {
+      this.cmhw.set(this.initialCmhw());
+      this.periodScoped.set(false);
+    }
     this.loadLookup(LookupCategories.Ethnicity, this.ethnicityOptions, this.ethnicityState);
     this.loadLookup(LookupCategories.Gender, this.genderOptions, this.genderState);
     this.loadLookup(LookupCategories.CountryOfOrigin, this.countryOptions, this.countryState);
@@ -253,6 +287,12 @@ export class ReportsGuestReportComponent implements OnInit, OnDestroy {
     this.gender.set('');
     this.countryOfOrigin.set('');
     if (hadFilters) this.resetAndLoad();
+  }
+
+  /** The "Registered" chip's "×" / the "Limit to …" link — toggles the period scope and re-queries. */
+  setPeriodScoped(scoped: boolean): void {
+    this.periodScoped.set(scoped);
+    this.resetAndLoad();
   }
 
   /** Chip "×" — removes one applied filter and re-queries. */
@@ -356,6 +396,8 @@ export class ReportsGuestReportComponent implements OnInit, OnDestroy {
         countryOfOrigin: this.countryOfOrigin() || undefined,
         ageMin: band?.ageMin,
         ageMax: band?.ageMax,
+        registeredFrom: this.periodScoped() ? this.from() : undefined,
+        registeredTo: this.periodScoped() ? this.to() : undefined,
         cursor: this.currentCursor,
         pageSize: PAGE_SIZE,
       })

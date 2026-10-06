@@ -7,26 +7,27 @@
 
   <!-- KPI row (Desktop 86). -->
   <section class="stat-row cpn__stats">
-    <div class="stat-card">
+    <!-- Each tile opens the guest list filtered to the guests it counts. -->
+    <a class="stat-card" [routerLink]="seenLink() ? '/guests' : null" [queryParams]="seenLink()" [attr.title]="seenLink() ? 'Open these guests in the guest list' : null">
       <span class="stat-card__label">Guests seen by CPN</span>
       <span class="stat-card__value">{{ loading() || !d ? '—' : d.guestsSeenByCpn }}</span>
       <span class="stat-card__caption">{{ rangeLabel() }} · {{ d ? d.cpnContactsInRange + ' CPN contacts' : 'CPN contacts' }}</span>
-    </div>
-    <div class="stat-card">
+    </a>
+    <a class="stat-card" [routerLink]="caseloadLink() ? '/guests' : null" [queryParams]="caseloadLink()" [attr.title]="caseloadLink() ? 'Open these guests in the guest list' : null">
       <span class="stat-card__label">Active CPN caseload</span>
       <span class="stat-card__value">{{ loading() || !d ? '—' : d.activeCpnCaseload }}</span>
       <span class="stat-card__caption">Currently allocated</span>
-    </div>
-    <div class="stat-card">
+    </a>
+    <a class="stat-card" [routerLink]="referredLink() ? '/guests' : null" [queryParams]="referredLink()" [attr.title]="referredLink() ? 'Open these guests in the guest list' : null">
       <span class="stat-card__label">New CPN referrals</span>
       <span class="stat-card__value">{{ loading() || !d ? '—' : d.newCpnReferrals }}</span>
       <span class="stat-card__caption">Requested {{ rangeLabel() }}</span>
-    </div>
-    <div class="stat-card">
+    </a>
+    <a class="stat-card" [routerLink]="confirmedLink() ? '/guests' : null" [queryParams]="confirmedLink()" [attr.title]="confirmedLink() ? 'Open these guests in the guest list' : null">
       <span class="stat-card__label">Referrals confirmed at MDT</span>
       <span class="stat-card__value">{{ loading() || !d ? '—' : d.referralsConfirmedAtMdt }}</span>
       <span class="stat-card__caption stat-card__caption--maroon">{{ d && d.referralsPendingReview > 0 ? d.referralsPendingReview + ' pending review' : 'None pending review' }}</span>
-    </div>
+    </a>
   </section>
 
   <div class="cpn__grid">
@@ -48,13 +49,18 @@
       } @else {
         <div class="cpn__rows">
           @for (stage of pipeline(); track stage.key) {
-            <div class="breakdown-row">
+            <a
+              class="breakdown-row drill-row drill-row--inset"
+              [routerLink]="stage.link ? '/guests' : null"
+              [queryParams]="stage.link"
+              [attr.title]="stage.link ? 'Open these guests in the guest list' : null"
+            >
               <span class="breakdown-row__label">{{ stage.label }}</span>
               <div class="breakdown-row__track">
                 <div class="breakdown-row__fill" [class]="'breakdown-row__fill breakdown-row__fill--' + stage.tone" [style.width.%]="stage.pct"></div>
               </div>
               <span class="breakdown-row__value">{{ stage.count }}</span>
-            </div>
+            </a>
           }
         </div>
         <div class="pipeline-foot">
@@ -82,14 +88,14 @@
             <span class="session-stat__value">{{ d.cpnContactsInRange }}</span>
             <span class="session-stat__label">CPN contacts in range</span>
           </div>
-          <div class="session-stat">
+          <a class="session-stat drill-row drill-row--inset" [routerLink]="seenLink() ? '/guests' : null" [queryParams]="seenLink()" [attr.title]="seenLink() ? 'Open these guests in the guest list' : null">
             <span class="session-stat__value">{{ d.guestsSeenByCpn }}</span>
             <span class="session-stat__label">distinct guests seen</span>
-          </div>
-          <div class="session-stat">
+          </a>
+          <a class="session-stat drill-row drill-row--inset" [routerLink]="declinedLink() ? '/guests' : null" [queryParams]="declinedLink()" [attr.title]="declinedLink() ? 'Open these guests in the guest list' : null">
             <span class="session-stat__value">{{ d.referralsDeclinedAtMdt }}</span>
             <span class="session-stat__label">referrals declined at MDT</span>
-          </div>
+          </a>
         </div>
       }
     </section>

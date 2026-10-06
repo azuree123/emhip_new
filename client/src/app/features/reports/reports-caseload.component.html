@@ -8,28 +8,31 @@
     <div class="stat-card">
       <span class="stat-card__label">Total CMHW staff</span>
       <span class="stat-card__value">{{ loading() ? '—' : totalStaff() }}</span>
-      <span class="stat-card__caption">Workers with assigned guests</span>
+      <span class="stat-card__caption">Workers with assigned guests · current</span>
     </div>
     <div class="stat-card">
       <span class="stat-card__label">Avg caseload</span>
       <span class="stat-card__value">{{ loading() ? '—' : avgCaseload() }}</span>
-      <span class="stat-card__caption">Guests per worker</span>
+      <span class="stat-card__caption">Guests per worker · current</span>
     </div>
     <div class="stat-card">
       <span class="stat-card__label">Highest caseload</span>
       <span class="stat-card__value">{{ loading() ? '—' : highestCaseload() }}</span>
-      <span class="stat-card__caption">Busiest worker</span>
+      <span class="stat-card__caption">Busiest worker · current</span>
     </div>
     <div class="stat-card">
       <span class="stat-card__label">Overdue contacts</span>
       <span class="stat-card__value">{{ loading() ? '—' : overdueFollowUps() }}</span>
-      <span class="stat-card__caption stat-card__caption--maroon">Across all caseloads</span>
+      <span class="stat-card__caption stat-card__caption--maroon">Due {{ periodLabel() }}</span>
     </div>
   </section>
 
   <section class="report-card">
     <h2 class="report-card__title">Caseload per CMHW</h2>
-    <p class="report-card__subtitle">Click View to open a worker's guests in the Guest Report</p>
+    <p class="report-card__subtitle">
+      Assigned, Active and Urgent are each worker's current caseload; contacts are for {{ periodLabel() }}.
+      Click View to open a worker's guests in the Guest Report.
+    </p>
 
     @if (loading()) {
       <div class="report-card__state">Loading caseloads…</div>
@@ -45,7 +48,7 @@
               <th class="caseload-table__num">Active</th>
               <th class="caseload-table__num">Urgent</th>
               <th class="caseload-table__num">Overdue contacts</th>
-              <th class="caseload-table__num">Contacts (30d)</th>
+              <th class="caseload-table__num">Contacts in period</th>
               <th>Load</th>
               <th>Actions</th>
             </tr>
@@ -59,11 +62,30 @@
                     <span class="worker-cell__name">{{ row.displayName }}</span>
                   </span>
                 </td>
-                <td class="caseload-table__num caseload-table__strong">{{ row.assignedGuests }}</td>
-                <td class="caseload-table__num">{{ row.activeGuests }}</td>
-                <td class="caseload-table__num" [class.caseload-table__urgent]="row.urgentGuests > 0">{{ row.urgentGuests }}</td>
+                <!-- The current caseload counts open the worker's guests (dashboard drill-through). -->
+                <td class="caseload-table__num caseload-table__strong">
+                  <a
+                    class="count-link"
+                    [routerLink]="canViewGuests && row.assignedGuests > 0 ? '/guests' : null"
+                    [queryParams]="{ cmhw: row.staffId }"
+                  >{{ row.assignedGuests }}</a>
+                </td>
+                <td class="caseload-table__num">
+                  <a
+                    class="count-link"
+                    [routerLink]="canViewGuests && row.activeGuests > 0 ? '/guests' : null"
+                    [queryParams]="{ cmhw: row.staffId, status: 'Active' }"
+                  >{{ row.activeGuests }}</a>
+                </td>
+                <td class="caseload-table__num" [class.caseload-table__urgent]="row.urgentGuests > 0">
+                  <a
+                    class="count-link"
+                    [routerLink]="canViewGuests && row.urgentGuests > 0 ? '/guests' : null"
+                    [queryParams]="{ cmhw: row.staffId, urgent: true }"
+                  >{{ row.urgentGuests }}</a>
+                </td>
                 <td class="caseload-table__num" [class.caseload-table__urgent]="row.overdueFollowUps > 0">{{ row.overdueFollowUps }}</td>
-                <td class="caseload-table__num">{{ row.contactsLast30Days }}</td>
+                <td class="caseload-table__num">{{ row.contactsInPeriod }}</td>
                 <td>
                   <span class="load-cell">
                     <span class="load-cell__track"><span class="load-cell__fill" [style.width.%]="row.loadPct"></span></span>

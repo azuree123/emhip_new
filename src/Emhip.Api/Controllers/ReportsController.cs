@@ -9,7 +9,11 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Emhip.Api.Controllers;
 
-/// <summary>Reports screen: the report tabs, the Excel workbook and the streaming CSV export.</summary>
+/// <summary>
+/// Reports screen: the report tabs, the Excel workbook and the streaming CSV export. Every tab
+/// takes the screen's shared reporting period (from / to, yyyy-MM-dd); on the tabs that used to
+/// be unscoped the pair is optional, and leaving it off keeps the old all-records behaviour.
+/// </summary>
 [ApiController]
 [Route("reports")]
 [Authorize]
@@ -25,76 +29,86 @@ public sealed class ReportsController(
     }
 
     /// <summary>
-    /// "Outcome dimensions" report — DIALOG averages, baseline vs latest reassessment. The optional
-    /// demographic filters (same names and meaning as GET /guests) narrow every figure to a cohort.
+    /// "Outcome dimensions" report — DIALOG averages, baseline vs latest reassessment, over the
+    /// assessments recorded in the period. The optional demographic filters (same names and
+    /// meaning as GET /guests) narrow every figure to a cohort.
     /// </summary>
     [HttpGet("dialog-outcomes")]
     [Authorize(Policy = Permissions.Reports.View)]
     public async Task<IActionResult> GetDialogOutcomes(
+        [FromQuery] DateOnly? from = null, [FromQuery] DateOnly? to = null,
         [FromQuery] string? ethnicity = null, [FromQuery] string? gender = null, [FromQuery] string? countryOfOrigin = null,
         [FromQuery] int? ageMin = null, [FromQuery] int? ageMax = null, CancellationToken cancellationToken = default)
     {
         var cohort = ReportCohortFilter.From(ethnicity, gender, countryOfOrigin, ageMin, ageMax);
-        var result = await mediator.Send(new GetDialogOutcomesReportQuery(currentUser.HubId, cohort), cancellationToken);
+        var result = await mediator.Send(
+            new GetDialogOutcomesReportQuery(currentUser.HubId, cohort, ReportPeriod.Create(from, to)), cancellationToken);
         return Ok(result);
     }
 
-    /// <summary>"Pathway Analytics" tab — per-pathway guest totals, statuses, AFA and DIALOG averages.</summary>
+    /// <summary>"Pathway Analytics" tab — per-pathway totals, statuses, AFA and DIALOG averages for the guests registered in the period.</summary>
     [HttpGet("pathway-analytics")]
     [Authorize(Policy = Permissions.Reports.View)]
-    public async Task<IActionResult> GetPathwayAnalytics(CancellationToken cancellationToken) =>
-        Ok(await mediator.Send(new GetPathwayAnalyticsQuery(currentUser.HubId), cancellationToken));
+    public async Task<IActionResult> GetPathwayAnalytics(
+        [FromQuery] DateOnly? from = null, [FromQuery] DateOnly? to = null, CancellationToken cancellationToken = default) =>
+        Ok(await mediator.Send(new GetPathwayAnalyticsQuery(currentUser.HubId, ReportPeriod.Create(from, to)), cancellationToken));
 
-    /// <summary>"Caseload Reports" tab — per-CMHW caseload, urgent counts, overdue follow-ups, recent contacts.</summary>
+    /// <summary>"Caseload Reports" tab — current per-CMHW caseload, with the overdue and recorded contacts of the period.</summary>
     [HttpGet("caseload")]
     [Authorize(Policy = Permissions.Reports.View)]
-    public async Task<IActionResult> GetCaseload(CancellationToken cancellationToken) =>
-        Ok(await mediator.Send(new GetCaseloadReportQuery(currentUser.HubId), cancellationToken));
+    public async Task<IActionResult> GetCaseload(
+        [FromQuery] DateOnly? from = null, [FromQuery] DateOnly? to = null, CancellationToken cancellationToken = default) =>
+        Ok(await mediator.Send(new GetCaseloadReportQuery(currentUser.HubId, ReportPeriod.Create(from, to)), cancellationToken));
 
-    /// <summary>"Data Quality" tab — record-completeness issue counts.</summary>
+    /// <summary>"Data Quality" tab — record-completeness issue counts for the guests registered in the period.</summary>
     [HttpGet("data-quality")]
     [Authorize(Policy = Permissions.Reports.View)]
-    public async Task<IActionResult> GetDataQuality(CancellationToken cancellationToken) =>
-        Ok(await mediator.Send(new GetDataQualityReportQuery(currentUser.HubId), cancellationToken));
+    public async Task<IActionResult> GetDataQuality(
+        [FromQuery] DateOnly? from = null, [FromQuery] DateOnly? to = null, CancellationToken cancellationToken = default) =>
+        Ok(await mediator.Send(new GetDataQualityReportQuery(currentUser.HubId, ReportPeriod.Create(from, to)), cancellationToken));
 
-    /// <summary>"CPN Activity" — contacts by type and outcome within the range.</summary>
     /// <summary>"CPN Activity" tab — the CPN referral pipeline and the guests on the CPN caseload.</summary>
     [HttpGet("cpn-activity")]
     [Authorize(Policy = Permissions.Reports.View)]
     public async Task<IActionResult> GetCpnActivity([FromQuery] DateOnly from, [FromQuery] DateOnly to, CancellationToken cancellationToken) =>
         Ok(await mediator.Send(new GetCpnActivityQuery(currentUser.HubId, from, to), cancellationToken));
 
+    /// <summary>Contacts by type and outcome within the range.</summary>
     [HttpGet("contacts-breakdown")]
     [Authorize(Policy = Permissions.Reports.View)]
     public async Task<IActionResult> GetContactsBreakdown([FromQuery] DateOnly from, [FromQuery] DateOnly to, CancellationToken cancellationToken) =>
         Ok(await mediator.Send(new GetContactsBreakdownQuery(currentUser.HubId, from, to), cancellationToken));
 
-    /// <summary>"DIALOG score trend" — monthly average total score, optionally for a demographic cohort.</summary>
+    /// <summary>"DIALOG score trend" — monthly average total score in the period, optionally for a demographic cohort.</summary>
     [HttpGet("dialog-trend")]
     [Authorize(Policy = Permissions.Reports.View)]
     public async Task<IActionResult> GetDialogTrend(
+        [FromQuery] DateOnly? from = null, [FromQuery] DateOnly? to = null,
         [FromQuery] string? ethnicity = null, [FromQuery] string? gender = null, [FromQuery] string? countryOfOrigin = null,
         [FromQuery] int? ageMin = null, [FromQuery] int? ageMax = null, CancellationToken cancellationToken = default) =>
         Ok(await mediator.Send(
-            new GetDialogTrendQuery(currentUser.HubId, ReportCohortFilter.From(ethnicity, gender, countryOfOrigin, ageMin, ageMax)),
+            new GetDialogTrendQuery(
+                currentUser.HubId, ReportCohortFilter.From(ethnicity, gender, countryOfOrigin, ageMin, ageMax), ReportPeriod.Create(from, to)),
             cancellationToken));
 
-    /// <summary>"Referral sources" breakdown.</summary>
+    /// <summary>"Referral sources" breakdown of the guests registered in the period.</summary>
     [HttpGet("referral-sources")]
     [Authorize(Policy = Permissions.Reports.View)]
-    public async Task<IActionResult> GetReferralSources(CancellationToken cancellationToken) =>
-        Ok(await mediator.Send(new GetReferralSourcesQuery(currentUser.HubId), cancellationToken));
+    public async Task<IActionResult> GetReferralSources(
+        [FromQuery] DateOnly? from = null, [FromQuery] DateOnly? to = null, CancellationToken cancellationToken = default) =>
+        Ok(await mediator.Send(new GetReferralSourcesQuery(currentUser.HubId, ReportPeriod.Create(from, to)), cancellationToken));
 
-    /// <summary>"Export history" tab — most recent exports for the hub.</summary>
+    /// <summary>"Export history" tab — the hub's most recent exports taken in the period.</summary>
     [HttpGet("exports")]
     [Authorize(Policy = Permissions.Reports.View)]
-    public async Task<IActionResult> GetExportHistory(CancellationToken cancellationToken) =>
-        Ok(await mediator.Send(new GetExportHistoryQuery(currentUser.HubId), cancellationToken));
+    public async Task<IActionResult> GetExportHistory(
+        [FromQuery] DateOnly? from = null, [FromQuery] DateOnly? to = null, CancellationToken cancellationToken = default) =>
+        Ok(await mediator.Send(new GetExportHistoryQuery(currentUser.HubId, ReportPeriod.Create(from, to)), cancellationToken));
 
     /// <summary>
     /// Multi-sheet Excel workbook: summary, demographics, referral sources, pathways, caseload, DIALOG
-    /// outcomes and data quality (spec §5.4). The optional demographic filters are the DIALOG
-    /// Outcomes tab's cohort and apply to the DIALOG outcomes sheet only.
+    /// outcomes and data quality (spec §5.4), every sheet for the reporting period. The optional
+    /// demographic filters are the DIALOG Outcomes tab's cohort and apply to the DIALOG outcomes sheet only.
     /// </summary>
     [HttpGet("export.xlsx")]
     [Authorize(Policy = Permissions.Reports.Export)]

@@ -439,7 +439,7 @@ The header shows the guest's name with chips for status, clinical pathway and an
 | --- | --- | --- |
 | Back arrow | Returns to the previous screen | Everyone |
 | **Add Contact** | Opens the Add Contact form (section 6) | CMHWs, CPNs, Hub Managers |
-| **Raise Urgent Flag** | Opens Clinical Details with the risk assessment form ready (section 5.5) | Everyone |
+| **Raise Urgent Flag** | Opens a quick panel to tick the risks and raise the flag (section 5.5) | Everyone |
 | **Export Record** | Downloads the guest's full record (section 5.15) | Hub Managers |
 | **Anonymise record** | Removes the guest's identifying details (section 5.16) | Administrators |
 
@@ -508,9 +508,20 @@ The tab shows the presenting problem, long-term and physical health conditions, 
 
 These ticks feed the Clinical complexity indicators on the dashboards.
 
+#### Raise an urgent flag quickly
+
+You can raise the flag from any tab without opening Clinical Details.
+
+1. Select **Raise Urgent Flag** in the guest's header. A panel opens on the right.
+2. Tick one or more risks: **Suicidal Ideation**, **Self Harm**, **Risk to Others**, **Severe Deterioration**, **Safeguarding Concern**.
+3. Add **Notes** if you want to, for example what happened and who reported it.
+4. Select **Raise urgent flag**.
+
+The panel closes and the header shows the Urgent badge. The flag is saved as a new risk assessment, so it also appears in the Risk & complexity card. If the guest is already urgent, the panel says so, and the new risks are added to the open episode.
+
 #### Record a risk assessment
 
-1. In the **Risk & complexity** card, select **+ Record assessment**. **Raise Urgent Flag** in the header opens this form for you.
+1. In the **Risk & complexity** card, select **+ Record assessment**.
 2. Tick any that apply: **Suicidal ideation**, **Self-harm**, **Risk to others**, **Severe deterioration**, **Safeguarding concern**.
 3. Add **Notes**.
 4. Select **Save assessment**.
@@ -693,7 +704,7 @@ You can open the form from:
 - **Add Contact** in a guest's record header
 - **Add casework note** on the Notes tab, or **Resume** on a draft
 - **Add CPN contact** on the CPN Record tab
-- **Add contact** on a row or in the details panel on Urgent Cases.
+- **Add contact** in the Urgent Case Details panel on Urgent Cases.
 
 ### 6.1 Record an ordinary contact
 
@@ -829,7 +840,7 @@ When you submit from a guest's record, the form closes and the **Notes** tab ope
 
 A guest gets the urgent flag when:
 
-- someone records a risk assessment on Clinical Details with at least one risk ticked (**Raise Urgent Flag**)
+- someone selects **Raise Urgent Flag** on the guest's record, or records a risk assessment on Clinical Details, with at least one risk ticked
 - the initial conversation records immediate risk, at registration or on the Initial Conversation tab
 - risk screening at registration finds a risk (section 4.2).
 
@@ -851,10 +862,9 @@ Select **Urgent Cases** in the menu. The number beside it is the count of open c
 Each open case shows the guest's name and reference, the hours left or overdue and the contact deadline. It also shows the risk types, the CMHW and when the flag was raised. Its buttons are:
 
 - **Open Guest**: opens the guest's record
-- **Add contact**: opens the Add Contact form for that guest
-- **Open Crisis Episode**: opens the urgent episode record (section 7.8).
+- **View Crisis Episode**: opens the urgent episode record (section 7.8).
 
-Select anywhere else on the case to open the **Urgent Case Details** panel.
+Select anywhere else on the case to open the **Urgent Case Details** panel. To log a contact, use **Add contact** in that panel.
 
 Resolved cases are listed below the open ones. Each shows when it was resolved, whether that was within 72 hours, any CMHT team and the resolution note. Select a resolved case or **View Episode** to open its episode record.
 
@@ -918,7 +928,7 @@ Resolving:
 
 ### 7.8 Urgent episode records
 
-The episode record is the full account of one urgent episode. Open it with **Open Crisis Episode**, **Open full episode record**, **View Episode** or by selecting a resolved case.
+The episode record is the full account of one urgent episode. Open it with **View Crisis Episode**, **Open full episode record**, **View Episode** or by selecting a resolved case.
 
 - **Episode tabs** (Episode 1, Episode 2 and so on) switch between a guest's episodes. A dot marks the open one.
 - The banner says whether the episode is open or resolved. An open episode has **Escalate to CMHT** and **Mark episode as resolved** buttons.
@@ -1060,47 +1070,71 @@ Select **Reports** in the menu to open Reports & Analytics. Everyone can view re
 
 The tabs are Overview, Guest Report, Pathway Analytics, Caseload Reports, DIALOG Outcomes, Data Quality, CPN Activity and Export History. On a narrow screen, arrows at the ends of the tab bar show more tabs.
 
-### 10.1 Set the date range
+### 10.1 Set the reporting period
 
-The **Overview** and **CPN Activity** tabs use a date range. It starts as the last six months.
+One reporting period applies to every tab and to both exports. It starts as the last six months.
 
-1. Choose the **From** and **To** dates.
+1. Choose the **From** and **To** dates under **Reporting period**. To cannot be in the future.
 2. Select **Apply**.
 
-The other tabs always show the current position.
+The period stays the same when you change tabs. Until you select Apply, a note says the new dates are not applied yet.
+
+What the period means:
+
+- **Guest counts** (tiles, pathways, demographics, referral sources, data quality) count the guests registered in the period, by the status or pathway they have today.
+- **Activity** (contacts, DIALOG assessments, urgent flags, CPN referrals, exports) counts what was recorded in the period.
+- A few figures are always current and are labelled so, for example a worker's caseload and the CPN caseload.
+
+#### Open the guests behind a count
+
+Most counts of guests on the Reports tabs can be selected, as on the dashboards. A count you can select is outlined or underlined when you point at it. It opens the guest list showing exactly those guests, with a banner that names the count and the reporting period. Select **Show all guests** on the banner to return to the full list.
+
+You can select:
+
+- **Overview:** the five tiles, the DIALOG tiles Baselines recorded, Reassessments and Guests with no DIALOG reassessment yet, each pathway, ethnicity and referral source row, and Guests seen
+- **Pathway Analytics:** every count in the table, and the number of guests that need a pathway
+- **Caseload Reports:** each worker's Assigned, Active and Urgent counts
+- **DIALOG Outcomes:** Baselines recorded, Reassessments and Missing assessments. The guest list keeps the demographic group you chose
+- **Data Quality:** the tiles and **View guests** on each row
+- **CPN Activity:** the four tiles, each stage of the referral pipeline, and the guests seen and referrals declined under CPN sessions.
+
+Counts of contacts, scheduled contacts and urgent flags, and averages, are not lists of guests, so they cannot be selected. A guest referred to the CPN twice in the period appears once in the list, so the list can be one shorter than the referral count.
 
 ### 10.2 Overview
 
-- **Tiles:** Total guests, New, Active guests, Inactive and Urgent cases.
-- **DIALOG outcome metrics:** total assessments, baselines, reassessments, average score change and guests with no reassessment yet.
-- **Pathway distribution:** how many guests are on each of the three pathways now (not limited by the date range).
+- **Tiles:** Total guests registered in the period, then how many of them are New, Active or Inactive and how many are urgent today.
+- **DIALOG outcome metrics:** assessments recorded in the period: total, baselines, reassessments, average score change and guests with no reassessment yet.
+- **Pathway distribution:** the pathway each guest registered in the period is on now.
 - **Guest registrations over time:** new registrations each month.
-- **Guest demographics:** an ethnicity breakdown.
-- **Referral sources:** the share of guests from each source.
+- **Guest demographics:** the ethnicity of the guests registered in the period.
+- **Referral sources:** where the guests registered in the period came from.
 - **Contact activity:** guests seen, total contacts recorded, scheduled contacts due and urgent flags raised in the period.
 
 ### 10.3 Guest Report
 
 A searchable table of guests with their pathway, last activity and status.
 
+- The table lists the guests registered in the reporting period, shown as a **Registered** chip. Select × on the chip to list guests registered at any time, and the link that replaces it to go back.
 - Use **Search by guest name**, and filter by **All Status**, **All Pathway**, **All CMHW** and **All Dates**. All Dates filters by last activity in the last 7, 30 or 90 days.
 - Select **Filters** to choose **Ethnicity**, **Age group**, **Gender** and **Country of origin**, then **Apply**. Each choice shows as a chip; **Clear all** removes them.
 - Select **Open** to open a guest's record. Use **Prev** and **Next** to page through.
 
 ### 10.4 Pathway Analytics
 
-One row for each clinical pathway: guests, active, urgent, inactive, guests needing AFA support and the average DIALOG score.
+One row for each clinical pathway, for the guests registered in the period: guests, active, urgent, inactive, guests needing AFA support and the average DIALOG score from assessments recorded in the period.
 
 ### 10.5 Caseload Reports
 
-- **Tiles:** total CMHW staff with guests, average caseload, highest caseload and overdue contacts.
-- **Caseload per CMHW:** assigned, active, urgent, overdue contacts, contacts in the last 30 days and a load bar for each worker.
-- Select **View** on a row to open the Guest Report filtered to that worker.
+- **Tiles:** total CMHW staff with guests, average caseload and highest caseload (all current), and overdue contacts that fell due in the period.
+- **Caseload per CMHW:** assigned, active and urgent guests (current), overdue contacts due in the period, contacts recorded in the period and a load bar for each worker.
+- Select **View** on a row to open the Guest Report filtered to that worker. It lists the worker's whole current caseload, so the Registered chip starts off.
 
 ### 10.6 DIALOG Outcomes
 
+Only DIALOG assessments recorded in the reporting period are counted.
+
 - **Tiles:** Baselines recorded, Reassessments (with the percentage of guests with a baseline), Avg score change (baseline against most recent) and Missing assessments (no reassessment yet).
-- **DIALOG score trend:** the average total score out of 77 each month.
+- **DIALOG score trend:** the average total score out of 77 each month of the period.
 - **Outcome dimensions:** a chart comparing the baseline and most recent average for each of the 11 areas.
 - **Average DIALOG scores by domain:** baseline, most recent and change for each area.
 
@@ -1114,7 +1148,7 @@ Every figure on the tab is recalculated for that group. "Showing:" names the gro
 
 ### 10.7 Data Quality
 
-The tab shows how many guests were checked and, for each check, how many guests are affected and what share of all guests that is.
+The tab checks the guests registered in the reporting period. It shows how many guests were checked and, for each check, how many are affected and what share that is.
 
 | Check | What it finds |
 | --- | --- |
@@ -1127,32 +1161,33 @@ The tab shows how many guests were checked and, for each check, how many guests 
 | No referral source recorded | Guests with no referral source |
 | Due for retention review | Guests with no activity for longer than the retention period (20 years by default) |
 
-Select **View guests** on a row to open the guests affected.
+Select **View guests** on a row to open the guests affected. The guest list shows the same registration dates in its banner, so its total matches the row; **Show all guests** removes them.
 
 ### 10.8 CPN Activity
 
-- **Tiles:** guests seen by the CPN in the period, active CPN caseload, new CPN referrals and referrals confirmed at MDT (with the number pending review).
-- **CPN referral pipeline:** new referrals requested, confirmed at MDT, declined at MDT and pending review, with the average days from referral to first CPN contact. These are internal referrals.
+- **Tiles:** guests seen by the CPN in the period, active CPN caseload (current), new CPN referrals and referrals confirmed at MDT (with how many of the period's referrals are still pending review).
+- **CPN referral pipeline:** referrals requested in the period, and how many of them were confirmed, declined or are still pending review, with the average days from a confirmed referral to the first CPN contact. These are internal referrals.
 - **CPN sessions:** CPN contacts in the period, distinct guests seen and referrals declined.
 - **Guests currently on CPN caseload:** pathway, referral date, CPN, number of CPN contacts, last CPN contact and next contact. Select **Open** to go to the guest's CPN Record tab.
 
 ### 10.9 Export History
 
-A list of reports already exported, with the report, the period, when it was exported and by whom.
+A list of the reports exported during the reporting period, with the report, the period it covered, when it was exported and by whom.
 
 ### 10.10 Export to Excel or CSV (Hub Managers)
 
-**Export to Excel** downloads a workbook for the applied date range. It has seven sheets: Summary, Demographics, Referral sources, Pathways, Caseload, DIALOG outcomes and Data quality.
+Both exports use the reporting period applied on the Reports page, so they match what the tabs show.
 
-1. Set and apply the date range on the Overview tab.
+**Export to Excel** downloads a workbook with seven sheets: Summary, Demographics, Referral sources, Pathways, Caseload, DIALOG outcomes and Data quality. Every sheet covers the reporting period. The Summary sheet has the Overview tiles and contact activity.
+
+1. Set and apply the reporting period.
 2. If needed, set a demographic group on the DIALOG Outcomes tab.
 3. Select **Export to Excel**.
 
-To choose a different period, or to download a CSV file:
+To download a CSV file:
 
-1. Select **Export CSV**.
-2. Set the **From** and **To** dates under **Reporting period**.
-3. Select **Download CSV** or **Export to Excel**.
+1. Select **Export CSV**. The dialog shows the reporting period it will use. To change it, close the dialog and apply new dates.
+2. Select **Download CSV** or **Export to Excel**.
 
 The CSV file has one row per guest registered in the period. Each row gives the guest's G-number, name, pathway, status, registration date, ethnicity, age group, gender, country of origin, referral source and referral type. Demographics and referral sources are included in every export.
 

@@ -152,10 +152,22 @@
       </div>
     </div>
 
-    @if (drillThroughLabel(); as label) {
+    @if (hasDrillThrough()) {
       <div class="drill-banner" role="status">
         <span class="drill-banner__text">
-          Showing guests: <strong>{{ label }}</strong>
+          @if (drillThroughLabel(); as label) {
+            Showing guests: <strong>{{ label }}</strong>
+            @if (periodLabel(); as period) {
+              <span class="drill-banner__count">· {{ period }}</span>
+            }
+            @if (registeredLabel(); as registered) {
+              <span class="drill-banner__count">· registered {{ registered }}</span>
+            }
+          } @else if (registeredLabel(); as registered) {
+            Showing guests registered <strong>{{ registered }}</strong>
+          } @else {
+            Showing guests: <strong>{{ periodLabel() }}</strong>
+          }
           @if (totalCount() !== null) {
             <span class="drill-banner__count">· {{ totalCount() }} {{ totalCount() === 1 ? 'guest' : 'guests' }}</span>
           }

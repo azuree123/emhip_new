@@ -10,11 +10,15 @@ public sealed class GetPathwayReportQueryHandler(IReportReadService reads) : IRe
         reads.GetPathwayReportAsync(request.HubId, request.From, request.To, cancellationToken);
 }
 
-/// <summary>DIALOG outcomes for the hub, or for a demographic cohort when <paramref name="Cohort"/> is set.</summary>
-public sealed record GetDialogOutcomesReportQuery(Guid HubId, ReportCohortFilter? Cohort = null) : IRequest<DialogOutcomesReportDto>;
+/// <summary>
+/// DIALOG outcomes for the hub, or for a demographic cohort when <paramref name="Cohort"/> is set,
+/// over the assessments recorded in <paramref name="Period"/> (every assessment when null).
+/// </summary>
+public sealed record GetDialogOutcomesReportQuery(Guid HubId, ReportCohortFilter? Cohort = null, ReportPeriod? Period = null)
+    : IRequest<DialogOutcomesReportDto>;
 
 public sealed class GetDialogOutcomesReportQueryHandler(IReportReadService reads) : IRequestHandler<GetDialogOutcomesReportQuery, DialogOutcomesReportDto>
 {
     public Task<DialogOutcomesReportDto> Handle(GetDialogOutcomesReportQuery request, CancellationToken cancellationToken) =>
-        reads.GetDialogOutcomesAsync(request.HubId, request.Cohort, cancellationToken);
+        reads.GetDialogOutcomesAsync(request.HubId, request.Cohort, request.Period, cancellationToken);
 }

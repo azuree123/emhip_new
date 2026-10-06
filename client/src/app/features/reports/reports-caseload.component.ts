@@ -1,6 +1,11 @@
-import { ChangeDetectionStrategy, Component, OnInit, computed, inject, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
+import { RouterLink } from '@angular/router';
+import { Subscription } from 'rxjs';
 import { CaseloadReportRowDto } from '../../core/api-models';
-import { ReportsApiService } from '../../core/reports-api.service';
+import { AuthService } from '../../core/auth.service';
+import { Permissions } from '../../core/permissions';
+import { ReportPeriod, ReportsApiService } from '../../core/reports-api.service';
+import { formatPeriod } from './report-meta';
 
 interface CaseloadRow extends CaseloadReportRowDto {
   initials: string;
@@ -15,16 +20,30 @@ interface CaseloadRow extends CaseloadReportRowDto {
  * the caseload DTO, so the fourth tile reports the real overdue-contacts
  * total instead. Each row's "View" opens the Guest Report tab filtered to that
  * CMHW (the design's Desktop69 drill-down, served by the real guest list).
+ *
+ * A caseload is who is assigned now, so the assigned / active / urgent columns and the first
+ * three tiles are current; overdue contacts (due in the period) and contacts recorded follow the
+ * reporting period. The assigned / active / urgent counts open that worker's guests in the guest
+ * list, as on the dashboard's caseload table; the contact counts have no guest list to open.
  */
 @Component({
   selector: 'app-reports-caseload',
   standalone: true,
+  imports: [RouterLink],
   templateUrl: './reports-caseload.component.html',
   styleUrl: './reports-caseload.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ReportsCaseloadComponent implements OnInit {
+export class ReportsCaseloadComponent {
   private readonly reportsApi = inject(ReportsApiService);
+
+  /** The Reports screen's applied reporting period (yyyy-MM-dd). */
+  readonly from = input.required<string>();
+  readonly to = input.required<string>();
+  readonly periodLabel = computed(() => formatPeriod(this.from(), this.to()));
+
+  /** Counts link to the guest list only for roles that can open it. */
+  protected readonly canViewGuests = inject(AuthService).hasPermission(Permissions.Guests.View);
 
   /** Emits the staffId whose guests should open in the Guest Report tab. */
   readonly viewGuests = output<string>();
@@ -65,10 +84,19 @@ export class ReportsCaseloadComponent implements OnInit {
     this.data().reduce((sum, r) => sum + r.overdueFollowUps, 0),
   );
 
-  ngOnInit(): void {
+  constructor() {
+    // Reload whenever a new period is applied; the cleanup drops a still-running older request.
+    effect((onCleanup) => {
+      const period: ReportPeriod = { from: this.from(), to: this.to() };
+      const sub = untracked(() => this.load(period));
+      onCleanup(() => sub.unsubscribe());
+    });
+  }
+
+  private load(period: ReportPeriod): Subscription {
     this.loading.set(true);
     this.error.set(null);
-    this.reportsApi.getCaseload().subscribe({
+    return this.reportsApi.getCaseload(period).subscribe({
       next: (rows) => {
         this.data.set(rows);
         this.loading.set(false);

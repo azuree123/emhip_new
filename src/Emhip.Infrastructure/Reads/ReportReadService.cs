@@ -6,43 +6,53 @@ using Microsoft.EntityFrameworkCore;
 namespace Emhip.Infrastructure.Reads;
 
 /// <summary>
-/// Report reads. Hub-wide counts come from the materialized dashboard snapshot (maintained by
-/// ReportMaterializerWorker) rather than a live GROUP BY over Guests. The row-level export
-/// streams guests directly via IAsyncEnumerable so GET /reports/export never buffers the full
-/// result set in memory.
+/// Report reads. Every Reports tab is scoped to the shared reporting period: guest counts cover
+/// the guests registered in it (status and pathway as they are now), activity covers what was
+/// recorded in it. Those are live aggregates over indexed columns (RegisteredAt, OccurredAt,
+/// AssessedAt), run only when the Reports screen asks — the dashboard keeps reading its
+/// materialized snapshot. The row-level export streams guests directly via IAsyncEnumerable so
+/// GET /reports/export never buffers the full result set in memory.
 /// </summary>
 public sealed class ReportReadService(EmhipDbContext db, Emhip.Application.Abstractions.IAppSettingsService settings) : IReportReadService
 {
     public async Task<PathwayReportDto> GetPathwayReportAsync(Guid hubId, DateOnly from, DateOnly to, CancellationToken cancellationToken = default)
     {
-        // Header KPI tiles and the pathway distribution — current counts, reused from the
-        // materialized dashboard snapshot (never a live GROUP BY over Guests).
-        var snapshot = await db.DashboardSnapshots.AsNoTracking()
-            .FirstOrDefaultAsync(s => s.HubId == hubId, cancellationToken);
+        var period = new ReportPeriod(from, to);
+        var fromOffset = period.Start;
+        var toOffset = period.End;
+
+        // Header KPI tiles and the pathway distribution: the guests registered in the period —
+        // the same rows the CSV export lists — by the status and pathway they are on now.
+        var registered = RegisteredGuests(hubId, period);
+
+        var byStatus = await registered
+            .GroupBy(g => g.Status)
+            .Select(grp => new { Status = grp.Key, Count = grp.Count(), Urgent = grp.Count(g => g.IsUrgent) })
+            .ToListAsync(cancellationToken);
+        int StatusCount(Domain.Enums.GuestStatus status) => byStatus.Where(r => r.Status == status).Sum(r => r.Count);
+        var statusCounts = new GuestStatusCountsDto(
+            byStatus.Sum(r => r.Count),
+            StatusCount(Domain.Enums.GuestStatus.Active),
+            StatusCount(Domain.Enums.GuestStatus.New),
+            StatusCount(Domain.Enums.GuestStatus.OnHold),
+            byStatus.Sum(r => r.Urgent));
 
         // Pathway distribution: the three clinical pathways only, always all three and in the
-        // service's order. The snapshot stores display labels, so match them back to the enum.
-        var distribution = snapshot is null
-            ? []
-            : System.Text.Json.JsonSerializer.Deserialize<List<Emhip.Application.Dashboards.PathwayDistributionDto>>(snapshot.PathwayDistributionJson) ?? [];
-        var totalAllocated = distribution.Sum(d => d.Count);
+        // service's order.
+        var byPathway = await registered
+            .Where(g => g.Pathway != null)
+            .GroupBy(g => g.Pathway!.Value)
+            .Select(grp => new { Pathway = grp.Key, Count = grp.Count() })
+            .ToListAsync(cancellationToken);
+        var totalAllocated = byPathway.Sum(p => p.Count);
         var categoryTotals = new[] { Domain.Enums.GuestPathway.MentalWellbeing, Domain.Enums.GuestPathway.ClinicalSupport, Domain.Enums.GuestPathway.CommunityRecovery }
             .Select(pathway =>
             {
-                var count = distribution.FirstOrDefault(d => d.Category == Emhip.Application.Guests.GuestPathwayLabels.For(pathway))?.Count ?? 0;
+                var count = byPathway.Where(p => p.Pathway == pathway).Sum(p => p.Count);
                 return new PathwayCategoryTotalDto(
                     pathway.ToString(), count, totalAllocated == 0 ? 0 : Math.Round(100.0 * count / totalAllocated, 1));
             })
             .ToList();
-        var statusCounts = new GuestStatusCountsDto(
-            snapshot?.TotalGuestsAcrossHub ?? 0,
-            snapshot?.TotalActiveGuests ?? 0,
-            snapshot?.PendingConversationGuests ?? 0,
-            snapshot?.InactiveGuests ?? 0,
-            snapshot?.UrgentGuests ?? 0);
-
-        var fromOffset = new DateTimeOffset(from.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
-        var toOffset = new DateTimeOffset(to.ToDateTime(TimeOnly.MaxValue), TimeSpan.Zero);
 
         var monthlyRegistrations = (await db.Guests.AsNoTracking()
                 .Where(g => g.HubId == hubId && g.RegisteredAt >= fromOffset && g.RegisteredAt <= toOffset)
@@ -75,7 +85,7 @@ public sealed class ReportReadService(EmhipDbContext db, Emhip.Application.Abstr
         var activity = new ReportActivityDto(guestsSeen, urgentFlagsRaised, followUpEntries, contactsRecorded);
 
         var ethnicityCounts = await db.GuestDemographics.AsNoTracking()
-            .Where(d => d.Ethnicity != null && db.Guests.Any(g => g.Id == d.GuestId && g.HubId == hubId))
+            .Where(d => d.Ethnicity != null && registered.Any(g => g.Id == d.GuestId))
             .GroupBy(d => d.Ethnicity!)
             .Select(g => new { Label = g.Key, Count = g.Count() })
             .OrderByDescending(g => g.Count)
@@ -93,17 +103,21 @@ public sealed class ReportReadService(EmhipDbContext db, Emhip.Application.Abstr
     }
 
     public async Task<DialogOutcomesReportDto> GetDialogOutcomesAsync(
-        Guid hubId, ReportCohortFilter? cohort = null, CancellationToken cancellationToken = default)
+        Guid hubId, ReportCohortFilter? cohort = null, ReportPeriod? period = null, CancellationToken cancellationToken = default)
     {
         // Every figure below is computed over the same guest set, so a demographic cohort
         // (e.g. Black African, 18–24) narrows the counts and the per-domain averages alike.
         var cohortGuests = CohortGuests(hubId, cohort);
         var cohortSize = await cohortGuests.CountAsync(cancellationToken);
 
+        // With a reporting period, only the assessments recorded inside it count: baselines taken
+        // in the period, and each guest's latest reassessment within it.
+        var assessments = DialogAssessmentsIn(period).Where(d => cohortGuests.Any(g => g.Id == d.GuestId));
+
         // Baselines = version 1; follow-up cohort = each guest's highest version above 1.
         // Guest-scoped cardinality (a handful of versions per guest), so a live aggregate is fine here.
-        var baseline = await db.DialogAssessments.AsNoTracking()
-            .Where(d => d.Version == 1 && cohortGuests.Any(g => g.Id == d.GuestId))
+        var baseline = await assessments
+            .Where(d => d.Version == 1)
             .GroupBy(_ => 1)
             .Select(g => new
             {
@@ -122,10 +136,9 @@ public sealed class ReportReadService(EmhipDbContext db, Emhip.Application.Abstr
             })
             .FirstOrDefaultAsync(cancellationToken);
 
-        var latest = await db.DialogAssessments.AsNoTracking()
+        var latest = await assessments
             .Where(d => d.Version > 1
-                && d.Version == db.DialogAssessments.Where(x => x.GuestId == d.GuestId).Max(x => x.Version)
-                && cohortGuests.Any(g => g.Id == d.GuestId))
+                && d.Version == assessments.Where(x => x.GuestId == d.GuestId).Max(x => x.Version))
             .GroupBy(_ => 1)
             .Select(g => new
             {
@@ -143,6 +156,11 @@ public sealed class ReportReadService(EmhipDbContext db, Emhip.Application.Abstr
                 MeetingsWithMhStaff = g.Average(d => (double)d.MeetingsWithMhStaff),
             })
             .FirstOrDefaultAsync(cancellationToken);
+
+        // Same set as the guest list's dialogAwaitingReassessment segment.
+        var awaitingReassessment = await cohortGuests.CountAsync(g =>
+            assessments.Any(d => d.GuestId == g.Id && d.Version == 1)
+            && !assessments.Any(d => d.GuestId == g.Id && d.Version > 1), cancellationToken);
 
         double? Round(double? value) => value is null ? null : Math.Round(value.Value, 2);
 
@@ -164,7 +182,8 @@ public sealed class ReportReadService(EmhipDbContext db, Emhip.Application.Abstr
                 Dim("medication", "Medication", baseline?.Medication, latest?.Medication),
                 Dim("meetingsWithMhStaff", "Meetings with MH staff", baseline?.MeetingsWithMhStaff, latest?.MeetingsWithMhStaff),
             ],
-            cohortSize);
+            cohortSize,
+            awaitingReassessment);
     }
 
     /// <summary>
@@ -194,11 +213,38 @@ public sealed class ReportReadService(EmhipDbContext db, Emhip.Application.Abstr
         return guests;
     }
 
-    public async Task<PathwayAnalyticsDto> GetPathwayAnalyticsAsync(Guid hubId, CancellationToken cancellationToken = default)
+    /// <summary>The hub's guests registered in <paramref name="period"/>; every guest when it is null.</summary>
+    private IQueryable<Domain.Entities.Guest> RegisteredGuests(Guid hubId, ReportPeriod? period)
+    {
+        var guests = db.Guests.AsNoTracking().Where(g => g.HubId == hubId && !g.IsDeleted);
+        if (period is null) return guests;
+
+        var start = period.Start;
+        var end = period.End;
+        return guests.Where(g => g.RegisteredAt >= start && g.RegisteredAt <= end);
+    }
+
+    /// <summary>DIALOG assessments recorded in <paramref name="period"/>; every assessment when it is null.</summary>
+    private IQueryable<Domain.Entities.DialogAssessment> DialogAssessmentsIn(ReportPeriod? period)
+    {
+        var assessments = db.DialogAssessments.AsNoTracking();
+        if (period is null) return assessments;
+
+        var start = period.Start;
+        var end = period.End;
+        return assessments.Where(d => d.AssessedAt >= start && d.AssessedAt <= end);
+    }
+
+    public async Task<PathwayAnalyticsDto> GetPathwayAnalyticsAsync(Guid hubId, ReportPeriod? period = null, CancellationToken cancellationToken = default)
     {
         // Live aggregates over indexed columns — this tab is loaded on demand, not on every dashboard hit.
-        var rows = await db.Guests.AsNoTracking()
-            .Where(g => g.HubId == hubId && g.Pathway != null)
+        // The guests registered in the period, by the pathway they are on now; the DIALOG average
+        // uses each guest's latest assessment recorded in the period.
+        var guests = RegisteredGuests(hubId, period);
+        var assessments = DialogAssessmentsIn(period);
+
+        var rows = await guests
+            .Where(g => g.Pathway != null)
             .GroupBy(g => g.Pathway!)
             .Select(grp => new
             {
@@ -211,15 +257,14 @@ public sealed class ReportReadService(EmhipDbContext db, Emhip.Application.Abstr
             })
             .ToListAsync(cancellationToken);
 
-        var dialogAverages = await db.DialogAssessments.AsNoTracking()
-            .Where(d => d.Version == db.DialogAssessments.Where(x => x.GuestId == d.GuestId).Max(x => x.Version))
-            .Join(db.Guests.Where(g => g.HubId == hubId && g.Pathway != null), d => d.GuestId, g => g.Id, (d, g) => new { g.Pathway, Total = d.MentalHealth + d.PhysicalHealth + d.JobSituation + d.Accommodation + d.LeisureActivities + d.FriendshipsSocialLife + d.RelationshipWithFamily + d.PersonalSafety + d.PracticalHelp + d.Medication + d.MeetingsWithMhStaff })
+        var dialogAverages = await assessments
+            .Where(d => d.Version == assessments.Where(x => x.GuestId == d.GuestId).Max(x => x.Version))
+            .Join(guests.Where(g => g.Pathway != null), d => d.GuestId, g => g.Id, (d, g) => new { g.Pathway, Total = d.MentalHealth + d.PhysicalHealth + d.JobSituation + d.Accommodation + d.LeisureActivities + d.FriendshipsSocialLife + d.RelationshipWithFamily + d.PersonalSafety + d.PracticalHelp + d.Medication + d.MeetingsWithMhStaff })
             .GroupBy(x => x.Pathway!)
             .Select(grp => new { Pathway = grp.Key, Avg = grp.Average(x => (double)x.Total) })
             .ToListAsync(cancellationToken);
 
-        var unallocated = await db.Guests.AsNoTracking()
-            .CountAsync(g => g.HubId == hubId && g.Pathway == null, cancellationToken);
+        var unallocated = await guests.CountAsync(g => g.Pathway == null, cancellationToken);
 
         return new PathwayAnalyticsDto(
             unallocated,
@@ -230,10 +275,17 @@ public sealed class ReportReadService(EmhipDbContext db, Emhip.Application.Abstr
                 .ToList());
     }
 
-    public async Task<IReadOnlyList<CaseloadReportRowDto>> GetCaseloadReportAsync(Guid hubId, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<CaseloadReportRowDto>> GetCaseloadReportAsync(Guid hubId, ReportPeriod? period = null, CancellationToken cancellationToken = default)
     {
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
-        var thirtyDaysAgo = DateTimeOffset.UtcNow.AddDays(-30);
+
+        // The caseload columns are always the current caseload. With a period, overdue contacts are
+        // the ones that fell due inside it and contacts are those recorded inside it; without one
+        // (the dashboard's live view), every overdue contact and the last 30 days of contacts.
+        var dueFrom = period?.From ?? DateOnly.MinValue;
+        var dueTo = period?.To ?? DateOnly.MaxValue;
+        var contactsFrom = period?.Start ?? DateTimeOffset.UtcNow.AddDays(-30);
+        var contactsTo = period?.End ?? DateTimeOffset.MaxValue;
 
         var rows = await db.Users.AsNoTracking()
             .Where(u => u.HubId == hubId && u.IsActive)
@@ -244,18 +296,21 @@ public sealed class ReportReadService(EmhipDbContext db, Emhip.Application.Abstr
                 db.Guests.Count(g => g.AssignedCmhwId == u.Id && g.Status == Domain.Enums.GuestStatus.Active),
                 db.Guests.Count(g => g.AssignedCmhwId == u.Id && g.IsUrgent),
                 // Past-due items are 'Overdue' once FollowUpSchedulerWorker has run, 'Scheduled' until then.
-                db.FollowUps.Count(f => f.AssigneeStaffId == u.Id && (f.Status == Domain.Enums.FollowUpStatus.Overdue
-                    || (f.Status == Domain.Enums.FollowUpStatus.Scheduled && f.DueDate < today))),
-                db.Contacts.Count(c => c.CreatedByStaffId == u.Id && c.OccurredAt >= thirtyDaysAgo)))
+                db.FollowUps.Count(f => f.AssigneeStaffId == u.Id && f.DueDate >= dueFrom && f.DueDate <= dueTo
+                    && (f.Status == Domain.Enums.FollowUpStatus.Overdue
+                        || (f.Status == Domain.Enums.FollowUpStatus.Scheduled && f.DueDate < today))),
+                db.Contacts.Count(c => c.CreatedByStaffId == u.Id && c.OccurredAt >= contactsFrom && c.OccurredAt <= contactsTo)))
             .ToListAsync(cancellationToken);
 
         // Ordering by a constructor-projected member doesn't translate — sort the (small) staff list in memory.
         return rows.OrderByDescending(r => r.AssignedGuests).ToList();
     }
 
-    public async Task<DataQualityReportDto> GetDataQualityReportAsync(Guid hubId, CancellationToken cancellationToken = default)
+    public async Task<DataQualityReportDto> GetDataQualityReportAsync(Guid hubId, ReportPeriod? period = null, CancellationToken cancellationToken = default)
     {
-        var guests = db.Guests.AsNoTracking().Where(g => g.HubId == hubId);
+        // The records registered in the period — the "View guests" drill-through passes the same
+        // registration window to the guest list, so its count matches the row.
+        var guests = RegisteredGuests(hubId, period);
         var total = await guests.CountAsync(cancellationToken);
         var ninetyDaysAgo = DateTimeOffset.UtcNow.AddDays(-90);
 
@@ -312,7 +367,8 @@ public sealed class ReportReadService(EmhipDbContext db, Emhip.Application.Abstr
         var newReferrals = await referralsInRange.CountAsync(cancellationToken);
         var confirmed = await referralsInRange.CountAsync(i => i.Status == Domain.Enums.MdtQueueStatus.Confirmed, cancellationToken);
         var declined = await referralsInRange.CountAsync(i => i.Status == Domain.Enums.MdtQueueStatus.Declined, cancellationToken);
-        var pending = await referrals.CountAsync(i => i.Status == Domain.Enums.MdtQueueStatus.Pending, cancellationToken);
+        // Requested in the range and still waiting — so the pipeline's stages add up to its requests.
+        var pending = await referralsInRange.CountAsync(i => i.Status == Domain.Enums.MdtQueueStatus.Pending, cancellationToken);
 
         // Guests currently on the CPN caseload: a confirmed referral, or the clinical profile's CPN flag.
         var caseload = await hubGuests
@@ -334,9 +390,11 @@ public sealed class ReportReadService(EmhipDbContext db, Emhip.Application.Abstr
                     .OrderBy(f => f.DueDate).Select(f => (DateOnly?)f.DueDate).FirstOrDefault()))
             .ToListAsync(cancellationToken);
 
-        // Referral → first CPN contact lead time, over confirmed referrals that have had a contact since.
+        // Referral → first CPN contact lead time, over the referrals confirmed in the range that
+        // have had a contact since.
         var confirmedRows = await referrals
-            .Where(i => i.Status == Domain.Enums.MdtQueueStatus.Confirmed && i.ReviewedAt != null)
+            .Where(i => i.Status == Domain.Enums.MdtQueueStatus.Confirmed && i.ReviewedAt != null
+                && i.ReviewedAt >= fromTs && i.ReviewedAt <= toTs)
             .Select(i => new
             {
                 i.ReviewedAt,
@@ -380,10 +438,10 @@ public sealed class ReportReadService(EmhipDbContext db, Emhip.Application.Abstr
     }
 
     public async Task<IReadOnlyList<DialogTrendPointDto>> GetDialogTrendAsync(
-        Guid hubId, ReportCohortFilter? cohort = null, CancellationToken cancellationToken = default)
+        Guid hubId, ReportCohortFilter? cohort = null, ReportPeriod? period = null, CancellationToken cancellationToken = default)
     {
         var cohortGuests = CohortGuests(hubId, cohort);
-        var points = await db.DialogAssessments.AsNoTracking()
+        var points = await DialogAssessmentsIn(period)
             .Where(d => cohortGuests.Any(g => g.Id == d.GuestId))
             .GroupBy(d => new { d.AssessedAt.Year, d.AssessedAt.Month })
             .Select(grp => new
@@ -399,10 +457,9 @@ public sealed class ReportReadService(EmhipDbContext db, Emhip.Application.Abstr
         return points.Select(p => new DialogTrendPointDto(p.Year, p.Month, Math.Round(p.Avg, 1), p.Count)).ToList();
     }
 
-    public async Task<IReadOnlyList<BreakdownSliceDto>> GetReferralSourcesAsync(Guid hubId, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<BreakdownSliceDto>> GetReferralSourcesAsync(Guid hubId, ReportPeriod? period = null, CancellationToken cancellationToken = default)
     {
-        var rows = await db.Guests.AsNoTracking()
-            .Where(g => g.HubId == hubId)
+        var rows = await RegisteredGuests(hubId, period)
             .GroupBy(g => g.ReferralSource ?? "Not recorded")
             .Select(grp => new { Label = grp.Key, Count = grp.Count() })
             .ToListAsync(cancellationToken);
@@ -474,9 +531,17 @@ public sealed class ReportReadService(EmhipDbContext db, Emhip.Application.Abstr
             Breakdown(secondary, secondaryInPeriod, r => Label(r.ReferralSubcategory)));
     }
 
-    public async Task<IReadOnlyList<ExportHistoryItemDto>> GetExportHistoryAsync(Guid hubId, CancellationToken cancellationToken = default) =>
-        await db.ExportRecords.AsNoTracking()
-            .Where(e => e.HubId == hubId)
+    public async Task<IReadOnlyList<ExportHistoryItemDto>> GetExportHistoryAsync(Guid hubId, ReportPeriod? period = null, CancellationToken cancellationToken = default)
+    {
+        var exports = db.ExportRecords.AsNoTracking().Where(e => e.HubId == hubId);
+        if (period is not null)
+        {
+            var start = period.Start;
+            var end = period.End;
+            exports = exports.Where(e => e.ExportedAt >= start && e.ExportedAt <= end);
+        }
+
+        return await exports
             .OrderByDescending(e => e.ExportedAt)
             .Take(50)
             .Select(e => new ExportHistoryItemDto(
@@ -484,6 +549,7 @@ public sealed class ReportReadService(EmhipDbContext db, Emhip.Application.Abstr
                 db.Users.Where(u => u.Id == e.ExportedByStaffId).Select(u => u.DisplayName).FirstOrDefault() ?? "Unknown",
                 e.ExportType, e.FromDate, e.ToDate))
             .ToListAsync(cancellationToken);
+    }
 
     public async IAsyncEnumerable<ReportExportRowDto> StreamExportAsync(
         Guid hubId, DateOnly from, DateOnly to, [EnumeratorCancellation] CancellationToken cancellationToken = default)

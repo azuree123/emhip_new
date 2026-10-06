@@ -74,6 +74,14 @@ export class GuestsApiService {
     segment?: string;
     /** Clinical pathway (MentalWellbeing / ClinicalSupport / CommunityRecovery) — not `pathway`. */
     clinicalPathway?: string;
+    /** The Reports screen's period: guests registered on these inclusive days (yyyy-MM-dd). */
+    registeredFrom?: string;
+    registeredTo?: string;
+    /** The window a report segment ending "InPeriod" is measured over (yyyy-MM-dd); all time when unset. */
+    periodFrom?: string;
+    periodTo?: string;
+    /** Exact referral source — the Reports Overview's referral-source rows. */
+    referralSource?: string;
     cursor?: string;
     pageSize?: number;
   }): Observable<KeysetPage<GuestListItemDto>> {
@@ -93,6 +101,11 @@ export class GuestsApiService {
     if (opts.ageMax !== undefined) params = params.set('ageMax', opts.ageMax);
     if (opts.segment) params = params.set('segment', opts.segment);
     if (opts.clinicalPathway) params = params.set('clinicalPathway', opts.clinicalPathway);
+    if (opts.registeredFrom) params = params.set('registeredFrom', opts.registeredFrom);
+    if (opts.registeredTo) params = params.set('registeredTo', opts.registeredTo);
+    if (opts.periodFrom) params = params.set('periodFrom', opts.periodFrom);
+    if (opts.periodTo) params = params.set('periodTo', opts.periodTo);
+    if (opts.referralSource) params = params.set('referralSource', opts.referralSource);
     if (opts.cursor) params = params.set('cursor', opts.cursor);
     if (opts.pageSize) params = params.set('pageSize', opts.pageSize);
     return this.http.get<KeysetPage<GuestListItemDto>>(this.base, { params });

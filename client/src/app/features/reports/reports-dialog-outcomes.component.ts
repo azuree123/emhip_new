@@ -2,15 +2,21 @@ import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
-  OnInit,
   computed,
+  effect,
   inject,
+  input,
   model,
   signal,
+  untracked,
 } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { DialogOutcomesReportDto, DialogTrendPointDto } from '../../core/api-models';
-import { ReportsApiService } from '../../core/reports-api.service';
+import { AuthService } from '../../core/auth.service';
+import { GuestSegment, GuestSegments } from '../../core/guest-segments';
+import { Permissions } from '../../core/permissions';
+import { ReportPeriod, ReportsApiService } from '../../core/reports-api.service';
 import {
   DemographicFilterValue,
   DemographicFiltersComponent,
@@ -18,7 +24,8 @@ import {
   demographicFilterCount,
   demographicFilterParams,
 } from '../../shared/demographic-filters.component';
-import { cohortLabel } from './report-meta';
+import { cohortLabel, formatPeriod } from './report-meta';
+import { GuestDrill, cohortDrill, periodDrill } from './report-drill';
 import { ReportsDomainTableComponent } from './reports-domain-table.component';
 
 /** Below this many reassessed guests, a cohort's averages can swing on a single score. */
@@ -108,20 +115,46 @@ const T_POINT_INSET = 8;
  * recomputes the outcomes and the trend for that cohort. The cohort is a two-way
  * model so the Reports page keeps it across tab switches and feeds it into the
  * Excel export's DIALOG outcomes sheet.
+ *
+ * Only the assessments recorded in the reporting period count: baselines taken in it, each
+ * guest's latest reassessment within it, and the trend's months inside it. The guest-count tiles
+ * open the guest list filtered to those guests — same period, same demographic cohort.
  */
 @Component({
   selector: 'app-reports-dialog-outcomes',
   standalone: true,
-  imports: [ReportsDomainTableComponent, DemographicFiltersComponent],
+  imports: [ReportsDomainTableComponent, DemographicFiltersComponent, RouterLink],
   templateUrl: './reports-dialog-outcomes.component.html',
   styleUrl: './reports-dialog-outcomes.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ReportsDialogOutcomesComponent implements OnInit {
+export class ReportsDialogOutcomesComponent {
   private readonly reportsApi = inject(ReportsApiService);
 
   /** Demographic cohort every figure on the tab is computed for; empty = all guests. */
   readonly cohort = model<DemographicFilterValue>(EMPTY_DEMOGRAPHIC_FILTERS);
+  /** The Reports screen's applied reporting period (yyyy-MM-dd). */
+  readonly from = input.required<string>();
+  readonly to = input.required<string>();
+  readonly periodLabel = computed(() => formatPeriod(this.from(), this.to()));
+
+  private readonly canViewGuests = inject(AuthService).hasPermission(Permissions.Guests.View);
+
+  /** A tile's guest-list drill-through: the segment over the period, for the selected cohort. */
+  private drill(count: number | undefined, segment: GuestSegment): GuestDrill | null {
+    if (!this.canViewGuests || !count) return null;
+    return periodDrill(segment, this.from(), this.to(), cohortDrill(this.cohort()));
+  }
+
+  readonly baselinesLink = computed(() =>
+    this.drill(this.outcomes()?.guestsWithBaseline, GuestSegments.DialogBaselineInPeriod),
+  );
+  readonly reassessedLink = computed(() =>
+    this.drill(this.outcomes()?.guestsWithFollowUp, GuestSegments.DialogReassessedInPeriod),
+  );
+  readonly missingLink = computed(() =>
+    this.drill(this.outcomes()?.guestsAwaitingReassessment, GuestSegments.DialogAwaitingReassessment),
+  );
 
   readonly outcomes = signal<DialogOutcomesReportDto | null>(null);
   readonly loading = signal(false);
@@ -142,7 +175,9 @@ export class ReportsDialogOutcomesComponent implements OnInit {
 
   /** Empty-state copy — "none recorded" reads wrong when it's only this cohort that has none. */
   readonly emptyText = computed(() =>
-    this.cohortActive() ? 'No DIALOG assessments for guests in this cohort.' : 'No DIALOG assessments recorded yet.',
+    this.cohortActive()
+      ? 'No DIALOG assessments in this period for guests in this cohort.'
+      : 'No DIALOG assessments recorded in this period.',
   );
 
   /** A filtered cohort whose reassessed guests are too few for the averages to mean much. */
@@ -161,26 +196,27 @@ export class ReportsDialogOutcomesComponent implements OnInit {
       this.outcomesSub?.unsubscribe();
       this.trendSub?.unsubscribe();
     });
+    // Re-query everything whenever the period or the cohort changes (including the first render).
+    effect(() => {
+      const period: ReportPeriod = { from: this.from(), to: this.to() };
+      const cohort = this.cohort();
+      untracked(() => this.load(period, cohort));
+    });
   }
 
-  ngOnInit(): void {
-    this.load();
-  }
-
-  /** The drawer's Apply / Clear all / chip "×" — re-query everything for the new cohort. */
+  /** The drawer's Apply / Clear all / chip "×" — the effect re-queries for the new cohort. */
   onCohortChange(value: DemographicFilterValue): void {
     this.cohort.set(value);
-    this.load();
   }
 
-  private load(): void {
-    const params = demographicFilterParams(this.cohort());
+  private load(period: ReportPeriod, cohort: DemographicFilterValue): void {
+    const params = demographicFilterParams(cohort);
 
     this.outcomesSub?.unsubscribe();
     this.outcomes.set(null);
     this.loading.set(true);
     this.error.set(null);
-    this.outcomesSub = this.reportsApi.getDialogOutcomes(params).subscribe({
+    this.outcomesSub = this.reportsApi.getDialogOutcomes(period, params).subscribe({
       next: (outcomes) => {
         this.outcomes.set(outcomes);
         this.loading.set(false);
@@ -195,7 +231,7 @@ export class ReportsDialogOutcomesComponent implements OnInit {
     this.trendSub?.unsubscribe();
     this.hoveredTrend.set(null);
     this.trendLoading.set(true);
-    this.trendSub = this.reportsApi.getDialogTrend(params).subscribe({
+    this.trendSub = this.reportsApi.getDialogTrend(period, params).subscribe({
       next: (points) => {
         this.trend.set(points);
         this.trendLoading.set(false);
@@ -213,12 +249,8 @@ export class ReportsDialogOutcomesComponent implements OnInit {
     return Math.round((o.guestsWithFollowUp / o.guestsWithBaseline) * 100);
   });
 
-  /** Guests with a baseline but no reassessment yet. */
-  readonly missingFollowUps = computed<number>(() => {
-    const o = this.outcomes();
-    if (!o) return 0;
-    return Math.max(o.guestsWithBaseline - o.guestsWithFollowUp, 0);
-  });
+  /** Guests baselined in the period with no reassessment in it (counted by the server). */
+  readonly missingFollowUps = computed<number>(() => this.outcomes()?.guestsAwaitingReassessment ?? 0);
 
   /** Total-score change (sum of per-domain averages, most recent minus baseline). */
   readonly improvement = computed<number | null>(() => {

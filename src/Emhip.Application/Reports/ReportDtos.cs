@@ -4,8 +4,8 @@ namespace Emhip.Application.Reports;
 public sealed record PathwayReportDto(
     DateOnly From,
     DateOnly To,
-    // Guests currently allocated to each of the three clinical pathways (enum name in Category),
-    // and how many guests are allocated in all. Not range-scoped, like the status tiles.
+    // Guests registered in the period, by the clinical pathway they are on now (enum name in
+    // Category), and how many of them are allocated in all — the same guests as the status tiles.
     IReadOnlyList<PathwayCategoryTotalDto> CategoryTotals,
     int TotalAllocated,
     GuestStatusCountsDto StatusCounts,
@@ -15,7 +15,10 @@ public sealed record PathwayReportDto(
 
 public sealed record PathwayCategoryTotalDto(string Category, int Count, double Percentage);
 
-/// <summary>Current hub-wide guest counts by status (point-in-time, not range-scoped) — the report header KPI tiles.</summary>
+/// <summary>
+/// The report header KPI tiles: guests registered in the reporting period, by their current status
+/// (Urgent counts those currently flagged). The CSV export lists exactly these guests.
+/// </summary>
 public sealed record GuestStatusCountsDto(int Total, int Active, int PendingConversation, int Inactive, int Urgent);
 
 /// <summary>"Guest registrations over time" chart — registrations per calendar month inside the range.</summary>
@@ -36,12 +39,17 @@ public sealed record DialogOutcomesReportDto(
     int GuestsWithFollowUp,
     IReadOnlyList<DialogDimensionDto> Dimensions,
     /// <summary>Guests in the cohort the figures were computed over — every hub guest when unfiltered.</summary>
-    int CohortGuests);
+    int CohortGuests,
+    /// <summary>
+    /// Guests whose baseline is in the period but who have no reassessment in it — counted
+    /// directly, since a period's reassessments can belong to guests baselined before it.
+    /// </summary>
+    int GuestsAwaitingReassessment);
 
 /// <summary>Averages are null when no assessments exist for that cohort.</summary>
 public sealed record DialogDimensionDto(string Key, string Label, double? BaselineAverage, double? LatestAverage);
 
-/// <summary>"Pathway Analytics" tab — per allocated clinical pathway.</summary>
+/// <summary>"Pathway Analytics" tab — per allocated clinical pathway, over the guests registered in the reporting period.</summary>
 public sealed record PathwayAnalyticsDto(
     int UnallocatedGuests,
     IReadOnlyList<PathwayAnalyticsRowDto> Pathways);
@@ -55,7 +63,11 @@ public sealed record PathwayAnalyticsRowDto(
     int AfaSupportCount,
     double? AvgLatestDialogTotal);
 
-/// <summary>"Caseload Reports" tab — per CMHW in the hub.</summary>
+/// <summary>
+/// "Caseload Reports" tab — per CMHW in the hub. Assigned / active / urgent are the current
+/// caseload; overdue contacts and contacts recorded follow the reporting period (see
+/// IReportReadService.GetCaseloadReportAsync).
+/// </summary>
 public sealed record CaseloadReportRowDto(
     Guid StaffId,
     string DisplayName,
@@ -63,9 +75,9 @@ public sealed record CaseloadReportRowDto(
     int ActiveGuests,
     int UrgentGuests,
     int OverdueFollowUps,
-    int ContactsLast30Days);
+    int ContactsInPeriod);
 
-/// <summary>"Data Quality" tab — completeness issues across the hub's guests.</summary>
+/// <summary>"Data Quality" tab — completeness issues across the guests registered in the reporting period.</summary>
 public sealed record DataQualityReportDto(int TotalGuests, IReadOnlyList<DataQualityIssueDto> Issues);
 
 public sealed record DataQualityIssueDto(string Key, string Label, int Count);
@@ -134,8 +146,12 @@ public sealed record CpnActivityReportDto(
     int NewCpnReferrals,
     int ReferralsConfirmedAtMdt,
     int ReferralsDeclinedAtMdt,
+    /// <summary>CPN referrals requested in the range that are still awaiting MDT review.</summary>
     int ReferralsPendingReview,
-    /// <summary>Average days from the referral being confirmed to the first CPN contact, over referrals with both.</summary>
+    /// <summary>
+    /// Average days from the referral being confirmed to the first CPN contact, over referrals
+    /// confirmed in the range that have had one.
+    /// </summary>
     double? AvgDaysReferralToContact,
     int CpnContactsInRange,
     IReadOnlyList<CpnCaseloadRowDto> Caseload);

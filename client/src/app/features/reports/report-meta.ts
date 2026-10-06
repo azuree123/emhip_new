@@ -34,6 +34,13 @@ export function toIsoDate(date: Date): string {
   return date.toISOString().slice(0, 10);
 }
 
+/** "6 Apr 2026 – 6 Oct 2026" — the reporting period as every tab and the export dialog label it. */
+export function formatPeriod(from: string, to: string): string {
+  const day = (iso: string) =>
+    new Date(`${iso}T00:00:00`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  return `${day(from)} – ${day(to)}`;
+}
+
 /**
  * The worksheets in the Excel workbook returned by ReportsApiService.exportWorkbook, in order —
  * kept in step with ExcelWorkbookBuilder. Demographics and referral sources are on every export.

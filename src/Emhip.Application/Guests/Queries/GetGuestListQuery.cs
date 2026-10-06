@@ -18,7 +18,15 @@ public sealed record GetGuestListQuery(
     // Dashboard/report drill-throughs: a GuestSegments key, and the clinical pathway (distinct
     // from the practical-support referral category that `Pathway` filters on).
     string? Segment = null,
-    GuestPathway? ClinicalPathway = null)
+    GuestPathway? ClinicalPathway = null,
+    // The Reports screen's reporting period — guests registered on these (inclusive) days.
+    DateOnly? RegisteredFrom = null,
+    DateOnly? RegisteredTo = null,
+    // The window the report segments ending "InPeriod" are measured over (GuestSegments).
+    DateOnly? PeriodFrom = null,
+    DateOnly? PeriodTo = null,
+    // The Reports Overview's referral-source rows.
+    string? ReferralSource = null)
     : IRequest<KeysetPage<GuestListItemDto>>;
 
 public sealed class GetGuestListQueryHandler(IGuestReadService reads) : IRequestHandler<GetGuestListQuery, KeysetPage<GuestListItemDto>>
@@ -28,7 +36,8 @@ public sealed class GetGuestListQueryHandler(IGuestReadService reads) : IRequest
             request.HubId, request.SearchText, request.Status, request.Cursor, request.PageSize,
             request.Pathway, request.HasRiskFlags, request.AssignedCmhwId, request.LastActivityWithinDays, request.UrgentOnly,
             request.Ethnicity, request.Gender, request.CountryOfOrigin, request.AgeMin, request.AgeMax,
-            request.Segment, request.ClinicalPathway, cancellationToken);
+            request.Segment, request.ClinicalPathway, request.RegisteredFrom, request.RegisteredTo,
+            request.PeriodFrom, request.PeriodTo, request.ReferralSource, cancellationToken);
 }
 
 public sealed record GetHubCmhwsQuery(Guid HubId) : IRequest<IReadOnlyList<CmhwOptionDto>>;

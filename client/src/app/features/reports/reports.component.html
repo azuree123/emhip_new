@@ -9,8 +9,8 @@
       @if (canExport) {
         <div class="header-card__actions">
           <!-- The source header offers "Export Excel" + "Export CSV": Excel downloads the
-               multi-sheet workbook for the applied range straight away, CSV opens the
-               export dialog where the period can be re-picked. -->
+               multi-sheet workbook for the applied period straight away, CSV opens the
+               export dialog for the same period. -->
           <button
             type="button"
             class="btn btn--secondary"
@@ -49,8 +49,8 @@
     <!-- Exports need reports.export (Hub Manager, Admin); other roles only view the tabs. -->
     @if (canExport) {
       <p class="header-card__export-note">
-        The Excel workbook contains {{ workbookSheets.length }} sheets — {{ workbookSheetList }} — for the
-        applied reporting period. Demographics and referral sources are included in every export.
+        The Excel workbook contains {{ workbookSheets.length }} sheets — {{ workbookSheetList }} — every one
+        for the reporting period, {{ periodLabel() }}. Demographics and referral sources are included in every export.
         @if (dialogCohortActive()) {
           <span class="header-card__export-cohort">DIALOG outcomes sheet filtered to: {{ dialogCohortLabel() }}</span>
         }
@@ -118,27 +118,35 @@
 
     <!-- Date-range filter row (Desktop74): From / To fields + red Apply button.
          The source's All CMHW / All Hub / All Pathway dropdowns are omitted here —
-         the date-ranged report endpoints only accept from/to. Shown only on the
-         date-ranged tabs (Overview, CPN Activity). -->
-    @if (showFilters()) {
-      <div class="filters">
-        <span class="filters__label">Filters:</span>
+         the report endpoints only accept from/to. One reporting period for the whole
+         screen: shown on every tab, kept across tab switches and used by both exports. -->
+    <div class="filters">
+      <span class="filters__label">Reporting period:</span>
 
-        <label class="filters__field">
-          <span class="filters__field-caption">From</span>
-          <input type="date" [value]="draftFrom()" [max]="draftTo()" (change)="onDraftFromChange($event)" />
-        </label>
+      <label class="filters__field">
+        <span class="filters__field-caption">From</span>
+        <input type="date" [value]="draftFrom()" [max]="draftTo()" (change)="onDraftFromChange($event)" />
+      </label>
 
-        <label class="filters__field">
-          <span class="filters__field-caption">To</span>
-          <input type="date" [value]="draftTo()" [min]="draftFrom()" [max]="maxDate" (change)="onDraftToChange($event)" />
-        </label>
+      <label class="filters__field">
+        <span class="filters__field-caption">To</span>
+        <input type="date" [value]="draftTo()" [min]="draftFrom()" [max]="maxDate" (change)="onDraftToChange($event)" />
+      </label>
 
-        <button type="button" class="btn btn--primary filters__apply" [disabled]="draftInvalid() || loading()" (click)="applyDates()">
-          Apply
-        </button>
-      </div>
-    }
+      <button type="button" class="btn btn--primary filters__apply" [disabled]="draftInvalid() || loading()" (click)="applyDates()">
+        Apply
+      </button>
+
+      <span class="filters__hint" [class.filters__hint--pending]="draftPending()" aria-live="polite">
+        @if (draftInvalid()) {
+          "From" must be on or before "To".
+        } @else if (draftPending()) {
+          Press Apply to update every tab and the exports.
+        } @else {
+          Applies to every tab and to exports.
+        }
+      </span>
+    </div>
   </section>
 
   @if (activeTab() === 'overview' && error()) {
@@ -164,25 +172,25 @@
       />
     }
     @case ('guest-report') {
-      <app-reports-guest-report [initialCmhw]="guestReportCmhw()" />
+      <app-reports-guest-report [initialCmhw]="guestReportCmhw()" [from]="from()" [to]="to()" />
     }
     @case ('pathway-analytics') {
-      <app-reports-pathway-analytics />
+      <app-reports-pathway-analytics [from]="from()" [to]="to()" />
     }
     @case ('caseload') {
-      <app-reports-caseload (viewGuests)="openCmhwGuests($event)" />
+      <app-reports-caseload [from]="from()" [to]="to()" (viewGuests)="openCmhwGuests($event)" />
     }
     @case ('dialog-outcomes') {
-      <app-reports-dialog-outcomes [(cohort)]="dialogCohort" />
+      <app-reports-dialog-outcomes [(cohort)]="dialogCohort" [from]="from()" [to]="to()" />
     }
     @case ('data-quality') {
-      <app-reports-data-quality />
+      <app-reports-data-quality [from]="from()" [to]="to()" />
     }
     @case ('cpn-activity') {
       <app-reports-cpn-activity [from]="from()" [to]="to()" />
     }
     @case ('export-history') {
-      <app-reports-export-history />
+      <app-reports-export-history [from]="from()" [to]="to()" />
     }
   }
 </div>

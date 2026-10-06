@@ -15,20 +15,15 @@
     <div class="export-dialog__body">
       <h3 class="export-dialog__section">Reporting period</h3>
       <div class="export-dialog__period">
-        <label class="export-dialog__field">
-          <span class="export-dialog__field-caption">From</span>
-          <input type="date" [value]="draftFrom()" [max]="draftTo()" (change)="onFromChange($event)" />
-        </label>
-        <label class="export-dialog__field">
-          <span class="export-dialog__field-caption">To</span>
-          <input type="date" [value]="draftTo()" [min]="draftFrom()" [max]="maxDate" (change)="onToChange($event)" />
-        </label>
+        <span class="export-dialog__period-value">{{ periodLabel() }}</span>
+        <span class="export-dialog__period-hint">The period the report tabs are showing — change it with the filter on the Reports page.</span>
       </div>
 
       <h3 class="export-dialog__section export-dialog__section--spaced">What you get</h3>
       <p class="export-dialog__note">
-        <strong>Excel</strong> — a workbook with {{ workbookSheets.length }} sheets for the selected period,
-        including demographic (ethnicity, age group, gender, country of origin) and referral-source breakdowns:
+        <strong>Excel</strong> — a workbook with {{ workbookSheets.length }} sheets, every one for this period and
+        matching the report tabs, including demographic (ethnicity, age group, gender, country of origin) and
+        referral-source breakdowns:
       </p>
       <ul class="export-dialog__sheets">
         @for (sheet of workbookSheets; track sheet) {

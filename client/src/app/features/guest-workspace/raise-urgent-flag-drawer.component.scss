@@ -1,0 +1,281 @@
+@use './guest-workspace.tokens' as t;
+
+// "Raise Urgent Flag" quick popup — the Urgent Case Details drawer's geometry (Desktop58 in
+// urgent-cases.component.scss): rgba(0,0,0,0.45) overlay, 520px right-hand white panel with 8px
+// left corners, 20px title over a 12px reference, rgb(255,245,244) notice card and 36px/4px
+// action buttons. The flag tiles reuse the Urgent Cases risk-flag pill colours when ticked.
+
+:host {
+  font-family: t.$font-primary;
+}
+
+.drawer-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  justify-content: flex-end;
+}
+
+.drawer {
+  width: 520px;
+  max-width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  box-sizing: border-box;
+  background: #fff;
+  border-radius: 8px 0 0 8px;
+  padding: 24px 30px 32px 29px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+
+  &__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  &__title {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 600;
+    line-height: 24px;
+    color: t.$color-text-primary;
+  }
+
+  &__ref {
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 24px;
+    color: t.$color-text-primary;
+  }
+
+  &__close {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    border: none;
+    background: transparent;
+    color: #212121;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+
+    &:hover {
+      background: #f0f0f0;
+    }
+  }
+
+  &__guest {
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 24px;
+    color: t.$color-text-primary;
+  }
+
+  &__form {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    flex: 1;
+  }
+
+  &__actions {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: auto;
+    padding-top: 12px;
+  }
+}
+
+.notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  border-radius: 8px;
+  background: rgb(255, 245, 244);
+  color: t.$color-text-primary;
+  padding: 14px 18px;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 20px;
+
+  &__icon {
+    flex-shrink: 0;
+    margin-top: 2px;
+    color: t.$color-brand-red-bright;
+  }
+
+  &--existing {
+    background: t.$color-gold-bg;
+
+    .notice__icon {
+      color: t.$color-gold-text;
+    }
+  }
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  border: none;
+  min-width: 0;
+
+  > span,
+  > legend {
+    padding: 0;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 24px;
+    color: t.$color-text-primary;
+  }
+
+  > legend {
+    margin-bottom: 8px;
+  }
+
+  textarea {
+    font-family: inherit;
+    font-size: 14px;
+    line-height: 22px;
+    color: t.$color-text-primary;
+    border: 1px solid #e5e5e5;
+    border-radius: 6px;
+    padding: 8px 12px;
+    resize: vertical;
+    min-height: 96px;
+
+    &:focus {
+      outline: none;
+      border-color: t.$color-brand;
+    }
+  }
+}
+
+.flag-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.flag-tile {
+  --flag-bg: #fff;
+  --flag-fg: #2a2a2a;
+
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 6px;
+  background: #fff;
+  box-shadow: inset 0 0 0 1px rgb(232, 232, 232);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+  color: t.$color-text-primary;
+  text-align: left;
+  cursor: pointer;
+
+  &:hover {
+    box-shadow: inset 0 0 0 1px rgb(200, 200, 200);
+  }
+
+  &:focus-visible {
+    outline: 2px solid t.$color-brand;
+    outline-offset: 1px;
+  }
+
+  &__box {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    border-radius: 4px;
+    box-shadow: inset 0 0 0 1.5px rgb(190, 190, 190);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+  }
+
+  &--on {
+    background: var(--flag-bg);
+    color: var(--flag-fg);
+    font-weight: 600;
+    box-shadow: inset 0 0 0 1.5px var(--flag-fg);
+
+    &:hover {
+      box-shadow: inset 0 0 0 1.5px var(--flag-fg);
+    }
+
+    .flag-tile__box {
+      background: var(--flag-fg);
+      box-shadow: none;
+    }
+  }
+}
+
+.banner-error {
+  border-radius: 8px;
+  background: rgb(255, 237, 237);
+  color: rgb(225, 38, 40);
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 20px;
+}
+
+.drawer-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 36px;
+  border-radius: 4px;
+  border: none;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: -0.005em;
+  line-height: 24px;
+  cursor: pointer;
+  white-space: nowrap;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  &--red {
+    background: t.$color-brand-red;
+    color: #fff;
+  }
+
+  &--outline {
+    background: #fff;
+    color: t.$color-text-primary;
+    box-shadow: inset 0 0 0 1px t.$color-border-strong;
+  }
+}
+
+@media (max-width: 640px) {
+  .drawer {
+    width: 100%;
+    border-radius: 0;
+    padding: 16px;
+  }
+
+  .flag-grid {
+    grid-template-columns: 1fr;
+  }
+}

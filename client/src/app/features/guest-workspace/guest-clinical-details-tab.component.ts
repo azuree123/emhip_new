@@ -18,8 +18,8 @@ import { formatDate } from './guest-workspace.util';
  * "Current service involvement" and "Risk & complexity" on the right, the latter closing
  * with the green/red "Last risk assessment" banner. Data comes from the versioned clinical
  * profile (getClinicalProfile) plus the risk-assessment history (getClinical); the
- * risk-assessment form lives inside the "Risk & complexity" card so the header's
- * "Raise Urgent Flag" action can deep-link into it via the openForm input.
+ * risk-assessment form lives inside the "Risk & complexity" card. The header's "Raise Urgent
+ * Flag" popup records an assessment too, and bumps reloadToken so this tab re-reads it.
  */
 @Component({
   selector: 'emhip-guest-clinical-details-tab',
@@ -32,8 +32,8 @@ export class GuestClinicalDetailsTabComponent {
   private readonly guestsApi = inject(GuestsApiService);
 
   readonly guestId = input.required<string>();
-  /** When true (header "Raise Urgent Flag" button), the risk-assessment form starts expanded. */
-  readonly openForm = input(false);
+  /** Bumped by the workspace when the header's "Raise Urgent Flag" popup records an assessment. */
+  readonly reloadToken = input(0);
   @Output() readonly refresh = new EventEmitter<void>();
 
   readonly profile = signal<ClinicalProfileDto | null>(null);
@@ -57,12 +57,10 @@ export class GuestClinicalDetailsTabComponent {
   constructor() {
     effect((onCleanup) => {
       const id = this.guestId();
+      this.reloadToken();
       let cancelled = false;
       onCleanup(() => (cancelled = true));
       this.load(id, () => cancelled);
-    });
-    effect(() => {
-      if (this.openForm()) this.showRiskForm.set(true);
     });
   }
 

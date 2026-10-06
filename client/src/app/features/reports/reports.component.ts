@@ -10,8 +10,9 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
+import { Subscription } from 'rxjs';
 import { BreakdownSliceDto, DialogOutcomesReportDto, PathwayReportDto } from '../../core/api-models';
-import { ReportsApiService } from '../../core/reports-api.service';
+import { ReportPeriod, ReportsApiService } from '../../core/reports-api.service';
 import { AuthService } from '../../core/auth.service';
 import { Permissions } from '../../core/permissions';
 import {
@@ -20,7 +21,7 @@ import {
   demographicFilterCount,
   demographicFilterParams,
 } from '../../shared/demographic-filters.component';
-import { WORKBOOK_SHEETS, cohortLabel, downloadBlob, toIsoDate } from './report-meta';
+import { WORKBOOK_SHEETS, cohortLabel, downloadBlob, formatPeriod, toIsoDate } from './report-meta';
 import { ReportsCaseloadComponent } from './reports-caseload.component';
 import { ReportsCpnActivityComponent } from './reports-cpn-activity.component';
 import { ReportsDataQualityComponent } from './reports-data-quality.component';
@@ -57,6 +58,10 @@ const TAB_REVEAL_INSET = 64;
  * activity) and Desktop49 (export history). The sidebar/header chrome is
  * rendered by the shared shell; this component owns the content area: header
  * card with section tabs and date filters, plus the per-tab report bodies.
+ *
+ * The From / To filter is the one reporting period for the whole screen: it shows on every
+ * tab, survives tab switches, drives every tab's figures (each tab says which of its figures
+ * are current rather than period-based) and is the period both exports are taken for.
  */
 @Component({
   selector: 'app-reports',
@@ -108,18 +113,16 @@ export class ReportsComponent implements OnInit {
     year: 'numeric',
   });
 
-  // Applied range (drives the date-ranged reports) vs draft range (bound to the
+  // Applied range (drives every tab and the exports) vs draft range (bound to the
   // inputs until the design's red "Apply" button is pressed — Desktop74 filter row).
   readonly from = signal<string>(this.monthsAgoIso(6));
   readonly to = signal<string>(this.maxDate);
   readonly draftFrom = signal<string>(this.from());
   readonly draftTo = signal<string>(this.to());
   readonly draftInvalid = computed(() => this.draftFrom() > this.draftTo());
-
-  /** The date filter row only applies to the date-ranged tabs. */
-  readonly showFilters = computed(
-    () => this.activeTab() === 'overview' || this.activeTab() === 'cpn-activity',
-  );
+  /** The inputs hold dates that haven't been applied yet. */
+  readonly draftPending = computed(() => this.draftFrom() !== this.from() || this.draftTo() !== this.to());
+  readonly periodLabel = computed(() => formatPeriod(this.from(), this.to()));
 
   readonly loading = signal(false);
   readonly error = signal<string | null>(null);
@@ -145,6 +148,12 @@ export class ReportsComponent implements OnInit {
 
   readonly exportOpen = signal(false);
 
+  // The Overview's three requests, cancelled when a newer period is applied so a slow response
+  // for the old period can't overwrite the new figures.
+  private reportSub?: Subscription;
+  private outcomesSub?: Subscription;
+  private referralSourcesSub?: Subscription;
+
   /** Header "Export Excel" — the multi-sheet workbook for the applied date range. */
   readonly workbookSheets = WORKBOOK_SHEETS;
   readonly workbookSheetList = WORKBOOK_SHEETS.join(', ');
@@ -169,12 +178,15 @@ export class ReportsComponent implements OnInit {
       for (const tab of Array.from(bar.children)) observer.observe(tab);
       destroyRef.onDestroy(() => observer.disconnect());
     });
+    destroyRef.onDestroy(() => {
+      this.reportSub?.unsubscribe();
+      this.outcomesSub?.unsubscribe();
+      this.referralSourcesSub?.unsubscribe();
+    });
   }
 
   ngOnInit(): void {
-    this.loadReport();
-    this.loadOutcomes();
-    this.loadReferralSources();
+    this.loadOverview();
   }
 
   selectTab(id: ReportTabId): void {
@@ -235,16 +247,18 @@ export class ReportsComponent implements OnInit {
     if (value) this.draftTo.set(value);
   }
 
+  /** Applies the drafted period to every tab — the open tab reloads through its from/to inputs. */
   applyDates(): void {
     if (this.draftInvalid()) return;
     this.from.set(this.draftFrom());
     this.to.set(this.draftTo());
-    this.loadReport();
+    this.loadOverview();
   }
 
   /**
    * Downloads the multi-sheet Excel workbook (WORKBOOK_SHEETS — spec §5.4) for the
-   * currently applied date range, with the DIALOG outcomes sheet for the DIALOG tab's cohort.
+   * currently applied date range — every sheet for that period — with the DIALOG outcomes
+   * sheet for the DIALOG tab's cohort.
    */
   exportExcel(): void {
     if (this.excelBusy()) return;
@@ -264,10 +278,19 @@ export class ReportsComponent implements OnInit {
     });
   }
 
-  loadReport(): void {
+  /** The Overview's figures — held here (not in the tab) so they survive tab switches. */
+  private loadOverview(): void {
+    const period: ReportPeriod = { from: this.from(), to: this.to() };
+    this.loadReport(period);
+    this.loadOutcomes(period);
+    this.loadReferralSources(period);
+  }
+
+  private loadReport(period: ReportPeriod): void {
+    this.reportSub?.unsubscribe();
     this.loading.set(true);
     this.error.set(null);
-    this.reportsApi.getPathwayReport(this.from(), this.to()).subscribe({
+    this.reportSub = this.reportsApi.getPathwayReport(period.from, period.to).subscribe({
       next: (report) => {
         this.report.set(report);
         this.loading.set(false);
@@ -280,10 +303,11 @@ export class ReportsComponent implements OnInit {
     });
   }
 
-  loadOutcomes(): void {
+  private loadOutcomes(period: ReportPeriod): void {
+    this.outcomesSub?.unsubscribe();
     this.outcomesLoading.set(true);
     this.outcomesError.set(null);
-    this.reportsApi.getDialogOutcomes().subscribe({
+    this.outcomesSub = this.reportsApi.getDialogOutcomes(period).subscribe({
       next: (outcomes) => {
         this.outcomes.set(outcomes);
         this.outcomesLoading.set(false);
@@ -296,9 +320,10 @@ export class ReportsComponent implements OnInit {
     });
   }
 
-  loadReferralSources(): void {
+  private loadReferralSources(period: ReportPeriod): void {
+    this.referralSourcesSub?.unsubscribe();
     this.referralSourcesLoading.set(true);
-    this.reportsApi.getReferralSources().subscribe({
+    this.referralSourcesSub = this.reportsApi.getReferralSources(period).subscribe({
       next: (slices) => {
         this.referralSources.set(slices);
         this.referralSourcesLoading.set(false);

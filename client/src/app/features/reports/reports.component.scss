@@ -297,6 +297,17 @@ $tab-bar-bg: rgb(246, 246, 246);
   &__apply {
     padding: 0 17px;
   }
+
+  &__hint {
+    font-weight: 500;
+    font-size: 12px;
+    line-height: 18px;
+    color: $ink-soft;
+
+    &--pending {
+      color: $maroon;
+    }
+  }
 }
 
 // ---- Responsive ----------------------------------------------------------

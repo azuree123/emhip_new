@@ -10,6 +10,15 @@
   display: flex;
   flex-direction: column;
   gap: 23px;
+
+  // What the KPI tiles below count — sits tight above them.
+  &__scope {
+    margin: 0 0 -13px;
+    font-weight: 500;
+    font-size: 12px;
+    line-height: 20px;
+    color: $ink-muted;
+  }
 }
 
 // Five status tiles (Total / New / Active / Inactive / Urgent) rather than the shared
@@ -30,6 +39,26 @@
   &--wide {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     margin-top: 12px;
+  }
+}
+
+a.dm-tile {
+  color: inherit;
+  text-decoration: none;
+}
+
+// A tile that opens the guests it counts (see the drill-through styles in _reports-shared).
+.dm-tile[href] {
+  cursor: pointer;
+  transition: box-shadow 120ms ease;
+
+  &:hover {
+    box-shadow: inset 0 0 0 1px $maroon;
+  }
+
+  &:focus-visible {
+    outline: 2px solid $maroon;
+    outline-offset: 2px;
   }
 }
 

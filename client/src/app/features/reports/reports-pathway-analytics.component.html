@@ -2,12 +2,19 @@
   <div class="report-card__head">
     <div>
       <h2 class="report-card__title">Pathway analytics</h2>
-      <p class="report-card__subtitle">Caseload and DIALOG averages per clinical pathway</p>
+      <p class="report-card__subtitle">
+        Guests registered {{ periodLabel() }}, by their current pathway · Avg DIALOG from assessments in the period
+      </p>
     </div>
     @if (unallocated() !== null) {
-      <span class="pathway-analytics__unallocated">
-        <strong>{{ unallocated() }}</strong>&nbsp;guest{{ unallocated() === 1 ? '' : 's' }} require allocation
-      </span>
+      <a
+        class="pathway-analytics__unallocated count-link"
+        [routerLink]="unallocatedLink() ? '/guests' : null"
+        [queryParams]="unallocatedLink()"
+        [attr.title]="unallocatedLink() ? 'Open these guests in the guest list' : null"
+      >
+        <strong>{{ unallocated() }}</strong>&nbsp;guest{{ unallocated() === 1 ? '' : 's' }} registered in the period require allocation
+      </a>
     }
   </div>
 
@@ -18,7 +25,7 @@
   @if (loading()) {
     <div class="report-card__state">Loading pathway analytics…</div>
   } @else if (rows().length === 0) {
-    <div class="report-card__state">No pathway allocations recorded yet.</div>
+    <div class="report-card__state">No guests registered in this period have a pathway allocated.</div>
   } @else {
     <div class="table-scroll">
       <table class="rpt-table pathway-table">
@@ -43,11 +50,22 @@
                   {{ row.label }}
                 </span>
               </td>
-              <td class="pathway-table__num pathway-table__strong">{{ row.totalGuests }}</td>
-              <td class="pathway-table__num">{{ row.activeGuests }}</td>
-              <td class="pathway-table__num" [class.pathway-table__urgent]="row.urgentGuests > 0">{{ row.urgentGuests }}</td>
-              <td class="pathway-table__num">{{ row.inactiveGuests }}</td>
-              <td class="pathway-table__num">{{ row.afaSupportCount }}</td>
+              <!-- Each count opens the guest list filtered to those guests. -->
+              <td class="pathway-table__num pathway-table__strong">
+                <a class="count-link" [routerLink]="row.links.total ? '/guests' : null" [queryParams]="row.links.total">{{ row.totalGuests }}</a>
+              </td>
+              <td class="pathway-table__num">
+                <a class="count-link" [routerLink]="row.links.active ? '/guests' : null" [queryParams]="row.links.active">{{ row.activeGuests }}</a>
+              </td>
+              <td class="pathway-table__num" [class.pathway-table__urgent]="row.urgentGuests > 0">
+                <a class="count-link" [routerLink]="row.links.urgent ? '/guests' : null" [queryParams]="row.links.urgent">{{ row.urgentGuests }}</a>
+              </td>
+              <td class="pathway-table__num">
+                <a class="count-link" [routerLink]="row.links.inactive ? '/guests' : null" [queryParams]="row.links.inactive">{{ row.inactiveGuests }}</a>
+              </td>
+              <td class="pathway-table__num">
+                <a class="count-link" [routerLink]="row.links.afa ? '/guests' : null" [queryParams]="row.links.afa">{{ row.afaSupportCount }}</a>
+              </td>
               <td class="pathway-table__num pathway-table__strong">{{ row.avgDialog }}</td>
             </tr>
           }

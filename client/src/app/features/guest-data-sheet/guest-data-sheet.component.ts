@@ -18,6 +18,15 @@ import { StaffPickerComponent } from '../../shared/staff-picker.component';
 import { AGE_BANDS } from '../../core/api-models';
 import { CLINICAL_PATHWAY_OPTIONS, clinicalPathwayLabel } from '../../core/demographic-options';
 import { GuestSegment, guestSegmentLabel, isGuestSegment } from '../../core/guest-segments';
+import { formatPeriod } from '../reports/report-meta';
+
+/** yyyy-MM-dd, as the Reports screen's period is passed on its drill-throughs. */
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+
+/** A from/to pair of drill-through query params, or null unless both are valid dates. */
+function isoRange(from: string, to: string): { from: string; to: string } | null {
+  return ISO_DATE.test(from) && ISO_DATE.test(to) ? { from, to } : null;
+}
 
 type StatusFilterValue = GuestStatus | 'All';
 type PathwayFilterValue = GuestPathway | 'All';
@@ -121,6 +130,15 @@ export class GuestDataSheetComponent {
    * (?clinicalPathway=…) simply sets the Pathway filter.
    */
   protected readonly segment = signal<GuestSegment | null>(null);
+  /**
+   * The Reports screen's period on a report drill-through (?registeredFrom=…&registeredTo=…):
+   * only guests registered on those days, so the list matches the report's count.
+   */
+  protected readonly registeredRange = signal<{ from: string; to: string } | null>(null);
+  /** A report KPI's reporting period (?periodFrom=…&periodTo=…) — the window its segment is measured over. */
+  protected readonly periodRange = signal<{ from: string; to: string } | null>(null);
+  /** The Reports Overview's referral-source rows (?referralSource=…). */
+  protected readonly referralSource = signal<string | null>(null);
   protected readonly exporting = signal(false);
   protected readonly exportError = signal<string | null>(null);
 
@@ -166,6 +184,13 @@ export class GuestDataSheetComponent {
         activityParam && ACTIVITY_OPTIONS.some((o) => o.value === activityParam) ? (activityParam as ActivityFilterValue) : 'All';
       const segmentParam = params.get('segment');
       const segment = isGuestSegment(segmentParam) ? segmentParam : null;
+      const registeredFrom = params.get('registeredFrom') ?? '';
+      const registeredTo = params.get('registeredTo') ?? '';
+      const registeredRange = isoRange(registeredFrom, registeredTo);
+      const currentRange = this.registeredRange();
+      const periodRange = isoRange(params.get('periodFrom') ?? '', params.get('periodTo') ?? '');
+      const currentPeriod = this.periodRange();
+      const referralSource = params.get('referralSource')?.trim() || null;
       const ageBandParam = params.get('ageBand') ?? '';
       const demographics: DemographicFilterValue = {
         ethnicity: params.get('ethnicity') ?? '',
@@ -182,6 +207,11 @@ export class GuestDataSheetComponent {
         cmhw !== this.cmhwFilter() ||
         activity !== this.activityFilter() ||
         segment !== this.segment() ||
+        registeredRange?.from !== currentRange?.from ||
+        registeredRange?.to !== currentRange?.to ||
+        periodRange?.from !== currentPeriod?.from ||
+        periodRange?.to !== currentPeriod?.to ||
+        referralSource !== this.referralSource() ||
         demographics.ethnicity !== current.ethnicity ||
         demographics.gender !== current.gender ||
         demographics.countryOfOrigin !== current.countryOfOrigin ||
@@ -193,6 +223,9 @@ export class GuestDataSheetComponent {
       this.cmhwFilter.set(cmhw);
       this.activityFilter.set(activity);
       this.segment.set(segment);
+      this.registeredRange.set(registeredRange);
+      this.periodRange.set(periodRange);
+      this.referralSource.set(referralSource);
       this.demographics.set(demographics);
       if (changed || !this.initialized) {
         this.initialized = true;
@@ -250,25 +283,57 @@ export class GuestDataSheetComponent {
     this.cmhwFilter.set(null);
     this.activityFilter.set('All');
     this.demographics.set(EMPTY_DEMOGRAPHIC_FILTERS);
-    this.segment.set(null);
+    this.clearDrillThroughState();
     this.resetAndLoad();
   }
 
-  /** Banner text for the drill-through the list was opened with, e.g. "SMI recorded". */
+  /** Banner text for the drill-through the list was opened with, e.g. "SMI recorded" or "Referral source: GP". */
   protected drillThroughLabel(): string | null {
     const segment = this.segment();
-    return segment ? guestSegmentLabel(segment) : null;
+    const source = this.referralSource();
+    const parts = [segment ? guestSegmentLabel(segment) : null, source ? `Referral source: ${source}` : null];
+    return parts.filter((p) => !!p).join(' · ') || null;
   }
 
-  /** "Show all guests" on the drill-through banner — drops the segment but keeps other filters. */
+  /** "6 Apr 2026 – 6 Oct 2026" for a report drill-through's registration window. */
+  protected registeredLabel(): string | null {
+    const range = this.registeredRange();
+    return range ? formatPeriod(range.from, range.to) : null;
+  }
+
+  /** "6 Apr 2026 – 6 Oct 2026" — the reporting period a report KPI's segment was measured over. */
+  protected periodLabel(): string | null {
+    const range = this.periodRange();
+    return range ? formatPeriod(range.from, range.to) : null;
+  }
+
+  protected hasDrillThrough(): boolean {
+    return !!(this.drillThroughLabel() || this.registeredLabel() || this.periodLabel());
+  }
+
+  /** "Show all guests" on the drill-through banner — drops the drill-through but keeps other filters. */
   protected clearDrillThrough(): void {
-    this.segment.set(null);
+    this.clearDrillThroughState();
     void this.router.navigate([], {
       relativeTo: this.route,
-      queryParams: { segment: null },
+      queryParams: {
+        segment: null,
+        registeredFrom: null,
+        registeredTo: null,
+        periodFrom: null,
+        periodTo: null,
+        referralSource: null,
+      },
       queryParamsHandling: 'merge',
     });
     this.resetAndLoad();
+  }
+
+  private clearDrillThroughState(): void {
+    this.segment.set(null);
+    this.registeredRange.set(null);
+    this.periodRange.set(null);
+    this.referralSource.set(null);
   }
 
   protected resetAndLoad(): void {
@@ -309,6 +374,11 @@ export class GuestDataSheetComponent {
     ageMax?: number;
     segment?: string;
     clinicalPathway?: string;
+    registeredFrom?: string;
+    registeredTo?: string;
+    periodFrom?: string;
+    periodTo?: string;
+    referralSource?: string;
   } {
     const status = this.statusFilter();
     const pathway = this.pathwayFilter();
@@ -324,6 +394,11 @@ export class GuestDataSheetComponent {
       urgent: this.urgentOnly() ? true : undefined,
       ...demographicFilterParams(this.demographics()),
       segment: this.segment() ?? undefined,
+      registeredFrom: this.registeredRange()?.from,
+      registeredTo: this.registeredRange()?.to,
+      periodFrom: this.periodRange()?.from,
+      periodTo: this.periodRange()?.to,
+      referralSource: this.referralSource() ?? undefined,
     };
   }
 

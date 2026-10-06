@@ -52,13 +52,14 @@ const RISK_FLAGS: RiskFlagDef[] = [
  * Risk-level / CMHW / overdue filters are applied client-side (the endpoint returns the full
  * active set).
  *
- * Every active case carries the same three actions: "Open Guest" (the workspace), "Add
- * contact" (the shared Add Contact popup — CaseworkNoteDrawerComponent, the same record the
- * workspace header writes) and "Open Crisis Episode" — the full-screen "Urgent Episode Record"
- * (Desktop57, UrgentEpisodeRecordComponent) with the episode tabs, intake notes, timeline,
- * outcome and audit trail. Clicking the card itself still opens the compact Desktop58 "Urgent
- * Case Details" drawer with the countdown and the working actions. A contact is always
- * recorded through the one popup, so the CPN toggle and the SBAR record are never bypassed.
+ * Every active case carries the same two actions: "Open Guest" (the workspace) and "View
+ * Crisis Episode" — the full-screen "Urgent Episode Record" (Desktop57,
+ * UrgentEpisodeRecordComponent) with the episode tabs, intake notes, timeline, outcome and audit
+ * trail. Clicking the card itself still opens the compact Desktop58 "Urgent Case Details" drawer
+ * with the countdown and the working actions, including "Add contact" (the shared Add Contact
+ * popup — CaseworkNoteDrawerComponent, the same record the workspace header writes). A contact
+ * is always recorded through the one popup, so the CPN toggle and the SBAR record are never
+ * bypassed.
  *
  * "Escalate to CMHT" (Desktop65 modal) and "Mark episode as resolved" (which now also captures
  * the pathway re-entry decision) are reachable from both the drawer and the record's open-episode
@@ -344,7 +345,7 @@ export class UrgentCasesComponent implements OnInit, OnDestroy {
 
   // ---- "Add contact" — the shared Add Contact popup (casework note) ----
 
-  /** Row button or drawer button: open the popup for that guest. */
+  /** Drawer button: open the popup for that guest. */
   openAddContact(c: UrgentCaseDto, event?: Event): void {
     event?.stopPropagation();
     if (!this.canAddContact) return;
@@ -578,7 +579,7 @@ export class UrgentCasesComponent implements OnInit, OnDestroy {
 
   // ---- "Urgent Episode Record" (Desktop57) ----
 
-  /** Row CTA "Open Crisis Episode": the guest's open episode, with the older ones as tabs. */
+  /** Row CTA "View Crisis Episode": the guest's open episode, with the older ones as tabs. */
   openCrisisEpisode(c: UrgentCaseDto, event?: Event): void {
     event?.stopPropagation();
     this.recordTarget.set({ guestId: c.guestId, episodeId: null });

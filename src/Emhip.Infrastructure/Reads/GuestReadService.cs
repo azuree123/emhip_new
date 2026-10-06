@@ -54,7 +54,35 @@ public sealed class GuestReadService(ISqlConnectionFactory connectionFactory, Em
         [GuestSegments.NoRecentContact] = "g.Status = 'Active' AND NOT EXISTS (SELECT 1 FROM Contacts c WHERE c.GuestId = g.Id AND c.OccurredAt >= @Since90)",
         [GuestSegments.AutoInactive] = "g.Status = 'OnHold'",
         [GuestSegments.PastRetention] = "ISNULL(g.LastActivityAt, g.RegisteredAt) < @RetentionCutoff",
+        // Reports screen KPIs — each mirrors the ReportReadService count it drills into, measured
+        // over @PeriodStart..@PeriodEnd (the reporting period; all time when none is passed).
+        [GuestSegments.AfaSupport] = "g.AfaSupportNeeded = 1",
+        [GuestSegments.ContactInPeriod] = "EXISTS (SELECT 1 FROM Contacts c WHERE c.GuestId = g.Id AND c.OccurredAt >= @PeriodStart AND c.OccurredAt <= @PeriodEnd)",
+        [GuestSegments.DialogBaselineInPeriod] = DialogBaselineInPeriod,
+        [GuestSegments.DialogReassessedInPeriod] = DialogReassessedInPeriod,
+        [GuestSegments.DialogAwaitingReassessment] = $"{DialogBaselineInPeriod} AND NOT {DialogReassessedInPeriod}",
+        [GuestSegments.CpnSeenInPeriod] = "EXISTS (SELECT 1 FROM CaseworkNotes n WHERE n.GuestId = g.Id AND n.IsCpnContact = 1 AND n.Status = 'Submitted' AND n.OccurredAt >= @PeriodStart AND n.OccurredAt <= @PeriodEnd)",
+        // The CPN caseload: the clinical profile's CPN flag, or a confirmed CPN referral.
+        [GuestSegments.CpnCaseload] =
+            "EXISTS (SELECT 1 FROM GuestClinicalProfiles cp WHERE cp.GuestId = g.Id AND cp.CpnInvolved = 1)"
+            + " OR EXISTS (SELECT 1 FROM MdtQueueItems i WHERE i.GuestId = g.Id AND i.Kind = 'CpnReferral' AND i.Status = 'Confirmed')",
+        [GuestSegments.CpnReferredInPeriod] = CpnReferralInPeriod(null),
+        [GuestSegments.CpnConfirmedInPeriod] = CpnReferralInPeriod("Confirmed"),
+        [GuestSegments.CpnDeclinedInPeriod] = CpnReferralInPeriod("Declined"),
+        [GuestSegments.CpnPendingInPeriod] = CpnReferralInPeriod("Pending"),
     };
+
+    private const string DialogBaselineInPeriod =
+        "EXISTS (SELECT 1 FROM DialogAssessments d WHERE d.GuestId = g.Id AND d.Version = 1 AND d.AssessedAt >= @PeriodStart AND d.AssessedAt <= @PeriodEnd)";
+
+    private const string DialogReassessedInPeriod =
+        "EXISTS (SELECT 1 FROM DialogAssessments d WHERE d.GuestId = g.Id AND d.Version > 1 AND d.AssessedAt >= @PeriodStart AND d.AssessedAt <= @PeriodEnd)";
+
+    /// <summary>A CPN referral requested in the period, optionally still in <paramref name="status"/>.</summary>
+    private static string CpnReferralInPeriod(string? status) =>
+        "EXISTS (SELECT 1 FROM MdtQueueItems i WHERE i.GuestId = g.Id AND i.Kind = 'CpnReferral'"
+        + (status is null ? string.Empty : $" AND i.Status = '{status}'")
+        + " AND i.RequestedAt >= @PeriodStart AND i.RequestedAt <= @PeriodEnd)";
 
     public async Task<KeysetPage<GuestListItemDto>> GetGuestListAsync(
         Guid hubId, string? searchText, GuestStatus? status, string? cursor, int pageSize,
@@ -62,6 +90,8 @@ public sealed class GuestReadService(ISqlConnectionFactory connectionFactory, Em
         int? lastActivityWithinDays = null, bool? urgentOnly = null,
         string? ethnicity = null, string? gender = null, string? countryOfOrigin = null,
         int? ageMin = null, int? ageMax = null, string? segment = null, GuestPathway? clinicalPathway = null,
+        DateOnly? registeredFrom = null, DateOnly? registeredTo = null,
+        DateOnly? periodFrom = null, DateOnly? periodTo = null, string? referralSource = null,
         CancellationToken cancellationToken = default)
     {
         var decodedCursor = KeysetCursor.Decode<GuestCursor>(cursor);
@@ -80,6 +110,12 @@ public sealed class GuestReadService(ISqlConnectionFactory connectionFactory, Em
         var since30 = DateTimeOffset.UtcNow.AddDays(-30);
         var since90 = DateTimeOffset.UtcNow.AddDays(-90);
         var retentionCutoff = DateTimeOffset.UtcNow.AddYears(-Math.Max(retentionYears, 1));
+        // The Reports screen's period: whole UTC days, inclusive — the same window the reports count.
+        DateTimeOffset? registeredAfter = registeredFrom is { } rf ? new DateTimeOffset(rf.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero) : null;
+        DateTimeOffset? registeredBefore = registeredTo is { } rt ? new DateTimeOffset(rt.ToDateTime(TimeOnly.MaxValue), TimeSpan.Zero) : null;
+        // The window the "…InPeriod" report segments are measured over; all time when not given.
+        var periodStart = periodFrom is { } pf ? new DateTimeOffset(pf.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero) : DateTimeOffset.MinValue;
+        var periodEnd = periodTo is { } pt ? new DateTimeOffset(pt.ToDateTime(TimeOnly.MaxValue), TimeSpan.Zero) : DateTimeOffset.MaxValue;
 
         var sql = $"""
             SELECT TOP (@FetchSize)
@@ -122,6 +158,9 @@ public sealed class GuestReadService(ISqlConnectionFactory connectionFactory, Em
                 AND (@BornOnOrBefore IS NULL OR g.DateOfBirth <= @BornOnOrBefore)
                 AND (@BornOnOrAfter IS NULL OR g.DateOfBirth >= @BornOnOrAfter)
                 AND (@LastContactAfter IS NULL OR lc.OccurredAt >= @LastContactAfter)
+                AND (@RegisteredAfter IS NULL OR g.RegisteredAt >= @RegisteredAfter)
+                AND (@RegisteredBefore IS NULL OR g.RegisteredAt <= @RegisteredBefore)
+                AND (@ReferralSource IS NULL OR g.ReferralSource = @ReferralSource)
                 AND (@ClinicalPathway IS NULL OR g.Pathway = @ClinicalPathway){segmentPredicate}
                 AND (
                     @HasCursor = 0
@@ -159,6 +198,11 @@ public sealed class GuestReadService(ISqlConnectionFactory connectionFactory, Em
             Id = decodedCursor?.Id ?? Guid.Empty,
             FetchSize = pageSize + 1,
             ClinicalPathway = clinicalPathwayName,
+            RegisteredAfter = registeredAfter,
+            RegisteredBefore = registeredBefore,
+            ReferralSource = referralSource,
+            PeriodStart = periodStart,
+            PeriodEnd = periodEnd,
             Since30 = since30,
             Since90 = since90,
             RetentionCutoff = retentionCutoff,
@@ -222,6 +266,9 @@ public sealed class GuestReadService(ISqlConnectionFactory connectionFactory, Em
                     OR EXISTS (SELECT 1 FROM AspNetUsers su WHERE su.Id = g.AssignedCmhwId AND su.DisplayName LIKE @SearchPattern))
                     AND (@AssignedCmhwId IS NULL OR g.AssignedCmhwId = @AssignedCmhwId)
                     AND (@UrgentOnly IS NULL OR g.IsUrgent = @UrgentOnly)
+                    AND (@RegisteredAfter IS NULL OR g.RegisteredAt >= @RegisteredAfter)
+                    AND (@RegisteredBefore IS NULL OR g.RegisteredAt <= @RegisteredBefore)
+                    AND (@ReferralSource IS NULL OR g.ReferralSource = @ReferralSource)
                     AND (@ClinicalPathway IS NULL OR g.Pathway = @ClinicalPathway){predicates}{segmentPredicate}
                 """;
             totalCount = await connection.ExecuteScalarAsync<int>(countSql, new
@@ -245,6 +292,11 @@ public sealed class GuestReadService(ISqlConnectionFactory connectionFactory, Em
                     ? (DateTimeOffset?)DateTimeOffset.UtcNow.AddDays(-lastActivityWithinDays.Value)
                     : null,
                 ClinicalPathway = clinicalPathwayName,
+                RegisteredAfter = registeredAfter,
+                RegisteredBefore = registeredBefore,
+                ReferralSource = referralSource,
+                PeriodStart = periodStart,
+                PeriodEnd = periodEnd,
                 Since30 = since30,
                 Since90 = since90,
                 RetentionCutoff = retentionCutoff,

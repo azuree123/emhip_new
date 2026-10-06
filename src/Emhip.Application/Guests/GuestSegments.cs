@@ -29,4 +29,18 @@ public static class GuestSegments
     public const string NoRecentContact = "noRecentContact";
     public const string AutoInactive = "autoOnHold";
     public const string PastRetention = "pastRetention";
+
+    // Reports screen KPIs. "…InPeriod" segments are measured over the reporting period passed as
+    // periodFrom / periodTo (GET /guests); without one they cover all time.
+    public const string AfaSupport = "afaSupport";
+    public const string ContactInPeriod = "contactInPeriod";
+    public const string DialogBaselineInPeriod = "dialogBaselineInPeriod";
+    public const string DialogReassessedInPeriod = "dialogReassessedInPeriod";
+    public const string DialogAwaitingReassessment = "dialogAwaitingReassessment";
+    public const string CpnSeenInPeriod = "cpnSeenInPeriod";
+    public const string CpnCaseload = "cpnCaseload";
+    public const string CpnReferredInPeriod = "cpnReferredInPeriod";
+    public const string CpnConfirmedInPeriod = "cpnConfirmedInPeriod";
+    public const string CpnDeclinedInPeriod = "cpnDeclinedInPeriod";
+    public const string CpnPendingInPeriod = "cpnPendingInPeriod";
 }

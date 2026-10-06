@@ -24,6 +24,7 @@ import { GuestAccessLogTabComponent } from './guest-access-log-tab.component';
 import { DocumentConfirmDialogComponent } from '../documents/document-confirm-dialog.component';
 import { documentErrorMessage } from '../../core/documents-api.service';
 import { CaseworkNoteDrawerComponent } from './casework-note-drawer.component';
+import { RaiseUrgentFlagDrawerComponent } from './raise-urgent-flag-drawer.component';
 import { formatDate, guestPathwayChip, initials, statusChip, urgentChip } from './guest-workspace.util';
 
 type TabId =
@@ -64,7 +65,8 @@ interface TabDef {
  *
  * The header's "Add Contact" button opens CaseworkNoteDrawerComponent — in the design that
  * button leads to the SBAR casework note (GuestOverviewTab2, bundle 50271-54563), not a bare
- * contact row.
+ * contact row. "Raise Urgent Flag" opens RaiseUrgentFlagDrawerComponent, a quick right-hand
+ * popup that records the flag as a risk assessment without leaving the current tab.
  *
  * The sidebar/top header bar from the source are intentionally omitted — those are
  * rendered once by AppShellComponent around every routed screen.
@@ -86,6 +88,7 @@ interface TabDef {
     GuestActionTabComponent,
     GuestNotesTabComponent,
     CaseworkNoteDrawerComponent,
+    RaiseUrgentFlagDrawerComponent,
     GuestAccessLogTabComponent,
     DocumentConfirmDialogComponent,
   ],
@@ -103,6 +106,8 @@ export class GuestWorkspaceComponent {
 
   /** "Add Contact" writes a casework note, so it follows the notes-add claim. */
   readonly canAddNote = this.auth.hasPermission(Permissions.Guests.NotesAdd);
+  /** A flag is recorded as a risk assessment, which the API guards with the clinical-edit claim. */
+  readonly canRaiseUrgent = this.auth.hasPermission(Permissions.Guests.ClinicalEdit);
   /** Subject-access export and anonymisation are data-protection duties — separate claims (UK GDPR). */
   readonly canExport = this.auth.hasPermission(Permissions.Guests.Export);
   readonly canErase = this.auth.hasPermission(Permissions.Guests.Erase);
@@ -133,8 +138,10 @@ export class GuestWorkspaceComponent {
 
   /** "Add Contact" header button opens the casework note drawer (bundle 50271-54563). */
   readonly noteDrawerOpen = signal(false);
-  /** Set by "Raise Urgent Flag" so Clinical Details opens with its risk form expanded. */
-  readonly pendingRiskForm = signal(false);
+  /** "Raise Urgent Flag" header button opens the quick flag popup. */
+  readonly urgentDrawerOpen = signal(false);
+  /** Bumped after a flag is raised so an open Clinical Details tab re-reads its assessments. */
+  readonly clinicalReloadToken = signal(0);
 
   readonly overview = signal<GuestOverviewDto | null>(null);
   readonly loading = signal(true);
@@ -201,7 +208,6 @@ export class GuestWorkspaceComponent {
   }
 
   selectTab(id: TabId): void {
-    this.pendingRiskForm.set(false);
     this.activeTab.set(id);
   }
 
@@ -211,11 +217,21 @@ export class GuestWorkspaceComponent {
     this.selectTab(step);
   }
 
-  /** Urgent flags are raised by recording a risk assessment — jump to Clinical Details with
-   *  its risk form open. */
+  /** Urgent flags are raised by recording a risk assessment — the popup does that in place. */
   raiseUrgentFlag(): void {
-    this.pendingRiskForm.set(true);
-    this.activeTab.set('clinical');
+    if (!this.canRaiseUrgent) return;
+    this.urgentDrawerOpen.set(true);
+  }
+
+  closeUrgentDrawer(): void {
+    this.urgentDrawerOpen.set(false);
+  }
+
+  /** The flag is on the record: refresh the header badge and any open Clinical Details tab. */
+  urgentFlagRaised(): void {
+    this.urgentDrawerOpen.set(false);
+    this.clinicalReloadToken.update((n) => n + 1);
+    this.reloadOverview();
   }
 
   openNoteDrawer(): void {
