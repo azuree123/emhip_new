@@ -12,7 +12,8 @@
 .drawer-overlay {
   position: fixed;
   inset: 0;
-  z-index: 60;
+  // Above the Urgent Cases details drawer (100) and episode record (110), which can open it.
+  z-index: 120;
   background: rgba(0, 0, 0, 0.45);
   display: flex;
   align-items: flex-start;

@@ -490,7 +490,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 100;
+  // Escalate / Resolve open from the details drawer (100) and the Urgent Episode Record (110),
+  // so they must sit above both.
+  z-index: 120;
 }
 
 .modal {
