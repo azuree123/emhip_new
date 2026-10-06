@@ -67,6 +67,14 @@ const CATEGORY_META: Record<string, { name: string; hint: string }> = {
     name: 'Emergency contact relationships',
     hint: 'Relationship options for a guest’s emergency contacts.',
   },
+  [LookupCategories.HubActivity]: {
+    name: 'Hub activities',
+    hint: 'Sessions offered under "Activity" when an Activity contact is logged in Add Contact.',
+  },
+  [LookupCategories.AfaAdviceType]: {
+    name: 'AFA advice types',
+    hint: 'Types of practical advice or signposting offered when an AFA contact is logged.',
+  },
 };
 
 /** Display order of the nav — same order the server seeds them in. */

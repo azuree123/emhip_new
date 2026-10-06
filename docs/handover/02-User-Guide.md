@@ -452,7 +452,7 @@ The tabs are Overview, Demographics, Initial Conversation, Clinical Details, DIA
 - **Tiles:** days since last activity, number of open scheduled contacts, and the DIALOG baseline score out of 77.
 - **Personal snapshot:** date of birth, ethnicity, phone, housing, economic activity, referral type and email.
 - **Pathway history:** current pathway, registration date, assigned CMHW and whether AFA support is needed.
-- **Recent activity history:** the 10 most recent contacts. Select **View all** to open the Contact History tab.
+- **Recent activity history:** the 10 most recent contacts, each with its type, who recorded it and when. Select **View all** to open the Contact History tab.
 - **Additional information:** any extra questions your hub has added. You can edit the answers if your role allows.
 
 ### 5.3 Demographics tab
@@ -543,7 +543,7 @@ This tab shows the current pathway, every pathway change and the caseload alloca
 2. Under **Select new pathway**, choose the new pathway. The current one cannot be chosen.
 3. Enter the **Date of change**. It cannot be in the future.
 4. Check **Assigned by**. It is set to you; change it to whoever authorised the change.
-5. Enter the **Reason for change**.
+5. Enter the **Reason for change**. This is required.
 6. Select **Change Pathway**.
 
 The old pathway stays in the history. The change is permanent and appears in reports.
@@ -580,7 +580,7 @@ A closed plan moves to **Previous care plans** and becomes read-only. You can th
 
 ### 5.9 Contact History tab
 
-This lists every contact recorded for the guest, newest first. Each shows the type (for example Phone call), the outcome, the date and time, and who recorded it. Select **Load more** to see older contacts.
+This lists every contact recorded for the guest, newest first. Each shows the type (for example Phone call), the date and time, and who recorded it. Select **Load more** to see older contacts.
 
 ### 5.10 CPN Record tab
 
@@ -686,7 +686,7 @@ The export is recorded on the guest's Access Log. Handle the file as confidentia
 
 ## 6. Recording a contact (Add Contact)
 
-Every contact with a guest is recorded with the **Add Contact** form. It uses the SBAR structure: Situation, Background, Assessment and Recommendation.
+Every contact with a guest is recorded with the **Add Contact** form. A casework or CPN contact uses the SBAR structure: Situation, Background, Assessment and Recommendation. Activity, Hospitality and AFA contacts use a short form instead (section 6.1).
 
 You can open the form from:
 
@@ -697,8 +697,24 @@ You can open the form from:
 
 ### 6.1 Record an ordinary contact
 
+Under **Select contact type**, choose **CASEWORK** (selected to start with), **ACTIVITY**, **HOSPITALITY** or **AFA**. The form changes to show only the fields for that type.
+
+| Contact type | Fields | Button |
+| --- | --- | --- |
+| Casework | The full SBAR note, described in the steps below | **Submit contact note** |
+| Activity | **Date**; **Activity** (the hub session the guest attended); **Describe the occasion**; **Observation notes**; **Risk check** | **Save activity contact** |
+| Hospitality | **Additional notes** (optional). The date and **Logged by** are filled in for you | **Confirm & log hospitality** |
+| AFA | **Date**; **Contact method**; **Description** (the type of practical advice or signposting given); **Risk check** | **Save AFA contact** |
+
+- **Activity:** choose the session from the **Activity** list. If it is not listed, leave the list empty and type it in **Describe the occasion**. One of the two is required. The list is kept in **Settings → Lookups → Hub activities**.
+- **Hospitality:** no clinical notes, no risk check and no next contact date are needed.
+- **AFA:** the **Description** list is kept in **Settings → Lookups → AFA advice types**.
+- Activity, Hospitality and AFA contacts have no actions, attachments, next contact date or MDT and CPN requests. If you need any of those, record a Casework contact instead.
+
+To record a casework contact:
+
 1. Open the form. It shows the guest's name at the top.
-2. Under **Select contact type**, choose **CASEWORK** (selected to start with), **ACTIVITY**, **HOSPITALITY** or **AFA**.
+2. Under **Select contact type**, leave **CASEWORK** selected.
 3. Choose the **Contact method**: Phone call, In person, Video call, Text message or Email. This is required.
 4. Check the **Date**. It is today by default. **Logged by** is filled in for you.
 5. Write the **Situation**: what is happening now.
@@ -706,7 +722,7 @@ You can open the form from:
 7. Write your **Assessment**. This is required to submit.
 8. Write the **Recommendation**: what needs to happen next.
 9. Under **Risk update**, choose **YES, HIGH RISK** or **NO RISK DETECTED** (the default). Add **Risk notes** if needed.
-10. Add actions, attachments, a next contact date or MDT and CPN requests as needed (sections 6.4 to 6.7).
+10. Enter the **Next contact date**, or tick **No next contact needed** (section 6.6). One of the two is required to submit. Add actions, attachments or MDT and CPN requests as needed (sections 6.4 to 6.7).
 11. Select **Submit contact note**.
 
 > **Warning:** Choosing **YES, HIGH RISK** records the risk on the note but does not raise the urgent flag. To raise it, use **Raise Urgent Flag** and record a risk assessment (section 5.5).
@@ -771,7 +787,9 @@ Attached files are also stored on the guest's Documents tab. They are locked wit
 
 ### 6.6 Next contact date
 
-Enter a **Next contact date** to schedule the next contact with this guest. When you submit, it becomes a scheduled contact assigned to you.
+A **Next contact date** is required to submit a casework or CPN contact note. When you submit, it becomes a scheduled contact assigned to you.
+
+If no further contact is planned, tick **No next contact needed** instead. The date is cleared and greyed out, nothing is scheduled, and the note on the Notes tab shows "No next contact needed". A draft can be saved without either.
 
 ### 6.7 MDT discussion and CPN referral
 

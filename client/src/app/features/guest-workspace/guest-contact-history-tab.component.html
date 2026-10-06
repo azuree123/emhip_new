@@ -72,14 +72,8 @@
 
               <div class="contact__body">
                 <div class="contact__head">
+                  <!-- No outcome tag: every contact the system logs today is a completed one. -->
                   <span class="contact__type">{{ humanize(contact.type) }}</span>
-                  <span
-                    class="chip"
-                    [style.background]="outcomeChip(contact.outcome).bg"
-                    [style.color]="outcomeChip(contact.outcome).fg"
-                  >
-                    {{ outcomeChip(contact.outcome).label }}
-                  </span>
                 </div>
                 <div class="contact__meta">
                   <span>{{ formatDateTime(contact.occurredAt) }}</span>

@@ -72,6 +72,13 @@ All 13 items in the feedback sheet are fixed and ready to retest. Numbers match 
 - **Next steps on the Demographics tab:** for a guest registered with the full five steps, it shows the initial conversation and DIALOG baseline as done (with dates) instead of always offering "Continue to Initial conversation".
 - **Registration detail fields:** in step 2, answering **No** (or **Unknown**) to allergies, family history, inpatient admission, previous diagnosis or a risk-history question clears and greys out its detail field; **Yes** or **Unsure** opens it again.
 
+**Changed on 6 October 2026**
+
+- **Reason for change is required** when changing a guest's pathway (Pathway History, **Add New Pathway**). Without one, the dialog shows "Enter the reason for changing the pathway." and nothing is saved.
+- **Next contact date is required in Add Contact.** Submitting without one is refused unless **No next contact needed** is ticked. Ticking it clears and greys out the date, and the note shows "No next contact needed" on the Notes tab. Drafts can still be saved without either.
+- **Add Contact shows the right fields for each contact type:** Activity, Hospitality and AFA now have their own short forms from the design (see Add Contact under Workflows). Before, all four types showed the full casework note. Admins can edit the two new lists in **Settings → Lookups**: **Hub activities** and **AFA advice types**.
+- **No outcome tags on contacts:** the Contact History tab, the Overview's Recent activity history and the Urgent Cases timeline no longer show "Successful" against each contact, because every contact the system logs is a completed one.
+
 ## Workflows
 
 Each part below lists what a screen offers, who can use it, and what you should see. "Guest" means a person using the hub's services. Statuses are **New** (initial conversation not done), **Active** and **Inactive** (no activity for 90 days). **Urgent** is a separate flag that sits beside the status.
@@ -180,9 +187,9 @@ The header shows the guest's status, an Urgent badge when flagged, their pathway
 | Initial Conversation | For a New guest, **Start Initial Conversation**; completing it makes the guest Active, the same as registration step 2 |
 | Clinical Details | **Edit details** (medication, diagnoses, SMI, CPN involved, Trust involvement); **Record assessment**: ticking any risk flags the guest urgent and opens an urgent case |
 | DIALOG Scores | **Record new** scores; baseline and latest are compared |
-| Pathway History | **Change Pathway** (date not in the future, "assigned by" required); **Reassign CMHW** |
+| Pathway History | **Change Pathway** (date not in the future; "assigned by" and reason required); **Reassign CMHW** |
 | Care Plan | Start or edit a plan with goals (each needs a description); **Close plan** as Completed or Superseded |
-| Contact History | Every contact logged for this guest |
+| Contact History | Every contact logged for this guest: type, date and who recorded it |
 | CPN Record | Referral, MDT decision, CPN allocated, Part 1 status and CPN sessions; **Add CPN contact** |
 | Documents | Where documents are managed now (Documents is no longer in the menu). **Upload document** links the file to this guest automatically, with no guest to choose. View details and versions, download, edit details, delete with a reason, and restore or permanently delete from the **Recycle bin** (Hub Manager, Admin) |
 | Actions & Reminders | Add, complete, edit and delete actions |
@@ -193,12 +200,12 @@ The header shows the guest's status, an Urgent badge when flagged, their pathway
 
 **Add Contact** is on the guest record and on each urgent case. For CPN staff it starts with **Is this a CPN contact?**
 
-- **Ordinary contact:**
-    - Contact type: Casework, Activity, Hospitality or AFA.
-    - Method and date.
-    - The SBAR note: Situation, Background, **Assessment** (required), Recommendation.
-    - Risk update, actions arising and attachments.
-    - The **Next contact date** becomes a scheduled contact.
+- **Ordinary contact:** the contact type changes the form.
+    - **Activity:** date, **Activity** (from the Hub activities list) or **Describe the occasion** (one is required), Observation notes and **Risk check**. Button **Save activity contact**.
+    - **Hospitality:** date and Logged by are auto-logged; optional Additional notes only. Button **Confirm & log hospitality**.
+    - **AFA:** date, **Contact method**, **Description** (from the AFA advice types list) and **Risk check**. Button **Save AFA contact**.
+    - The short forms have no SBAR note, actions, attachments, next contact date or referral switches.
+    - **Casework:** method and date; the SBAR note (Situation, Background, **Assessment** (required), Recommendation); risk update, actions arising and attachments; and the **Next contact date** (required unless **No next contact needed** is ticked), which becomes a scheduled contact.
 - **CPN contact:** choose **Initial assessment (Part 1)** or **Contact session**.
     - Part 1 is a ten-section assessment and can only be completed once per guest.
     - Contact sessions use the SBAR note, where Recommendation is also required.
@@ -335,11 +342,13 @@ Work through this in order: each part creates the data the next part needs. Tick
 - [ ] Register a second guest with **Register & schedule for later**; they are New, then complete their Initial Conversation from the record
 - [ ] Edit and save each Demographics section
 - [ ] Record new DIALOG scores and compare with the baseline
-- [ ] Change Pathway and reassign the CMHW
+- [ ] Change Pathway (first try without a reason; it is refused) and reassign the CMHW
 - [ ] Start a care plan with two goals, then close it
 - [ ] Add, complete and delete an action
 - [ ] Add a quick note and pin it to Overview
 - [ ] **Add Contact**: save a draft, attach a file, resume it from Notes, then submit with a next contact date and an action
+- [ ] **Add Contact** without a next contact date: submitting is refused; tick **No next contact needed** and submit; the note shows "No next contact needed" and no contact is scheduled
+- [ ] **Add Contact** as Activity (try without an activity first; it is refused), Hospitality and AFA; each shows only its own fields, and the Notes tab shows what was recorded
 - [ ] Add a contact with **Refer this guest to the CPN** and another with **Add this guest for MDT discussion**
 - [ ] Documents tab: upload, edit details, upload a new version, download, delete
 - [ ] Guest list: search by name, by G-number and by phone; use every filter and the demographics drawer; export the CSV

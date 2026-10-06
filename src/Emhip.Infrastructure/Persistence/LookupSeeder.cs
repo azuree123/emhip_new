@@ -45,6 +45,12 @@ public static class LookupSeeder
         public const string CpnReferralReason = "CpnReferralReason";
         /// <summary>"Reason for declining" on the MDT queue's Decline dialog.</summary>
         public const string MdtDeclineReason = "MdtDeclineReason";
+
+        // --- Add Contact short forms ---
+        /// <summary>"Activity *" on an Activity contact — the hub sessions a guest can attend.</summary>
+        public const string HubActivity = "HubActivity";
+        /// <summary>The "Description" on an AFA contact — the type of practical advice given.</summary>
+        public const string AfaAdviceType = "AfaAdviceType";
     }
 
     private static readonly (string Category, string[] Labels)[] Seed =
@@ -125,6 +131,14 @@ public static class LookupSeeder
         (Categories.MdtDeclineReason, [
             "Insufficient clinical evidence", "Manageable within CMHW support", "Already under NHS mental health team",
             "Guest declined CPN involvement", "Other",
+        ]),
+        (Categories.HubActivity, [
+            "Community lunch", "Coffee morning", "Peer support group", "Wellbeing workshop", "Art and craft session",
+            "Walking group", "Gardening club", "Cooking session", "Music session", "Other",
+        ]),
+        (Categories.AfaAdviceType, [
+            "Housing advice", "Employment support", "Benefits and financial support", "Food and essentials",
+            "Immigration and legal advice", "Signposting to another service", "Other practical advice",
         ]),
         (Categories.SecondaryReferralSubcategory, [
             "Community mental health team", "Crisis team", "Inpatient discharge", "Talking therapies",

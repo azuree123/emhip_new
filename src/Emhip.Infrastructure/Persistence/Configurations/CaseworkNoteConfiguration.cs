@@ -27,6 +27,9 @@ public class CaseworkNoteConfiguration : IEntityTypeConfiguration<CaseworkNote>
         builder.Property(n => n.GuestReportedChanges).HasMaxLength(2000);
         builder.Property(n => n.ServiceInvolvementChanges).HasMaxLength(2000);
         builder.Property(n => n.AdditionalNotes).HasMaxLength(4000);
+        builder.Property(n => n.ActivityType).HasMaxLength(200);
+        builder.Property(n => n.Occasion).HasMaxLength(500);
+        builder.Property(n => n.AdviceType).HasMaxLength(200);
         builder.Property(n => n.RowVersion).IsRowVersion();
     }
 }

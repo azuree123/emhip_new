@@ -150,4 +150,8 @@ export const LookupCategories = {
   CpnReferralReason: 'CpnReferralReason',
   /** "Reason for declining" on the MDT queue. */
   MdtDeclineReason: 'MdtDeclineReason',
+  /** "Activity *" on an Activity contact in the Add Contact popup. */
+  HubActivity: 'HubActivity',
+  /** The "Description" (type of advice given) on an AFA contact. */
+  AfaAdviceType: 'AfaAdviceType',
 } as const;

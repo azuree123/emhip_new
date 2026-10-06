@@ -53,6 +53,16 @@ public class CaseworkNote : AggregateRoot
     /// <summary>"Any specific risk factors to note this session".</summary>
     public string? RiskNotes { get; private set; }
 
+    // --- Short-form contact types (Activity, Hospitality, AFA) ---
+    /// <summary>"Activity *" — the hub activity the guest attended (HubActivity lookup label).</summary>
+    public string? ActivityType { get; private set; }
+
+    /// <summary>"Describe the occasion" — free text when the session is not in the activity list.</summary>
+    public string? Occasion { get; private set; }
+
+    /// <summary>The AFA "Description" — the type of practical advice or signposting given (AfaAdviceType lookup label).</summary>
+    public string? AdviceType { get; private set; }
+
     /// <summary>"Any changes the guest mentioned since you last spoke?"</summary>
     public string? GuestReportedChanges { get; private set; }
 
@@ -61,6 +71,12 @@ public class CaseworkNote : AggregateRoot
 
     public string? AdditionalNotes { get; private set; }
     public DateOnly? NextContactDate { get; private set; }
+
+    /// <summary>
+    /// The worker ticked "No next contact needed" — the explicit opt-out from the otherwise
+    /// mandatory next contact date, kept so the record shows it was a decision, not an omission.
+    /// </summary>
+    public bool NoNextContactRequired { get; private set; }
 
     public bool MdtDiscussionRequested { get; private set; }
     public bool CpnReferralRequested { get; private set; }
@@ -90,12 +106,23 @@ public class CaseworkNote : AggregateRoot
 
     public bool IsSubmitted => Status == CaseworkNoteStatus.Submitted;
 
+    /// <summary>
+    /// Casework and CPN contacts are full SBAR clinical notes. Activity, Hospitality and AFA are the
+    /// design's short forms — no session notes, so no assessment and no next contact date.
+    /// </summary>
+    public static bool IsClinicalNote(bool isCpnContact, CaseworkNoteCategory? category) =>
+        isCpnContact || category is not (CaseworkNoteCategory.Activity or CaseworkNoteCategory.Hospitality or CaseworkNoteCategory.Afa);
+
+    public bool RequiresClinicalNote => IsClinicalNote(IsCpnContact, Category);
+
     public void Update(
         CaseworkNoteCategory? category, ContactType contactMethod, DateTimeOffset occurredAt,
         string? situation, string? background, string? assessment, string? recommendation,
         CaseworkRiskLevel riskLevel, string? guestReportedChanges, string? serviceInvolvementChanges,
         string? additionalNotes, DateOnly? nextContactDate, bool mdtDiscussionRequested, bool cpnReferralRequested,
-        bool isCpnContact = false, CpnSessionType? cpnSessionType = null, string? riskNotes = null)
+        bool isCpnContact = false, CpnSessionType? cpnSessionType = null, string? riskNotes = null,
+        bool noNextContactRequired = false,
+        string? activityType = null, string? occasion = null, string? adviceType = null)
     {
         if (IsSubmitted)
         {
@@ -113,12 +140,17 @@ public class CaseworkNote : AggregateRoot
         GuestReportedChanges = guestReportedChanges;
         ServiceInvolvementChanges = serviceInvolvementChanges;
         AdditionalNotes = additionalNotes;
-        NextContactDate = nextContactDate;
+        // Opting out and booking a date contradict each other; the opt-out wins.
+        NextContactDate = noNextContactRequired ? null : nextContactDate;
+        NoNextContactRequired = noNextContactRequired;
         MdtDiscussionRequested = mdtDiscussionRequested;
         CpnReferralRequested = cpnReferralRequested;
         IsCpnContact = isCpnContact;
         CpnSessionType = cpnSessionType;
         RiskNotes = riskNotes;
+        ActivityType = activityType;
+        Occasion = occasion;
+        AdviceType = adviceType;
         UpdatedAt = DateTimeOffset.UtcNow;
     }
 
@@ -136,7 +168,7 @@ public class CaseworkNote : AggregateRoot
             throw new InvalidOperationException("This casework note has already been submitted.");
         }
 
-        if (string.IsNullOrWhiteSpace(Assessment))
+        if (RequiresClinicalNote && string.IsNullOrWhiteSpace(Assessment))
         {
             throw new InvalidOperationException("An assessment is required before a casework note can be submitted.");
         }

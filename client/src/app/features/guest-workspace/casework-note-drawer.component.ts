@@ -58,6 +58,8 @@ interface FollowUpForm {
   serviceInvolvementChanges: string;
   additionalNotes: string;
   nextContactDate: string;
+  /** "No next contact needed" — bypasses the otherwise mandatory next contact date. */
+  noNextContactRequired: boolean;
   mdtDiscussionRequested: boolean;
   cpnReferralRequested: boolean;
   /** "Refer this guest to the CPN" — sent to the Hub Manager's MDT queue for confirmation. */
@@ -67,6 +69,11 @@ interface FollowUpForm {
   /** "Add this guest for MDT discussion" — a discussion request on the MDT queue. */
   mdtDiscussionReason: string;
   mdtDiscussionDetails: string;
+  /** Activity short form: "Activity *" (HubActivity lookup) and "Describe the occasion". */
+  activityType: string;
+  occasion: string;
+  /** AFA short form: the "Description" — type of advice given (AfaAdviceType lookup). */
+  adviceType: string;
 }
 
 /** Part 1 — the initial clinical assessment, one per guest. */
@@ -153,6 +160,11 @@ function today(): string {
  *
  * Both halves share the header (CPN toggle, contact method, date, read-only "Logged by") and the
  * "Save as draft" / "Submit contact note" footer, and both save as resumable drafts.
+ *
+ * With the CPN toggle off, the chip picks the form (EMHIP - Additional Changes, "Add Contact"):
+ * CASEWORK is the full SBAR note; ACTIVITY (activity, occasion, observation notes, risk check),
+ * HOSPITALITY (optional notes only — no clinical notes, risk check or next contact) and AFA (type of
+ * advice, contact method, risk check) are short forms that skip the clinical sections entirely.
  *
  * Honest-data notes:
  * - The design's contact-type chips are CASEWORK, ACTIVITY, Hospitality and AFA. The API also has
@@ -325,12 +337,44 @@ export class CaseworkNoteDrawerComponent implements OnInit {
 
   readonly entryBadge = computed(() => (this.noteId() ? 'Draft' : 'New Entry'));
 
-  /** Which body the two toggles select: the chips only, Part 1, or Part 2. */
-  get body(): 'contactType' | 'sessionChoice' | 'assessment' | 'followUp' {
-    if (!this.header.isCpnContact) return 'contactType';
+  /**
+   * Which body the toggles select: the casework note ('contactType'), one of the three short
+   * forms, the CPN session choice, Part 1, or Part 2.
+   */
+  get body(): 'contactType' | 'activity' | 'hospitality' | 'afa' | 'sessionChoice' | 'assessment' | 'followUp' {
+    if (!this.header.isCpnContact) {
+      if (this.header.category === 'Activity') return 'activity';
+      if (this.header.category === 'Hospitality') return 'hospitality';
+      if (this.header.category === 'Afa') return 'afa';
+      return 'contactType';
+    }
     if (this.header.sessionType === 'InitialAssessment') return 'assessment';
     if (this.header.sessionType === 'FollowUpSession') return 'followUp';
     return 'sessionChoice';
+  }
+
+  /** Activity, Hospitality and AFA: no SBAR, actions, attachments, next contact or referrals. */
+  get isShortForm(): boolean {
+    return this.body === 'activity' || this.body === 'hospitality' || this.body === 'afa';
+  }
+
+  /** Activity and Hospitality happen at the hub, so the design drops the contact method for them. */
+  get showContactMethod(): boolean {
+    return this.body !== 'activity' && this.body !== 'hospitality';
+  }
+
+  /** The design's per-type submit button. */
+  get submitLabel(): string {
+    switch (this.body) {
+      case 'activity':
+        return 'Save activity contact';
+      case 'hospitality':
+        return 'Confirm & log hospitality';
+      case 'afa':
+        return 'Save AFA contact';
+      default:
+        return 'Submit contact note';
+    }
   }
 
   /** A submitted Part 1 is part of the clinical record and is shown, not edited. */
@@ -366,6 +410,8 @@ export class CaseworkNoteDrawerComponent implements OnInit {
       'CpnDiagnosisStatus',
       'CpnFollowUpFrequency',
       'CpnReferralReason',
+      'HubActivity',
+      'AfaAdviceType',
     ];
 
     forkJoin({
@@ -424,6 +470,7 @@ export class CaseworkNoteDrawerComponent implements OnInit {
       serviceInvolvementChanges: '',
       additionalNotes: '',
       nextContactDate: '',
+      noNextContactRequired: false,
       mdtDiscussionRequested: false,
       cpnReferralRequested: false,
       cpnReferralReason: '',
@@ -431,6 +478,9 @@ export class CaseworkNoteDrawerComponent implements OnInit {
       cpnReferralRationale: '',
       mdtDiscussionReason: '',
       mdtDiscussionDetails: '',
+      activityType: '',
+      occasion: '',
+      adviceType: '',
     };
   }
 
@@ -512,6 +562,7 @@ export class CaseworkNoteDrawerComponent implements OnInit {
       serviceInvolvementChanges: dto.serviceInvolvementChanges ?? '',
       additionalNotes: dto.additionalNotes ?? '',
       nextContactDate: toDateInput(dto.nextContactDate),
+      noNextContactRequired: dto.noNextContactRequired,
       mdtDiscussionRequested: dto.mdtDiscussionRequested,
       cpnReferralRequested: dto.cpnReferralRequested,
       // The referral / discussion detail is not stored on the note itself (it becomes the MDT
@@ -521,6 +572,9 @@ export class CaseworkNoteDrawerComponent implements OnInit {
       cpnReferralRationale: '',
       mdtDiscussionReason: '',
       mdtDiscussionDetails: '',
+      activityType: dto.activityType ?? '',
+      occasion: dto.occasion ?? '',
+      adviceType: dto.adviceType ?? '',
     };
   }
 
@@ -606,10 +660,21 @@ export class CaseworkNoteDrawerComponent implements OnInit {
 
   setCategory(category: CaseworkNoteCategory): void {
     this.header.category = category;
+    // Activity and Hospitality are in-person at the hub (the design shows no contact method), and
+    // a hospitality contact's date is auto-logged as today.
+    if (category === 'Activity' || category === 'Hospitality') this.header.contactMethod = 'InPerson';
+    if (category === 'Hospitality') this.header.occurredOn = today();
+    this.saveError.set(null);
   }
 
   setRisk(level: CaseworkRiskLevel): void {
     this.followUp.riskLevel = level;
+  }
+
+  /** Ticking the opt-out clears the date so the two never contradict each other. */
+  setNoNextContact(value: boolean): void {
+    this.followUp.noNextContactRequired = value;
+    if (value) this.followUp.nextContactDate = '';
   }
 
   toggleMdt(): void {
@@ -852,6 +917,13 @@ export class CaseworkNoteDrawerComponent implements OnInit {
       return 'Select a contact type.';
     }
 
+    if (this.isShortForm) {
+      if (submit && this.body === 'activity' && !this.followUp.activityType && !this.followUp.occasion.trim()) {
+        return 'Select the hub activity the guest attended, or describe the occasion if it is not listed.';
+      }
+      return null;
+    }
+
     if (this.body === 'assessment') {
       if (!submit) return null;
       const a = this.assessment;
@@ -885,6 +957,9 @@ export class CaseworkNoteDrawerComponent implements OnInit {
     if (submit && this.body === 'contactType' && !this.followUp.assessment.trim()) {
       return 'Your assessment of what is going on is required to submit a contact note.';
     }
+    if (submit && !this.followUp.nextContactDate && !this.followUp.noNextContactRequired) {
+      return 'Enter the next contact date, or tick "No next contact needed".';
+    }
     if (submit && this.followUp.cpnReferralRequested && !this.followUp.cpnReferralReason) {
       return 'Select the primary reason for the CPN referral.';
     }
@@ -916,6 +991,7 @@ export class CaseworkNoteDrawerComponent implements OnInit {
   }
 
   private toNoteInput(): CaseworkNoteInput {
+    if (this.isShortForm) return this.toShortFormInput();
     const actions: CaseworkActionInput[] = this.actions
       .filter((a) => a.description.trim() && a.dueDate)
       .map((a) => ({
@@ -940,7 +1016,8 @@ export class CaseworkNoteDrawerComponent implements OnInit {
       guestReportedChanges: this.trimmed(this.followUp.guestReportedChanges),
       serviceInvolvementChanges: this.trimmed(this.followUp.serviceInvolvementChanges),
       additionalNotes: this.trimmed(this.followUp.additionalNotes),
-      nextContactDate: this.followUp.nextContactDate || null,
+      nextContactDate: this.followUp.noNextContactRequired ? null : this.followUp.nextContactDate || null,
+      noNextContactRequired: this.followUp.noNextContactRequired,
       mdtDiscussionRequested: this.followUp.mdtDiscussionRequested,
       cpnReferralRequested: this.followUp.cpnReferralRequested,
       actions,
@@ -949,6 +1026,33 @@ export class CaseworkNoteDrawerComponent implements OnInit {
       cpnReferralRationale: this.followUp.cpnReferralRequested ? this.trimmed(this.followUp.cpnReferralRationale) : null,
       mdtDiscussionReason: this.followUp.mdtDiscussionRequested ? this.trimmed(this.followUp.mdtDiscussionReason) : null,
       mdtDiscussionDetails: this.followUp.mdtDiscussionRequested ? this.trimmed(this.followUp.mdtDiscussionDetails) : null,
+    };
+  }
+
+  /**
+   * Activity, Hospitality and AFA save only their own fields, so SBAR text typed under another
+   * chip before switching is not filed against a short-form contact.
+   */
+  private toShortFormInput(): CaseworkNoteInput {
+    const body = this.body;
+    return {
+      category: this.header.category,
+      contactMethod: this.header.contactMethod as ContactType,
+      occurredAt: this.occurredAtIso(),
+      // Hospitality has no risk check; the field is not nullable, so it keeps the default.
+      riskLevel: body === 'hospitality' ? 'NoRiskDetected' : this.followUp.riskLevel,
+      isCpnContact: false,
+      cpnSessionType: null,
+      // Activity's "Observation notes" and Hospitality's "Additional notes" share the notes field.
+      additionalNotes: body === 'afa' ? null : this.trimmed(this.followUp.additionalNotes),
+      nextContactDate: null,
+      noNextContactRequired: false,
+      mdtDiscussionRequested: false,
+      cpnReferralRequested: false,
+      actions: [],
+      activityType: body === 'activity' ? this.followUp.activityType || null : null,
+      occasion: body === 'activity' ? this.trimmed(this.followUp.occasion) : null,
+      adviceType: body === 'afa' ? this.followUp.adviceType || null : null,
     };
   }
 

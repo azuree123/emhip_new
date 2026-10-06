@@ -127,6 +127,11 @@ export class GuestNotesTabComponent {
     return CATEGORY_CHIPS[category] ?? { label: humanize(category), bg: '#f0f0f0', fg: '#646464' };
   }
 
+  /** Activity, Hospitality and AFA contacts are short forms with no SBAR note to show. */
+  isShortForm(note: CaseworkNoteDto): boolean {
+    return !note.isCpnContact && (note.category === 'Activity' || note.category === 'Hospitality' || note.category === 'Afa');
+  }
+
   riskChip(level: CaseworkRiskLevel): StatusChip {
     return RISK_CHIPS[level] ?? { label: humanize(level), bg: '#f0f0f0', fg: '#646464' };
   }

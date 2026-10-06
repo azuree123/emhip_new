@@ -162,10 +162,8 @@
                 </div>
                 <div class="timeline-item__content">
                   <div class="timeline-item__head">
+                    <!-- No outcome tag: every contact the system logs today is a completed one. -->
                     <span class="timeline-item__type">{{ humanize(contact.type) }}</span>
-                    <span class="chip" [style.background]="outcomeChip(contact.outcome).bg" [style.color]="outcomeChip(contact.outcome).fg">
-                      {{ outcomeChip(contact.outcome).label }}
-                    </span>
                   </div>
                   <div class="timeline-item__meta">
                     <span>{{ contact.createdByName }}</span>

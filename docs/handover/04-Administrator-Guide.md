@@ -452,6 +452,8 @@ The screen lists every category on the left. Only the lists below feed a screen 
 | **Cpn referral source** | CPN initial assessment, "Referred by" |
 | **Cpn diagnosis status** | CPN initial assessment, "Current diagnosis (if known)" |
 | **Cpn follow up frequency** | CPN initial assessment, "Contact frequency" |
+| **Hub activities** | Add Contact, Activity contact type, "Activity" |
+| **AFA advice types** | Add Contact, AFA contact type, "Description" |
 
 The lists below appear on the Lookups tab but have no effect yet. Their screens use fixed lists or free text instead.
 

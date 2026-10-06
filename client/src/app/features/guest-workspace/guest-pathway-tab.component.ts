@@ -44,7 +44,7 @@ function problemDetail(err: unknown, fallback: string): string {
  * button that opens the Change Pathway dialog.
  *
  * The dialog carries the design's full field set — "Select new pathway *" option cards,
- * "Date of change *", "Assigned by *" and the free-text reason — all now backed by
+ * "Date of change *", "Assigned by *" and "Reason for change *" — all now backed by
  * POST /guests/{id}/pathway-changes, which appends to GuestPathwayDto.changes. The tab's
  * current pathway and AFA flag come from that same DTO; the practical-support referrals
  * are separate data and keep their own secondary card.
@@ -159,8 +159,16 @@ export class GuestPathwayTabComponent {
     return null;
   });
 
+  readonly reasonFieldError = computed(() =>
+    this.reason().trim() ? null : 'Enter the reason for changing the pathway.',
+  );
+
   readonly formValid = computed(
-    () => !this.pathwayFieldError() && !this.assignedByFieldError() && !this.changedOnFieldError(),
+    () =>
+      !this.pathwayFieldError() &&
+      !this.assignedByFieldError() &&
+      !this.changedOnFieldError() &&
+      !this.reasonFieldError(),
   );
 
   /** Live allocation — the header's name, falling back to the newest history entry. */
@@ -317,11 +325,10 @@ export class GuestPathwayTabComponent {
 
     this.changingPathway.set(true);
     this.changeError.set(null);
-    const reason = this.reason().trim();
     this.guestsApi
       .changePathway(this.guestId(), {
         pathway,
-        reason: reason || null,
+        reason: this.reason().trim(),
         assignedByStaffId: this.assignedByStaffId(),
         changedOn: this.changedOn(),
       })

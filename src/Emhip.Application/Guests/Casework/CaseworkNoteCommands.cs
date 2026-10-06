@@ -30,8 +30,12 @@ public sealed record CaseworkNoteDto(
     string? ServiceInvolvementChanges,
     string? AdditionalNotes,
     DateOnly? NextContactDate,
+    bool NoNextContactRequired,
     bool MdtDiscussionRequested,
     bool CpnReferralRequested,
+    string? ActivityType,
+    string? Occasion,
+    string? AdviceType,
     string AuthorName,
     DateTimeOffset CreatedAt,
     DateTimeOffset? SubmittedAt,
@@ -70,7 +74,13 @@ public sealed record CaseworkNoteInput(
     string? CpnReferralUrgency = null,
     string? CpnReferralRationale = null,
     string? MdtDiscussionReason = null,
-    string? MdtDiscussionDetails = null);
+    string? MdtDiscussionDetails = null,
+    // "No next contact needed" — the explicit opt-out from the mandatory next contact date.
+    bool NoNextContactRequired = false,
+    // Short-form contact types: Activity (activity + occasion) and AFA (type of advice given).
+    string? ActivityType = null,
+    string? Occasion = null,
+    string? AdviceType = null);
 
 public sealed record SaveCaseworkNoteCommand(Guid GuestId, Guid? NoteId, CaseworkNoteInput Input, bool Submit) : IRequest<Guid>;
 
@@ -95,6 +105,9 @@ public sealed class SaveCaseworkNoteCommandValidator : AbstractValidator<SaveCas
         RuleFor(x => x.Input.ServiceInvolvementChanges).MaximumLength(2000);
         RuleFor(x => x.Input.AdditionalNotes).MaximumLength(4000);
         RuleFor(x => x.Input.RiskNotes).MaximumLength(2000);
+        RuleFor(x => x.Input.ActivityType).MaximumLength(200);
+        RuleFor(x => x.Input.Occasion).MaximumLength(500);
+        RuleFor(x => x.Input.AdviceType).MaximumLength(200);
 
         // The design gates the contact-type chips behind "Is this a CPN contact? = No", so a
         // non-CPN note must carry one and a CPN note must not.
@@ -105,15 +118,30 @@ public sealed class SaveCaseworkNoteCommandValidator : AbstractValidator<SaveCas
             .When(x => x.Submit && x.Input.IsCpnContact)
             .WithMessage("Select a CPN session type.");
 
+        // Every submitted clinical contact books the next one, unless the worker explicitly opts
+        // out. The short forms (Activity, Hospitality, AFA) carry no next contact date at all.
+        RuleFor(x => x.Input.NextContactDate).NotNull()
+            .When(x => x.Submit && IsClinical(x) && !x.Input.NoNextContactRequired)
+            .WithMessage("Enter the next contact date, or tick \"No next contact needed\".");
+
         // Drafts are deliberately unvalidated beyond lengths — the point of a draft is that it
         // can be incomplete. The assessment requirement is enforced on submit by the aggregate.
         RuleFor(x => x.Input.Assessment).NotEmpty()
-            .When(x => x.Submit)
+            .When(x => x.Submit && IsClinical(x))
             .WithMessage("An assessment is required to submit a casework note.");
+
+        // "Activity *": a listed hub activity, or the free-text occasion when it is not listed.
+        RuleFor(x => x.Input.ActivityType)
+            .Must((x, activity) => !string.IsNullOrWhiteSpace(activity) || !string.IsNullOrWhiteSpace(x.Input.Occasion))
+            .When(x => x.Submit && !x.Input.IsCpnContact && x.Input.Category == CaseworkNoteCategory.Activity)
+            .WithMessage("Select the hub activity the guest attended, or describe the occasion if it is not listed.");
 
         RuleForEach(x => x.Input.Actions).ChildRules(action =>
             action.RuleFor(a => a.Description).NotEmpty().MaximumLength(500));
     }
+
+    private static bool IsClinical(SaveCaseworkNoteCommand x) =>
+        CaseworkNote.IsClinicalNote(x.Input.IsCpnContact, x.Input.Category);
 }
 
 /// <summary>
@@ -147,7 +175,8 @@ public sealed class SaveCaseworkNoteCommandHandler(IAppDbContext db, ICurrentUse
             input.Situation, input.Background, input.Assessment, input.Recommendation,
             input.RiskLevel, input.GuestReportedChanges, input.ServiceInvolvementChanges,
             input.AdditionalNotes, input.NextContactDate, input.MdtDiscussionRequested, input.CpnReferralRequested,
-            input.IsCpnContact, input.CpnSessionType, input.RiskNotes);
+            input.IsCpnContact, input.CpnSessionType, input.RiskNotes, input.NoNextContactRequired,
+            input.ActivityType, input.Occasion, input.AdviceType);
 
         if (request.Submit)
         {
@@ -181,10 +210,10 @@ public sealed class SaveCaseworkNoteCommandHandler(IAppDbContext db, ICurrentUse
                     request.GuestId, action.Description, action.DueDate, action.AssignedToStaffId ?? currentUser.StaffId));
             }
 
-            if (input.NextContactDate is not null)
+            if (note.NextContactDate is { } nextContact)
             {
                 db.FollowUps.Add(new FollowUp(
-                    request.GuestId, input.NextContactDate.Value, currentUser.StaffId,
+                    request.GuestId, nextContact, currentUser.StaffId,
                     $"Next contact agreed in casework note of {input.OccurredAt:dd MMM yyyy}."));
             }
 
@@ -215,8 +244,17 @@ public sealed class SaveCaseworkNoteCommandHandler(IAppDbContext db, ICurrentUse
     {
         var parts = new List<string>
         {
-            input.IsCpnContact ? "CPN contact session" : $"{input.Category} note",
+            input.IsCpnContact ? "CPN contact session" : input.Category switch
+            {
+                CaseworkNoteCategory.Activity => "Activity contact",
+                CaseworkNoteCategory.Hospitality => "Hospitality contact",
+                CaseworkNoteCategory.Afa => "AFA contact",
+                _ => $"{input.Category} note",
+            },
         };
+        if (!string.IsNullOrWhiteSpace(input.ActivityType)) parts.Add($"Activity: {input.ActivityType}");
+        if (!string.IsNullOrWhiteSpace(input.Occasion)) parts.Add($"Occasion: {input.Occasion}");
+        if (!string.IsNullOrWhiteSpace(input.AdviceType)) parts.Add($"Advice given: {input.AdviceType}");
         if (!string.IsNullOrWhiteSpace(input.Assessment)) parts.Add($"Assessment: {input.Assessment}");
         if (!string.IsNullOrWhiteSpace(input.Recommendation)) parts.Add($"Recommendation: {input.Recommendation}");
         if (input.RiskLevel != CaseworkRiskLevel.NoRiskDetected) parts.Add($"Risk: {input.RiskLevel}");

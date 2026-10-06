@@ -1,7 +1,7 @@
 import { Component, computed, effect, inject, input, signal } from '@angular/core';
 import { GuestContactSummaryDto } from '../../core/api-models';
 import { GuestsApiService } from '../../core/guests-api.service';
-import { formatDateTime, humanize, outcomeChip } from './guest-workspace.util';
+import { formatDateTime, humanize } from './guest-workspace.util';
 
 const PAGE_SIZE = 25;
 
@@ -45,7 +45,6 @@ export class GuestContactHistoryTabComponent {
 
   readonly humanize = humanize;
   readonly formatDateTime = formatDateTime;
-  readonly outcomeChip = outcomeChip;
 
   constructor() {
     effect((onCleanup) => {

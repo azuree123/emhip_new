@@ -342,6 +342,35 @@
 
 // ---- MDT / CPN toggles ----
 
+// ---- Next contact date + "No next contact needed" opt-out ----
+
+.next-contact {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.check-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  align-self: flex-start;
+  font-family: t.$font-primary;
+  font-weight: 500;
+  font-size: 13px;
+  line-height: 20px;
+  color: t.$color-text-body;
+  cursor: pointer;
+
+  input {
+    width: 16px;
+    height: 16px;
+    margin: 0;
+    accent-color: t.$color-brand-red-bright;
+    cursor: pointer;
+  }
+}
+
 .toggle-row {
   display: flex;
   align-items: center;

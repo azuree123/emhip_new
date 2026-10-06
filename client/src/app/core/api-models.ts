@@ -175,7 +175,8 @@ export interface PathwayChangeDto {
 
 export interface ChangePathwayRequest {
   pathway: GuestPathway;
-  reason?: string | null;
+  /** Required — every pathway change records why it was made. */
+  reason: string;
   /** Staff member who authorised the change; falls back to assignedByName for non-portal clinicians. */
   assignedByStaffId?: string | null;
   assignedByName?: string | null;
@@ -307,7 +308,10 @@ export interface CaseworkNoteInput {
   guestReportedChanges?: string | null;
   serviceInvolvementChanges?: string | null;
   additionalNotes?: string | null;
+  /** Required to submit unless noNextContactRequired is ticked. */
   nextContactDate?: string | null;
+  /** "No next contact needed" — the explicit opt-out from the mandatory next contact date. */
+  noNextContactRequired: boolean;
   mdtDiscussionRequested: boolean;
   cpnReferralRequested: boolean;
   actions: CaseworkActionInput[];
@@ -318,6 +322,11 @@ export interface CaseworkNoteInput {
   /** "Add this guest for MDT discussion" — reason and what the team should consider. */
   mdtDiscussionReason?: string | null;
   mdtDiscussionDetails?: string | null;
+  /** Activity contact: the hub activity (HubActivity lookup) and/or the free-text occasion. */
+  activityType?: string | null;
+  occasion?: string | null;
+  /** AFA contact: the type of practical advice given (AfaAdviceType lookup). */
+  adviceType?: string | null;
 }
 
 export interface CaseworkNoteDto {
@@ -341,8 +350,12 @@ export interface CaseworkNoteDto {
   serviceInvolvementChanges: string | null;
   additionalNotes: string | null;
   nextContactDate: string | null;
+  noNextContactRequired: boolean;
   mdtDiscussionRequested: boolean;
   cpnReferralRequested: boolean;
+  activityType: string | null;
+  occasion: string | null;
+  adviceType: string | null;
   authorName: string;
   createdAt: string;
   submittedAt: string | null;

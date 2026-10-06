@@ -12,7 +12,6 @@ import {
   formatDateTime,
   guestPathwayLabel,
   humanize,
-  outcomeChip,
 } from './guest-workspace.util';
 
 /**
@@ -95,5 +94,4 @@ export class GuestOverviewTabComponent {
   readonly formatDate = formatDate;
   readonly formatDateTime = formatDateTime;
   readonly humanize = humanize;
-  readonly outcomeChip = outcomeChip;
 }

@@ -34,7 +34,10 @@ public sealed class ChangeGuestPathwayCommandValidator : AbstractValidator<Chang
     public ChangeGuestPathwayCommandValidator()
     {
         RuleFor(x => x.GuestId).NotEmpty();
-        RuleFor(x => x.Reason).MaximumLength(2000);
+        RuleFor(x => x.Reason)
+            .Must(reason => !string.IsNullOrWhiteSpace(reason))
+            .WithMessage("Enter the reason for changing the pathway.")
+            .MaximumLength(2000);
         RuleFor(x => x.AssignedByName).MaximumLength(200);
         RuleFor(x => x.ChangedOn)
             .LessThanOrEqualTo(_ => DateOnly.FromDateTime(DateTime.UtcNow).AddDays(1))
@@ -59,7 +62,7 @@ public sealed class ChangeGuestPathwayCommandHandler(IAppDbContext db, ICurrentU
         guest.Allocate(request.Pathway, guest.AfaSupportNeeded);
 
         var change = new PathwayChange(
-            request.GuestId, previous, request.Pathway, request.Reason,
+            request.GuestId, previous, request.Pathway, request.Reason?.Trim(),
             request.AssignedByStaffId, request.AssignedByName, request.ChangedOn, currentUser.StaffId);
 
         db.PathwayChanges.Add(change);

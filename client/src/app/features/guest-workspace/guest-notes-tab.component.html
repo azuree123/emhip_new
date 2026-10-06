@@ -52,13 +52,16 @@
                     >
                       {{ categoryChip(note.category).label }}
                     </span>
-                    <span
-                      class="chip"
-                      [style.background]="riskChip(note.riskLevel).bg"
-                      [style.color]="riskChip(note.riskLevel).fg"
-                    >
-                      {{ riskChip(note.riskLevel).label }}
-                    </span>
+                    <!-- Hospitality has no risk check, so it carries no risk chip. -->
+                    @if (note.category !== 'Hospitality' || note.isCpnContact) {
+                      <span
+                        class="chip"
+                        [style.background]="riskChip(note.riskLevel).bg"
+                        [style.color]="riskChip(note.riskLevel).fg"
+                      >
+                        {{ riskChip(note.riskLevel).label }}
+                      </span>
+                    }
                     @if (note.status === 'Draft') {
                       <span class="badge-draft">Draft</span>
                     }
@@ -79,39 +82,69 @@
 
                   @if (expandedId() === note.id) {
                     <div class="note__detail">
-                      <div class="sbar-block">
-                        <span class="sbar-block__label">Situation</span>
-                        <p class="sbar-block__body">{{ note.situation || 'Not recorded.' }}</p>
-                      </div>
-                      <div class="sbar-block">
-                        <span class="sbar-block__label">Background</span>
-                        <p class="sbar-block__body">{{ note.background || 'Not recorded.' }}</p>
-                        @if (note.guestReportedChanges) {
-                          <p class="sbar-block__sub">
-                            <span class="sbar-block__sub-label">Changes since last contact:</span>
-                            {{ note.guestReportedChanges }}
-                          </p>
+                      @if (isShortForm(note)) {
+                        <!-- Short-form contacts show only what their form records. -->
+                        @if (note.category === 'Activity') {
+                          <div class="sbar-block">
+                            <span class="sbar-block__label">Activity</span>
+                            <p class="sbar-block__body">{{ note.activityType || 'Not listed' }}</p>
+                            @if (note.occasion) {
+                              <p class="sbar-block__sub">
+                                <span class="sbar-block__sub-label">Occasion:</span>
+                                {{ note.occasion }}
+                              </p>
+                            }
+                          </div>
+                          <div class="sbar-block">
+                            <span class="sbar-block__label">Observation notes</span>
+                            <p class="sbar-block__body">{{ note.additionalNotes || 'Not recorded.' }}</p>
+                          </div>
+                        } @else if (note.category === 'Hospitality') {
+                          <div class="sbar-block">
+                            <span class="sbar-block__label">Additional notes</span>
+                            <p class="sbar-block__body">{{ note.additionalNotes || 'Not recorded.' }}</p>
+                          </div>
+                        } @else {
+                          <div class="sbar-block">
+                            <span class="sbar-block__label">Advice given</span>
+                            <p class="sbar-block__body">{{ note.adviceType || 'Not recorded.' }}</p>
+                          </div>
                         }
-                        @if (note.serviceInvolvementChanges) {
-                          <p class="sbar-block__sub">
-                            <span class="sbar-block__sub-label">Other services:</span>
-                            {{ note.serviceInvolvementChanges }}
-                          </p>
-                        }
-                      </div>
-                      <div class="sbar-block">
-                        <span class="sbar-block__label">Assessment</span>
-                        <p class="sbar-block__body">{{ note.assessment || 'Not recorded.' }}</p>
-                      </div>
-                      <div class="sbar-block">
-                        <span class="sbar-block__label">Recommendation</span>
-                        <p class="sbar-block__body">{{ note.recommendation || 'Not recorded.' }}</p>
-                      </div>
-                      @if (note.additionalNotes) {
+                      } @else {
                         <div class="sbar-block">
-                          <span class="sbar-block__label">Additional notes</span>
-                          <p class="sbar-block__body">{{ note.additionalNotes }}</p>
+                          <span class="sbar-block__label">Situation</span>
+                          <p class="sbar-block__body">{{ note.situation || 'Not recorded.' }}</p>
                         </div>
+                        <div class="sbar-block">
+                          <span class="sbar-block__label">Background</span>
+                          <p class="sbar-block__body">{{ note.background || 'Not recorded.' }}</p>
+                          @if (note.guestReportedChanges) {
+                            <p class="sbar-block__sub">
+                              <span class="sbar-block__sub-label">Changes since last contact:</span>
+                              {{ note.guestReportedChanges }}
+                            </p>
+                          }
+                          @if (note.serviceInvolvementChanges) {
+                            <p class="sbar-block__sub">
+                              <span class="sbar-block__sub-label">Other services:</span>
+                              {{ note.serviceInvolvementChanges }}
+                            </p>
+                          }
+                        </div>
+                        <div class="sbar-block">
+                          <span class="sbar-block__label">Assessment</span>
+                          <p class="sbar-block__body">{{ note.assessment || 'Not recorded.' }}</p>
+                        </div>
+                        <div class="sbar-block">
+                          <span class="sbar-block__label">Recommendation</span>
+                          <p class="sbar-block__body">{{ note.recommendation || 'Not recorded.' }}</p>
+                        </div>
+                        @if (note.additionalNotes) {
+                          <div class="sbar-block">
+                            <span class="sbar-block__label">Additional notes</span>
+                            <p class="sbar-block__body">{{ note.additionalNotes }}</p>
+                          </div>
+                        }
                       }
 
                       @if (note.actions.length) {
@@ -170,6 +203,8 @@
                         <div class="note__flags">
                           @if (note.nextContactDate) {
                             <span class="note__flag">Next contact {{ formatDate(note.nextContactDate) }}</span>
+                          } @else if (note.noNextContactRequired) {
+                            <span class="note__flag">No next contact needed</span>
                           }
                           @if (note.mdtDiscussionRequested) {
                             <span class="note__flag">Flagged for MDT discussion</span>

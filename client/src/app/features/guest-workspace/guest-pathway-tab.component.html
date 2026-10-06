@@ -369,17 +369,22 @@
             </div>
           </div>
 
-          <label class="dialog__field dialog__field--wide">
-            <span class="dialog__label">Reason for change</span>
+          <div class="dialog__field dialog__field--wide">
+            <label class="dialog__label" for="pathway-change-reason">Reason for change&nbsp;*</label>
             <textarea
+              id="pathway-change-reason"
               class="dialog__textarea"
               name="reason"
               rows="4"
+              required
               placeholder="Briefly describe why the pathway is being changed..."
               [ngModel]="reason()"
               (ngModelChange)="reason.set($event)"
             ></textarea>
-          </label>
+            @if (submitted() && reasonFieldError()) {
+              <p class="form-error">{{ reasonFieldError() }}</p>
+            }
+          </div>
 
           <p class="dialog__note">
             <svg width="11" height="11" viewBox="0 0 9.625 9.625" fill="none" aria-hidden="true">

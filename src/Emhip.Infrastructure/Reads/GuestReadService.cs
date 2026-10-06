@@ -392,7 +392,8 @@ public sealed class GuestReadService(ISqlConnectionFactory connectionFactory, Em
                 n.Situation, n.Background, n.Assessment, n.Recommendation, n.RiskLevel,
                 n.RiskNotes, n.IsCpnContact, n.CpnSessionType, n.SessionNumber,
                 n.GuestReportedChanges, n.ServiceInvolvementChanges, n.AdditionalNotes,
-                n.NextContactDate, n.MdtDiscussionRequested, n.CpnReferralRequested,
+                n.NextContactDate, n.NoNextContactRequired, n.MdtDiscussionRequested, n.CpnReferralRequested,
+                n.ActivityType, n.Occasion, n.AdviceType,
                 AuthorName = db.Users.Where(u => u.Id == n.AuthorStaffId).Select(u => u.DisplayName).FirstOrDefault() ?? "Unknown",
                 n.CreatedAt, n.SubmittedAt,
             })
@@ -435,7 +436,8 @@ public sealed class GuestReadService(ISqlConnectionFactory connectionFactory, Em
                 n.Situation, n.Background, n.Assessment, n.Recommendation, n.RiskLevel,
                 n.RiskNotes, n.IsCpnContact, n.CpnSessionType, n.SessionNumber,
                 n.GuestReportedChanges, n.ServiceInvolvementChanges, n.AdditionalNotes,
-                n.NextContactDate, n.MdtDiscussionRequested, n.CpnReferralRequested,
+                n.NextContactDate, n.NoNextContactRequired, n.MdtDiscussionRequested, n.CpnReferralRequested,
+                n.ActivityType, n.Occasion, n.AdviceType,
                 n.AuthorName, n.CreatedAt, n.SubmittedAt,
                 n.SubmittedAt is null
                     ? []

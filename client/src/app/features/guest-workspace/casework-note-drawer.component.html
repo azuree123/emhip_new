@@ -95,25 +95,35 @@
       }
 
       <div class="drawer__grid">
-        <label class="field">
-          <span class="field__label">Contact method&nbsp;*</span>
-          <select name="contactMethod" [(ngModel)]="header.contactMethod" required>
-            <option value="" disabled>Select....</option>
-            @for (type of contactTypes; track type) {
-              <option [value]="type">{{ humanize(type) }}</option>
-            }
-          </select>
-        </label>
+        <!-- Activity and Hospitality happen in person at the hub, so the design drops the method. -->
+        @if (showContactMethod) {
+          <label class="field">
+            <span class="field__label">Contact method&nbsp;*</span>
+            <select name="contactMethod" [(ngModel)]="header.contactMethod" required>
+              <option value="" disabled>Select....</option>
+              @for (type of contactTypes; track type) {
+                <option [value]="type">{{ humanize(type) }}</option>
+              }
+            </select>
+          </label>
+        }
 
+        <!-- A hospitality contact's date and author are both auto-logged (design). -->
         <label class="field">
-          <span class="field__label">Date&nbsp;*</span>
-          <input type="date" name="occurredOn" [(ngModel)]="header.occurredOn" required />
+          @if (body === 'hospitality') {
+            <span class="field__label">Date</span>
+            <input type="date" name="occurredOn" [ngModel]="header.occurredOn" disabled />
+            <span class="field__hint">auto-logged</span>
+          } @else {
+            <span class="field__label">Date&nbsp;*</span>
+            <input type="date" name="occurredOn" [(ngModel)]="header.occurredOn" required />
+          }
         </label>
 
         <label class="field">
           <span class="field__label">Logged by&nbsp;*</span>
           <input type="text" name="loggedBy" [value]="loggedBy" disabled />
-          <span class="field__hint">Pre-filled from login</span>
+          <span class="field__hint">{{ body === 'hospitality' ? 'auto-logged' : 'Pre-filled from login' }}</span>
         </label>
       </div>
 
@@ -466,6 +476,117 @@
         </fieldset>
       }
 
+      <!-- ============ Short forms — Activity, Hospitality and AFA (no SBAR note) ============ -->
+      @if (body === 'activity') {
+        <div class="banner">
+          <p class="banner__text">
+            Select the hub activity the guest attended. If the session is not listed, type it in the
+            free-text field. An admin can add new sessions to the list in Settings → Lookups.
+          </p>
+        </div>
+
+        <label class="field field--full">
+          <span class="field__label">Activity&nbsp;*</span>
+          <select name="activityType" [(ngModel)]="followUp.activityType">
+            <option value="">Select activity...</option>
+            @for (item of options('HubActivity'); track item.id) {
+              <option [value]="item.label">{{ item.label }}</option>
+            }
+          </select>
+          <span class="field__hint">List maintained by admin in Settings — no developer needed to update</span>
+        </label>
+
+        <label class="field field--full">
+          <span class="field__label">Describe the occasion</span>
+          <input
+            type="text"
+            name="occasion"
+            maxlength="500"
+            [(ngModel)]="followUp.occasion"
+            placeholder="e.g. Wednesday community lunch"
+          />
+        </label>
+
+        <label class="field field--full">
+          <span class="field__label">Observation notes</span>
+          <textarea
+            name="observationNotes"
+            rows="3"
+            [(ngModel)]="followUp.additionalNotes"
+            placeholder="How did the guest engage? Any notable behaviour, mood or connections made?"
+          ></textarea>
+        </label>
+      }
+
+      @if (body === 'hospitality') {
+        <div class="banner">
+          <p class="banner__text">
+            No clinical notes, no risk check, no next contact date required for hospitality contacts.
+          </p>
+        </div>
+
+        <label class="field field--full">
+          <span class="field__label">Additional notes <span class="field__optional">(optional)</span></span>
+          <textarea
+            name="hospitalityNotes"
+            rows="3"
+            [(ngModel)]="followUp.additionalNotes"
+            placeholder="e.g. Guest arrived with family member, engaged well with other attendees, seemed more settled than previous visit…"
+          ></textarea>
+          <span class="field__hint">
+            Use this to record anything worth noting — mood, engagement, who they came with, or any brief
+            observations.
+          </span>
+        </label>
+      }
+
+      @if (body === 'afa') {
+        <div class="banner">
+          <p class="banner__text">
+            AFA records that practical advice or signposting was given. No session notes required — just
+            confirm the contact and complete the risk check.
+          </p>
+        </div>
+
+        <label class="field field--full">
+          <span class="field__label">Description</span>
+          <select name="adviceType" [(ngModel)]="followUp.adviceType">
+            <option value="">Select....</option>
+            @for (item of options('AfaAdviceType'); track item.id) {
+              <option [value]="item.label">{{ item.label }}</option>
+            }
+          </select>
+          <span class="field__hint">The type of practical advice or signposting given</span>
+        </label>
+      }
+
+      @if (body === 'activity' || body === 'afa') {
+        <div class="field field--full">
+          <span class="field__label">Risk check&nbsp;*</span>
+          <div class="choice-row choice-row--risk">
+            @for (option of riskChoices; track option.value) {
+              <button
+                type="button"
+                class="choice choice--wide"
+                [class.choice--on]="followUp.riskLevel === option.value"
+                [class.choice--danger]="option.value === 'High'"
+                [attr.aria-pressed]="followUp.riskLevel === option.value"
+                (click)="setRisk(option.value)"
+              >
+                <span class="choice__radio" aria-hidden="true"></span>
+                <span class="choice__label">{{ option.label }}</span>
+              </button>
+            }
+          </div>
+          @if (riskOutsideChoices) {
+            <span class="field__hint">
+              This note already records a {{ followUp.riskLevel === 'Low' ? 'low' : 'medium' }}
+              risk level. Choosing above will replace it.
+            </span>
+          }
+        </div>
+      }
+
       <!-- ====================== Part 2 — follow-up session, and non-CPN ====================== -->
       @if (body === 'followUp') {
         <div class="banner">
@@ -752,11 +873,34 @@
           ></textarea>
         </label>
 
-        <label class="field field--narrow">
-          <span class="field__label">Next contact date</span>
-          <input type="date" name="nextContactDate" [(ngModel)]="followUp.nextContactDate" />
-          <span class="field__hint">Scheduled as the next contact when the note is submitted.</span>
-        </label>
+        <!-- Mandatory on submit; "No next contact needed" is the worker's explicit opt-out. -->
+        <div class="next-contact">
+          <label class="field field--narrow">
+            <span class="field__label">Next contact date&nbsp;*</span>
+            <input
+              type="date"
+              name="nextContactDate"
+              [(ngModel)]="followUp.nextContactDate"
+              [disabled]="followUp.noNextContactRequired"
+            />
+            <span class="field__hint">
+              {{
+                followUp.noNextContactRequired
+                  ? 'No next contact will be scheduled for this guest.'
+                  : 'Scheduled as the next contact when the note is submitted.'
+              }}
+            </span>
+          </label>
+          <label class="check-row">
+            <input
+              type="checkbox"
+              name="noNextContactRequired"
+              [ngModel]="followUp.noNextContactRequired"
+              (ngModelChange)="setNoNextContact($event)"
+            />
+            <span>No next contact needed</span>
+          </label>
+        </div>
 
         <div class="toggle-row">
           <span class="toggle-row__label">Add this guest for MDT discussion</span>
@@ -872,9 +1016,13 @@
           Submitting files Part 1 on the clinical record and logs the matching contact. The next
           appointment date is scheduled as the next contact. It can be saved as a draft and resumed until
           it is submitted — after that it cannot be created again for this guest.
+        } @else if (isShortForm) {
+          Saving logs this contact on the guest's record and in Contact History. A draft can be
+          reopened from the Notes tab until it is saved.
         } @else {
           Submitting files this note on the clinical record and logs the matching contact. Any
-          actions listed above become guest actions, and the next contact date is scheduled. Drafts can be reopened and re-saved from the Notes tab until they are
+          actions listed above become guest actions, and the next contact date is scheduled (it is
+          required unless "No next contact needed" is ticked). Drafts can be reopened and re-saved from the Notes tab until they are
           submitted.
         }
       </p>
@@ -900,7 +1048,7 @@
           class="btn-submit"
           [disabled]="saving() !== null || (assessmentReadOnly && body === 'assessment')"
         >
-          {{ saving() === 'submit' ? 'Submitting…' : 'Submit contact note' }}
+          {{ saving() === 'submit' ? 'Submitting…' : submitLabel }}
         </button>
       </div>
     </form>
