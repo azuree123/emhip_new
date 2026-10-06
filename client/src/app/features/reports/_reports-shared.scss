@@ -321,7 +321,6 @@ a.stat-card {
   th {
     background: rgb(241, 241, 241);
     padding: 8px 16px;
-    text-align: left;
     font-weight: 600;
     font-size: 12px;
     line-height: 24px;
@@ -351,6 +350,12 @@ a.stat-card {
   tbody tr + tr td {
     border-top: 1px solid $line;
   }
+}
+
+// Headers read left by default. Kept weightless (:where) so a column's own number class
+// (e.g. .caseload-table__num, text-align: right) aligns its header over its values.
+:where(.rpt-table) th {
+  text-align: left;
 }
 
 // ---- Breakdown rows (Desktop72 "Referral sources" / Desktop86 contact
