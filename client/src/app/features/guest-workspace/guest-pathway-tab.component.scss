@@ -423,9 +423,15 @@
     height: 48px;
     border-radius: 6px;
     background: t.$color-tile-bg;
+    color: t.$color-text-primary;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
 
     &--selected {
       background: t.$color-brand-red-bright;
+      color: #fff;
     }
   }
 

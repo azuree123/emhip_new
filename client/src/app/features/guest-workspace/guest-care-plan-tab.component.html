@@ -291,10 +291,18 @@
           <span class="count-label">{{ history().length }} closed</span>
         </div>
 
+        <!-- Accordion: each closed plan is one summary row; select it to read the full plan. -->
         <div class="history-list">
           @for (plan of history(); track plan.id) {
-            <article class="history-plan">
-              <div class="history-plan__head">
+            @let open = isHistoryOpen(plan.id);
+            <article class="history-plan" [class.history-plan--open]="open">
+              <button
+                type="button"
+                class="history-plan__head"
+                [attr.aria-expanded]="open"
+                [attr.aria-controls]="'care-plan-history-' + plan.id"
+                (click)="toggleHistory(plan.id)"
+              >
                 <span class="history-plan__dates">
                   {{ formatDate(plan.startedOn) }} — {{ formatDate(plan.closedOn) }}
                 </span>
@@ -305,42 +313,61 @@
                 >
                   {{ planChip(plan.status).label }}
                 </span>
-              </div>
+                <span class="history-plan__goals">{{ goalSummary(plan) }}</span>
+                <span class="history-plan__meta">Created by {{ plan.createdByName || '—' }}</span>
+                <svg
+                  class="history-plan__chevron"
+                  [class.history-plan__chevron--open]="open"
+                  width="12"
+                  height="8"
+                  viewBox="0 0 12 8"
+                  fill="none"
+                  aria-hidden="true"
+                >
+                  <path d="M 1 1.5 L 6 6.5 L 11 1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                </svg>
+              </button>
 
-              @if (plan.summary) {
-                <p class="history-plan__body">{{ plan.summary }}</p>
-              }
-              @if (plan.guestVoice) {
-                <div class="prose-block prose-block--voice">
-                  <span class="prose-block__label">The guest’s own words</span>
-                  <p class="prose-block__body">{{ plan.guestVoice }}</p>
-                </div>
-              }
-              @if (plan.supportArrangements) {
-                <div class="prose-block">
-                  <span class="prose-block__label">Agreed support arrangements</span>
-                  <p class="prose-block__body">{{ plan.supportArrangements }}</p>
-                </div>
-              }
-
-              @if (plan.goals.length) {
-                <ul class="history-goals">
-                  @for (goal of orderedGoals(plan); track goal.id) {
-                    <li class="history-goals__item">
-                      <span
-                        class="chip"
-                        [style.background]="goalChip(goal.status).bg"
-                        [style.color]="goalChip(goal.status).fg"
-                      >
-                        {{ goalChip(goal.status).label }}
-                      </span>
-                      <span class="history-goals__text">{{ goal.description }}</span>
-                    </li>
+              @if (open) {
+                <div class="history-plan__detail" [id]="'care-plan-history-' + plan.id">
+                  @if (plan.summary) {
+                    <p class="history-plan__body">{{ plan.summary }}</p>
                   }
-                </ul>
-              }
+                  @if (plan.guestVoice) {
+                    <div class="prose-block prose-block--voice">
+                      <span class="prose-block__label">The guest’s own words</span>
+                      <p class="prose-block__body">{{ plan.guestVoice }}</p>
+                    </div>
+                  }
+                  @if (plan.supportArrangements) {
+                    <div class="prose-block">
+                      <span class="prose-block__label">Agreed support arrangements</span>
+                      <p class="prose-block__body">{{ plan.supportArrangements }}</p>
+                    </div>
+                  }
 
-              <span class="history-plan__meta">Created by {{ plan.createdByName || '—' }}</span>
+                  @if (plan.goals.length) {
+                    <ul class="history-goals">
+                      @for (goal of orderedGoals(plan); track goal.id) {
+                        <li class="history-goals__item">
+                          <span
+                            class="chip"
+                            [style.background]="goalChip(goal.status).bg"
+                            [style.color]="goalChip(goal.status).fg"
+                          >
+                            {{ goalChip(goal.status).label }}
+                          </span>
+                          <span class="history-goals__text">{{ goal.description }}</span>
+                        </li>
+                      }
+                    </ul>
+                  }
+
+                  @if (!plan.summary && !plan.guestVoice && !plan.supportArrangements && !plan.goals.length) {
+                    <p class="history-plan__meta">Nothing else was recorded on this plan.</p>
+                  }
+                </div>
+              }
             </article>
           }
         </div>

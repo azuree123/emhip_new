@@ -318,23 +318,67 @@
 .history-list {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 10px;
 }
 
+// Accordion row: the summary line is the toggle; the full plan opens beneath it.
 .history-plan {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding: 16px;
   border-radius: 8px;
   box-shadow: inset 0 0 0 1px t.$color-divider;
+  overflow: hidden;
 
   &__head {
+    width: 100%;
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 12px;
+    gap: 10px;
     flex-wrap: wrap;
+    padding: 14px 16px;
+    border: none;
+    background: transparent;
+    text-align: left;
+    font: inherit;
+    cursor: pointer;
+
+    &:hover {
+      background: #fafafa;
+    }
+
+    &:focus-visible {
+      outline: 2px solid t.$color-brand;
+      outline-offset: -2px;
+    }
+  }
+
+  &__goals {
+    font-family: t.$font-primary;
+    font-weight: 500;
+    font-size: 13px;
+    line-height: 20px;
+    color: t.$color-text-body;
+  }
+
+  // Pushes the author and chevron to the right-hand end of the row.
+  &__head &__meta {
+    margin-left: auto;
+  }
+
+  &__chevron {
+    color: t.$color-text-meta;
+    flex-shrink: 0;
+    transition: transform 120ms ease;
+
+    &--open {
+      transform: rotate(180deg);
+    }
+  }
+
+  &__detail {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 14px 16px 16px;
+    border-top: 1px solid t.$color-divider;
   }
 
   &__dates {

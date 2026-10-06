@@ -55,7 +55,8 @@ interface PlanForm {
  * updates the active one, and **goals left out of the request are deleted**, so the editor
  * always posts the full list. A goal's position in the array is its sort order, which is why
  * the editor offers move-up/move-down rather than a sortOrder field. Closed plans are refused
- * by the server on edit, so they render as history only.
+ * by the server on edit, so they render as history only — one collapsed row per plan (dates,
+ * outcome, goal count, author) that expands to the full plan.
  *
  * Everything that writes is gated on guests.edit; without it the tab is a read-only view.
  */
@@ -80,6 +81,8 @@ export class GuestCarePlanTabComponent {
 
   readonly current = computed<CarePlanDto | null>(() => this.plans()?.current ?? null);
   readonly history = computed<CarePlanDto[]>(() => this.plans()?.history ?? []);
+  /** Previous care plans opened in the accordion (several can be open to compare them). */
+  readonly expandedHistory = signal<ReadonlySet<string>>(new Set());
 
   /** True while the inline editor is open — either for a brand-new plan or the active one. */
   readonly editing = signal(false);
@@ -114,6 +117,27 @@ export class GuestCarePlanTabComponent {
 
   planChip(status: CarePlanStatus | string): StatusChip {
     return PLAN_STATUS_CHIPS[status as CarePlanStatus] ?? PLAN_STATUS_CHIPS.Completed;
+  }
+
+  isHistoryOpen(planId: string): boolean {
+    return this.expandedHistory().has(planId);
+  }
+
+  toggleHistory(planId: string): void {
+    this.expandedHistory.update((open) => {
+      const next = new Set(open);
+      if (next.has(planId)) next.delete(planId);
+      else next.add(planId);
+      return next;
+    });
+  }
+
+  /** "3 goals · 2 achieved" — the collapsed row's one-line view of a closed plan's goals. */
+  goalSummary(plan: CarePlanDto): string {
+    const total = plan.goals.length;
+    if (total === 0) return 'No goals';
+    const achieved = plan.goals.filter((g) => g.status === 'Achieved').length;
+    return `${total} goal${total === 1 ? '' : 's'} · ${achieved} achieved`;
   }
 
   /** Goals in stored order — the array position is the sort order the server round-trips. */

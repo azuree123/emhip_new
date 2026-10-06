@@ -321,7 +321,11 @@
                   (click)="selectPathway(option.value)"
                 >
                   <span class="option-card__radio" [class.option-card__radio--selected]="selectedPathway() === option.value"></span>
-                  <span class="option-card__tile" [class.option-card__tile--selected]="selectedPathway() === option.value"></span>
+                  <span class="option-card__tile" [class.option-card__tile--selected]="selectedPathway() === option.value">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                      <path [attr.transform]="option.icon.transform" [attr.d]="option.icon.d" fill="currentColor" />
+                    </svg>
+                  </span>
                   <span class="option-card__name">{{ option.label }}</span>
                   <span class="option-card__desc">{{ option.description }}</span>
                   @if (isCurrentPathway(option.value)) {

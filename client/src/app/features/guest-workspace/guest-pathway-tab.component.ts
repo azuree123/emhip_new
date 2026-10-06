@@ -20,7 +20,20 @@ interface PathwayOption {
   value: GuestPathway;
   label: string;
   description: string;
+  /** The tile glyph from the Change Pathway design, positioned inside a 24×24 box. */
+  icon: { transform: string; d: string };
 }
+
+/**
+ * Change Pathway tile glyphs (design_download_claude_3 Components.bundle.js, the Change Pathway
+ * modal): a heart for Mental Wellbeing, a medical bag for Clinical Support and a medical cross
+ * for Community Recovery.
+ */
+const PATHWAY_ICONS: Record<GuestPathway, PathwayOption['icon']> = {
+  MentalWellbeing: { transform: 'translate(2 4.002)', d: 'M 10.82 1.577 L 9.999 2.4 L 9.176 1.576 C 7.077 -0.523 3.673 -0.523 1.574 1.576 C -0.525 3.675 -0.525 7.079 1.574 9.178 L 9.47 17.073 C 9.763 17.366 10.237 17.366 10.53 17.073 L 18.432 9.176 C 20.526 7.07 20.53 3.677 18.43 1.577 C 16.327 -0.526 12.923 -0.526 10.82 1.577 Z M 17.368 8.119 L 10 15.482 L 2.635 8.117 C 1.122 6.604 1.122 4.15 2.635 2.637 C 4.148 1.124 6.602 1.124 8.115 2.637 L 9.472 3.995 C 9.77 4.292 10.255 4.287 10.546 3.982 L 11.88 2.638 C 13.397 1.121 15.853 1.121 17.37 2.638 C 18.883 4.151 18.881 6.598 17.368 8.119 Z' },
+  ClinicalSupport: { transform: 'translate(3 2)', d: 'M 7.25 1.5 L 10.75 1.5 C 11.164 1.5 11.5 1.836 11.5 2.25 L 11.5 4 L 6.5 4 L 6.5 2.25 C 6.5 1.836 6.836 1.5 7.25 1.5 Z M 5 2.25 L 5 4 L 3.25 4 C 1.455 4 0 5.455 0 7.25 L 0 14.75 C 0 16.545 1.455 18 3.25 18 L 14.75 18 C 16.545 18 18 16.545 18 14.75 L 18 7.25 C 18 5.455 16.545 4 14.75 4 L 13 4 L 13 2.25 C 13 1.007 11.993 0 10.75 0 L 7.25 0 C 6.007 0 5 1.007 5 2.25 Z M 14.75 5.5 C 15.717 5.5 16.5 6.284 16.5 7.25 L 16.5 14.75 C 16.5 15.717 15.717 16.5 14.75 16.5 L 3.25 16.5 C 2.283 16.5 1.5 15.717 1.5 14.75 L 1.5 7.25 C 1.5 6.284 2.283 5.5 3.25 5.5 L 14.75 5.5 Z M 8.5 8.75 L 8.5 10.5 L 6.75 10.5 C 6.336 10.5 6 10.836 6 11.25 C 6 11.664 6.336 12 6.75 12 L 8.5 12 L 8.5 13.75 C 8.5 14.164 8.836 14.5 9.25 14.5 C 9.664 14.5 10 14.164 10 13.75 L 10 12 L 11.75 12 C 12.164 12 12.5 11.664 12.5 11.25 C 12.5 10.836 12.164 10.5 11.75 10.5 L 10 10.5 L 10 8.75 C 10 8.336 9.664 8 9.25 8 C 8.836 8 8.5 8.336 8.5 8.75 Z' },
+  CommunityRecovery: { transform: 'translate(3 3)', d: 'M 6.75 1.5 C 6.612 1.5 6.5 1.612 6.5 1.75 L 6.5 5.75 C 6.5 6.164 6.164 6.5 5.75 6.5 L 1.75 6.5 C 1.612 6.5 1.5 6.612 1.5 6.75 L 1.5 11.25 C 1.5 11.388 1.612 11.5 1.75 11.5 L 5.75 11.5 C 6.164 11.5 6.5 11.836 6.5 12.25 L 6.5 16.25 C 6.5 16.388 6.612 16.5 6.75 16.5 L 11.25 16.5 C 11.388 16.5 11.5 16.388 11.5 16.25 L 11.5 12.25 C 11.5 11.836 11.836 11.5 12.25 11.5 L 16.25 11.5 C 16.388 11.5 16.5 11.388 16.5 11.25 L 16.5 6.75 C 16.5 6.612 16.388 6.5 16.25 6.5 L 12.25 6.5 C 11.836 6.5 11.5 6.164 11.5 5.75 L 11.5 1.75 C 11.5 1.612 11.388 1.5 11.25 1.5 L 6.75 1.5 Z M 5 1.75 C 5 0.784 5.784 0 6.75 0 L 11.25 0 C 12.217 0 13 0.784 13 1.75 L 13 5 L 16.25 5 C 17.216 5 18 5.784 18 6.75 L 18 11.25 C 18 12.217 17.216 13 16.25 13 L 13 13 L 13 16.25 C 13 17.216 12.217 18 11.25 18 L 6.75 18 C 5.784 18 5 17.216 5 16.25 L 5 13 L 1.75 13 C 0.784 13 0 12.217 0 11.25 L 0 6.75 C 0 5.784 0.784 5 1.75 5 L 5 5 L 5 1.75 Z' },
+};
 
 /** Local (not UTC) yyyy-MM-dd, so "today" matches the worker's calendar day and the API's DateOnly. */
 function isoToday(): string {
@@ -129,9 +142,24 @@ export class GuestPathwayTabComponent {
   ];
 
   readonly pathwayOptions: PathwayOption[] = [
-    { value: 'MentalWellbeing', label: 'Mental Wellbeing', description: 'Early intervention and general wellbeing support.' },
-    { value: 'ClinicalSupport', label: 'Clinical Support', description: 'Intense support for complex mental health needs.' },
-    { value: 'CommunityRecovery', label: 'Community Recovery', description: 'Community-focused recovery and group support.' },
+    {
+      value: 'MentalWellbeing',
+      label: 'Mental Wellbeing',
+      description: 'Early intervention and general wellbeing support.',
+      icon: PATHWAY_ICONS.MentalWellbeing,
+    },
+    {
+      value: 'ClinicalSupport',
+      label: 'Clinical Support',
+      description: 'Intense support for complex mental health needs.',
+      icon: PATHWAY_ICONS.ClinicalSupport,
+    },
+    {
+      value: 'CommunityRecovery',
+      label: 'Community Recovery',
+      description: 'Community-focused recovery and group support.',
+      icon: PATHWAY_ICONS.CommunityRecovery,
+    },
   ];
 
   /** Label for the guest's live allocation, straight from GuestPathwayDto. */
