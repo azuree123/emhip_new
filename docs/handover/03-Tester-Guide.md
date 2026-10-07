@@ -188,7 +188,7 @@ The header shows the guest's status, an Urgent badge when flagged, their pathway
 | Clinical Details | **Edit details** (medication, diagnoses, SMI, CPN involved, Trust involvement); **Record assessment**: ticking any risk flags the guest urgent and opens an urgent case |
 | DIALOG Scores | **Record new** scores; baseline and latest are compared |
 | Pathway History | **Change Pathway** (date not in the future; "assigned by" and reason required); **Reassign CMHW** |
-| Care Plan | Start or edit a plan with goals (each needs a description); **Close plan** as Completed or Superseded |
+| Care Plan | **Create New Plan** (the two prose questions, next contact, MDT review, CPN and NHS referral are required; goals are optional); the row **⋮** menu has **Edit Plan**, **Close Plan** and **Export Plan**; creating a plan while one is active supersedes it |
 | Contact History | Every contact logged for this guest: type, date and who recorded it |
 | CPN Record | Referral, MDT decision, CPN allocated, Part 1 status and CPN sessions; **Add CPN contact** |
 | Documents | Where documents are managed now (Documents is no longer in the menu). **Upload document** links the file to this guest automatically, with no guest to choose. View details and versions, download, edit details, delete with a reason, and restore or permanently delete from the **Recycle bin** (Hub Manager, Admin) |
@@ -346,7 +346,7 @@ Work through this in order: each part creates the data the next part needs. Tick
 - [ ] Edit and save each Demographics section
 - [ ] Record new DIALOG scores and compare with the baseline
 - [ ] Change Pathway (first try without a reason; it is refused) and reassign the CMHW
-- [ ] Start a care plan with two goals, then close it
+- [ ] Create a care plan with two goals, edit it, export it, create a second plan (the first is superseded), then close it
 - [ ] Add, complete and delete an action
 - [ ] Add a quick note and pin it to Overview
 - [ ] **Add Contact**: save a draft, attach a file, resume it from Notes, then submit with a next contact date and an action

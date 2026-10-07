@@ -98,6 +98,8 @@ The bar across the top shows a greeting, today's date, the guest search box, a b
 
 The suggestions match the start of a name, or an exact reference. The guest list search also matches any part of a name, a phone number and the assigned CMHW's name. Press Esc to close the suggestions.
 
+To jump to the search box from anywhere, press **Ctrl + K** (**Cmd + K** on a Mac).
+
 ### 1.9 Guest status and the urgent flag
 
 Every guest has one of three statuses.
@@ -570,24 +572,29 @@ Every reassignment is logged with who made it, when and why.
 
 ### 5.8 Care Plan tab
 
-A care plan records what the guest wants from their support, the arrangements agreed and the goals being worked towards.
+A care plan is agreed with the guest in a session. It records what they want to work on, the support we will provide, what they will do between sessions, referrals, the goals being worked towards, and the review and next steps. The tab lists every plan the guest has had under **Care Plan History**, newest first. The active plan is open; select any plan to open or close it.
 
-#### Start a care plan
+#### Create a care plan
 
-1. Select **Start care plan**.
-2. Fill in **Plan summary**, **The guest's own words**, **Agreed support arrangements** and **Review due**.
-3. Select **Add goal** for each goal. Give it a **Description** and choose a **Status**: Not started, In progress, Achieved or Discontinued. Add a **Target date** and a **Progress note** if useful.
-4. Use the arrow buttons on a goal to move it up or down, or the remove button to delete it.
-5. Select **Save care plan**.
+1. Select **Create New Plan**.
+2. Fill in **What does the guest want to work on?** and **What support will we provide?**. Both are required.
+3. Add **What will the guest do between sessions?** and **Any referrals made or planned** if they apply.
+4. Under **Goals**, give each goal a **Description** and choose a **Status**: Not started, In progress, Achieved or Discontinued. Add a **Target date** and a **Progress note** if useful. Select **Add goal** for more, use the arrow buttons to reorder them, or the remove button to delete one. A goal left completely blank is ignored.
+5. Under **Review & Next steps**, set the **Date of next contact** and the **MDT Review date**, and answer **CPN involvement required?** and **Has a referral to NHS services been made or discussed?**. All four are required.
+6. Add **Any other notes for the record** if needed.
+7. Select **Create**.
 
-Every goal needs a description. EMHIP says "Every goal needs a description. Remove any blank rows before saving." otherwise.
+If the guest already has an active plan, creating a new one closes it. The old plan stays in Care Plan History, marked as superseded.
 
-#### Update or close a care plan
+#### Edit, close or export a care plan
 
-1. To update it, select **Edit plan**, make your changes and select **Save care plan**.
-2. To close it, select **Close plan**, then choose how it ended: **Completed** or **Superseded**.
+Select the **⋮** button on a plan's row:
 
-A closed plan moves to **Previous care plans** and becomes read-only. You can then start a new one. A **Review overdue** chip appears when the review date has passed.
+- **Edit Plan** (active plan only) opens the plan to update. Select **Save changes** when you are done.
+- **Close Plan** (active plan only) asks you to confirm, then moves the plan to history.
+- **Export Plan** downloads the plan as a text file. Every export is recorded in the guest's access log.
+
+Closed plans are read-only. A **MDT review overdue** chip appears when the MDT review date has passed.
 
 ### 5.9 Contact History tab
 
@@ -1212,7 +1219,7 @@ The "Who can" column shows the built-in roles. Your Administrator may have chang
 | Record a DIALOG reassessment | Guest record, DIALOG Scores tab, **Record new** | CMHW, CPN, Hub Manager |
 | Change the clinical pathway | Guest record, Pathway History tab, **Add New Pathway** | CMHW, CPN, Hub Manager |
 | Reassign the CMHW | Guest record, Pathway History tab, **Reassign CMHW** | CMHW, CPN, Hub Manager |
-| Start or close a care plan | Guest record, Care Plan tab | CMHW, CPN, Hub Manager |
+| Create, edit, close or export a care plan | Guest record, Care Plan tab | CMHW, CPN, Hub Manager |
 | Add or complete an action | Guest record, Actions & Reminders tab | CMHW, CPN, Hub Manager |
 | Add a quick note | Guest record, Notes tab | CMHW, CPN, Hub Manager |
 | Upload a document | Guest record, Documents tab | CMHW, CPN, Hub Manager |
