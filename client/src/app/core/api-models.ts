@@ -1311,6 +1311,8 @@ export type AgeBandLabel = (typeof AGE_BANDS)[number]['label'];
 
 export type CarePlanStatus = 'Active' | 'Completed' | 'Superseded';
 export type CarePlanGoalStatus = 'NotStarted' | 'InProgress' | 'Achieved' | 'Discontinued';
+/** "Has a referral to NHS services been made or discussed?" */
+export type CarePlanNhsReferral = 'NotAppropriate' | 'Discussed' | 'Made' | 'Declined';
 
 export interface CarePlanGoalDto {
   id: string;
@@ -1325,15 +1327,26 @@ export interface CarePlanDto {
   id: string;
   guestId: string;
   status: CarePlanStatus;
-  summary: string | null;
-  /** What the guest said they want out of the support. */
+  /** "What does the guest want to work on?" — in the guest's own words. */
   guestVoice: string | null;
+  /** "What support will we provide?" */
   supportArrangements: string | null;
+  /** "What will the guest do between sessions?" */
+  betweenSessions: string | null;
+  /** Referrals made or planned, internal or external. */
+  referrals: string | null;
+  /** "Any other notes for the record" (older plans' summary lives here). */
+  otherNotes: string | null;
+  nextContactOn: string | null;
+  cpnInvolvementRequired: boolean | null;
+  nhsReferral: CarePlanNhsReferral | null;
   startedOn: string;
+  /** The MDT (pathway) review date. */
   reviewDueOn: string | null;
   closedOn: string | null;
   isReviewOverdue: boolean;
   createdByName: string;
+  createdAt: string;
   updatedAt: string;
   goals: CarePlanGoalDto[];
 }
@@ -1354,10 +1367,15 @@ export interface CarePlanGoalInput {
 }
 
 export interface SaveCarePlanRequest {
-  summary?: string | null;
-  guestVoice?: string | null;
-  supportArrangements?: string | null;
-  reviewDueOn?: string | null;
+  guestVoice: string | null;
+  supportArrangements: string | null;
+  betweenSessions?: string | null;
+  referrals?: string | null;
+  otherNotes?: string | null;
+  nextContactOn: string | null;
+  reviewDueOn: string | null;
+  cpnInvolvementRequired: boolean | null;
+  nhsReferral: CarePlanNhsReferral | null;
   goals: CarePlanGoalInput[];
 }
 

@@ -167,7 +167,7 @@
           <app-guest-pathway-tab [guestId]="guestId()" [overview]="guest" (refresh)="reloadOverview()" />
         }
         @case ('careplan') {
-          <emhip-guest-care-plan-tab [guestId]="guestId()" />
+          <emhip-guest-care-plan-tab [guestId]="guestId()" [pathway]="guest.pathway" [guestNumber]="guest.guestNumber" />
         }
         @case ('contacts') {
           <emhip-guest-contact-history-tab [guestId]="guestId()" />

@@ -13,9 +13,12 @@ public class CarePlanConfiguration : IEntityTypeConfiguration<CarePlan>
         // One active plan per guest is the invariant the command relies on.
         builder.HasIndex(p => new { p.GuestId, p.Status }).HasDatabaseName("IX_CarePlans_Guest_Status");
         builder.Property(p => p.Status).HasConversion<string>().HasMaxLength(20);
-        builder.Property(p => p.Summary).HasMaxLength(4000);
         builder.Property(p => p.GuestVoice).HasMaxLength(4000);
         builder.Property(p => p.SupportArrangements).HasMaxLength(4000);
+        builder.Property(p => p.BetweenSessions).HasMaxLength(4000);
+        builder.Property(p => p.Referrals).HasMaxLength(4000);
+        builder.Property(p => p.OtherNotes).HasMaxLength(4000);
+        builder.Property(p => p.NhsReferral).HasConversion<string>().HasMaxLength(20);
         builder.Property(p => p.RowVersion).IsRowVersion();
     }
 }

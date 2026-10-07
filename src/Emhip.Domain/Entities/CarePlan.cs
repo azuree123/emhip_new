@@ -4,25 +4,38 @@ using Emhip.Domain.Enums;
 namespace Emhip.Domain.Entities;
 
 /// <summary>
-/// The guest's care plan: what the support is trying to achieve, the goals it breaks down into,
-/// and when it is next due for review. One plan per guest at a time — superseding a plan closes
-/// the old one rather than editing it, so the history of what was agreed stays intact.
+/// The guest's care plan, agreed with them in session: what they want to work on, the support
+/// we provide, what they will do between sessions, referrals, the goals it breaks down into, and
+/// the review and next steps. One plan per guest at a time — starting a new plan supersedes the
+/// old one rather than editing it, so the history of what was agreed stays intact.
 /// </summary>
 public class CarePlan : AggregateRoot
 {
     public Guid GuestId { get; private set; }
     public CarePlanStatus Status { get; private set; }
 
-    /// <summary>The overall aim, in the guest's own terms where possible.</summary>
-    public string? Summary { get; private set; }
-
-    /// <summary>What the guest said they want out of the support.</summary>
+    /// <summary>"What does the guest want to work on?" — in the guest's own words.</summary>
     public string? GuestVoice { get; private set; }
 
-    /// <summary>Agreed support and who provides it.</summary>
+    /// <summary>"What support will we provide?" — frequency of contact, who is involved, activities.</summary>
     public string? SupportArrangements { get; private set; }
 
+    /// <summary>"What will the guest do between sessions?"</summary>
+    public string? BetweenSessions { get; private set; }
+
+    /// <summary>Referrals made or planned, internal or external.</summary>
+    public string? Referrals { get; private set; }
+
+    /// <summary>"Any other notes for the record". Plans written before the current form kept their summary here.</summary>
+    public string? OtherNotes { get; private set; }
+
+    public DateOnly? NextContactOn { get; private set; }
+    public bool? CpnInvolvementRequired { get; private set; }
+    public CarePlanNhsReferral? NhsReferral { get; private set; }
+
     public DateOnly StartedOn { get; private set; }
+
+    /// <summary>The MDT (pathway) review date.</summary>
     public DateOnly? ReviewDueOn { get; private set; }
     public DateOnly? ClosedOn { get; private set; }
 
@@ -43,17 +56,31 @@ public class CarePlan : AggregateRoot
         UpdatedAt = CreatedAt;
     }
 
-    public void Update(string? summary, string? guestVoice, string? supportArrangements, DateOnly? reviewDueOn)
+    public void Update(
+        string? guestVoice,
+        string? supportArrangements,
+        string? betweenSessions,
+        string? referrals,
+        string? otherNotes,
+        DateOnly? nextContactOn,
+        DateOnly? reviewDueOn,
+        bool? cpnInvolvementRequired,
+        CarePlanNhsReferral? nhsReferral)
     {
         if (Status != CarePlanStatus.Active)
         {
             throw new InvalidOperationException("A closed care plan cannot be edited — start a new plan instead.");
         }
 
-        Summary = summary;
         GuestVoice = guestVoice;
         SupportArrangements = supportArrangements;
+        BetweenSessions = betweenSessions;
+        Referrals = referrals;
+        OtherNotes = otherNotes;
+        NextContactOn = nextContactOn;
         ReviewDueOn = reviewDueOn;
+        CpnInvolvementRequired = cpnInvolvementRequired;
+        NhsReferral = nhsReferral;
         UpdatedAt = DateTimeOffset.UtcNow;
     }
 

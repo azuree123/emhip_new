@@ -510,8 +510,9 @@ public sealed class GuestReadService(ISqlConnectionFactory connectionFactory, Em
             .OrderByDescending(p => p.StartedOn).ThenByDescending(p => p.CreatedAt)
             .Select(p => new
             {
-                p.Id, p.GuestId, p.Status, p.Summary, p.GuestVoice, p.SupportArrangements,
-                p.StartedOn, p.ReviewDueOn, p.ClosedOn, p.UpdatedAt,
+                p.Id, p.GuestId, p.Status, p.GuestVoice, p.SupportArrangements, p.BetweenSessions, p.Referrals, p.OtherNotes,
+                p.NextContactOn, p.CpnInvolvementRequired, p.NhsReferral,
+                p.StartedOn, p.ReviewDueOn, p.ClosedOn, p.CreatedAt, p.UpdatedAt,
                 CreatedByName = db.Users.Where(u => u.Id == p.CreatedByStaffId).Select(u => u.DisplayName).FirstOrDefault() ?? "Unknown",
             })
             .ToListAsync(cancellationToken);
@@ -527,10 +528,11 @@ public sealed class GuestReadService(ISqlConnectionFactory connectionFactory, Em
 
         var mapped = plans
             .Select(p => new CarePlanDto(
-                p.Id, p.GuestId, p.Status, p.Summary, p.GuestVoice, p.SupportArrangements,
+                p.Id, p.GuestId, p.Status, p.GuestVoice, p.SupportArrangements, p.BetweenSessions, p.Referrals, p.OtherNotes,
+                p.NextContactOn, p.CpnInvolvementRequired, p.NhsReferral,
                 p.StartedOn, p.ReviewDueOn, p.ClosedOn,
                 p.Status == CarePlanStatus.Active && p.ReviewDueOn is not null && p.ReviewDueOn < today,
-                p.CreatedByName, p.UpdatedAt,
+                p.CreatedByName, p.CreatedAt, p.UpdatedAt,
                 goals.Where(g => g.CarePlanId == p.Id).Select(g => g.Dto).ToList()))
             .ToList();
         var current = mapped.FirstOrDefault(p => p.Status == CarePlanStatus.Active);

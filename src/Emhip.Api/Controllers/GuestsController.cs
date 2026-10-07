@@ -367,16 +367,26 @@ public sealed class GuestsController(IMediator mediator, ICurrentUser currentUse
     public async Task<IActionResult> GetCarePlan(Guid guestId, CancellationToken cancellationToken) =>
         Ok(await mediator.Send(new GetGuestCarePlansQuery(guestId), cancellationToken));
 
-    /// <summary>Creates the guest's care plan or updates the active one, replacing its goal list.</summary>
+    /// <summary>Updates the active care plan (creating one when there is none), replacing its goal list.</summary>
     [HttpPut("{guestId:guid}/care-plan")]
     [Authorize(Policy = Permissions.Guests.Edit)]
-    public async Task<IActionResult> SaveCarePlan(Guid guestId, [FromBody] SaveCarePlanRequest request, CancellationToken cancellationToken)
+    public async Task<IActionResult> SaveCarePlan(Guid guestId, [FromBody] SaveCarePlanRequest request, CancellationToken cancellationToken) =>
+        Ok(new { id = await mediator.Send(request.ToCommand(guestId, startNew: false), cancellationToken) });
+
+    /// <summary>"Create New Plan" — supersedes the active plan, if any, and starts a fresh one.</summary>
+    [HttpPost("{guestId:guid}/care-plan")]
+    [Authorize(Policy = Permissions.Guests.Edit)]
+    public async Task<IActionResult> CreateCarePlan(Guid guestId, [FromBody] SaveCarePlanRequest request, CancellationToken cancellationToken) =>
+        Ok(new { id = await mediator.Send(request.ToCommand(guestId, startNew: true), cancellationToken) });
+
+    /// <summary>"Export Plan" — plain-text copy of one care plan, active or closed. Logged against the guest.</summary>
+    [HttpGet("{guestId:guid}/care-plan/{carePlanId:guid}/export")]
+    [Authorize(Policy = Permissions.Guests.View)]
+    public async Task<IActionResult> ExportCarePlan(Guid guestId, Guid carePlanId, CancellationToken cancellationToken)
     {
-        var id = await mediator.Send(
-            new SaveCarePlanCommand(guestId, request.Summary, request.GuestVoice, request.SupportArrangements,
-                request.ReviewDueOn, request.Goals ?? []),
-            cancellationToken);
-        return Ok(new { id });
+        var export = await mediator.Send(new ExportCarePlanQuery(guestId, carePlanId), cancellationToken);
+        if (export is null) return NotFound();
+        return File(System.Text.Encoding.UTF8.GetBytes(export.Content), "text/plain; charset=utf-8", export.FileName);
     }
 
     /// <summary>Closes the active plan as completed or superseded; closed plans are read-only.</summary>
@@ -528,8 +538,14 @@ public sealed class GuestsController(IMediator mediator, ICurrentUser currentUse
     public sealed record ReassignGuestRequest(Guid? AssignedCmhwId, string? Reason);
 
     public sealed record SaveCarePlanRequest(
-        string? Summary, string? GuestVoice, string? SupportArrangements, DateOnly? ReviewDueOn,
-        IReadOnlyList<CarePlanGoalInput>? Goals);
+        string? GuestVoice, string? SupportArrangements, string? BetweenSessions, string? Referrals, string? OtherNotes,
+        DateOnly? NextContactOn, DateOnly? ReviewDueOn, bool? CpnInvolvementRequired, CarePlanNhsReferral? NhsReferral,
+        IReadOnlyList<CarePlanGoalInput>? Goals)
+    {
+        public SaveCarePlanCommand ToCommand(Guid guestId, bool startNew) => new(
+            guestId, GuestVoice, SupportArrangements, BetweenSessions, Referrals, OtherNotes,
+            NextContactOn, ReviewDueOn, CpnInvolvementRequired, NhsReferral, Goals ?? [], startNew);
+    }
 
     public sealed record CloseCarePlanRequest(Domain.Enums.CarePlanStatus Status);
 

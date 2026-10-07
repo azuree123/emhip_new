@@ -44,6 +44,8 @@ interface NavSection {
   host: {
     // Clicking anywhere outside the search box closes the suggestions dropdown.
     '(document:click)': 'onDocumentClick($event)',
+    // Ctrl + K (⌘K on a Mac) jumps to the guest search from anywhere in the app.
+    '(document:keydown)': 'onGlobalKeydown($event)',
   },
 })
 export class AppShellComponent implements OnInit {
@@ -87,6 +89,7 @@ export class AppShellComponent implements OnInit {
   readonly suggestionsVisible = computed(() => this.suggestionsOpen() && this.suggestions() !== null);
 
   private readonly searchBox = viewChild<ElementRef<HTMLElement>>('searchBox');
+  private readonly searchInput = viewChild<ElementRef<HTMLInputElement>>('searchInput');
   private readonly suggestQuery$ = new Subject<string>();
 
   constructor() {
@@ -323,6 +326,18 @@ export class AppShellComponent implements OnInit {
   closeSuggestions(): void {
     this.suggestionsOpen.set(false);
     this.activeSuggestionIndex.set(-1);
+  }
+
+  /** Ctrl + K / ⌘K focuses the header search, as its hint keys advertise. An open modal
+   *  dialog keeps focus — the search sits behind its backdrop. */
+  onGlobalKeydown(event: KeyboardEvent): void {
+    // `key` can be missing on synthetic keydowns (e.g. Chrome autofill).
+    if (event.key?.toLowerCase() !== 'k' || !(event.ctrlKey || event.metaKey) || event.altKey || event.shiftKey) return;
+    const input = this.searchInput()?.nativeElement;
+    if (!input || document.querySelector('[aria-modal="true"]')) return;
+    event.preventDefault(); // the browser's own Ctrl + K moves focus to its address bar
+    input.focus();
+    input.select();
   }
 
   onDocumentClick(event: MouseEvent): void {

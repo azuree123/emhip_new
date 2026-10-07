@@ -14,14 +14,20 @@ public sealed record CarePlanDto(
     Guid Id,
     Guid GuestId,
     CarePlanStatus Status,
-    string? Summary,
     string? GuestVoice,
     string? SupportArrangements,
+    string? BetweenSessions,
+    string? Referrals,
+    string? OtherNotes,
+    DateOnly? NextContactOn,
+    bool? CpnInvolvementRequired,
+    CarePlanNhsReferral? NhsReferral,
     DateOnly StartedOn,
     DateOnly? ReviewDueOn,
     DateOnly? ClosedOn,
     bool IsReviewOverdue,
     string CreatedByName,
+    DateTimeOffset CreatedAt,
     DateTimeOffset UpdatedAt,
     IReadOnlyList<CarePlanGoalDto> Goals);
 
@@ -39,25 +45,39 @@ public sealed class GetGuestCarePlansQueryHandler(IGuestReadService reads) : IRe
 public sealed record CarePlanGoalInput(Guid? Id, string Description, CarePlanGoalStatus Status, DateOnly? TargetDate, string? ProgressNote);
 
 /// <summary>
-/// Creates the guest's plan or updates the active one, replacing its goal list. Editing a closed
-/// plan is refused by the aggregate — a new plan supersedes it instead.
+/// Writes the guest's care plan and replaces its goal list. With <see cref="StartNew"/> false it
+/// updates the active plan (creating one when there is none); with it true — "Create New Plan" —
+/// the active plan is closed as superseded and a fresh plan started in the same save. Editing a
+/// closed plan is refused by the aggregate.
 /// </summary>
 public sealed record SaveCarePlanCommand(
     Guid GuestId,
-    string? Summary,
     string? GuestVoice,
     string? SupportArrangements,
+    string? BetweenSessions,
+    string? Referrals,
+    string? OtherNotes,
+    DateOnly? NextContactOn,
     DateOnly? ReviewDueOn,
-    IReadOnlyList<CarePlanGoalInput> Goals) : IRequest<Guid>;
+    bool? CpnInvolvementRequired,
+    CarePlanNhsReferral? NhsReferral,
+    IReadOnlyList<CarePlanGoalInput> Goals,
+    bool StartNew = false) : IRequest<Guid>;
 
 public sealed class SaveCarePlanCommandValidator : AbstractValidator<SaveCarePlanCommand>
 {
     public SaveCarePlanCommandValidator()
     {
         RuleFor(x => x.GuestId).NotEmpty();
-        RuleFor(x => x.Summary).MaximumLength(4000);
-        RuleFor(x => x.GuestVoice).MaximumLength(4000);
-        RuleFor(x => x.SupportArrangements).MaximumLength(4000);
+        RuleFor(x => x.GuestVoice).NotEmpty().WithMessage("Record what the guest wants to work on.").MaximumLength(4000);
+        RuleFor(x => x.SupportArrangements).NotEmpty().WithMessage("Record the support we will provide.").MaximumLength(4000);
+        RuleFor(x => x.BetweenSessions).MaximumLength(4000);
+        RuleFor(x => x.Referrals).MaximumLength(4000);
+        RuleFor(x => x.OtherNotes).MaximumLength(4000);
+        RuleFor(x => x.NextContactOn).NotNull().WithMessage("Set the date of the next contact.");
+        RuleFor(x => x.ReviewDueOn).NotNull().WithMessage("Set the MDT review date.");
+        RuleFor(x => x.CpnInvolvementRequired).NotNull().WithMessage("Say whether CPN involvement is required.");
+        RuleFor(x => x.NhsReferral).NotNull().WithMessage("Say whether a referral to NHS services has been made or discussed.").IsInEnum();
         RuleForEach(x => x.Goals).ChildRules(goal =>
         {
             goal.RuleFor(g => g.Description).NotEmpty().MaximumLength(500);
@@ -73,19 +93,31 @@ public sealed class SaveCarePlanCommandHandler(IAppDbContext db, ICurrentUser cu
         var guestExists = await db.Guests.AsNoTracking().AnyAsync(g => g.Id == request.GuestId, cancellationToken);
         if (!guestExists) throw new KeyNotFoundException($"Guest {request.GuestId} not found.");
 
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
         var plan = await db.CarePlans
             .FirstOrDefaultAsync(p => p.GuestId == request.GuestId && p.Status == CarePlanStatus.Active, cancellationToken);
 
-        if (plan is null)
+        if (plan is not null && request.StartNew)
         {
-            plan = new CarePlan(request.GuestId, currentUser.StaffId, DateOnly.FromDateTime(DateTime.UtcNow), request.ReviewDueOn);
-            db.CarePlans.Add(plan);
-            await db.SaveChangesAsync(cancellationToken); // the goals need the plan's id
+            // Closed in the same save that adds its replacement, so the guest never has two active plans.
+            plan.Close(CarePlanStatus.Superseded, today);
+            plan = null;
         }
 
-        plan.Update(request.Summary, request.GuestVoice, request.SupportArrangements, request.ReviewDueOn);
+        var existingGoals = new List<CarePlanGoal>();
+        if (plan is null)
+        {
+            plan = new CarePlan(request.GuestId, currentUser.StaffId, today, request.ReviewDueOn);
+            db.CarePlans.Add(plan);
+        }
+        else
+        {
+            existingGoals = await db.CarePlanGoals.Where(g => g.CarePlanId == plan.Id).ToListAsync(cancellationToken);
+        }
 
-        var existingGoals = await db.CarePlanGoals.Where(g => g.CarePlanId == plan.Id).ToListAsync(cancellationToken);
+        plan.Update(
+            request.GuestVoice, request.SupportArrangements, request.BetweenSessions, request.Referrals, request.OtherNotes,
+            request.NextContactOn, request.ReviewDueOn, request.CpnInvolvementRequired, request.NhsReferral);
 
         // Goals absent from the submitted list were removed in the editor.
         var keptIds = request.Goals.Where(g => g.Id is not null).Select(g => g.Id!.Value).ToHashSet();

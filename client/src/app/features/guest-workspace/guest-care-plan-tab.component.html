@@ -1,6 +1,6 @@
 <div class="tab-panel">
   @if (loading()) {
-    <div class="state-card">Loading care plan…</div>
+    <div class="state-card">Loading care plans…</div>
   } @else if (error()) {
     <div class="state-card state-card--error">
       {{ error() }}
@@ -9,369 +9,551 @@
       </div>
     </div>
   } @else {
-    <!-- ── The active plan ─────────────────────────────────────────────── -->
-    @if (editing()) {
-      <section class="card">
-        <div class="card__header-row">
-          <h2 class="card__title">{{ current() ? 'Edit care plan' : 'Start care plan' }}</h2>
+    <section class="card">
+      <div class="history-header">
+        <div>
+          <h2 class="card__title">Care Plan History</h2>
+          <p class="history-header__subtitle">Agreed with guest, based on allocated pathway</p>
         </div>
-
-        <div class="edit-form">
-          <div class="edit-form__grid">
-            <label class="edit-form__field edit-form__field--full">
-              <span>Plan summary</span>
-              <textarea
-                rows="3"
-                [(ngModel)]="form.summary"
-                placeholder="What this plan is for, in a sentence or two…"
-              ></textarea>
-            </label>
-            <label class="edit-form__field edit-form__field--full">
-              <span>The guest’s own words</span>
-              <textarea
-                rows="3"
-                [(ngModel)]="form.guestVoice"
-                placeholder="What the guest said they want out of this support…"
-              ></textarea>
-            </label>
-            <label class="edit-form__field edit-form__field--full">
-              <span>Agreed support arrangements</span>
-              <textarea
-                rows="3"
-                [(ngModel)]="form.supportArrangements"
-                placeholder="Who does what, how often, and with whom…"
-              ></textarea>
-            </label>
-            <label class="edit-form__field">
-              <span>Review due</span>
-              <input type="date" [(ngModel)]="form.reviewDueOn" />
-            </label>
-          </div>
-
-          <!-- Goals: the array order is the sort order the server stores. -->
-          <div class="goals-editor">
-            <div class="goals-editor__head">
-              <h3 class="subhead">Goals</h3>
-              <span class="hint">Goals removed here are deleted when the plan is saved.</span>
-            </div>
-
-            @for (goal of form.goals; track goal.key; let i = $index, count = $count) {
-              <div class="goal-row">
-                <div class="goal-row__head">
-                  <span class="goal-row__index">Goal {{ i + 1 }}</span>
-                  <div class="goal-row__controls">
-                    <button
-                      type="button"
-                      class="icon-btn"
-                      aria-label="Move goal up"
-                      [disabled]="i === 0"
-                      (click)="moveGoal(i, -1)"
-                    >
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                        <path d="M12 19V5m0 0-6 6m6-6 6 6" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" />
-                      </svg>
-                    </button>
-                    <button
-                      type="button"
-                      class="icon-btn"
-                      aria-label="Move goal down"
-                      [disabled]="i === count - 1"
-                      (click)="moveGoal(i, 1)"
-                    >
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                        <path d="M12 5v14m0 0 6-6m-6 6-6-6" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" />
-                      </svg>
-                    </button>
-                    <button
-                      type="button"
-                      class="icon-btn icon-btn--danger"
-                      aria-label="Remove goal"
-                      (click)="removeGoal(i)"
-                    >
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                        <path d="M5 7h14M10 7V5h4v2m-7 0 .8 12h8.4L17 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
-                      </svg>
-                    </button>
-                  </div>
-                </div>
-
-                <div class="goal-row__grid">
-                  <label class="edit-form__field edit-form__field--full">
-                    <span>Description</span>
-                    <input type="text" [(ngModel)]="goal.description" placeholder="What the guest is working towards…" />
-                  </label>
-                  <label class="edit-form__field">
-                    <span>Status</span>
-                    <select [(ngModel)]="goal.status">
-                      @for (status of goalStatuses; track status) {
-                        <option [value]="status">{{ goalChip(status).label }}</option>
-                      }
-                    </select>
-                  </label>
-                  <label class="edit-form__field">
-                    <span>Target date</span>
-                    <input type="date" [(ngModel)]="goal.targetDate" />
-                  </label>
-                  <label class="edit-form__field edit-form__field--full">
-                    <span>Progress note</span>
-                    <textarea rows="2" [(ngModel)]="goal.progressNote" placeholder="How this goal is going…"></textarea>
-                  </label>
-                </div>
-              </div>
-            } @empty {
-              <p class="empty-state">No goals yet — add the first one below.</p>
-            }
-
-            <button type="button" class="btn-ghost goals-editor__add" (click)="addGoal()">
-              <svg width="16" height="16" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-                <path d="M10 4.25v11.5M4.25 10h11.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
-              </svg>
-              Add goal
-            </button>
-          </div>
-
-          @if (saveError()) {
-            <p class="form-error">{{ saveError() }}</p>
-          }
-
-          <div class="edit-form__actions">
-            <button type="button" class="btn-ghost" [disabled]="saving()" (click)="cancelEdit()">Cancel</button>
-            <button type="button" class="btn-primary" [disabled]="saving()" (click)="save()">
-              {{ saving() ? 'Saving…' : 'Save care plan' }}
-            </button>
-          </div>
-        </div>
-      </section>
-    } @else if (current(); as plan) {
-      <section class="card">
-        <div class="card__header-row">
-          <div class="plan-heading">
-            <h2 class="card__title">Care Plan</h2>
-            <span class="chip" [style.background]="planChip(plan.status).bg" [style.color]="planChip(plan.status).fg">
-              {{ planChip(plan.status).label }}
-            </span>
-            @if (plan.isReviewOverdue) {
-              <span class="chip chip--overdue">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                  <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" />
-                  <path d="M12 7.5v5.25M12 16.25v.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                </svg>
-                Review overdue
-              </span>
-            }
-          </div>
-          @if (canEdit) {
-            <div class="plan-actions">
-              <button type="button" class="btn-ghost" (click)="openClose()">Close plan</button>
-              <button type="button" class="btn-primary" (click)="editPlan()">Edit plan</button>
-            </div>
-          }
-        </div>
-
-        @if (closingOpen()) {
-          <div class="close-strip">
-            <p class="close-strip__text">
-              Closing this plan moves it into history and makes it read-only. How did it end?
-            </p>
-            @if (closeError()) {
-              <p class="form-error">{{ closeError() }}</p>
-            }
-            <div class="close-strip__actions">
-              <button type="button" class="btn-ghost" [disabled]="closing()" (click)="cancelClose()">Cancel</button>
-              <button type="button" class="btn-ghost" [disabled]="closing()" (click)="closePlan('Superseded')">
-                Superseded
-              </button>
-              <button type="button" class="btn-primary" [disabled]="closing()" (click)="closePlan('Completed')">
-                {{ closing() ? 'Closing…' : 'Completed' }}
-              </button>
-            </div>
-          </div>
+        @if (canEdit) {
+          <button type="button" class="btn-primary btn-primary--icon" (click)="openCreate()">
+            <svg width="16" height="16" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+              <path d="M10 4.25v11.5M4.25 10h11.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+            </svg>
+            Create New Plan
+          </button>
         }
+      </div>
 
-        <div class="plan-dates">
-          <div class="field">
-            <span class="field__label">Started</span>
-            <span class="field__value">{{ formatDate(plan.startedOn) }}</span>
-          </div>
-          <div class="field">
-            <span class="field__label">Review due</span>
-            <span class="field__value" [class.field__value--overdue]="plan.isReviewOverdue">
-              {{ formatDate(plan.reviewDueOn) }}
-            </span>
-          </div>
-          <div class="field">
-            <span class="field__label">Created by</span>
-            <span class="field__value">{{ plan.createdByName || '—' }}</span>
-          </div>
-          <div class="field">
-            <span class="field__label">Last updated</span>
-            <span class="field__value">{{ formatDateTime(plan.updatedAt) }}</span>
-          </div>
-        </div>
+      @if (exportError()) {
+        <p class="form-error plan-list__error">{{ exportError() }}</p>
+      }
 
-        <div class="plan-prose">
-          <div class="prose-block">
-            <span class="prose-block__label">Plan summary</span>
-            <p class="prose-block__body">{{ plan.summary || 'Not recorded yet.' }}</p>
-          </div>
-          <div class="prose-block prose-block--voice">
-            <span class="prose-block__label">The guest’s own words</span>
-            <p class="prose-block__body">{{ plan.guestVoice || 'Not recorded yet.' }}</p>
-          </div>
-          <div class="prose-block">
-            <span class="prose-block__label">Agreed support arrangements</span>
-            <p class="prose-block__body">{{ plan.supportArrangements || 'Not recorded yet.' }}</p>
-          </div>
-        </div>
-      </section>
-
-      <section class="card">
-        <div class="card__header-row">
-          <h2 class="card__title">Goals</h2>
-          <span class="count-label">{{ plan.goals.length }} {{ plan.goals.length === 1 ? 'goal' : 'goals' }}</span>
-        </div>
-
-        @if (plan.goals.length) {
-          <ol class="goal-list">
-            @for (goal of orderedGoals(plan); track goal.id) {
-              <li class="goal">
-                <div class="goal__head">
-                  <span class="goal__description">{{ goal.description }}</span>
-                  <span
-                    class="chip"
-                    [style.background]="goalChip(goal.status).bg"
-                    [style.color]="goalChip(goal.status).fg"
-                  >
-                    {{ goalChip(goal.status).label }}
-                  </span>
-                </div>
-                <div class="goal__meta">
-                  <span>Target {{ formatDate(goal.targetDate) }}</span>
-                </div>
-                @if (goal.progressNote) {
-                  <p class="goal__note">{{ goal.progressNote }}</p>
-                }
-              </li>
-            }
-          </ol>
-        } @else {
-          <p class="empty-state">No goals have been agreed on this plan yet.</p>
-        }
-      </section>
-    } @else {
-      <section class="card">
-        <div class="empty-plan">
-          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <path
-              d="M7 3.75h10A1.25 1.25 0 0 1 18.25 5v14A1.25 1.25 0 0 1 17 20.25H7A1.25 1.25 0 0 1 5.75 19V5A1.25 1.25 0 0 1 7 3.75Z"
-              stroke="currentColor"
-              stroke-width="1.4"
-            />
-            <path d="M8.75 9h6.5M8.75 12.25h6.5M8.75 15.5h4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
-          </svg>
-          <p class="empty-plan__title">No care plan yet</p>
-          <p class="empty-plan__text">
-            A care plan records what the guest wants from their support, the arrangements agreed with them, and the
-            goals being worked towards.
-          </p>
-          @if (canEdit) {
-            <button type="button" class="btn-primary" (click)="startPlan()">Start care plan</button>
-          } @else {
-            <p class="empty-state">You do not have permission to start a care plan for this guest.</p>
-          }
-        </div>
-      </section>
-    }
-
-    <!-- ── Closed plans, read-only ─────────────────────────────────────── -->
-    @if (history().length) {
-      <section class="card">
-        <div class="card__header-row">
-          <h2 class="card__title">Previous care plans</h2>
-          <span class="count-label">{{ history().length }} closed</span>
-        </div>
-
-        <!-- Accordion: each closed plan is one summary row; select it to read the full plan. -->
-        <div class="history-list">
-          @for (plan of history(); track plan.id) {
-            @let open = isHistoryOpen(plan.id);
-            <article class="history-plan" [class.history-plan--open]="open">
+      <div class="plan-list">
+        @for (plan of allPlans(); track plan.id) {
+          @let open = isOpen(plan.id);
+          @let active = plan.status === 'Active';
+          <article class="plan" [class.plan--open]="open">
+            <div class="plan__head">
+              <!-- The whole summary line toggles the plan; the ⋮ menu sits beside it. -->
               <button
                 type="button"
-                class="history-plan__head"
+                class="plan__toggle"
                 [attr.aria-expanded]="open"
-                [attr.aria-controls]="'care-plan-history-' + plan.id"
-                (click)="toggleHistory(plan.id)"
+                [attr.aria-controls]="'care-plan-' + plan.id"
+                (click)="toggle(plan.id)"
               >
-                <span class="history-plan__dates">
-                  {{ formatDate(plan.startedOn) }} — {{ formatDate(plan.closedOn) }}
+                <svg class="plan__icon" width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path
+                    d="M5 3.75h14c.69 0 1.25.56 1.25 1.25v9.25l-6 6H5c-.69 0-1.25-.56-1.25-1.25V5c0-.69.56-1.25 1.25-1.25Z"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                    stroke-linejoin="round"
+                  />
+                  <path d="M14.25 20v-4.5c0-.69.56-1.25 1.25-1.25H20M3.75 3.75l10.5 10.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+                <span class="plan__summary">
+                  <span class="plan__title-row">
+                    <span class="plan__title">Care Plan</span>
+                    <span class="plan__chip">{{ planChipLabel(plan) }}</span>
+                    @if (plan.isReviewOverdue) {
+                      <span class="plan__chip plan__chip--overdue">MDT review overdue</span>
+                    }
+                  </span>
+                  <span class="plan__meta">{{ planMeta(plan) }}</span>
                 </span>
-                <span
-                  class="chip"
-                  [style.background]="planChip(plan.status).bg"
-                  [style.color]="planChip(plan.status).fg"
-                >
-                  {{ planChip(plan.status).label }}
-                </span>
-                <span class="history-plan__goals">{{ goalSummary(plan) }}</span>
-                <span class="history-plan__meta">Created by {{ plan.createdByName || '—' }}</span>
                 <svg
-                  class="history-plan__chevron"
-                  [class.history-plan__chevron--open]="open"
-                  width="12"
-                  height="8"
+                  class="plan__chevron"
+                  [class.plan__chevron--open]="open"
+                  width="14"
+                  height="9"
                   viewBox="0 0 12 8"
                   fill="none"
                   aria-hidden="true"
                 >
-                  <path d="M 1 1.5 L 6 6.5 L 11 1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                  <path d="M 1 1.5 L 6 6.5 L 11 1.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
                 </svg>
               </button>
 
-              @if (open) {
-                <div class="history-plan__detail" [id]="'care-plan-history-' + plan.id">
-                  @if (plan.summary) {
-                    <p class="history-plan__body">{{ plan.summary }}</p>
-                  }
-                  @if (plan.guestVoice) {
-                    <div class="prose-block prose-block--voice">
-                      <span class="prose-block__label">The guest’s own words</span>
-                      <p class="prose-block__body">{{ plan.guestVoice }}</p>
-                    </div>
-                  }
-                  @if (plan.supportArrangements) {
-                    <div class="prose-block">
-                      <span class="prose-block__label">Agreed support arrangements</span>
-                      <p class="prose-block__body">{{ plan.supportArrangements }}</p>
-                    </div>
-                  }
+              <span class="row-menu">
+                <button
+                  type="button"
+                  class="plan__kebab"
+                  [attr.aria-expanded]="openMenuId() === plan.id"
+                  aria-haspopup="menu"
+                  [attr.aria-label]="'More actions for the care plan created ' + formatDate(plan.startedOn)"
+                  (click)="toggleMenu(plan.id)"
+                >
+                  <svg width="4" height="16" viewBox="0 0 4 16" fill="currentColor" aria-hidden="true">
+                    <circle cx="2" cy="2" r="1.7" />
+                    <circle cx="2" cy="8" r="1.7" />
+                    <circle cx="2" cy="14" r="1.7" />
+                  </svg>
+                </button>
 
+                @if (openMenuId() === plan.id) {
+                  <span class="row-menu__list" role="menu">
+                    @if (active && canEdit) {
+                      <button type="button" class="row-menu__item" role="menuitem" (click)="openEdit()">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                          <path d="M4 20h4L18.5 9.5a2.83 2.83 0 0 0-4-4L4 16v4Z M13.5 6.5l4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                        Edit Plan
+                      </button>
+                      <button type="button" class="row-menu__item row-menu__item--danger" role="menuitem" (click)="openClose()">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                          <path d="M4.5 6.5h15M9.5 6.5V4.75h5V6.5m-8 0 .9 12.75h9.2L17.5 6.5M10.25 10.5v5.5m3.5-5.5v5.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                        Close Plan
+                      </button>
+                    }
+                    <button
+                      type="button"
+                      class="row-menu__item"
+                      role="menuitem"
+                      [disabled]="exportingId() === plan.id"
+                      (click)="exportPlan(plan)"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+                        <path
+                          transform="translate(2.813,1.125)"
+                          d="M 12.375 6.75 L 12.375 13.5 C 12.375 13.799 12.256 14.085 12.045 14.296 C 11.835 14.507 11.548 14.625 11.25 14.625 L 1.125 14.625 C 0.827 14.625 0.54 14.507 0.33 14.296 C 0.119 14.085 0 13.799 0 13.5 L 0 6.75 C 0 6.452 0.119 6.166 0.33 5.955 C 0.54 5.744 0.827 5.625 1.125 5.625 L 2.813 5.625 C 2.962 5.625 3.105 5.685 3.21 5.79 C 3.316 5.896 3.375 6.039 3.375 6.188 C 3.375 6.337 3.316 6.48 3.21 6.586 C 3.105 6.691 2.962 6.75 2.813 6.75 L 1.125 6.75 L 1.125 13.5 L 11.25 13.5 L 11.25 6.75 L 9.563 6.75 C 9.413 6.75 9.27 6.691 9.165 6.586 C 9.059 6.48 9 6.337 9 6.188 C 9 6.039 9.059 5.896 9.165 5.79 C 9.27 5.685 9.413 5.625 9.563 5.625 L 11.25 5.625 C 11.548 5.625 11.835 5.744 12.045 5.955 C 12.256 6.166 12.375 6.452 12.375 6.75 Z M 3.773 3.773 L 5.625 1.921 L 5.625 8.438 C 5.625 8.587 5.684 8.73 5.79 8.836 C 5.895 8.941 6.038 9 6.188 9 C 6.337 9 6.48 8.941 6.585 8.836 C 6.691 8.73 6.75 8.587 6.75 8.438 L 6.75 1.921 L 8.602 3.773 C 8.708 3.879 8.851 3.938 9 3.938 C 9.149 3.938 9.292 3.879 9.398 3.773 C 9.504 3.668 9.563 3.525 9.563 3.375 C 9.563 3.226 9.504 3.083 9.398 2.977 L 6.585 0.165 C 6.533 0.113 6.471 0.071 6.403 0.043 C 6.335 0.015 6.261 0 6.188 0 C 6.114 0 6.04 0.015 5.972 0.043 C 5.904 0.071 5.842 0.113 5.79 0.165 L 2.977 2.977 C 2.871 3.083 2.812 3.226 2.812 3.375 C 2.812 3.525 2.871 3.668 2.977 3.773 C 3.083 3.879 3.226 3.938 3.375 3.938 C 3.524 3.938 3.667 3.879 3.773 3.773 Z"
+                          fill="currentColor"
+                        />
+                      </svg>
+                      {{ exportingId() === plan.id ? 'Exporting…' : 'Export Plan' }}
+                    </button>
+                  </span>
+                }
+              </span>
+            </div>
+
+            @if (open) {
+              <div class="plan__body" [id]="'care-plan-' + plan.id">
+                <div class="qa-grid">
+                  <div class="qa">
+                    <h3 class="qa__question">What does the guest want to work on?</h3>
+                    <p class="qa__answer">{{ plan.guestVoice || 'Not recorded.' }}</p>
+                  </div>
+                  <div class="qa">
+                    <h3 class="qa__question">What support will we provide?</h3>
+                    <p class="qa__answer">{{ plan.supportArrangements || 'Not recorded.' }}</p>
+                  </div>
+                  <div class="qa">
+                    <h3 class="qa__question">What will the guest do between sessions?</h3>
+                    <p class="qa__answer">{{ plan.betweenSessions || 'Not recorded.' }}</p>
+                  </div>
+                  <div class="qa">
+                    <h3 class="qa__question">Referrals made or planned</h3>
+                    <p class="qa__answer">{{ plan.referrals || 'None recorded.' }}</p>
+                  </div>
+                </div>
+
+                <div class="plan-goals">
+                  <h3 class="qa__question">Goals</h3>
                   @if (plan.goals.length) {
-                    <ul class="history-goals">
+                    <ol class="goal-list">
                       @for (goal of orderedGoals(plan); track goal.id) {
-                        <li class="history-goals__item">
-                          <span
-                            class="chip"
-                            [style.background]="goalChip(goal.status).bg"
-                            [style.color]="goalChip(goal.status).fg"
-                          >
-                            {{ goalChip(goal.status).label }}
-                          </span>
-                          <span class="history-goals__text">{{ goal.description }}</span>
+                        <li class="goal">
+                          <div class="goal__head">
+                            <span class="goal__description">{{ goal.description }}</span>
+                            <span class="chip" [style.background]="goalChip(goal.status).bg" [style.color]="goalChip(goal.status).fg">
+                              {{ goalChip(goal.status).label }}
+                            </span>
+                          </div>
+                          @if (goal.targetDate) {
+                            <span class="goal__meta">Target {{ formatDate(goal.targetDate) }}</span>
+                          }
+                          @if (goal.progressNote) {
+                            <p class="goal__note">{{ goal.progressNote }}</p>
+                          }
                         </li>
                       }
-                    </ul>
-                  }
-
-                  @if (!plan.summary && !plan.guestVoice && !plan.supportArrangements && !plan.goals.length) {
-                    <p class="history-plan__meta">Nothing else was recorded on this plan.</p>
+                    </ol>
+                  } @else {
+                    <p class="qa__answer">No goals have been agreed on this plan.</p>
                   }
                 </div>
-              }
-            </article>
-          }
-        </div>
-      </section>
-    }
+
+                @if (plan.otherNotes) {
+                  <div class="qa">
+                    <h3 class="qa__question">Other notes for the record</h3>
+                    <p class="qa__answer">{{ plan.otherNotes }}</p>
+                  </div>
+                }
+
+                <div class="plan-facts">
+                  <span class="plan-facts__item">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                      <rect x="3.75" y="5" width="16.5" height="15.25" rx="2" stroke="currentColor" stroke-width="1.5" />
+                      <path d="M3.75 9.5h16.5M8 3v3.5M16 3v3.5M9.5 13.25l1.5-1v4.5m2.75-3.75c0-.55.45-1 1-1s1 .45 1 1c0 1.25-2 1.75-2 3.75h2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                    <strong>Next contact:</strong> {{ formatDate(plan.nextContactOn) }}
+                  </span>
+                  <span class="plan-facts__item" [class.plan-facts__item--overdue]="plan.isReviewOverdue">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                      <circle cx="6.5" cy="5.5" r="2" stroke="currentColor" stroke-width="1.5" />
+                      <circle cx="6.5" cy="18.5" r="2" stroke="currentColor" stroke-width="1.5" />
+                      <circle cx="17.5" cy="7.5" r="2" stroke="currentColor" stroke-width="1.5" />
+                      <path d="M6.5 7.5v9M17.5 9.5c0 4-5 3.5-9.5 7.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                    </svg>
+                    <strong>MDT review:</strong> {{ formatDate(plan.reviewDueOn) }}{{ plan.isReviewOverdue ? ' (overdue)' : '' }}
+                  </span>
+                  <span class="plan-facts__item">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                      <rect x="3.75" y="7" width="16.5" height="12.5" rx="2" stroke="currentColor" stroke-width="1.5" />
+                      <path d="M9 7V5.5c0-.55.45-1 1-1h4c.55 0 1 .45 1 1V7M12 10.5v5.5M9.25 13.25h5.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                    </svg>
+                    <strong>CPN involvement:</strong> {{ cpnLabel(plan.cpnInvolvementRequired) }}
+                  </span>
+                  <span class="plan-facts__item">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                      <path d="M5.25 20.25V5c0-.69.56-1.25 1.25-1.25h7.25L18.75 8.5v11.75M3.5 20.25h17" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                      <path d="M12 8.5v5M9.5 11h5M10 17h4v3.25h-4z" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                    <strong>NHS referral:</strong> {{ nhsReferralLabel(plan.nhsReferral) }}
+                  </span>
+                </div>
+              </div>
+            }
+          </article>
+        } @empty {
+          <div class="empty-plan">
+            <p class="empty-plan__title">No care plans yet</p>
+            <p class="empty-plan__text">
+              A care plan records what the guest wants to work on, the support agreed with them, what they will do
+              between sessions, and the goals being worked towards.
+            </p>
+            @if (!canEdit) {
+              <p class="empty-state">You do not have permission to create a care plan for this guest.</p>
+            }
+          </div>
+        }
+      </div>
+    </section>
   }
 </div>
+
+<!-- Click-anywhere-else closes an open row menu. -->
+@if (openMenuId()) {
+  <div class="menu-backdrop" (click)="closeMenu()"></div>
+}
+
+<!-- ── Create New Care Plan / Edit Care Plan ─────────────────────────────── -->
+@if (dialogMode(); as mode) {
+  <div class="dialog-backdrop" (click)="closeDialog()">
+    <form
+      class="dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="care-plan-dialog-title"
+      novalidate
+      (click)="$event.stopPropagation()"
+      (ngSubmit)="save()"
+    >
+      <header class="dialog__header">
+        <div>
+          <h2 class="dialog__title" id="care-plan-dialog-title">
+            {{ mode === 'create' ? 'Create New Care Plan' : 'Edit Care Plan' }}
+          </h2>
+          <p class="dialog__subtitle">Agreed with guest, based on allocated pathway</p>
+        </div>
+        <button type="button" class="dialog__close" aria-label="Close" [disabled]="saving()" (click)="closeDialog()">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path d="M 3 3 L 13 13 M 13 3 L 3 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+          </svg>
+        </button>
+      </header>
+
+      <div class="dialog__body">
+        <p class="dialog__banner">
+          <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <circle cx="8" cy="8" r="8" fill="currentColor" />
+            <path d="M 8 7.25 L 8 11.5 M 8 4.6 L 8 5" stroke="#fff" stroke-width="1.6" stroke-linecap="round" />
+          </svg>
+          <span>
+            This plan is developed collaboratively with the guest. It should reflect what was agreed in the session, not
+            what was decided for them.
+          </span>
+        </p>
+        @if (mode === 'create' && current()) {
+          <p class="dialog__banner dialog__banner--amber">
+            <span>Creating a new plan closes the current active plan and keeps it in Care Plan History.</span>
+          </p>
+        }
+
+        <label class="dialog__field">
+          <span class="dialog__label">What does the guest want to work on?&nbsp;*</span>
+          <textarea
+            class="dialog__textarea"
+            name="guestVoice"
+            placeholder="Goals in their own words…"
+            [class.dialog__textarea--invalid]="missing('guestVoice')"
+            [(ngModel)]="form.guestVoice"
+          ></textarea>
+          @if (missing('guestVoice')) {
+            <span class="form-error">Record what the guest wants to work on.</span>
+          }
+        </label>
+
+        <label class="dialog__field">
+          <span class="dialog__label">What support will we provide?&nbsp;*</span>
+          <textarea
+            class="dialog__textarea"
+            name="supportArrangements"
+            placeholder="Detail frequency of contact, who is involved, what activities or referrals are planned…"
+            [class.dialog__textarea--invalid]="missing('supportArrangements')"
+            [(ngModel)]="form.supportArrangements"
+          ></textarea>
+          @if (missing('supportArrangements')) {
+            <span class="form-error">Record the support we will provide.</span>
+          } @else {
+            <span class="dialog__note">
+              <svg width="10" height="10" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                <circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5" />
+                <path d="M 8 4.5 L 8 8.75 M 8 11.25 L 8 11.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+              </svg>
+              Specific to {{ pathwayLabel() ? 'the ' + pathwayLabel() + ' pathway' : 'pathway' }}
+            </span>
+          }
+        </label>
+
+        <label class="dialog__field">
+          <span class="dialog__label">What will the guest do between sessions?</span>
+          <textarea
+            class="dialog__textarea"
+            name="betweenSessions"
+            placeholder="Activities, exercises or self-care the guest has agreed to try…"
+            [(ngModel)]="form.betweenSessions"
+          ></textarea>
+        </label>
+
+        <label class="dialog__field">
+          <span class="dialog__label">Any referrals made or planned (internal or external)</span>
+          <textarea
+            class="dialog__textarea"
+            name="referrals"
+            placeholder="Include service name, date referred, expected wait…"
+            [(ngModel)]="form.referrals"
+          ></textarea>
+        </label>
+
+        <!-- Goals — not in the design mock-up, kept so progress can be tracked goal by goal. -->
+        <div class="dialog__section">
+          <div class="dialog__section-head">
+            <h3 class="dialog__section-title">Goals</h3>
+            <span class="dialog__hint">Break what the guest wants to work on into goals you can track.</span>
+          </div>
+
+          @for (goal of form.goals; track goal.key; let i = $index, count = $count) {
+            <div class="goal-row">
+              <div class="goal-row__head">
+                <span class="goal-row__index">Goal {{ i + 1 }}</span>
+                <div class="goal-row__controls">
+                  <button type="button" class="icon-btn" aria-label="Move goal up" [disabled]="i === 0" (click)="moveGoal(i, -1)">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                      <path d="M12 19V5m0 0-6 6m6-6 6 6" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                  </button>
+                  <button
+                    type="button"
+                    class="icon-btn"
+                    aria-label="Move goal down"
+                    [disabled]="i === count - 1"
+                    (click)="moveGoal(i, 1)"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                      <path d="M12 5v14m0 0 6-6m-6 6-6-6" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                  </button>
+                  <button type="button" class="icon-btn icon-btn--danger" aria-label="Remove goal" (click)="removeGoal(i)">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                      <path d="M5 7h14M10 7V5h4v2m-7 0 .8 12h8.4L17 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              <div class="goal-row__grid">
+                <label class="dialog__field goal-row__full">
+                  <span class="dialog__label dialog__label--small">Description</span>
+                  <input
+                    type="text"
+                    class="dialog__input"
+                    [name]="'goalDescription' + goal.key"
+                    placeholder="What the guest is working towards…"
+                    [class.dialog__input--invalid]="goalMissingDescription(goal)"
+                    [(ngModel)]="goal.description"
+                  />
+                  @if (goalMissingDescription(goal)) {
+                    <span class="form-error">Give this goal a description, or remove it.</span>
+                  }
+                </label>
+                <label class="dialog__field">
+                  <span class="dialog__label dialog__label--small">Status</span>
+                  <select class="dialog__input" [name]="'goalStatus' + goal.key" [(ngModel)]="goal.status">
+                    @for (status of goalStatuses; track status) {
+                      <option [value]="status">{{ goalChip(status).label }}</option>
+                    }
+                  </select>
+                </label>
+                <label class="dialog__field">
+                  <span class="dialog__label dialog__label--small">Target date</span>
+                  <input type="date" class="dialog__input" [name]="'goalTarget' + goal.key" [(ngModel)]="goal.targetDate" />
+                </label>
+                <label class="dialog__field goal-row__full">
+                  <span class="dialog__label dialog__label--small">Progress note</span>
+                  <textarea
+                    class="dialog__textarea dialog__textarea--short"
+                    [name]="'goalNote' + goal.key"
+                    placeholder="How this goal is going…"
+                    [(ngModel)]="goal.progressNote"
+                  ></textarea>
+                </label>
+              </div>
+            </div>
+          } @empty {
+            <p class="empty-state">No goals yet — add the first one below.</p>
+          }
+
+          <button type="button" class="btn-ghost dialog__add-goal" (click)="addGoal()">
+            <svg width="16" height="16" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+              <path d="M10 4.25v11.5M4.25 10h11.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+            </svg>
+            Add goal
+          </button>
+        </div>
+
+        <div class="dialog__section">
+          <h3 class="dialog__section-title">Review &amp; Next steps</h3>
+
+          <div class="dialog__row">
+            <label class="dialog__field">
+              <span class="dialog__label">Date of next contact&nbsp;*</span>
+              <input
+                type="date"
+                class="dialog__input"
+                name="nextContactOn"
+                [class.dialog__input--invalid]="missing('nextContactOn')"
+                [(ngModel)]="form.nextContactOn"
+              />
+              @if (missing('nextContactOn')) {
+                <span class="form-error">Set the date of the next contact.</span>
+              }
+            </label>
+            <label class="dialog__field">
+              <span class="dialog__label">MDT Review date&nbsp;*</span>
+              <input
+                type="date"
+                class="dialog__input"
+                name="reviewDueOn"
+                [class.dialog__input--invalid]="missing('reviewDueOn')"
+                [(ngModel)]="form.reviewDueOn"
+              />
+              @if (missing('reviewDueOn')) {
+                <span class="form-error">Set the MDT review date.</span>
+              } @else {
+                <span class="dialog__note">
+                  <svg width="10" height="10" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                    <circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5" />
+                    <path d="M 8 4.5 L 8 8.75 M 8 11.25 L 8 11.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+                  </svg>
+                  {{ pathwayLabel() ? pathwayLabel() + ' pathway review' : 'Pathway review' }}
+                </span>
+              }
+            </label>
+          </div>
+
+          <div class="dialog__row">
+            <label class="dialog__field">
+              <span class="dialog__label">CPN involvement required?&nbsp;*</span>
+              <select
+                class="dialog__input"
+                name="cpnInvolvementRequired"
+                [class.dialog__input--invalid]="missing('cpnInvolvementRequired')"
+                [(ngModel)]="form.cpnInvolvementRequired"
+              >
+                <option value="">Select…</option>
+                <option value="no">No</option>
+                <option value="yes">Yes</option>
+              </select>
+              @if (missing('cpnInvolvementRequired')) {
+                <span class="form-error">Choose Yes or No.</span>
+              }
+            </label>
+            <label class="dialog__field">
+              <span class="dialog__label">Has a referral to NHS services been made or discussed?&nbsp;*</span>
+              <select
+                class="dialog__input"
+                name="nhsReferral"
+                [class.dialog__input--invalid]="missing('nhsReferral')"
+                [(ngModel)]="form.nhsReferral"
+              >
+                <option value="">Select…</option>
+                @for (option of nhsReferralOptions; track option.value) {
+                  <option [value]="option.value">{{ option.label }}</option>
+                }
+              </select>
+              @if (missing('nhsReferral')) {
+                <span class="form-error">Choose an answer.</span>
+              }
+            </label>
+          </div>
+
+          <label class="dialog__field">
+            <span class="dialog__label">Any other notes for the record</span>
+            <textarea class="dialog__textarea" name="otherNotes" [(ngModel)]="form.otherNotes"></textarea>
+          </label>
+        </div>
+
+        <div class="dialog__actions">
+          @if (saveError()) {
+            <p class="form-error">{{ saveError() }}</p>
+          }
+          <button type="submit" class="btn-primary dialog__submit" [disabled]="saving()">
+            {{ saving() ? 'Saving…' : mode === 'create' ? 'Create' : 'Save changes' }}
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+}
+
+<!-- ── Close Plan confirmation ───────────────────────────────────────────── -->
+@if (closeConfirmOpen()) {
+  <div class="dialog-backdrop" (click)="cancelClose()">
+    <div
+      class="dialog dialog--narrow"
+      role="alertdialog"
+      aria-modal="true"
+      aria-labelledby="care-plan-close-title"
+      (click)="$event.stopPropagation()"
+    >
+      <header class="dialog__header">
+        <div>
+          <h2 class="dialog__title" id="care-plan-close-title">Close care plan?</h2>
+          <p class="dialog__subtitle">The plan moves to Care Plan History and becomes read-only.</p>
+        </div>
+        <button type="button" class="dialog__close" aria-label="Close" [disabled]="closing()" (click)="cancelClose()">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path d="M 3 3 L 13 13 M 13 3 L 3 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+          </svg>
+        </button>
+      </header>
+      <div class="dialog__body">
+        <p class="qa__answer">
+          Close the plan when the work agreed in it has ended. You can create a new plan for the guest at any time.
+        </p>
+        <div class="dialog__actions">
+          @if (closeError()) {
+            <p class="form-error">{{ closeError() }}</p>
+          }
+          <button type="button" class="btn-ghost" [disabled]="closing()" (click)="cancelClose()">Cancel</button>
+          <button type="button" class="btn-primary" [disabled]="closing()" (click)="confirmClose()">
+            {{ closing() ? 'Closing…' : 'Close Plan' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+}

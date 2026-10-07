@@ -1,17 +1,8 @@
-// Care Plan tab — same white-card / chip / edit-form language as the other workspace tabs
-// (see guest-tab-shared.scss and guest-workspace.tokens.scss). The only tab-specific pieces
-// are the goal editor rows, the overdue-review badge and the read-only history block.
+// Care Plan tab — "Care Plan History" accordion, the ⋮ row menu, and the Create New Care Plan
+// dialog, per the Care Plan design frames. Card, chip and button basics come from
+// guest-tab-shared.scss; colours and type from guest-workspace.tokens.scss.
 @use './guest-tab-shared';
 @use './guest-workspace.tokens' as t;
-
-.count-label,
-.hint {
-  font-family: t.$font-primary;
-  font-weight: 500;
-  font-size: 12px;
-  line-height: 18px;
-  color: t.$color-text-meta;
-}
 
 .state-card__actions {
   display: flex;
@@ -19,125 +10,221 @@
   margin-top: 16px;
 }
 
-.subhead {
-  margin: 0;
-  font-family: t.$font-primary;
-  font-weight: 600;
-  font-size: 16px;
-  line-height: 24px;
-  color: t.$color-text-primary;
-}
+// ---- Card header ----
 
-// ---- Active plan header ----
-
-.plan-heading {
+.history-header {
   display: flex;
-  align-items: center;
-  gap: 10px;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
   flex-wrap: wrap;
-  min-width: 0;
+  margin-bottom: 32px;
+
+  &__subtitle {
+    margin: 6px 0 0;
+    font-family: t.$font-primary;
+    font-weight: 500;
+    font-size: 12px;
+    line-height: 18px;
+    color: t.$color-text-body;
+  }
 }
 
-.plan-actions {
-  display: flex;
+.btn-primary--icon {
+  display: inline-flex;
   align-items: center;
   gap: 8px;
+  padding: 0 16px 0 14px;
   flex-shrink: 0;
 }
 
-.chip--overdue {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  background: t.$color-chip-red-bg;
-  color: t.$color-brand-red;
-}
+// ---- Plan accordion ----
 
-.close-strip {
+.plan-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  margin-bottom: 20px;
-  padding: 16px;
-  border-radius: 8px;
-  background: t.$color-amber-banner-bg;
-  box-shadow: inset 3px 0 0 0 t.$color-amber-banner-bar;
+  gap: 12px;
 
-  &__text {
-    margin: 0;
-    font-family: t.$font-primary;
-    font-weight: 500;
-    font-size: 13px;
-    line-height: 20px;
-    color: t.$color-text-body;
+  &__error {
+    margin-bottom: 12px;
+  }
+}
+
+// Grey summary band; once open the plan gains a hairline frame around the white body.
+.plan {
+  border-radius: 8px;
+  background: #fff;
+
+  &--open {
+    box-shadow: inset 0 0 0 1px t.$color-divider;
   }
 
-  &__actions {
+  &__head {
     display: flex;
-    justify-content: flex-end;
+    align-items: center;
+    gap: 4px;
+    padding-right: 12px;
+    border-radius: 8px;
+    background: t.$color-tile-bg;
+  }
+
+  &--open &__head {
+    border-radius: 8px 8px 0 0;
+  }
+
+  &__toggle {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 14px 8px 14px 16px;
+    border: none;
+    border-radius: 8px 0 0 8px;
+    background: transparent;
+    text-align: left;
+    font: inherit;
+    color: t.$color-text-primary;
+    cursor: pointer;
+
+    &:focus-visible {
+      outline: 2px solid t.$color-brand;
+      outline-offset: -2px;
+    }
+  }
+
+  &__icon {
+    flex-shrink: 0;
+    margin-top: 1px;
+    color: t.$color-text-primary;
+  }
+
+  &__summary {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  &__title-row {
+    display: flex;
+    align-items: center;
     gap: 8px;
     flex-wrap: wrap;
   }
-}
 
-.plan-dates {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 20px 16px;
-  padding-bottom: 20px;
-  border-bottom: 1px solid t.$color-border;
-}
-
-.field__value--overdue {
-  color: t.$color-brand-red;
-  font-weight: 600;
-}
-
-.plan-prose {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  padding-top: 20px;
-}
-
-.prose-block {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-
-  &__label {
+  &__title {
     font-family: t.$font-primary;
-    font-weight: 600;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 22px;
+    color: t.$color-text-primary;
+  }
+
+  &__chip {
+    padding: 3px 12px;
+    border-radius: t.$radius-pill;
+    background: #fff;
+    font-family: t.$font-primary;
+    font-weight: 500;
+    font-size: 11px;
+    line-height: 16px;
+    color: t.$color-text-body;
+    white-space: nowrap;
+
+    &--overdue {
+      background: t.$color-chip-red-bg;
+      color: t.$color-brand-red;
+    }
+  }
+
+  &__meta {
+    font-family: t.$font-primary;
+    font-weight: 500;
+    font-size: 12px;
+    line-height: 18px;
+    color: t.$color-text-meta;
+  }
+
+  &__chevron {
+    flex-shrink: 0;
+    align-self: center;
+    color: t.$color-text-primary;
+    transition: transform 120ms ease;
+
+    &--open {
+      transform: rotate(180deg);
+    }
+  }
+
+  &__kebab {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: t.$color-text-primary;
+    cursor: pointer;
+
+    &:hover,
+    &[aria-expanded='true'] {
+      background: rgba(0, 0, 0, 0.05);
+    }
+  }
+
+  &__body {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    padding: 24px 14px 0;
+  }
+}
+
+// ---- Expanded plan ----
+
+.qa-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 28px 40px;
+}
+
+.qa {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+
+  &__question {
+    margin: 0;
+    font-family: t.$font-primary;
+    font-weight: 500;
     font-size: 14px;
     line-height: 20px;
     color: t.$color-text-primary;
   }
 
-  &__body {
+  &__answer {
     margin: 0;
     font-family: t.$font-primary;
     font-weight: 400;
-    font-size: 14px;
-    line-height: 22px;
+    font-size: 12px;
+    line-height: 21px;
     color: t.$color-text-body;
     white-space: pre-wrap;
     overflow-wrap: anywhere;
   }
-
-  // The guest's own words are quoted back to them — set apart from the worker's prose.
-  &--voice {
-    padding: 12px 16px;
-    border-radius: 8px;
-    background: t.$color-segment-bg;
-    box-shadow: inset 3px 0 0 0 t.$color-brand;
-
-    .prose-block__body {
-      font-style: italic;
-    }
-  }
 }
 
-// ---- Goals, read-only ----
+.plan-goals {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
 
 .goal-list {
   list-style: none;
@@ -145,17 +232,16 @@
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  counter-reset: goal;
+  gap: 8px;
 }
 
 .goal {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 16px;
+  gap: 4px;
+  padding: 12px 14px;
   border-radius: 8px;
-  box-shadow: inset 0 0 0 1px t.$color-divider;
+  background: t.$color-segment-bg;
 
   &__head {
     display: flex;
@@ -167,16 +253,14 @@
 
   &__description {
     font-family: t.$font-primary;
-    font-weight: 600;
-    font-size: 14px;
-    line-height: 22px;
+    font-weight: 500;
+    font-size: 13px;
+    line-height: 20px;
     color: t.$color-text-primary;
     overflow-wrap: anywhere;
   }
 
   &__meta {
-    display: flex;
-    gap: 16px;
     font-family: t.$font-primary;
     font-weight: 500;
     font-size: 12px;
@@ -188,7 +272,7 @@
     margin: 0;
     font-family: t.$font-primary;
     font-weight: 400;
-    font-size: 13px;
+    font-size: 12px;
     line-height: 20px;
     color: t.$color-text-body;
     white-space: pre-wrap;
@@ -196,35 +280,394 @@
   }
 }
 
-// ---- Goal editor ----
+// Review & next steps — one line of icon + fact under a divider.
+.plan-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 32px;
+  padding: 18px 0 22px;
+  border-top: 1px solid t.$color-divider;
 
-.goals-editor {
+  &__item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: t.$font-primary;
+    font-weight: 400;
+    font-size: 12px;
+    line-height: 18px;
+    color: t.$color-text-body;
+
+    svg {
+      flex-shrink: 0;
+      color: t.$color-text-primary;
+    }
+
+    strong {
+      font-weight: 600;
+      color: t.$color-text-primary;
+    }
+
+    &--overdue,
+    &--overdue strong,
+    &--overdue svg {
+      color: t.$color-brand-red;
+    }
+  }
+}
+
+.empty-plan {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding-top: 4px;
+  align-items: center;
+  gap: 8px;
+  padding: 32px 16px;
+  border-radius: 8px;
+  background: t.$color-segment-bg;
+  text-align: center;
 
-  &__head {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 12px;
-    flex-wrap: wrap;
+  &__title {
+    margin: 0;
+    font-family: t.$font-primary;
+    font-weight: 600;
+    font-size: 16px;
+    line-height: 24px;
+    color: t.$color-text-primary;
   }
 
-  &__add {
+  &__text {
+    margin: 0;
+    max-width: 480px;
+    font-family: t.$font-primary;
+    font-weight: 400;
+    font-size: 13px;
+    line-height: 21px;
+    color: t.$color-text-meta;
+  }
+}
+
+// ---- ⋮ row menu ----
+
+.menu-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+}
+
+.row-menu {
+  position: relative;
+  display: inline-flex;
+
+  &__list {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    z-index: 50; // above .menu-backdrop so the items stay clickable
+    display: flex;
+    flex-direction: column;
+    min-width: 128px;
+    padding: 6px;
+    border-radius: 6px;
+    background: #fff;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  }
+
+  &__item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 7px 8px;
+    border: none;
+    border-radius: 4px;
+    background: transparent;
+    font-family: t.$font-primary;
+    font-weight: 500;
+    font-size: 12px;
+    line-height: 18px;
+    color: t.$color-text-primary;
+    text-align: left;
+    white-space: nowrap;
+    cursor: pointer;
+
+    &:hover:not(:disabled) {
+      background: #fafafa;
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: default;
+    }
+
+    &--danger {
+      color: t.$color-brand-red;
+
+      &:hover:not(:disabled) {
+        background: t.$color-chip-red-bg;
+      }
+    }
+  }
+}
+
+// ---- Create New Care Plan dialog ----
+
+.dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 120; // over the shell's header and sidebar, like the workspace drawers
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 48px 24px;
+  overflow-y: auto;
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.dialog {
+  width: 736px;
+  max-width: 100%;
+  margin: auto 0;
+  border-radius: 12px;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+
+  &--narrow {
+    width: 480px;
+  }
+
+  // Grey band, radius 12px 12px 0 0 — same chrome as the Change Pathway dialog.
+  &__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 20px 20px 16px;
+    border-radius: 12px 12px 0 0;
+    background: t.$color-tile-bg;
+  }
+
+  &__title {
+    margin: 0;
+    font-family: t.$font-primary;
+    font-weight: 500;
+    font-size: 18px;
+    line-height: 24px;
+    color: t.$color-text-primary;
+  }
+
+  &__subtitle {
+    margin: 4px 0 0;
+    font-family: t.$font-primary;
+    font-weight: 500;
+    font-size: 11px;
+    line-height: 16px;
+    color: t.$color-text-body;
+  }
+
+  &__close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: 6px;
+    background: #fff;
+    color: #212121;
+    cursor: pointer;
+  }
+
+  &__body {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    padding: 28px 20px 24px;
+  }
+
+  // Info banner — bg rgb(249,250,252) with a 3px rgb(52,91,177) left bar.
+  &__banner {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin: 0 0 4px;
+    padding: 12px 20px;
+    background: #f9fafc;
+    border-left: 3px solid #345bb1;
+    font-family: t.$font-primary;
+    font-weight: 500;
+    font-size: 12px;
+    line-height: 21px;
+    color: t.$color-text-primary;
+
+    svg {
+      flex: none;
+      margin-top: 3px;
+      color: #345bb1;
+    }
+
+    &--amber {
+      margin-top: -16px;
+      background: t.$color-amber-banner-bg;
+      border-left-color: t.$color-amber-banner-bar;
+    }
+  }
+
+  &__section {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding-top: 8px;
+  }
+
+  &__section-head {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  &__section-title {
+    margin: 0;
+    font-family: t.$font-primary;
+    font-weight: 500;
+    font-size: 18px;
+    line-height: 24px;
+    color: t.$color-text-primary;
+  }
+
+  &__hint {
+    font-family: t.$font-primary;
+    font-weight: 500;
+    font-size: 12px;
+    line-height: 18px;
+    color: t.$color-text-meta;
+  }
+
+  &__row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 224px));
+    gap: 24px;
+    max-width: 476px;
+
+    // The NHS question runs past its 224px select, as in the design.
+    .dialog__label {
+      white-space: nowrap;
+    }
+  }
+
+  &__field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-width: 476px;
+    min-width: 0;
+  }
+
+  &__label {
+    font-family: t.$font-primary;
+    font-weight: 500;
+    font-size: 13px;
+    line-height: 20px;
+    color: t.$color-text-primary;
+
+    &--small {
+      font-size: 12px;
+      line-height: 18px;
+    }
+  }
+
+  &__input,
+  &__textarea {
+    width: 100%;
+    box-sizing: border-box;
+    border: 1px solid t.$color-divider;
+    border-radius: 6px;
+    background: #fff;
+    font-family: t.$font-primary;
+    font-weight: 500;
+    font-size: 12px;
+    color: t.$color-text-body;
+
+    &::placeholder {
+      color: t.$color-text-meta;
+      font-weight: 400;
+    }
+
+    &:focus {
+      outline: none;
+      border-color: t.$color-brand-red;
+      box-shadow: 0 0 0 3px rgba(225, 38, 40, 0.1);
+    }
+
+    &--invalid {
+      border-color: t.$color-brand-red;
+    }
+  }
+
+  &__input {
+    height: 32px;
+    padding: 0 12px;
+  }
+
+  &__textarea {
+    min-height: 92px;
+    padding: 12px 14px;
+    line-height: 20px;
+    resize: vertical;
+
+    &--short {
+      min-height: 56px;
+    }
+  }
+
+  &__note {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: -2px;
+    font-family: t.$font-primary;
+    font-style: italic;
+    font-weight: 400;
+    font-size: 10px;
+    line-height: 14px;
+    color: t.$color-text-body;
+
+    svg {
+      flex: none;
+      color: t.$color-brand-red;
+    }
+  }
+
+  &__add-goal {
     align-self: flex-start;
     display: inline-flex;
     align-items: center;
     gap: 6px;
   }
+
+  &__actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 12px;
+    flex-wrap: wrap;
+    padding-top: 24px;
+  }
+
+  &__submit {
+    min-width: 94px;
+  }
 }
+
+// ---- Goal editor rows ----
 
 .goal-row {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  padding: 16px;
+  max-width: 476px;
+  padding: 14px 16px 16px;
   border-radius: 8px;
   background: t.$color-segment-bg;
 
@@ -238,8 +681,8 @@
   &__index {
     font-family: t.$font-primary;
     font-weight: 600;
-    font-size: 12px;
-    line-height: 18px;
+    font-size: 11px;
+    line-height: 16px;
     letter-spacing: 0.02em;
     text-transform: uppercase;
     color: t.$color-text-meta;
@@ -255,6 +698,10 @@
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 12px;
+  }
+
+  &__full {
+    grid-column: 1 / -1;
   }
 }
 
@@ -282,171 +729,36 @@
   }
 }
 
-// ---- Empty state ----
-
-.empty-plan {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-  padding: 32px 16px;
-  text-align: center;
-  color: t.$color-text-meta;
-
-  &__title {
-    margin: 0;
-    font-family: t.$font-primary;
-    font-weight: 600;
-    font-size: 16px;
-    line-height: 24px;
-    color: t.$color-text-primary;
-  }
-
-  &__text {
-    margin: 0 0 6px;
-    max-width: 460px;
-    font-family: t.$font-primary;
-    font-weight: 400;
-    font-size: 14px;
-    line-height: 22px;
-    color: t.$color-text-meta;
-  }
-}
-
-// ---- Closed plans ----
-
-.history-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-// Accordion row: the summary line is the toggle; the full plan opens beneath it.
-.history-plan {
-  border-radius: 8px;
-  box-shadow: inset 0 0 0 1px t.$color-divider;
-  overflow: hidden;
-
-  &__head {
-    width: 100%;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    flex-wrap: wrap;
-    padding: 14px 16px;
-    border: none;
-    background: transparent;
-    text-align: left;
-    font: inherit;
-    cursor: pointer;
-
-    &:hover {
-      background: #fafafa;
-    }
-
-    &:focus-visible {
-      outline: 2px solid t.$color-brand;
-      outline-offset: -2px;
-    }
-  }
-
-  &__goals {
-    font-family: t.$font-primary;
-    font-weight: 500;
-    font-size: 13px;
-    line-height: 20px;
-    color: t.$color-text-body;
-  }
-
-  // Pushes the author and chevron to the right-hand end of the row.
-  &__head &__meta {
-    margin-left: auto;
-  }
-
-  &__chevron {
-    color: t.$color-text-meta;
-    flex-shrink: 0;
-    transition: transform 120ms ease;
-
-    &--open {
-      transform: rotate(180deg);
-    }
-  }
-
-  &__detail {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    padding: 14px 16px 16px;
-    border-top: 1px solid t.$color-divider;
-  }
-
-  &__dates {
-    font-family: t.$font-primary;
-    font-weight: 600;
-    font-size: 14px;
-    line-height: 22px;
-    color: t.$color-text-primary;
-  }
-
-  &__body {
-    margin: 0;
-    font-family: t.$font-primary;
-    font-weight: 400;
-    font-size: 14px;
-    line-height: 22px;
-    color: t.$color-text-body;
-    white-space: pre-wrap;
-    overflow-wrap: anywhere;
-  }
-
-  &__meta {
-    font-family: t.$font-primary;
-    font-weight: 500;
-    font-size: 12px;
-    line-height: 18px;
-    color: t.$color-text-meta;
-  }
-}
-
-.history-goals {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-
-  &__item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-
-  &__text {
-    font-family: t.$font-primary;
-    font-weight: 400;
-    font-size: 13px;
-    line-height: 20px;
-    color: t.$color-text-body;
-    overflow-wrap: anywhere;
-  }
-}
-
-@media (max-width: 960px) {
-  .plan-dates {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+@media (max-width: 760px) {
+  .qa-grid {
+    grid-template-columns: 1fr;
   }
 }
 
 @media (max-width: 640px) {
-  .plan-dates,
+  .history-header .btn-primary--icon {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .dialog-backdrop {
+    padding: 16px;
+  }
+
+  .dialog__header {
+    padding: 16px;
+  }
+
+  .dialog__body {
+    padding: 20px 16px;
+  }
+
+  .dialog__row,
   .goal-row__grid {
     grid-template-columns: 1fr;
   }
 
-  .plan-actions {
-    width: 100%;
-    justify-content: flex-end;
+  .dialog__row .dialog__label {
+    white-space: normal;
   }
 }

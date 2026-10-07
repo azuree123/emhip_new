@@ -262,9 +262,19 @@ export class GuestsApiService {
     return this.http.get<GuestCarePlansDto>(`${this.base}/${guestId}/care-plan`);
   }
 
-  /** Creates or updates the active plan; goals omitted from the list are removed. */
+  /** Updates the active plan; goals omitted from the list are removed. */
   saveCarePlan(guestId: string, request: SaveCarePlanRequest): Observable<{ id: string }> {
     return this.http.put<{ id: string }>(`${this.base}/${guestId}/care-plan`, request);
+  }
+
+  /** "Create New Plan" — supersedes the active plan, if any, and starts a fresh one. */
+  createCarePlan(guestId: string, request: SaveCarePlanRequest): Observable<{ id: string }> {
+    return this.http.post<{ id: string }>(`${this.base}/${guestId}/care-plan`, request);
+  }
+
+  /** "Export Plan" — plain-text copy of one plan; the server logs the export. */
+  exportCarePlan(guestId: string, carePlanId: string): Observable<Blob> {
+    return this.http.get(`${this.base}/${guestId}/care-plan/${carePlanId}/export`, { responseType: 'blob' });
   }
 
   /** Closes the active plan; closed plans become read-only history. */
