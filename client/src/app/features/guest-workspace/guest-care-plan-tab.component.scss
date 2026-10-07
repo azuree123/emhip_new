@@ -610,6 +610,23 @@
     padding: 0 12px;
   }
 
+  // Chevron select, as in the design, instead of the browser's own arrow.
+  select.dialog__input {
+    appearance: none;
+    padding-right: 36px;
+    background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8' fill='none'%3E%3Cpath d='M1 1.5l5 5 5-5' stroke='%232a2a2a' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 14px center;
+    cursor: pointer;
+  }
+
+  &__text {
+    margin: 0;
+    font-family: t.$font-primary;
+    font-weight: 400;
+    font-size: 13px;
+    line-height: 21px;
+    color: t.$color-text-body;
+  }
+
   &__textarea {
     min-height: 92px;
     padding: 12px 14px;
