@@ -4,7 +4,7 @@ import { RecordRiskAssessmentRequest } from '../../core/api-models';
 import { GuestsApiService } from '../../core/guests-api.service';
 import { formatDate } from './guest-workspace.util';
 
-type RiskFlagKey = 'suicidalIdeation' | 'selfHarm' | 'riskToOthers' | 'severeDeterioration' | 'safeguardingConcern';
+type RiskFlagKey = 'suicidalIdeation' | 'selfHarm' | 'riskToOthers' | 'severeDeterioration' | 'safeguardingConcern' | 'otherRisk';
 
 interface RiskFlagOption {
   key: RiskFlagKey;
@@ -20,14 +20,16 @@ const RISK_FLAGS: RiskFlagOption[] = [
   { key: 'riskToOthers', label: 'Risk to Others', bg: 'rgb(243,232,255)', fg: 'rgb(126,34,206)' },
   { key: 'severeDeterioration', label: 'Severe Deterioration', bg: 'rgb(255,249,228)', fg: 'rgb(157,133,45)' },
   { key: 'safeguardingConcern', label: 'Safeguarding Concern', bg: 'rgb(236,242,255)', fg: 'rgb(52,91,177)' },
+  { key: 'otherRisk', label: 'Other', bg: 'rgb(240,240,240)', fg: 'rgb(70,70,70)' },
 ];
 
 /**
- * "Raise Urgent Flag" quick popup — a right-hand drawer in the style of the Urgent Case Details
- * drawer, opened from the Guest Workspace header. It records a risk assessment with the ticked
- * flags (POST guests/{id}/risk-assessments), which is what escalates the guest onto the Urgent
- * Cases queue and opens (or extends) their urgent episode — so the flag, the assessment history
- * on Clinical Details and the episode record all stay one record.
+ * "Raise Urgent Case" quick popup — a right-hand drawer opened from the Guest Workspace header,
+ * and the only place staff raise an urgent case (the Clinical Details form was removed in Oct
+ * 2026 so there is one route in). It records a risk assessment with the ticked risks
+ * (POST guests/{id}/risk-assessments), which puts the guest on the Urgent Cases dashboard and
+ * opens (or adds to) their urgent case — so the risk history and the Urgent Case Record stay one
+ * record. Notes are compulsory, and "Other" needs a description of the risk; the API enforces both.
  */
 @Component({
   selector: 'emhip-raise-urgent-flag-drawer',
@@ -51,12 +53,23 @@ export class RaiseUrgentFlagDrawerComponent {
 
   readonly flags = RISK_FLAGS;
   readonly selected = signal<ReadonlySet<RiskFlagKey>>(new Set());
-  notes = '';
+  /** Signals so canSubmit() re-evaluates as the worker types. */
+  readonly notes = signal('');
+  readonly otherDetails = signal('');
 
   readonly saving = signal(false);
   readonly error = signal<string | null>(null);
 
-  readonly canSubmit = computed(() => this.selected().size > 0 && !this.saving());
+  readonly otherSelected = computed(() => this.selected().has('otherRisk'));
+  readonly canSubmit = computed(
+    () =>
+      this.selected().size > 0 &&
+      this.notes().trim().length > 0 &&
+      (!this.otherSelected() || this.otherDetails().trim().length > 0) &&
+      !this.saving(),
+  );
+  /** Nothing typed or ticked yet — only then may a backdrop click close the drawer. */
+  readonly pristine = computed(() => this.selected().size === 0 && !this.notes().trim() && !this.otherDetails().trim());
   readonly urgentSinceLabel = computed(() => formatDate(this.urgentSince()));
 
   isSelected(key: RiskFlagKey): boolean {
@@ -83,7 +96,17 @@ export class RaiseUrgentFlagDrawerComponent {
     if (this.saving()) return;
     const chosen = this.selected();
     if (chosen.size === 0) {
-      this.error.set('Select at least one risk to raise the urgent flag.');
+      this.error.set('Select at least one risk to raise the urgent case.');
+      return;
+    }
+    const otherDetails = this.otherDetails().trim();
+    if (chosen.has('otherRisk') && !otherDetails) {
+      this.error.set("Describe the risk you selected as 'Other'.");
+      return;
+    }
+    const notes = this.notes().trim();
+    if (!notes) {
+      this.error.set('Urgent case notes are required — describe what happened before raising the case.');
       return;
     }
     const request: RecordRiskAssessmentRequest = {
@@ -92,7 +115,9 @@ export class RaiseUrgentFlagDrawerComponent {
       riskToOthers: chosen.has('riskToOthers'),
       severeDeterioration: chosen.has('severeDeterioration'),
       safeguardingConcern: chosen.has('safeguardingConcern'),
-      notes: this.notes.trim() || null,
+      otherRisk: chosen.has('otherRisk'),
+      otherRiskDetails: chosen.has('otherRisk') ? otherDetails : null,
+      notes,
     };
     this.saving.set(true);
     this.error.set(null);
@@ -103,7 +128,7 @@ export class RaiseUrgentFlagDrawerComponent {
       },
       error: () => {
         this.saving.set(false);
-        this.error.set('Could not raise the urgent flag. Please try again.');
+        this.error.set('Could not raise the urgent case. Please try again.');
       },
     });
   }

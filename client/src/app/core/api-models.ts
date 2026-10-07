@@ -70,10 +70,14 @@ export interface GuestNoteDto {
 
 export interface GuestContactSummaryDto {
   id: string;
+  /** Contact method (PhoneCall, InPerson, TextMessage, …). */
   type: string;
   outcome: string;
   occurredAt: string;
   createdByName: string;
+  /** What kind of contact the worker chose on Add Contact; null when no casework note was written. */
+  category: CaseworkNoteCategory | null;
+  isCpnContact: boolean;
 }
 
 /** Top-bar search autocomplete row — GET /guests/suggest?q=. */
@@ -144,6 +148,8 @@ export interface RiskAssessmentDto {
   notes: string | null;
   assessedByName: string;
   assessedAt: string;
+  otherRisk: boolean;
+  otherRiskDetails: string | null;
 }
 
 export interface GuestClinicalDto {
@@ -436,6 +442,8 @@ export interface UrgentCaseDto {
   safeguardingConcern: boolean;
   assignedCmhwName: string | null;
   escalatedAt: string;
+  otherRisk: boolean;
+  otherRiskDetails: string | null;
 }
 
 export interface ActiveGuestRowDto {
@@ -641,7 +649,11 @@ export interface RecordRiskAssessmentRequest {
   riskToOthers: boolean;
   severeDeterioration: boolean;
   safeguardingConcern: boolean;
+  /** Required whenever a risk is ticked (an urgent case with no notes is rejected). */
   notes?: string | null;
+  otherRisk?: boolean;
+  /** Required when otherRisk is set. */
+  otherRiskDetails?: string | null;
 }
 
 export interface CreatePathwayReferralRequest {
@@ -762,7 +774,7 @@ export interface DialogDimensionDto {
   latestAverage: number | null;
 }
 
-// ---- Urgent episodes (urgent-cases drawer: escalate to CMHT, resolve, episode record) ----
+// ---- Urgent cases (resolved list, CMHT contact, resolution) ----
 
 export interface UrgentEpisodeDto {
   id: string;
@@ -770,38 +782,41 @@ export interface UrgentEpisodeDto {
   guestName: string;
   guestNumber: number;
   raisedAt: string;
-  escalatedToCmhtAt: string | null;
-  escalatedToCmhtByName: string | null;
+  /** null until someone answers "CMHT or other NHS team notified". */
+  cmhtNotified: boolean | null;
   cmhtTeam: string | null;
-  escalationReason: string | null;
-  escalationUrgency: string | null;
-  escalationNotes: string | null;
   resolvedAt: string | null;
   resolvedByName: string | null;
   resolutionNote: string | null;
+  externalServicesInvolved: string | null;
+  inpatientAdmission: boolean;
 }
 
-export interface EscalateToCmhtRequest {
-  cmhtTeam: string;
-  reason?: string | null;
-  urgency?: string | null;
+/** PUT urgent-cases/episodes/{id}/cmht-contact — "Called by" is taken from the login. */
+export interface RecordCmhtContactRequest {
+  notified: boolean;
+  team?: string | null;
+  contactName?: string | null;
+  /** ISO date-time of the call; required when notified. */
+  calledAt?: string | null;
+  /** What was said. */
   notes?: string | null;
 }
 
 export interface ResolveUrgentCaseRequest {
+  inpatientAdmission: boolean;
+  /** "Any other external service involved" — e.g. ambulance, A&E, police. */
+  externalServicesInvolved?: string | null;
+  /** Older optional fields the API still accepts; the Urgent Case Record no longer asks for them. */
   resolutionNote?: string | null;
-  /** "Pathway re-entry decision" — applied to the guest and appended to the pathway history when it differs. */
   pathwayAfterResolution?: GuestPathway | null;
-  /** yyyy-MM-dd; scheduled as a follow-up for the guest's CMHW. */
   nextContactDate?: string | null;
-  /** Free text, e.g. "Yes — weekly CPN input added"; null when unchanged. */
   sessionFrequencyChange?: string | null;
-  inpatientAdmission?: boolean;
 }
 
-// ---- Urgent Episode Record (design Desktop57) ----
+// ---- Urgent Case Record ----
 
-/** One "Episode N" tab on the record screen. */
+/** One "Urgent Case N" tab on the record screen. */
 export interface UrgentEpisodeSummaryDto {
   id: string;
   episodeNumber: number;
@@ -809,30 +824,34 @@ export interface UrgentEpisodeSummaryDto {
   resolvedAt: string | null;
 }
 
-export interface UrgentEpisodeIntakeDto {
-  riskAssessmentId: string | null;
-  riskFlags: string[];
+export interface UrgentCaseCmhtContactDto {
+  notified: boolean;
+  team: string | null;
+  contactName: string | null;
+  calledAt: string | null;
   notes: string | null;
-  assessedAt: string | null;
-  assessedByName: string | null;
+  calledByName: string | null;
+  recordedAt: string | null;
 }
 
-export type UrgentEpisodeTimelineKind = 'flag' | 'note' | 'escalation' | 'contact' | 'followup' | 'pathway' | 'resolved';
-
-export interface UrgentEpisodeTimelineEntryDto {
-  kind: UrgentEpisodeTimelineKind;
-  title: string;
-  description: string | null;
-  secondaryDescription: string | null;
+export interface UrgentCaseContactDto {
+  id: string;
   occurredAt: string;
-  actorName: string | null;
+  category: CaseworkNoteCategory | null;
+  isCpnContact: boolean;
+  /** "Phone call", "In person", … */
+  method: string;
+  recordedByName: string | null;
 }
 
-export interface UrgentEpisodeAuditEntryDto {
-  tone: 'red' | 'blue' | 'green' | 'grey';
-  title: string;
-  detail: string;
+export type UrgentCaseAuditKind = 'raised' | 'risk' | 'contact' | 'cmht' | 'resolved';
+
+export interface UrgentCaseAuditEntryDto {
+  kind: UrgentCaseAuditKind;
+  action: string;
+  staffName: string | null;
   occurredAt: string;
+  detail: string | null;
 }
 
 export interface UrgentEpisodeRecordDto {
@@ -843,33 +862,30 @@ export interface UrgentEpisodeRecordDto {
   episodeNumber: number;
   episodes: UrgentEpisodeSummaryDto[];
   responseHours: number;
+  // 1. Header
+  assignedCmhwName: string | null;
+  pathwayAtFlag: GuestPathway | null;
+  // 2. Status bar
   raisedAt: string;
   deadlineAt: string;
-  raisedByName: string | null;
-  pathwayAtFlag: GuestPathway | null;
-  assignedCmhwName: string | null;
-  escalatedToCmhtAt: string | null;
-  escalatedToCmhtByName: string | null;
-  cmhtTeam: string | null;
-  escalationReason: string | null;
-  escalationUrgency: string | null;
-  escalationNotes: string | null;
   isResolved: boolean;
+  // 3. Flag details
+  raisedByName: string | null;
+  riskFlags: string[];
+  urgentCaseNotes: string | null;
+  // 4. Actions taken
+  cmhtContact: UrgentCaseCmhtContactDto | null;
+  contactsSinceFlag: UrgentCaseContactDto[];
+  // 5. Resolution
   resolvedAt: string | null;
   resolvedByName: string | null;
   resolvedWithinWindow: boolean | null;
-  resolutionNote: string | null;
-  pathwayAfterResolution: GuestPathway | null;
-  cmhwAfterResolutionName: string | null;
-  nextContactDate: string | null;
-  sessionFrequencyChange: string | null;
   inpatientAdmission: boolean;
-  followUpsLogged: number;
-  durationMinutes: number;
-  recordAccessCount: number;
-  intake: UrgentEpisodeIntakeDto;
-  timeline: UrgentEpisodeTimelineEntryDto[];
-  auditTrail: UrgentEpisodeAuditEntryDto[];
+  externalServicesInvolved: string | null;
+  /** Only on cases resolved before the Oct 2026 record spec. */
+  resolutionNote: string | null;
+  // 7. System audit trail, oldest first
+  auditTrail: UrgentCaseAuditEntryDto[];
 }
 
 // ---- UK GDPR: per-guest access log ----

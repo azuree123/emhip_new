@@ -133,7 +133,7 @@ public sealed class GuestReadService(ISqlConnectionFactory connectionFactory, Em
             ) pw
             OUTER APPLY (
                 SELECT TOP 1 CAST(CASE WHEN r.SuicidalIdeation = 1 OR r.SelfHarm = 1 OR r.RiskToOthers = 1
-                    OR r.SevereDeterioration = 1 OR r.SafeguardingConcern = 1 THEN 1 ELSE 0 END AS bit) AS HasFlags
+                    OR r.SevereDeterioration = 1 OR r.SafeguardingConcern = 1 OR r.OtherRisk = 1 THEN 1 ELSE 0 END AS bit) AS HasFlags
                 FROM RiskAssessments r WHERE r.GuestId = g.Id ORDER BY r.Version DESC
             ) rk
             OUTER APPLY (
@@ -234,7 +234,7 @@ public sealed class GuestReadService(ISqlConnectionFactory connectionFactory, Em
 
                     OUTER APPLY (
                         SELECT TOP 1 CAST(CASE WHEN r.SuicidalIdeation = 1 OR r.SelfHarm = 1 OR r.RiskToOthers = 1
-                            OR r.SevereDeterioration = 1 OR r.SafeguardingConcern = 1 THEN 1 ELSE 0 END AS bit) AS HasFlags
+                            OR r.SevereDeterioration = 1 OR r.SafeguardingConcern = 1 OR r.OtherRisk = 1 THEN 1 ELSE 0 END AS bit) AS HasFlags
                         FROM RiskAssessments r WHERE r.GuestId = g.Id ORDER BY r.Version DESC
                     ) rk
                     """;
@@ -336,7 +336,7 @@ public sealed class GuestReadService(ISqlConnectionFactory connectionFactory, Em
         var hasRiskFlags = await db.RiskAssessments.AsNoTracking()
             .Where(r => r.GuestId == guestId)
             .OrderByDescending(r => r.Version)
-            .Select(r => r.SuicidalIdeation || r.SelfHarm || r.RiskToOthers || r.SevereDeterioration || r.SafeguardingConcern)
+            .Select(r => r.SuicidalIdeation || r.SelfHarm || r.RiskToOthers || r.SevereDeterioration || r.SafeguardingConcern || r.OtherRisk)
             .FirstOrDefaultAsync(cancellationToken);
 
         var openFollowUps = await db.FollowUps.AsNoTracking()
@@ -350,13 +350,21 @@ public sealed class GuestReadService(ISqlConnectionFactory connectionFactory, Em
                 db.Users.Where(s => s.Id == n.AuthorStaffId).Select(s => s.DisplayName).FirstOrDefault() ?? "Unknown", n.CreatedAt))
             .ToListAsync(cancellationToken);
 
-        var recentContacts = await db.Contacts.AsNoTracking()
+        var recentContacts = (await db.Contacts.AsNoTracking()
             .Where(c => c.GuestId == guestId)
             .OrderByDescending(c => c.OccurredAt)
             .Take(10)
-            .Select(c => new GuestContactSummaryDto(c.Id, c.Type.ToString(), c.Outcome.ToString(), c.OccurredAt,
-                db.Users.Where(s => s.Id == c.CreatedByStaffId).Select(s => s.DisplayName).FirstOrDefault() ?? "Unknown"))
-            .ToListAsync(cancellationToken);
+            .Select(c => new
+            {
+                c.Id, c.Type, c.Outcome, c.OccurredAt,
+                CreatedByName = db.Users.Where(s => s.Id == c.CreatedByStaffId).Select(s => s.DisplayName).FirstOrDefault() ?? "Unknown",
+                Category = db.CaseworkNotes.Where(n => n.ContactId == c.Id).Select(n => n.Category).FirstOrDefault(),
+                IsCpnContact = db.CaseworkNotes.Any(n => n.ContactId == c.Id && n.IsCpnContact),
+            })
+            .ToListAsync(cancellationToken))
+            .Select(c => new GuestContactSummaryDto(
+                c.Id, c.Type.ToString(), c.Outcome.ToString(), c.OccurredAt, c.CreatedByName, c.Category?.ToString(), c.IsCpnContact))
+            .ToList();
 
         return new GuestOverviewDto(
             guest.Id, guest.GuestNumber, guest.FirstName, guest.LastName, guest.DateOfBirth, guest.Status,
@@ -396,7 +404,7 @@ public sealed class GuestReadService(ISqlConnectionFactory connectionFactory, Em
             .Select(r => new RiskAssessmentDto(
                 r.Id, r.Version, r.SuicidalIdeation, r.SelfHarm, r.RiskToOthers, r.SevereDeterioration, r.SafeguardingConcern,
                 r.Notes, db.Users.Where(s => s.Id == r.AssessedByStaffId).Select(s => s.DisplayName).FirstOrDefault() ?? "Unknown",
-                r.AssessedAt))
+                r.AssessedAt, r.OtherRisk, r.OtherRiskDetails))
             .ToListAsync(cancellationToken);
 
         return new GuestClinicalDto(guestId, history);
@@ -615,12 +623,14 @@ public sealed class GuestReadService(ISqlConnectionFactory connectionFactory, Em
                 Type = c.Type.ToString(),
                 Outcome = c.Outcome.ToString(),
                 CreatedByName = db.Users.Where(u => u.Id == c.CreatedByStaffId).Select(u => u.DisplayName).FirstOrDefault() ?? "Unknown",
+                Category = db.CaseworkNotes.Where(n => n.ContactId == c.Id).Select(n => n.Category).FirstOrDefault(),
+                IsCpnContact = db.CaseworkNotes.Any(n => n.ContactId == c.Id && n.IsCpnContact),
             })
             .ToListAsync(cancellationToken);
 
         var hasMore = rows.Count > pageSize;
         var page = rows.Take(pageSize)
-            .Select(r => new GuestContactSummaryDto(r.Id, r.Type, r.Outcome, r.OccurredAt, r.CreatedByName))
+            .Select(r => new GuestContactSummaryDto(r.Id, r.Type, r.Outcome, r.OccurredAt, r.CreatedByName, r.Category?.ToString(), r.IsCpnContact))
             .ToList();
 
         return new KeysetPage<GuestContactSummaryDto>

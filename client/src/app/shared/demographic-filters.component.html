@@ -21,7 +21,7 @@
   </button>
 
   @if (open()) {
-    <div #drawerPanel class="filter-drawer" role="dialog" aria-modal="false" aria-label="Demographic filters">
+    <div #drawerPanel class="filter-drawer" [class.filter-drawer--start]="align() === 'start'" role="dialog" aria-modal="false" aria-label="Demographic filters">
       <div class="filter-drawer__head">
         <span class="filter-drawer__title">Demographic filters</span>
         <button type="button" class="filter-drawer__close" aria-label="Close demographic filters" (click)="close()">

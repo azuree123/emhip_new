@@ -64,16 +64,16 @@ public static class EmailTemplateCatalog
 
         new(Keys.UrgentCaseRaised,
             "Urgent case raised",
-            "Sent to the assigned worker when a guest is escalated by a risk flag.",
+            "Sent to the assigned worker when an urgent case is raised for their guest.",
             ["recipientName", "guestName", "guestReference", "riskFlags", "raisedAt", "guestUrl", "responseHours"],
-            "URGENT: {{guestName}} ({{guestReference}}) has been flagged",
+            "URGENT CASE: {{guestName}} ({{guestReference}})",
             Layout("Urgent case raised", """
                 <p style="background:#fff0f1;border-left:4px solid #e12628;padding:12px 16px;margin:0 0 20px;">
-                  <strong>{{guestName}}</strong> ({{guestReference}}) was flagged as urgent on {{raisedAt}}.
+                  <strong>{{guestName}}</strong> ({{guestReference}}) was raised as an urgent case on {{raisedAt}}.
                 </p>
                 <p>Hello {{recipientName}},</p>
-                <p>A risk assessment has escalated this guest onto the urgent cases queue.</p>
-                <p><strong>Risk flags:</strong> {{riskFlags}}</p>
+                <p>This guest is now on the Urgent Cases dashboard.</p>
+                <p><strong>Risk identified:</strong> {{riskFlags}}</p>
                 <p>The response window for urgent cases is <strong>{{responseHours}} hours</strong>.</p>
                 <p style="text-align:center;margin:32px 0;">
                   <a href="{{guestUrl}}" style="background:#e12628;color:#ffffff;text-decoration:none;padding:12px 24px;border-radius:8px;display:inline-block;font-weight:600;">Open guest record</a>

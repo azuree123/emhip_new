@@ -1,5 +1,6 @@
-// "Urgent Episode Record" modal — Components.bundle.js Desktop57. 939px panel, two columns
-// (548 / 380), hairline cards, tinted intake/resolution boxes, coloured audit dots.
+// "Urgent Case Record" modal — sections follow EMHIP_Urgent_Case_Record_Spec.docx (Oct 2026).
+// Visual language carried over from the Desktop57 record and the Desktop58 countdown card:
+// 939px panel, hairline cards, label/value rows, coloured audit dots.
 $ink: rgb(42, 42, 42);
 $ink-body: rgb(50, 50, 50);
 $ink-meta: rgb(140, 140, 140);
@@ -10,6 +11,7 @@ $blue: rgb(52, 91, 177);
 $coral: rgb(235, 60, 44);
 $red: rgb(225, 38, 40);
 $gold: rgb(157, 133, 45);
+$maroon: rgb(148, 28, 60);
 
 .record-overlay {
   position: fixed;
@@ -43,17 +45,15 @@ $gold: rgb(157, 133, 45);
     padding: 24px 28px 16px;
   }
 
-  &__title {
-    margin: 0;
-    font-size: 20px;
-    font-weight: 600;
-    line-height: 24px;
+  &__heading {
+    min-width: 0;
+    flex: 1;
   }
 
-  &__sub {
-    display: block;
-    font-size: 12px;
-    font-weight: 500;
+  &__title {
+    margin: 0 0 12px;
+    font-size: 20px;
+    font-weight: 600;
     line-height: 24px;
   }
 
@@ -76,6 +76,7 @@ $gold: rgb(157, 133, 45);
     align-items: center;
     justify-content: center;
     cursor: pointer;
+    flex-shrink: 0;
 
     &:hover {
       background: rgb(240, 240, 240);
@@ -102,6 +103,7 @@ $gold: rgb(157, 133, 45);
     font-size: 12px;
     font-weight: 500;
     color: $ink;
+    white-space: nowrap;
     cursor: pointer;
 
     &--active {
@@ -133,26 +135,62 @@ $gold: rgb(157, 133, 45);
 
   &__columns {
     display: grid;
-    grid-template-columns: minmax(0, 548fr) minmax(0, 380fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 14px;
     align-items: start;
   }
+}
 
-  &__main,
-  &__side {
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
+// ---- 1. Header fields ----
+
+.header-grid {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, auto));
+  justify-content: start;
+  gap: 8px 28px;
+
+  &__cell {
     min-width: 0;
   }
+
+  dt {
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 16px;
+    color: $ink-meta;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  dd {
+    margin: 2px 0 0;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 24px;
+    color: $ink;
+  }
+
+  &__guest {
+    color: $coral;
+    font-weight: 600;
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
 }
+
+// ---- Buttons ----
 
 .btn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
   height: 36px;
-  padding: 0 16px 0 12px;
+  padding: 0 16px;
   border: none;
   border-radius: 4px;
   font-family: inherit;
@@ -186,8 +224,30 @@ $gold: rgb(157, 133, 45);
   }
 
   &--maroon {
-    background: rgb(148, 28, 60);
+    background: $maroon;
     color: #fff;
+  }
+
+  &--large {
+    height: 40px;
+    padding: 0 20px;
+    font-weight: 600;
+  }
+}
+
+.link-btn {
+  border: none;
+  background: none;
+  padding: 0;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: $coral;
+  text-decoration: none;
+  cursor: pointer;
+
+  &:hover {
+    text-decoration: underline;
   }
 }
 
@@ -204,77 +264,89 @@ $gold: rgb(157, 133, 45);
   }
 }
 
-// ---- Status banner (green resolved / amber open / red overdue) ----
+.muted {
+  margin: 0;
+  font-size: 14px;
+  color: $ink-meta;
+}
 
-.status-banner {
-  display: flex;
+// ---- 2. Status bar: live countdown (amber → red under 6h, green once resolved) ----
+
+.status-bar {
+  --tone: #{$gold};
+  --tone-bg: rgb(255, 249, 228);
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr);
+  gap: 16px;
   align-items: center;
-  gap: 14px;
-  padding: 11px 20px 11px 16px;
-  border-left: 3px solid $green;
-  background: rgb(241, 255, 244);
-  color: $green;
+  border-radius: 8px;
+  border-left: 3px solid var(--tone);
+  background: var(--tone-bg);
+  padding: 14px 20px 16px 18px;
 
-  &__icon {
-    flex-shrink: 0;
+  &[data-tone='red'] {
+    --tone: #{$coral};
+    --tone-bg: rgb(255, 245, 244);
+  }
+
+  &[data-tone='green'] {
+    --tone: #{$green};
+    --tone-bg: rgb(241, 255, 244);
+  }
+
+  &__head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 24px;
+    color: $ink;
   }
 
   &__text {
+    display: block;
+    margin-top: 4px;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 22px;
+    color: var(--tone);
+  }
+
+  &__track {
+    height: 6px;
+    border-radius: 444px;
+    background: rgba(42, 42, 42, 0.08);
+    overflow: hidden;
+    margin-top: 4px;
+  }
+
+  &__bar {
+    height: 100%;
+    border-radius: 444px;
+    background: var(--tone);
+    transition: width 0.3s ease;
+  }
+
+  &__cell {
     display: flex;
     flex-direction: column;
-    flex: 1;
-    min-width: 0;
-    color: $ink;
+    align-items: flex-start;
+    gap: 4px;
   }
 
-  &__title {
-    font-size: 14px;
-    font-weight: 500;
-    line-height: 24px;
-  }
-
-  &__sub {
-    font-size: 12px;
-    font-weight: 400;
-    line-height: 20px;
-  }
-
-  &__when {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    color: $ink;
-  }
-
-  &__date {
+  &__label {
     font-size: 12px;
     font-weight: 500;
-    line-height: 20px;
-  }
-
-  &__by {
-    font-size: 10px;
-    font-weight: 400;
     line-height: 18px;
+    color: $ink-meta;
   }
 
-  &__actions {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-    justify-content: flex-end;
-  }
-
-  &--open {
-    border-left-color: $gold;
-    background: rgb(255, 249, 228);
-    color: $gold;
-  }
-
-  &--overdue {
-    border-left-color: $red;
-    background: rgb(255, 237, 237);
-    color: $red;
+  &__value {
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 22px;
+    color: $ink;
   }
 }
 
@@ -285,40 +357,26 @@ $gold: rgb(157, 133, 45);
   box-shadow: inset 0 0 0 1px $line;
   padding: 14px 20px 16px;
   background: #fff;
+  min-width: 0;
 
   &__head {
     display: flex;
     align-items: center;
     gap: 8px;
     margin-bottom: 8px;
-    color: rgb(33, 33, 33);
 
     h3 {
       margin: 0;
-      font-size: 14px;
+      font-size: 15px;
       font-weight: 600;
       line-height: 24px;
       color: $ink;
     }
 
-    svg {
-      flex-shrink: 0;
+    &--split {
+      justify-content: space-between;
+      flex-wrap: wrap;
     }
-  }
-
-  &--intake {
-    background: rgb(255, 243, 243);
-    box-shadow: inset 0 0 0 1px rgb(255, 214, 214);
-  }
-
-  &--resolution {
-    background: rgb(240, 255, 244);
-    box-shadow: inset 0 0 0 1px rgb(204, 236, 212);
-  }
-
-  &--outcome {
-    background: rgba(240, 240, 240, 0.52);
-    box-shadow: none;
   }
 }
 
@@ -340,6 +398,17 @@ $gold: rgb(157, 133, 45);
     &:last-child {
       border-bottom: none;
     }
+
+    // Long values (notes, tag lists) sit under their label instead of beside it.
+    &--stack {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 6px;
+
+      dd {
+        text-align: left;
+      }
+    }
   }
 
   dt {
@@ -356,13 +425,42 @@ $gold: rgb(157, 133, 45);
     line-height: 24px;
     color: $ink-body;
     text-align: right;
+    overflow-wrap: anywhere;
   }
 
-  &--outcome {
-    dd {
-      text-transform: none;
+  &--compact .rows__row {
+    min-height: 36px;
+    padding: 6px 0;
+  }
+
+  // Resolution: two columns of rows on desktop.
+  &--grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 32px;
+
+    .rows__row:last-child {
+      border-bottom: 1px solid $line-row;
+    }
+
+    .rows__row--wide {
+      grid-column: 1 / -1;
+      border-bottom: none;
     }
   }
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.note-text {
+  white-space: pre-wrap;
+  background: rgb(250, 250, 250);
+  border-radius: 6px;
+  padding: 10px 12px;
 }
 
 .chip,
@@ -375,6 +473,9 @@ $gold: rgb(157, 133, 45);
   font-size: 12px;
   font-weight: 500;
   line-height: 16px;
+}
+
+.chip {
   white-space: nowrap;
 }
 
@@ -395,125 +496,156 @@ $gold: rgb(157, 133, 45);
   }
 }
 
-// ---- Tinted note boxes ----
+// ---- 4. Actions taken ----
 
-.note-box {
+.cmht {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-bottom: 12px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid $line-row;
+
+  &__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  &__label {
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 24px;
+  }
+
+  &__actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+}
+
+.toggle {
+  display: inline-flex;
+  align-self: flex-start;
   border-radius: 6px;
-  background: #fff;
-  padding: 12px 24px 14px;
+  box-shadow: inset 0 0 0 1px rgb(217, 217, 217);
+  overflow: hidden;
+
+  &__opt {
+    min-width: 64px;
+    height: 34px;
+    padding: 0 16px;
+    border: none;
+    background: #fff;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 500;
+    color: $ink;
+    cursor: pointer;
+
+    & + & {
+      border-left: 1px solid rgb(217, 217, 217);
+    }
+
+    &--on {
+      background: $ink;
+      color: #fff;
+    }
+  }
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: $ink;
+  min-width: 0;
+
+  &--full {
+    grid-column: 1 / -1;
+  }
+
+  input,
+  textarea {
+    height: 36px;
+    border-radius: 4px;
+    border: 1px solid rgb(229, 229, 229);
+    padding: 0 10px;
+    font-size: 14px;
+    font-family: inherit;
+    color: $ink;
+    background: #fff;
+    min-width: 0;
+
+    &:disabled {
+      background: rgb(246, 246, 246);
+      color: $ink-body;
+    }
+  }
+
+  textarea {
+    height: auto;
+    padding: 8px 10px;
+    resize: vertical;
+  }
+
+  &__hint {
+    font-size: 11px;
+    font-weight: 400;
+    color: rgb(143, 143, 143);
+  }
+}
+
+.contacts {
+  list-style: none;
+  margin: 0 0 8px;
+  padding: 0;
   display: flex;
   flex-direction: column;
   gap: 8px;
 
-  &--intake {
-    box-shadow: inset 0 0 0 1px rgba(225, 38, 40, 0.3);
-  }
-
-  &--resolution {
-    box-shadow: inset 0 0 0 1px rgba(20, 113, 41, 0.36);
-  }
-
-  &__flags {
+  &__item {
     display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
+    flex-direction: column;
+    padding: 8px 12px;
+    border-radius: 6px;
+    background: rgb(248, 248, 248);
   }
 
-  &__text {
-    margin: 0;
+  &__type {
     font-size: 14px;
-    font-weight: 400;
-    line-height: 24px;
-    color: $ink-body;
-    white-space: pre-wrap;
-  }
-
-  &__meta {
-    font-size: 12px;
-    font-weight: 500;
-    line-height: 18px;
-    color: $ink-meta;
-  }
-}
-
-// ---- Timeline ----
-
-.timeline {
-  position: relative;
-  margin: 8px 0 0 7px;
-  padding-left: 24px;
-  border-left: 1px solid rgba(197, 197, 197, 0.31);
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-
-  &__event {
-    position: relative;
-
-    &::before {
-      content: '';
-      position: absolute;
-      left: -29.5px;
-      top: 8px;
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      background: rgb(188, 183, 183);
-    }
-
-    &[data-kind='flag']::before {
-      background: $red;
-    }
-
-    &[data-kind='escalation']::before {
-      background: $blue;
-    }
-
-    &[data-kind='resolved']::before {
-      background: $green;
-    }
-  }
-
-  &__title {
-    font-size: 15px;
     font-weight: 600;
-    line-height: 26px;
-    color: $ink;
-  }
-
-  &__desc {
-    margin: 2px 0 0;
-    font-size: 14px;
-    font-weight: 400;
-    line-height: 24px;
-    color: $ink;
-    white-space: pre-wrap;
-
-    &--secondary {
-      color: rgb(114, 114, 114);
-    }
+    line-height: 22px;
   }
 
   &__meta {
-    display: flex;
-    align-items: center;
-    gap: 9px;
-    margin-top: 6px;
     font-size: 12px;
-    font-weight: 500;
     line-height: 18px;
     color: $ink-meta;
   }
 
-  &__sep {
-    width: 3px;
-    height: 3px;
-    border-radius: 50%;
-    background: $ink-meta;
+  &__all {
+    display: inline-block;
+    font-size: 13px;
   }
 }
 
-// ---- Audit trail ----
+.add-contact {
+  margin-top: 12px;
+  width: 100%;
+}
+
+// ---- 7. Audit trail ----
 
 .audit {
   list-style: none;
@@ -521,7 +653,7 @@ $gold: rgb(157, 133, 45);
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
 
   &__item {
     display: flex;
@@ -547,7 +679,7 @@ $gold: rgb(157, 133, 45);
       background: $ink-meta;
     }
 
-    &[data-tone='green'] {
+    &[data-kind='resolved'] {
       background: rgba(20, 113, 41, 0.16);
 
       span {
@@ -555,7 +687,8 @@ $gold: rgb(157, 133, 45);
       }
     }
 
-    &[data-tone='blue'] {
+    &[data-kind='cmht'],
+    &[data-kind='contact'] {
       background: rgba(52, 91, 177, 0.2);
 
       span {
@@ -563,7 +696,8 @@ $gold: rgb(157, 133, 45);
       }
     }
 
-    &[data-tone='red'] {
+    &[data-kind='raised'],
+    &[data-kind='risk'] {
       background: rgba(235, 60, 44, 0.21);
 
       span {
@@ -575,20 +709,82 @@ $gold: rgb(157, 133, 45);
   &__text {
     display: flex;
     flex-direction: column;
+    min-width: 0;
   }
 
   &__title {
     font-size: 14px;
-    font-weight: 500;
+    font-weight: 600;
     line-height: 24px;
     color: $ink;
   }
 
   &__detail {
     font-size: 12px;
-    font-weight: 400;
+    font-weight: 500;
     line-height: 18px;
     color: $ink-meta;
+  }
+
+  &__extra {
+    font-size: 13px;
+    line-height: 20px;
+    color: $ink-body;
+    overflow-wrap: anywhere;
+  }
+}
+
+// ---- "Mark as resolved" dialog (above the record, below the Add Contact drawer) ----
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 115;
+  background: rgba(15, 23, 42, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.modal {
+  width: 460px;
+  max-width: 100%;
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  color: $ink;
+
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 24px 0;
+
+    h2 {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 600;
+    }
+  }
+
+  &__body {
+    padding: 12px 24px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  &__footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 0 24px 24px;
   }
 }
 
@@ -617,6 +813,10 @@ $gold: rgb(157, 133, 45);
   .record {
     animation: none;
   }
+
+  .status-bar__bar {
+    transition: none;
+  }
 }
 
 @media (max-width: 1023px) {
@@ -632,11 +832,15 @@ $gold: rgb(157, 133, 45);
     justify-content: flex-start;
   }
 
-  .status-banner {
-    flex-wrap: wrap;
+  .header-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 
-    &__when {
-      align-items: flex-start;
+  .status-bar {
+    grid-template-columns: 1fr 1fr;
+
+    &__countdown {
+      grid-column: 1 / -1;
     }
   }
 }
@@ -661,6 +865,11 @@ $gold: rgb(157, 133, 45);
     padding-left: 16px;
     padding-right: 16px;
     overflow-x: auto;
+  }
+
+  .form-grid,
+  .rows--grid {
+    grid-template-columns: 1fr;
   }
 
   .rows__row {

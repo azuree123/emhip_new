@@ -73,10 +73,11 @@ public sealed class ReportReadService(EmhipDbContext db, Emhip.Application.Abstr
             .CountAsync(c => c.OccurredAt >= fromOffset && c.OccurredAt <= toOffset
                 && db.Guests.Any(g => g.Id == c.GuestId && g.HubId == hubId), cancellationToken);
 
-        var urgentFlagsRaised = await db.RiskAssessments.AsNoTracking()
-            .CountAsync(r => r.AssessedAt >= fromOffset && r.AssessedAt <= toOffset
-                && (r.SuicidalIdeation || r.SelfHarm || r.RiskToOthers || r.SevereDeterioration || r.SafeguardingConcern)
-                && db.Guests.Any(g => g.Id == r.GuestId && g.HubId == hubId), cancellationToken);
+        // "Urgent cases raised": urgent cases opened in the period. Raising again on an open case
+        // adds a risk assessment to that case, so assessments would over-count.
+        var urgentFlagsRaised = await db.UrgentEpisodes.AsNoTracking()
+            .CountAsync(e => e.RaisedAt >= fromOffset && e.RaisedAt <= toOffset
+                && db.Guests.Any(g => g.Id == e.GuestId && g.HubId == hubId), cancellationToken);
 
         var followUpEntries = await db.FollowUps.AsNoTracking()
             .CountAsync(f => f.DueDate >= from && f.DueDate <= to

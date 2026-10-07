@@ -366,6 +366,8 @@ namespace Emhip.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("ContactId");
+
                     b.HasIndex("AuthorStaffId", "Status");
 
                     b.HasIndex("GuestId", "OccurredAt")
@@ -1811,6 +1813,13 @@ namespace Emhip.Infrastructure.Persistence.Migrations
                         .HasMaxLength(4000)
                         .HasColumnType("nvarchar(4000)");
 
+                    b.Property<bool>("OtherRisk")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("OtherRiskDetails")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
                     b.Property<bool>("RiskToOthers")
                         .HasColumnType("bit");
 
@@ -1847,6 +1856,26 @@ namespace Emhip.Infrastructure.Persistence.Migrations
                     b.Property<Guid?>("AssignedCmhwIdAtFlag")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("CmhtCallNotes")
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<DateTimeOffset?>("CmhtCalledAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("CmhtContactName")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<bool?>("CmhtNotified")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTimeOffset?>("CmhtRecordedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<Guid?>("CmhtRecordedByStaffId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<string>("CmhtTeam")
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
@@ -1854,23 +1883,9 @@ namespace Emhip.Infrastructure.Persistence.Migrations
                     b.Property<Guid?>("CmhwAfterResolutionStaffId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<DateTimeOffset?>("EscalatedToCmhtAt")
-                        .HasColumnType("datetimeoffset");
-
-                    b.Property<Guid?>("EscalatedToCmhtByStaffId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("EscalationNotes")
-                        .HasMaxLength(4000)
-                        .HasColumnType("nvarchar(4000)");
-
-                    b.Property<string>("EscalationReason")
-                        .HasMaxLength(2000)
-                        .HasColumnType("nvarchar(2000)");
-
-                    b.Property<string>("EscalationUrgency")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
+                    b.Property<string>("ExternalServicesInvolved")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
 
                     b.Property<Guid>("GuestId")
                         .HasColumnType("uniqueidentifier");
@@ -2142,6 +2157,13 @@ namespace Emhip.Infrastructure.Persistence.Migrations
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
+
+                    b.Property<bool>("OtherRisk")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("OtherRiskDetails")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
 
                     b.Property<bool>("RiskToOthers")
                         .HasColumnType("bit");

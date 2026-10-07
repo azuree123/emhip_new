@@ -1,6 +1,6 @@
 @use './guest-workspace.tokens' as t;
 
-// "Raise Urgent Flag" quick popup — the Urgent Case Details drawer's geometry (Desktop58 in
+// "Raise Urgent Case" quick popup — the former Urgent Case Details drawer's geometry (Desktop58 in
 // urgent-cases.component.scss): rgba(0,0,0,0.45) overlay, 520px right-hand white panel with 8px
 // left corners, 20px title over a 12px reference, rgb(255,245,244) notice card and 36px/4px
 // action buttons. The flag tiles reuse the Urgent Cases risk-flag pill colours when ticked.
@@ -143,6 +143,15 @@
     margin-bottom: 8px;
   }
 
+  > .field__hint {
+    margin-top: -4px;
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 18px;
+    color: t.$color-text-meta;
+  }
+
+  input,
   textarea {
     font-family: inherit;
     font-size: 14px;
@@ -151,13 +160,16 @@
     border: 1px solid #e5e5e5;
     border-radius: 6px;
     padding: 8px 12px;
-    resize: vertical;
-    min-height: 96px;
 
     &:focus {
       outline: none;
       border-color: t.$color-brand;
     }
+  }
+
+  textarea {
+    resize: vertical;
+    min-height: 96px;
   }
 }
 

@@ -13,10 +13,10 @@ public class UrgentEpisodeConfiguration : IEntityTypeConfiguration<UrgentEpisode
         builder.HasIndex(e => new { e.GuestId, e.ResolvedAt });
         builder.HasIndex(e => e.ResolvedAt);
         builder.Property(e => e.CmhtTeam).HasMaxLength(200);
-        builder.Property(e => e.EscalationReason).HasMaxLength(2000);
-        builder.Property(e => e.EscalationUrgency).HasMaxLength(50);
-        builder.Property(e => e.EscalationNotes).HasMaxLength(4000);
+        builder.Property(e => e.CmhtContactName).HasMaxLength(200);
+        builder.Property(e => e.CmhtCallNotes).HasMaxLength(4000);
         builder.Property(e => e.ResolutionNote).HasMaxLength(4000);
+        builder.Property(e => e.ExternalServicesInvolved).HasMaxLength(500);
         builder.Property(e => e.PathwayAtFlag).HasConversion<string>().HasMaxLength(30);
         builder.Property(e => e.PathwayAfterResolution).HasConversion<string>().HasMaxLength(30);
         builder.Property(e => e.SessionFrequencyChange).HasMaxLength(200);

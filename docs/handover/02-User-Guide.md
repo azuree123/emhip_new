@@ -1,6 +1,6 @@
 # EMHIP User Guide
 
-_Version 1.0 · 30 September 2026 · For: CMHWs, CPNs and Hub Managers_
+_Version 1.1 · 7 October 2026 · For: CMHWs, CPNs and Hub Managers_
 
 This guide shows front-line staff and Hub Managers how to use EMHIP day to day. It covers signing in, the dashboards, finding and registering guests, the guest record, recording contacts, urgent cases, the MDT queue, scheduled contacts and reports. Tasks are written as numbered steps, and section 11 is a one-page quick reference. Staff accounts, roles and settings are covered in the Administrator Guide (document 04).
 
@@ -75,7 +75,7 @@ The left-hand menu has three headings. You only see the items your role allows.
 | --- | --- | --- | --- |
 | OVERVIEW | Dashboard | Your home dashboard | Everyone |
 | OVERVIEW | Guest | The guest list | Everyone |
-| CASE MANAGEMENT | Urgent Cases | Guests with an urgent flag, with a count | Everyone |
+| CASE MANAGEMENT | Urgent Cases | Guests with an open urgent case, with a count | Everyone |
 | CASE MANAGEMENT | MDT Queue | Items waiting for MDT review, with a count | Hub Managers |
 | CASE MANAGEMENT | Contact History | Contacts across the hub, per guest | Everyone |
 | ADMIN | Hub Workers, Roles & Permissions | Staff accounts and roles | Administrators |
@@ -100,7 +100,7 @@ The suggestions match the start of a name, or an exact reference. The guest list
 
 To jump to the search box from anywhere, press **Ctrl + K** (**Cmd + K** on a Mac).
 
-### 1.9 Guest status and the urgent flag
+### 1.9 Guest status and urgent cases
 
 Every guest has one of three statuses.
 
@@ -111,9 +111,9 @@ Every guest has one of three statuses.
 | Inactive | No activity recorded for 90 days | Goes back to Active when a new contact is recorded |
 
 - EMHIP checks for inactivity automatically several times a day. The 90-day period is a setting your Administrator can change.
-- New guests never become Inactive, and a guest with an urgent flag is never moved to Inactive.
+- New guests never become Inactive, and a guest with an open urgent case is never moved to Inactive.
 
-The **urgent flag** is separate from status. It marks a guest who needs contact within 72 hours because of risk. It shows as a red **Urgent** badge beside the status, so a guest can be Active and Urgent at the same time. Section 7 explains how it is raised and cleared.
+An **urgent case** is separate from status. It marks a guest who needs contact within 72 hours because of risk. While it is open, a red **Urgent** badge shows beside the status, so a guest can be Active and Urgent at the same time. Section 7 explains how an urgent case is raised and resolved.
 
 ### 1.10 Two kinds of pathway
 
@@ -146,7 +146,7 @@ The Dashboard is the first screen after you sign in. Hub Managers and Administra
 
 #### Banners
 
-- **Urgent banner:** shown when urgent cases are open anywhere in the hub, for example "2 urgent cases need attention — review the 72-hour contact window". It names the first guest and when the flag was raised. Select **View all urgent cases** to open Urgent Cases.
+- **Urgent banner:** shown when urgent cases are open anywhere in the hub, for example "2 urgent cases need attention — review the 72-hour contact window". It names the first guest and when the urgent case was raised. Select **View all urgent cases** to open Urgent Cases.
 - **Overdue banner:** names guests whose scheduled contacts have passed with no entry. They stay on your overdue list until the scheduled contact is marked done.
 
 #### Filter contacts
@@ -189,7 +189,7 @@ This list shows open scheduled contacts, soonest first. Each row reads "Contact 
 | Active guests | Active guests, with this month's net change | Open the guest list filtered to Active | Preview active guests |
 | New | Guests awaiting an initial conversation | Open the guest list filtered to New | Preview new guests |
 | Inactive | Inactive guests, with the number moved this month | Open the guest list filtered to Inactive | Preview inactive guests |
-| Urgent Cases | Guests with an urgent flag, with overdue scheduled contacts | Open Urgent Cases | Preview urgent guests |
+| Urgent Cases | Guests with an open urgent case, with overdue scheduled contacts | Open Urgent Cases | Preview urgent guests |
 
 #### The preview panel
 
@@ -286,7 +286,7 @@ The list updates a moment after you stop typing.
 | Reset filters (the icon left of the filters) | Clears the search box and every filter |
 | Pathway | Mental Wellbeing, Clinical Support, Community Recovery |
 | Status | New, Active, Inactive |
-| Urgent only | Shows only guests with the urgent flag; select again to turn off |
+| Urgent only | Shows only guests with an open urgent case; select again to turn off |
 | Assigned CMHW | Type to search staff; select × to clear |
 | Last Activity | Today, Last 7 days, Last 30 days |
 | Demographics | Ethnicity, Age group, Gender, Country of origin |
@@ -314,7 +314,7 @@ When you select a count on a dashboard or report, the guest list opens showing e
 2. Select **Export Guest**.
 3. A CSV file downloads with up to 2,000 matching guests. It opens in Excel.
 
-The file has each guest's name, date of birth, status, urgent flag, pathway and risk (High or Low). It also has the CMHW, registration date, last contact and next contact.
+The file has each guest's name, date of birth, status, whether they have an open urgent case, pathway and risk (High or Low). It also has the CMHW, registration date, last contact and next contact.
 
 > **Warning:** The export contains personal data. Store it only in approved locations and delete it when you no longer need it.
 
@@ -366,12 +366,12 @@ This form is completed once, at the first session. It is locked after submission
 | Actions arising | Each action needs a description and a due date | Assigned to |
 | Consent | Tick "The guest confirmed their consent for this conversation to be recorded in their clinical record." | |
 
-- If **Immediate escalation required?** is a Yes answer, **Crisis notes** become required. Record the actions taken, who was notified and what was agreed.
+- If **Immediate escalation required?** is a Yes answer, **Urgent case notes** become required. Record the actions taken, who was notified and what was agreed.
 - A detail field opens only when its question is answered **Yes** or **Unsure**: diagnosis group and reported diagnosis, inpatient year and location, family history details, allergy details, and the comment beside each risk-history question. Answering **No** or **Unknown** clears the detail and greys it out.
 - Use the prompts to guide a natural conversation. Record the guest's own words where you can.
 - Prompt 1 is saved as the presenting problem. Everything else on this step is saved together as the conversation notes.
 
-> **Warning:** Answering **Yes** to "Is the guest at immediate risk?" raises the urgent flag when you submit. So do Yes answers to the three history questions, a Yes to immediate escalation, and the flags for self-harm, psychosis, domestic abuse or child safeguarding.
+> **Warning:** Answering **Yes** to "Is the guest at immediate risk?" raises an urgent case when you submit. So do Yes answers to the three history questions, a Yes to immediate escalation, and the flags for self-harm, psychosis, domestic abuse or child safeguarding.
 
 ### 4.3 Step 3: DIALOG
 
@@ -417,7 +417,7 @@ If one part fails, EMHIP names it and stops. Select **Retry Submit**. Parts alre
 | Ethnicity | Demographics tab |
 | An **Initial review** item, if there was immediate risk or the pathway is Clinical Support | MDT Queue |
 | A risk assessment, if risk screening found anything | Clinical Details tab |
-| The urgent flag and an urgent episode, if a risk was flagged | Urgent Cases |
+| An urgent case, if a risk was flagged | Urgent Cases |
 
 ### 4.7 Register now and hold the conversation later
 
@@ -441,13 +441,13 @@ The header shows the guest's name with chips for status, clinical pathway and an
 | --- | --- | --- |
 | Back arrow | Returns to the previous screen | Everyone |
 | **Add Contact** | Opens the Add Contact form (section 6) | CMHWs, CPNs, Hub Managers |
-| **Raise Urgent Flag** | Opens a quick panel to tick the risks and raise the flag (section 5.5) | Everyone |
+| **Raise Urgent Case** | Opens a quick panel to record the risk and raise an urgent case (section 7.1) | Everyone |
 | **Export Record** | Downloads the guest's full record (section 5.15) | Hub Managers |
 | **Anonymise record** | Removes the guest's identifying details (section 5.16) | Administrators |
 
 If the guest has open scheduled contacts, a banner says how many. Work them from the Scheduled contacts screen (section 9.3).
 
-The tabs are Overview, Demographics, Initial Conversation, Clinical Details, DIALOG Scores, Pathway History, Care Plan, Contact History, CPN Record, Documents, Actions & Reminders and Notes. Hub Managers also see Access Log.
+The tabs are Overview, Demographics, Initial Conversation, Clinical Details, DIALOG Scores, Pathway History, Care Plan, Contact History, Casework Notes, CPN Record, Documents, Actions & Reminders and Notes. Hub Managers also see Access Log.
 
 ### 5.2 Overview tab
 
@@ -459,7 +459,7 @@ The tabs are Overview, Demographics, Initial Conversation, Clinical Details, DIA
 
 ### 5.3 Demographics tab
 
-**Personal details** were captured at registration and are read-only. Five further sections each show **Completed** or **Pending**, and each saves on its own.
+**Personal details** were captured at registration and are read-only. Five further sections each show **Complete** or **Incomplete**, and each saves on its own.
 
 | Section | Fields |
 | --- | --- |
@@ -471,11 +471,11 @@ The tabs are Overview, Demographics, Initial Conversation, Clinical Details, DIA
 
 #### Complete a demographics section
 
-1. Select **Edit** on the section, or **Complete** beside it in the **Profile completion** card.
+1. Select **Edit** on the section, or **Complete now** beside it in the **Profile completion** card.
 2. Fill in the fields.
-3. Select **Save section**. "Saved" appears and the section shows Completed when every field is filled.
+3. Select **Save section**. "Saved" appears and the section shows Complete when every field is filled.
 
-The **Profile completion** card shows the percentage complete. The **Relationship to other services** card shows service involvement from Clinical Details; select **Edit in Clinical Details** to change it. The **Next steps** card ticks off the initial conversation and the DIALOG baseline once they are recorded (with the date), highlights the first step still to do, and its main button takes you there: **Continue to Initial conversation**, **Record DIALOG baseline**, or **View DIALOG scores** once both are done.
+The **Profile completion** card shows the percentage complete and marks each section **Complete** or **Incomplete**. The **Relationship to other services** card shows service involvement from Clinical Details, also marked Complete or Incomplete; select **Edit in Clinical Details** to change it. The **Next steps** card ticks off the initial conversation and the DIALOG baseline once they are recorded (with the date), highlights the first step still to do, and its main button takes you there: **Continue to Initial conversation**, **Record DIALOG baseline**, or **View DIALOG scores** once both are done.
 
 > **Tip:** If a list such as Living situation is empty, its options have not been set up yet. Ask your Administrator.
 
@@ -495,7 +495,7 @@ Once the initial conversation is complete, this tab shows the locked record. It 
 8. Tick the box to confirm the guest's consent. This is required.
 9. Select **Complete Initial Conversation**.
 
-The guest becomes Active. The record is locked and cannot be edited. Submitting also allocates the pathway and CMHW, schedules the next contact and creates the actions. Immediate risk raises the urgent flag. Immediate risk or the Clinical Support pathway also adds an **Initial review** item to the MDT Queue.
+The guest becomes Active. The record is locked and cannot be edited. Submitting also allocates the pathway and CMHW, schedules the next contact and creates the actions. Immediate risk raises an urgent case. Immediate risk or the Clinical Support pathway also adds an **Initial review** item to the MDT Queue.
 
 ### 5.5 Clinical Details tab
 
@@ -510,29 +510,17 @@ The tab shows the presenting problem, long-term and physical health conditions, 
 
 These ticks feed the Clinical complexity indicators on the dashboards.
 
-#### Raise an urgent flag quickly
+#### The Risk & complexity card
 
-You can raise the flag from any tab without opening Clinical Details.
+This card is read-only. Risk is recorded by raising an urgent case with **Raise Urgent Case** in the guest's header (section 7.1), not on this tab.
 
-1. Select **Raise Urgent Flag** in the guest's header. A panel opens on the right.
-2. Tick one or more risks: **Suicidal Ideation**, **Self Harm**, **Risk to Others**, **Severe Deterioration**, **Safeguarding Concern**.
-3. Add **Notes** if you want to, for example what happened and who reported it.
-4. Select **Raise urgent flag**.
-
-The panel closes and the header shows the Urgent badge. The flag is saved as a new risk assessment, so it also appears in the Risk & complexity card. If the guest is already urgent, the panel says so, and the new risks are added to the open episode.
-
-#### Record a risk assessment
-
-1. In the **Risk & complexity** card, select **+ Record assessment**.
-2. Tick any that apply: **Suicidal ideation**, **Self-harm**, **Risk to others**, **Severe deterioration**, **Safeguarding concern**.
-3. Add **Notes**.
-4. Select **Save assessment**.
-
-If you tick at least one box, the guest gets the urgent flag and appears on Urgent Cases. The assigned CMHW is also sent an email, if your hub has turned this on.
-
-Each assessment is kept as a new version. The card shows whether the latest one found a risk. A banner gives its version and date, for example "Last risk assessment: v3, 12 Sep 2026 — active risk flags".
-
-> **Tip:** Recording a new assessment with no boxes ticked does not clear the urgent flag. Only resolving the urgent episode clears it (section 7.7).
+- **Immediate risk flag** fills itself in from the guest's urgent cases:
+    - "Yes — urgent case open", with the date and time it was raised
+    - "No open urgent case", with when the last one was raised and resolved
+    - "No urgent case raised", if the guest has never had one.
+- **SMI indicator** shows the tick from **Edit details**.
+- **Urgent cases** counts every urgent case the guest has had, for example "2 lifetime".
+- A banner shows the latest risk assessment with its version and date, for example "Last risk assessment: v3, 12 Sep 2026 — active risk flags". Each urgent case raised is kept as a new version.
 
 ### 5.6 DIALOG Scores tab
 
@@ -596,9 +584,19 @@ Select the **⋮** button on a plan's row:
 
 Closed plans are read-only. A **MDT review overdue** chip appears when the MDT review date has passed.
 
-### 5.9 Contact History tab
+### 5.9 Contact History and Casework Notes tabs
 
-This lists every contact recorded for the guest, newest first. Each shows the type (for example Phone call), the date and time, and who recorded it. Select **Load more** to see older contacts.
+#### Contact History
+
+This lists every contact recorded for the guest, newest first. Each row leads with the type of contact chosen in Add Contact: **Casework**, **Activity**, **Hospitality**, **AFA** or **CPN contact**. Under it, in smaller text, are how the contact was made (for example Phone call), the date and time, and who recorded it. Older contacts that were not recorded through Add Contact show "Contact". Select **Load more** to see older contacts.
+
+#### Casework Notes
+
+This tab shows only the guest's casework notes, newest first, so the clinical record can be read without scrolling past calls, activities and hospitality. Activity, Hospitality, AFA and CPN notes, and quick notes, are not shown here; they stay on the Notes tab.
+
+- Select a note to expand it, as on the Notes tab. You see the Situation, Background, Assessment and Recommendation, any actions, attachments and flags.
+- Drafts show a **Draft** badge, with **Resume** and **Discard**.
+- **Add casework note** opens the Add Contact form.
 
 ### 5.10 CPN Record tab
 
@@ -620,7 +618,7 @@ All of a guest's documents are kept on this tab. Anything you upload here is fil
 2. Drag a file onto the panel, or select **Browse files**. The panel shows the allowed file types and the size limit.
 3. Check the **Title**. It is filled in from the file name. This is required.
 4. Choose a **Category**. This is required.
-5. Add a **Description**, **Tags** (press Enter after each) and a **Retain until** date if needed. Leave Retain until blank to use the hub's default retention period.
+5. Add a **Description**, **Tags** (press Enter after each) and a **Retain until** date if needed. Leave Retain until blank to use the hub's default retention period. Every document is kept for at least 8 years from upload, the NHS minimum for mental health records, so an earlier date is refused.
 6. Answer any **Additional information** questions.
 7. Select **Upload document**. A progress bar shows the upload.
 
@@ -640,6 +638,8 @@ The document is stored as version 1 and "Document uploaded." appears.
 | Remove it for good | In the recycle bin, **Permanently delete**, then type DELETE | Administrators |
 
 Every version stays in the version history and can be downloaded. A reason for deleting is optional.
+
+A deleted document stays in the recycle bin until someone permanently deletes it; nothing is removed automatically. No document can be permanently deleted within 8 years of being uploaded, or before its **Retain until** date if that is later.
 
 ### 5.12 Actions & Reminders tab
 
@@ -667,7 +667,7 @@ Due dates show "overdue" in red, and "due soon" when they are three days away or
 
 #### Casework notes
 
-Every contact recorded with Add Contact is filed here as a casework note.
+Every contact recorded with Add Contact is filed here as a casework note, whatever its type. To see only Casework entries, use the **Casework Notes** tab (section 5.9).
 
 - Select a note to expand it. You see the Situation, Background, Assessment and Recommendation, any actions, attachments and flags.
 - Drafts show a **Draft** badge. Select **Resume** to finish one, or **Discard** to delete it. Submitted notes cannot be deleted.
@@ -680,7 +680,7 @@ Every contact recorded with Add Contact is filed here as a casework note.
 3. Tick **Pin to Overview** to pin it.
 4. Select **Add note**.
 
-Select **Pin** or **Unpin** on any quick note. Pinned notes appear under **Crisis Actions Taken** in the Urgent Case Details panel.
+Select **Pin** or **Unpin** on any quick note. Pinned notes are listed first on this tab. They are not yet shown on the Overview tab (see document 08, Known Issues).
 
 ### 5.14 Access Log tab (Hub Managers)
 
@@ -711,7 +711,7 @@ You can open the form from:
 - **Add Contact** in a guest's record header
 - **Add casework note** on the Notes tab, or **Resume** on a draft
 - **Add CPN contact** on the CPN Record tab
-- **Add contact** in the Urgent Case Details panel on Urgent Cases.
+- **Add contact** on an Urgent Case Record (section 7.4).
 
 ### 6.1 Record an ordinary contact
 
@@ -743,7 +743,7 @@ To record a casework contact:
 10. Enter the **Next contact date**, or tick **No next contact needed** (section 6.6). One of the two is required to submit. Add actions, attachments or MDT and CPN requests as needed (sections 6.4 to 6.7).
 11. Select **Submit contact note**.
 
-> **Warning:** Choosing **YES, HIGH RISK** records the risk on the note but does not raise the urgent flag. To raise it, use **Raise Urgent Flag** and record a risk assessment (section 5.5).
+> **Warning:** Choosing **YES, HIGH RISK** records the risk on the note but does not raise an urgent case. To raise one, use **Raise Urgent Case** in the guest's header (section 7.1).
 
 ### 6.2 Who sees the CPN option
 
@@ -843,19 +843,31 @@ When you submit from a guest's record, the form closes and the **Notes** tab ope
 
 ## 7. Urgent cases
 
-### 7.1 How a guest becomes urgent
+### 7.1 Raise an urgent case
 
-A guest gets the urgent flag when:
+A guest has an urgent case when:
 
-- someone selects **Raise Urgent Flag** on the guest's record, or records a risk assessment on Clinical Details, with at least one risk ticked
+- someone selects **Raise Urgent Case** on the guest's record
 - the initial conversation records immediate risk, at registration or on the Initial Conversation tab
 - risk screening at registration finds a risk (section 4.2).
 
-The flag opens an **urgent episode**. The guest appears on Urgent Cases for everyone within moments, and the assigned CMHW is emailed if your hub has turned this on. A guest has only one open episode at a time.
+To raise an urgent case from the guest's record:
+
+1. Select **Raise Urgent Case** in the guest's header. A panel opens on the right. It works from any tab.
+2. Under **Risk identified**, tick one or more: **Suicidal Ideation**, **Self Harm**, **Risk to Others**, **Severe Deterioration**, **Safeguarding Concern** or **Other**.
+3. If you tick **Other**, describe the risk in **Describe the other risk**. This is required.
+4. Write the **Urgent case notes**: what happened, who reported it and any immediate action taken. This is required.
+5. Select **Raise urgent case**. The button stays greyed out until a risk is ticked and the notes are written.
+
+The panel closes and the header shows the Urgent badge. The guest appears on Urgent Cases for everyone within moments, and the assigned CMHW is emailed if your hub has turned this on. An "Other" risk shows as "Other:" followed by your description on Urgent Cases, the Urgent Case Record, the CSV export and the email.
+
+A guest has only one open urgent case at a time. If the guest already has one, the panel says so, and anything you raise is added to that case. It shows in the record's audit trail as "Further risk recorded".
+
+> **Tip:** The Urgent Case Record names the person who raised the case from the account they were signed in with. Always sign in with your own account, never a shared one.
 
 ### 7.2 The 72-hour window
 
-An urgent guest must be contacted within 72 hours of the flag being raised. The countdown starts when the flag is raised. After 72 hours the case shows as overdue until someone resolves the episode, even if contacts have been logged.
+An urgent guest must be contacted within 72 hours of the urgent case being raised. The countdown starts when it is raised. After 72 hours the case shows as overdue until someone resolves it, even if contacts have been logged.
 
 ### 7.3 The Urgent Cases screen
 
@@ -864,94 +876,84 @@ Select **Urgent Cases** in the menu. The number beside it is the count of open c
 - A red banner appears when cases are overdue. Select **View now** to scroll to them.
 - **Live** beside the title means new cases appear and resolved ones disappear without refreshing. If it shows another word, such as Reconnecting, refresh the page.
 - **Tiles:** Active Urgent Cases, Contact overdue, Within 72-hour window and Resolved this month.
-- **Filters:** **Risk Level** (one of the five risk types), **Assigned CMHW** and **Overdue Only**.
+- **Filters:** **Risk Level** (one of the six risk types, including Other), **Assigned CMHW** and **Overdue Only**.
 
-Each open case shows the guest's name and reference, the hours left or overdue and the contact deadline. It also shows the risk types, the CMHW and when the flag was raised. Its buttons are:
+Each open case shows the guest's name and reference, the hours left or overdue and the contact deadline. It also shows the risk types, the CMHW and when the urgent case was raised.
 
-- **Open Guest**: opens the guest's record
-- **View Crisis Episode**: opens the urgent episode record (section 7.8).
+- Select anywhere on the case to open its **Urgent Case Record** (section 7.4).
+- **View Urgent Case Record** does the same.
+- **Open Guest**, or the guest's name, opens the guest's record.
 
-Select anywhere else on the case to open the **Urgent Case Details** panel. To log a contact, use **Add contact** in that panel.
+Contacts, the CMHT record and resolving are all on the Urgent Case Record. There is no separate details panel.
 
-Resolved cases are listed below the open ones. Each shows when it was resolved, whether that was within 72 hours, any CMHT team and the resolution note. Select a resolved case or **View Episode** to open its episode record.
+Resolved cases are listed below the open ones. Each shows when it was resolved, whether that was within 72 hours, who resolved it, whether the CMHT was notified (and which team) and when the urgent case was raised. Cases resolved before 7 October 2026 also show their resolution note. Select a resolved case or **View Urgent Case Record** to open its record, or **Open Guest** to open the guest.
 
 Select **Export** to download the cases currently shown as a CSV file.
 
-### 7.4 The Urgent Case Details panel
+### 7.4 The Urgent Case Record
 
-The panel shows:
+The Urgent Case Record is the full account of one urgent case. It opens over the Urgent Cases screen. Close it with the × or the Esc key.
 
-- a **72-hour countdown** with the deadline
-- the assigned CMHW, when the flag was raised, whether the CMHT was notified and which team, whether contacts have been logged, and the status
-- the risk types
-- **Crisis Actions Taken**: the guest's pinned notes
-- the **Episode timeline**: the flag, any escalation and each contact since the flag.
+| Part | What it shows |
+| --- | --- |
+| Header | The guest's name (select it to open their record), **Reference ID**, **Assigned CMHW** and **Pathway at time of flag**, with the buttons **Open Guest**, **Export Record** and × |
+| Tabs | One tab per urgent case the guest has had, oldest first: **Urgent Case 1**, **Urgent Case 2** and so on. A dot marks the open case, which is shown first |
+| Status bar | A live 72-hour countdown with a progress bar, the **Deadline** and the **Case status** (Open or Resolved) |
+| Flag details | **Flag raised by**, **Flag raised at**, **Risk identified** and the **Urgent case notes**. These are read-only |
+| Actions taken | **CMHT or other NHS team notified** (section 7.5), **Contacts logged since flag** and **Add contact** |
+| Resolution | **Mark as resolved** while the case is open (section 7.6); afterwards, who resolved it, when, whether it was within 72 hours, inpatient admission and any other external service involved |
+| System audit trail | Each step, oldest first, with the member of staff and the date and time |
 
-Its buttons are **Add contact**, **Open full episode record**, **Mark episode as resolved**, **Escalate to CMHT** and **Open full guest record**.
+**The countdown** reads, for example, "41h 12m remaining" or "Overdue — 3h 5m past deadline". The bar is amber while the case is open and turns red when fewer than 6 hours remain or the deadline has passed. Once the case is resolved it turns green and stops at the time of resolution.
 
-### 7.5 Add a crisis note
+**Flag raised by** is the member of staff who raised the case, taken from the account they were signed in with.
 
-1. In the details panel, select **Add Crisis Note**.
-2. Describe the crisis action taken.
-3. Select **Save note**.
+**Contacts logged since flag** is the number of contacts recorded since the urgent case was raised. Select the number to list them, each with its type (for example Casework), how it was made, the date and time and who recorded it. **Open Contact History** opens the guest's Contact History tab.
 
-The note is saved as a pinned note on the guest and appears under Crisis Actions Taken.
+**Add contact** opens the Add Contact form over the record (section 6). When you submit, the new contact is added to the list.
 
-### 7.6 Escalate to the CMHT
+**The system audit trail** lists, as they happen: Urgent case raised, Further risk recorded, Contact logged, CMHT notified or CMHT not notified, and Urgent case resolved.
 
-1. In the details panel, select **Escalate to CMHT**.
-2. Enter the **CMHT team to escalate to**, for example Crisis Resolution Team.
-3. Choose the **Reason for escalation**:
-    - 72 hour window expired - no contact
-    - Risk level has increased
-    - Guest unreachable - welfare concern
-    - Clinical need beyond hub capacity
-    - Safeguarding concern.
-4. Choose the **Urgency level**: Emergency, Urgent (the default) or Routine.
-5. Write the **Escalation notes**: clinical context, contacts attempted and the current risk.
-6. Select **Send escalation**.
+### 7.5 Record whether the CMHT was notified
 
-All four fields are required. The escalation is added to the episode timeline and the details panel shows "CMHT notified: YES".
+EMHIP has no connection to the CMHT, so it cannot contact them for you. Contact the CMHT or other NHS team by your usual route, then record what happened.
 
-> **Warning:** EMHIP records the escalation but does not contact the CMHT for you. Contact the team by your usual route as well.
+1. On the Urgent Case Record, under **CMHT or other NHS team notified**, choose **Yes** or **No**. An open case with nothing recorded yet starts on this question.
+2. If you choose **Yes**, fill in:
+    - **Name of person called** (required)
+    - **Team or service**, for example Crisis Resolution Team (optional)
+    - **Called by**, which is filled in from your sign-in and cannot be changed
+    - **Date and time of call** (required; it cannot be in the future)
+    - **What was said**: what was discussed and agreed.
+3. Select **Save**.
 
-### 7.7 Resolve an urgent episode
+The answer is then shown read-only. While the case is open, select **Edit** to correct it. Changing the answer to No clears the call details. The audit trail shows "CMHT notified" or "CMHT not notified" with the name of whoever recorded it.
 
-1. In the details panel or the episode record, select **Mark episode as resolved**.
-2. Write a **Resolution note**. It is optional, but it becomes part of the permanent record.
-3. Under **Pathway after resolution**, keep the current pathway or choose a new one.
-4. Enter a **Next contact date** if one was agreed. It cannot be in the past.
-5. Record any change in session frequency, for example "Yes — weekly CPN input added".
-6. Tick **Guest was admitted as an inpatient during this episode** if that happened.
-7. Select **Mark as resolved**.
+Urgent cases escalated to the CMHT before 7 October 2026 show **Notified: Yes**, with the old escalation reason and urgency at the top of **What was said**.
+
+### 7.6 Resolve an urgent case
+
+1. On the Urgent Case Record, select **Mark as resolved**.
+2. The dialog shows **Resolved by** (you), **Resolved at** (now) and **Resolved within 72h**, which is worked out for you.
+3. Answer **Inpatient admission**: **Yes** or **No**. This is required.
+4. Under **Any other external service involved**, enter any service involved, for example ambulance, A&E or police. Leave it blank if none.
+5. Select **Mark as resolved**.
 
 Resolving:
 
-- closes and locks the episode
-- clears the urgent flag; the guest keeps their status (New, Active or Inactive)
-- adds any pathway change to the Pathway History tab
-- schedules the next contact for the guest's CMHW
-- removes the case from Urgent Cases for everyone and lists it under resolved cases.
+- closes and locks the urgent case
+- removes the Urgent badge; the guest keeps their status (New, Active or Inactive)
+- removes the case from the open list on Urgent Cases for everyone and lists it under resolved cases.
 
-### 7.8 Urgent episode records
+> **Note:** Resolving no longer asks for a resolution note, a new pathway or a next contact date. Change the pathway on the Pathway History tab, and record the next contact with Add Contact.
 
-The episode record is the full account of one urgent episode. Open it with **View Crisis Episode**, **Open full episode record**, **View Episode** or by selecting a resolved case.
+### 7.7 Export an Urgent Case Record
 
-- **Episode tabs** (Episode 1, Episode 2 and so on) switch between a guest's episodes. A dot marks the open one.
-- The banner says whether the episode is open or resolved. An open episode has **Escalate to CMHT** and **Mark episode as resolved** buttons.
-- **Episode overview:** the pathway at the time of the flag, the CMHW, who raised the flag and when, and the deadline. It also shows who resolved it and when, and any CMHT team.
-- **Crisis action notes at intake:** the risk types and notes from the assessment that raised the flag.
-- **Full episode timeline**, and for resolved episodes the **Resolution note** and **Pathway re-entry decision**.
-- **Episode outcome:** whether it was resolved within 72 hours, duration, contacts logged, CMHT escalation and inpatient admission.
-- **System audit trail:** the recorded steps of the episode.
-
-#### Export an episode record
-
-1. Open the episode record.
+1. Open the Urgent Case Record.
 2. Select **Export Record**.
-3. A text file downloads, named like `urgent-episode-G-1042-episode-1.txt`.
+3. A text file downloads, named like `urgent-case-G-1042-1.txt`. It follows the sections of the record.
 
-The export is recorded on the guest's Access Log.
+The export is recorded on the guest's Access Log as "Exported urgent case record".
 
 ## 8. MDT queue (Hub Managers)
 
@@ -1022,7 +1024,6 @@ A scheduled contact is a contact planned for a date. EMHIP creates them from:
 - the next contact date at registration or the initial conversation
 - the next contact date in Add Contact
 - the next appointment date in a CPN Part 1
-- the next contact date when resolving an urgent episode
 - **Schedule contact** on the Scheduled contacts screen.
 
 #### Open the Scheduled contacts screen
@@ -1089,7 +1090,7 @@ The period stays the same when you change tabs. Until you select Apply, a note s
 What the period means:
 
 - **Guest counts** (tiles, pathways, demographics, referral sources, data quality) count the guests registered in the period, by the status or pathway they have today.
-- **Activity** (contacts, DIALOG assessments, urgent flags, CPN referrals, exports) counts what was recorded in the period.
+- **Activity** (contacts, DIALOG assessments, urgent cases raised, CPN referrals, exports) counts what was recorded in the period.
 - A few figures are always current and are labelled so, for example a worker's caseload and the CPN caseload.
 
 #### Open the guests behind a count
@@ -1105,7 +1106,7 @@ You can select:
 - **Data Quality:** the tiles and **View guests** on each row
 - **CPN Activity:** the four tiles, each stage of the referral pipeline, and the guests seen and referrals declined under CPN sessions.
 
-Counts of contacts, scheduled contacts and urgent flags, and averages, are not lists of guests, so they cannot be selected. A guest referred to the CPN twice in the period appears once in the list, so the list can be one shorter than the referral count.
+Counts of contacts, scheduled contacts and urgent cases raised, and averages, are not lists of guests, so they cannot be selected. A guest referred to the CPN twice in the period appears once in the list, so the list can be one shorter than the referral count.
 
 ### 10.2 Overview
 
@@ -1115,7 +1116,7 @@ Counts of contacts, scheduled contacts and urgent flags, and averages, are not l
 - **Guest registrations over time:** new registrations each month.
 - **Guest demographics:** the ethnicity of the guests registered in the period.
 - **Referral sources:** where the guests registered in the period came from.
-- **Contact activity:** guests seen, total contacts recorded, scheduled contacts due and urgent flags raised in the period.
+- **Contact activity:** guests seen, total contacts recorded, scheduled contacts due and urgent cases raised in the period.
 
 ### 10.3 Guest Report
 
@@ -1214,7 +1215,7 @@ The "Who can" column shows the built-in roles. Your Administrator may have chang
 | Record a CPN assessment or session | **Add Contact**, CPN switch on | CPN |
 | Refer a guest to the CPN | **Add Contact**, **Refer this guest to the CPN** | CMHW, CPN, Hub Manager |
 | Ask for MDT discussion | **Add Contact**, **Add this guest for MDT discussion** | CMHW, CPN, Hub Manager |
-| Record a risk assessment | Guest record, **Raise Urgent Flag** | CMHW, CPN, Hub Manager |
+| Raise an urgent case | Guest record, **Raise Urgent Case** | CMHW, CPN, Hub Manager |
 | Update clinical details | Guest record, Clinical Details tab | CMHW, CPN, Hub Manager |
 | Record a DIALOG reassessment | Guest record, DIALOG Scores tab, **Record new** | CMHW, CPN, Hub Manager |
 | Change the clinical pathway | Guest record, Pathway History tab, **Add New Pathway** | CMHW, CPN, Hub Manager |
@@ -1222,15 +1223,17 @@ The "Who can" column shows the built-in roles. Your Administrator may have chang
 | Create, edit, close or export a care plan | Guest record, Care Plan tab | CMHW, CPN, Hub Manager |
 | Add or complete an action | Guest record, Actions & Reminders tab | CMHW, CPN, Hub Manager |
 | Add a quick note | Guest record, Notes tab | CMHW, CPN, Hub Manager |
+| Read only the casework notes | Guest record, Casework Notes tab | Everyone |
 | Upload a document | Guest record, Documents tab | CMHW, CPN, Hub Manager |
 | Delete or restore a document | Guest record, Documents tab | Hub Manager |
 | See who opened a record | Guest record, Access Log tab | Hub Manager |
 | Export a guest's full record | Guest record, **Export Record** | Hub Manager |
 | Anonymise a record | Guest record, **Anonymise record** | Administrator |
-| Act on an urgent case | Urgent Cases, then select the case | CMHW, CPN, Hub Manager |
-| Escalate an urgent case to the CMHT | Urgent Case Details, **Escalate to CMHT** | CMHW, CPN, Hub Manager |
-| Resolve an urgent case | Urgent Case Details, **Mark episode as resolved** | CMHW, CPN, Hub Manager |
-| Export an urgent episode record | Episode record, **Export Record** | CMHW, CPN, Hub Manager |
+| Open an Urgent Case Record | Urgent Cases, then select the case | CMHW, CPN, Hub Manager |
+| Record whether the CMHT was notified | Urgent Case Record, **CMHT or other NHS team notified** | CMHW, CPN, Hub Manager |
+| Add a contact to an urgent case | Urgent Case Record, **Add contact** | CMHW, CPN, Hub Manager |
+| Resolve an urgent case | Urgent Case Record, **Mark as resolved** | CMHW, CPN, Hub Manager |
+| Export an Urgent Case Record | Urgent Case Record, **Export Record** | CMHW, CPN, Hub Manager |
 | Confirm or decline a CPN referral | MDT Queue | Hub Manager |
 | Record an MDT discussion | MDT Queue, **Mark as discussed** | Hub Manager |
 | See contacts across the hub | Contact History | Everyone |
@@ -1253,7 +1256,7 @@ The "Who can" column shows the built-in roles. Your Administrator may have chang
 | Care plan | The guest's goals and the support agreed with them |
 | Casework note | The note Add Contact writes for each contact |
 | Clinical pathway | Mental Wellbeing, Clinical Support or Community Recovery |
-| CMHT | Community mental health team: the team a hub escalates urgent cases to |
+| CMHT | Community mental health team: the NHS team a hub may contact about an urgent case |
 | CMHW | Community Mental Health Worker |
 | Contact | Any recorded interaction with a guest |
 | Contact session | A CPN contact after the Part 1 initial assessment |
@@ -1271,5 +1274,5 @@ The "Who can" column shows the built-in roles. Your Administrator may have chang
 | SBAR | Situation, Background, Assessment, Recommendation: the structure of every contact note |
 | Scheduled contact | A contact planned for a date and assigned to someone |
 | SMI | A yes/no indicator on the Clinical Details tab, counted on the dashboards |
-| Urgent episode | The record of one urgent flag, from raising it to resolving it |
-| Urgent flag | A marker that a guest needs contact within 72 hours because of risk |
+| Urgent case | A guest who needs contact within 72 hours because of risk, from the case being raised to its being resolved |
+| Urgent Case Record | The full record of one urgent case: flag details, actions taken, resolution and audit trail |

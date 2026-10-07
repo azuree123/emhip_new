@@ -791,7 +791,7 @@ export class RegisterGuestComponent {
         (value.risk.safeguardingComment ? ` (${value.risk.safeguardingComment})` : ''),
       `- Immediate escalation required: ${value.risk.escalationRequired}`,
       `- Immediate risk: ${value.risk.immediateRisk}`,
-      !!value.risk.crisisNotes && `- Crisis notes: ${value.risk.crisisNotes}`,
+      !!value.risk.crisisNotes && `- Urgent case notes: ${value.risk.crisisNotes}`,
       flaggedLabels.length > 0 && `- Flags for MDT: ${flaggedLabels.join('; ')}`,
       !!value.risk.riskNotes && `- Risk / safeguarding notes: ${value.risk.riskNotes}`,
       '',
@@ -859,7 +859,7 @@ export class RegisterGuestComponent {
     const risk = this.conversationForm.getRawValue().risk;
     const flags = risk.flags;
     const notes = [
-      risk.crisisNotes && `Crisis notes: ${risk.crisisNotes}`,
+      risk.crisisNotes && `Urgent case notes: ${risk.crisisNotes}`,
       risk.riskNotes && `Risk / safeguarding notes: ${risk.riskNotes}`,
       'Recorded during the registration initial conversation.',
     ]

@@ -1,8 +1,8 @@
 # EMHIP Administrator Guide
 
-_Version 1.0 · 30 September 2026 · For: system administrators and Hub Managers_
+_Version 1.1 · 7 October 2026 · For: system administrators and Hub Managers_
 
-This guide explains how to set up and look after EMHIP at [emhip.brainshub.co.uk](https://emhip.brainshub.co.uk). It covers staff accounts, roles and permissions, every setting, the drop-down lists and extra form fields, importing old records, document housekeeping and your data-protection duties. Each statement was checked against the software released on 30 September 2026. Where a setting does not yet do what its label suggests, the guide says so.
+This guide explains how to set up and look after EMHIP at [emhip.brainshub.co.uk](https://emhip.brainshub.co.uk). It covers staff accounts, roles and permissions, every setting, the drop-down lists and extra form fields, importing old records, document housekeeping and your data-protection duties. Each statement was checked against the software released on 30 September 2026, and the parts changed on 7 October 2026 against that release. Where a setting does not yet do what its label suggests, the guide says so.
 
 ## About this guide
 
@@ -43,6 +43,8 @@ Anyone holding `dashboard.hubmanager.view` sees the Hub Manager dashboard. Every
 EMHIP has no self-registration. The very first account is created automatically when the system starts with no user accounts at all. Its sign-in email and password come from two configuration keys on the server: `Bootstrap:AdminEmail` and `Bootstrap:AdminPassword`. On the production server these are set in the server's environment file as `BOOTSTRAP_ADMIN_EMAIL` and `BOOTSTRAP_ADMIN_PASSWORD`. Ask whoever installed the system for the values.
 
 The account is called **System Administrator** and holds the Admin role. Changing the two keys later has no effect, because the account is only created when there are no users.
+
+> **Note:** Everything done while signed in as this account is recorded under the name System Administrator, for example **Flag raised by** on an Urgent Case Record and the staff activity log. That is why urgent cases raised during testing showed "System Administrator". Make sure every member of staff signs in with their own named account. To tell this account apart, change its name with **Edit** on **Hub Workers**, or deactivate it once your own Admin accounts work (see below).
 
 > **Warning:** The software contains a placeholder default password for this account. Treat the bootstrap password as known to others until you have changed it.
 
@@ -198,7 +200,7 @@ The role editor groups permissions under Dashboard, Guests, Scheduled contacts, 
 | `guests.demographics.view` | See the Demographics tab | Yes | Yes | Yes | Yes |
 | `guests.demographics.edit` | Change demographics | Yes | Yes | Yes | Yes |
 | `guests.clinical.view` | See clinical details, risk and DIALOG scores | Yes | Yes | Yes | Yes |
-| `guests.clinical.edit` | Record risk and DIALOG; escalate and resolve urgent cases | Yes | Yes | Yes | Yes |
+| `guests.clinical.edit` | Raise urgent cases and record DIALOG; record whether the CMHT was notified and resolve urgent cases | Yes | Yes | Yes | Yes |
 | `guests.pathway.view` | See pathway history | Yes | Yes | Yes | Yes |
 | `guests.pathway.edit` | Refer a guest or change their pathway | Yes | Yes | Yes | Yes |
 | `guests.notes.view` | Read notes, casework notes and the CPN Record | Yes | Yes | Yes | Yes |
@@ -210,7 +212,7 @@ The role editor groups permissions under Dashboard, Guests, Scheduled contacts, 
 | `guests.erase` | Use Anonymise record | | | | Yes |
 | `followups.view` | See Scheduled contacts | Yes | Yes | Yes | Yes |
 | `followups.manage` | Schedule contacts and mark them done | Yes | Yes | Yes | Yes |
-| `urgentcases.view` | Urgent Cases screen, badge, alerts and episode records | Yes | Yes | Yes | Yes |
+| `urgentcases.view` | Urgent Cases screen, badge, alerts and Urgent Case Records | Yes | Yes | Yes | Yes |
 | `mdt.manage` | Work the MDT Queue | | | Yes | Yes |
 | `reports.view` | Open Reports, including Data Quality and Export History | Yes | Yes | Yes | Yes |
 | `reports.export` | Download report exports | | | Yes | Yes |
@@ -310,18 +312,18 @@ Choose the provider before the first upload. New files go to the selected provid
 | --- | --- | --- | --- |
 | **Maximum file size (MB)** | 25 | The server refuses larger files. Do not set 0: the server then refuses every file. See section 10 about the browser limit. | Everyone who uploads |
 | **Allowed file types** | pdf, doc, docx, xls, xlsx, png, jpg, jpeg, txt, csv, rtf, odt | Comma-separated file extensions the server accepts. Blank does not mean "any type": it restores the default list. | Everyone who uploads |
-| **Default retention (years)** | 7 | Sets **Retain until** on a new document when the uploader leaves it blank. 0 means no retention date. | Document deletion |
+| **Default retention (years)** | 8 | Sets **Retain until** on a new document when the uploader leaves it blank. It is never less than 8, the NHS minimum for mental health records: a lower value, including 0, is treated as 8, and there is no longer a "no retention date" option. See section 7.4. | Document deletion |
 
 ### 4.5 Clinical
 
 | Option | Default | What it does | Affects |
 | --- | --- | --- | --- |
-| **Urgent response window (hours)** | 72 | Sets the deadline shown in the Urgent Episode Record and its export, and the hours quoted in the "Urgent case raised" email. The Urgent Cases screen ignores it (see below). | Urgent-case handling |
-| **Inactivity threshold (days)** | 90 | Every 6 hours, Active guests with no recorded activity for this many days become Inactive. Guests with an open urgent flag are skipped. New activity makes a guest Active again. | All guests |
+| **Urgent response window (hours)** | 72 | Sets the countdown and deadline shown in the Urgent Case Record and its export, and the hours quoted in the "Urgent case raised" email. The Urgent Cases screen ignores it (see below). | Urgent-case handling |
+| **Inactivity threshold (days)** | 90 | Every 6 hours, Active guests with no recorded activity for this many days become Inactive. Guests with an open urgent case are skipped. New activity makes a guest Active again. | All guests |
 | **Default contact interval (days)** | 14 | Not used yet. The due date on a new scheduled contact starts blank. | Nobody |
 | **DIALOG review interval (weeks)** | 12 | Not used yet. No DIALOG due date is suggested. | Nobody |
 
-> **Warning:** The Urgent Cases screen always uses a fixed 72-hour window for its countdown, overdue counts and "within 72h" labels. The Urgent Episode Record uses this setting. If you change the setting, the two will disagree, so keep it at 72 until this is fixed.
+> **Warning:** The Urgent Cases screen always uses a fixed 72-hour window for its countdown, overdue counts and "within 72h" labels. The Urgent Case Record uses this setting. If you change the setting, the two will disagree, so keep it at 72 until this is fixed.
 
 > **Note:** The Data Quality report's "No contact in the last 90 days" line is fixed at 90 days. It does not follow the inactivity threshold.
 
@@ -382,7 +384,8 @@ The test always uses the standard wording. Edits to the **Test email** template 
 | **Default contact interval (days)** | Clinical | Not used. |
 | **DIALOG review interval (weeks)** | Clinical | Not used. |
 | **Guest list page size** | Interface | Not used. |
-| **Urgent response window (hours)** | Clinical | Used by the episode record and email only. Urgent Cases uses a fixed 72 hours. |
+| **Urgent response window (hours)** | Clinical | Used by the Urgent Case Record and email only. Urgent Cases uses a fixed 72 hours. |
+| **Default retention (years)** | Uploads | Values below 8, including 0, are treated as 8. |
 | **Inactivity threshold (days)** | Clinical | Moves guests to Inactive. Data Quality's "no recent contact" line stays at 90 days. |
 | **Allowed file types** | Uploads | Blank restores the default list instead of allowing any type. |
 
@@ -396,7 +399,7 @@ Open **Settings** > **Email templates**. Anyone with `settings.view` can read th
 | --- | --- | --- |
 | **Password reset** | Someone uses **Forgot password?** on the sign-in page | That member of staff |
 | **Account created** | An admin adds a hub worker | The new worker, with their temporary password |
-| **Urgent case raised** | A risk flag escalates a guest to Urgent Cases | The guest's assigned CMHW |
+| **Urgent case raised** | An urgent case is raised for a guest | The guest's assigned CMHW |
 | **Contact overdue** | Scheduled contacts become overdue | Each worker with overdue contacts |
 | **Test email** | Never; **Send test email** uses fixed wording | Nobody |
 
@@ -409,6 +412,12 @@ Open **Settings** > **Email templates**. Anyone with `settings.view` can read th
 5. Select **Save template**. **Discard** throws away unsaved edits.
 
 To go back to the original wording, select **Restore default** and confirm.
+
+#### How templates change with software updates
+
+- A template nobody has edited picks up the standard wording automatically at each software update. For example, after the 7 October 2026 update an unedited urgent-case email reads "URGENT CASE: …" and "was raised as an urgent case", and an unedited overdue-contacts email says "contact" instead of "follow-up".
+- A template you have saved keeps your wording. Later changes to the standard wording do not reach it.
+- **Restore default** puts a template back on the standard wording, and from then on it is updated automatically again. It also switches **Send this email** back on.
 
 #### Tokens
 
@@ -451,7 +460,7 @@ The screen lists every category on the left. Only the lists below feed a screen 
 | **Cpn others present** | CPN initial assessment, "Others present" |
 | **Cpn referral source** | CPN initial assessment, "Referred by" |
 | **Cpn diagnosis status** | CPN initial assessment, "Current diagnosis (if known)" |
-| **Cpn follow up frequency** | CPN initial assessment, "Contact frequency" |
+| **CPN contact frequency** | CPN initial assessment, "Contact frequency" |
 | **Hub activities** | Add Contact, Activity contact type, "Activity" |
 | **AFA advice types** | Add Contact, AFA contact type, "Description" |
 
@@ -462,11 +471,11 @@ The lists below appear on the Lookups tab but have no effect yet. Their screens 
 - **Employment status**
 - **Preferred languages**
 - **Diagnosis groups**
-- **CMHT teams**
-- **Escalation reasons**
-- **Escalation urgency**
+- **CMHT teams** (the Urgent Case Record's **Team or service** is free text)
 - **Contact cadences**
 - **Emergency contact relationships**
+
+The **Escalation reasons** and **Escalation urgency** lists are hidden from the Lookups tab. They belonged to **Escalate to CMHT**, which was replaced on 7 October 2026 by a hand-written record of the call on the Urgent Case Record. Their options are kept in the database but are not used anywhere.
 
 #### Add an option
 
@@ -564,7 +573,7 @@ Only `first_name`, `last_name` and `date_of_birth` are required. Everything else
 | `address_line2` | Text. |
 | `post_code` | Text. |
 | `registered_at` | Original registration date. |
-| `status` | New, Active or OnHold. See 6.3. |
+| `status` | New, Active, Inactive or OnHold. See 6.3. |
 | `pathway` | MentalWellbeing, ClinicalSupport or CommunityRecovery. |
 | `afa_support` | true, yes or 1 if practical support (AFA) is needed. |
 | `referral_source` | Text, for example GP referral. |
@@ -590,13 +599,13 @@ Only `first_name`, `last_name` and `date_of_birth` are required. Everything else
 
 | Column | Accepted values | Anything else |
 | --- | --- | --- |
-| `status` | New, Active or OnHold. OnHold is the value for Inactive. "On Hold" with a space also works. Blank means New. | Fails the dry run. `Inactive` is not accepted. |
+| `status` | New, Active, Inactive or OnHold. Inactive and OnHold mean the same; "On Hold" with a space also works. Blank means New. | Fails the dry run. |
 | `pathway` | MentalWellbeing, ClinicalSupport or CommunityRecovery. Spaces are allowed, for example "Mental Wellbeing". | Fails the dry run. |
 | `referral_type` | Primary or Secondary. | Ignored without warning. |
 | `afa_support` | true, yes or 1. | Treated as no. Only saved when `pathway` is filled. |
 | `dialog_scores` | Exactly 11 numbers from 1 to 7. | Reported during the real import only; the DIALOG is skipped. |
 
-If a row says OnHold but has a `last_activity_at` date, the guest is first set to Active. Within six hours the Inactive check moves them back if that date is older than the inactivity threshold.
+If a row says Inactive (or OnHold) but has a `last_activity_at` date, the guest is first set to Active. Within six hours the Inactive check moves them back if that date is older than the inactivity threshold.
 
 ### 6.4 Import step by step
 
@@ -621,7 +630,7 @@ The report shows **Rows read**, **Guests created**, **Guests updated**, **Notes 
 | Required. | `first_name` or `last_name` is empty | Fill it in |
 | Could not read 'x' as a date. | `date_of_birth` is empty or unreadable | Use year-month-day |
 | Unknown pathway 'x'. | Not one of the three pathways | Correct the value |
-| Unknown status 'x' — defaulting to New. | Not New, Active or OnHold | Correct the value |
+| Unknown status 'x' — defaulting to New. | Not New, Active, Inactive or OnHold | Correct the value |
 | Expected 11 numbers between 1 and 7… | Bad `dialog_scores` (real import only) | Correct the scores |
 | The file is empty or has no data rows. | Only a header, or nothing | Check the export |
 
@@ -681,11 +690,14 @@ Categories come from the **Document categories** lookup (section 5.2). Add, rena
 
 ### 7.4 Retention dates
 
-- Every document can have a **Retain until** date.
-- If the uploader leaves it blank, EMHIP sets it to today plus **Default retention (years)**, which is 7 by default. A setting of 0 leaves it empty.
-- To change it, open the document's actions menu, select **Edit details**, change **Retain until** and save.
-- A document cannot be permanently deleted until its **Retain until** date has passed.
-- Nothing is deleted automatically when the date passes. The date is a minimum, not a deletion schedule.
+EMHIP keeps every document for at least **8 years from the date it was uploaded**, the NHS minimum for mental health records.
+
+- Every document has a **Retain until** date. It can never be earlier than the upload date plus 8 years.
+- If the uploader leaves it blank, EMHIP sets it to today plus **Default retention (years)**, which is 8 by default and never less than 8.
+- To change it, open the document's actions menu, select **Edit details**, change **Retain until** and save. A date earlier than the upload date plus 8 years is refused with "Documents must be kept for at least 8 years from upload (the NHS minimum for mental health records). Choose [date] or later." Clearing the date sets it to the upload date plus 8 years.
+- A document cannot be permanently deleted until its **Retain until** date has passed, and never within 8 years of upload.
+- Deleted documents stay in the recycle bin until someone permanently deletes them. Nothing is removed automatically when the date passes: the date is a minimum, not a deletion schedule.
+- Documents uploaded before 7 October 2026 with no retention date, or one less than 8 years after upload, were moved to the upload date plus 8 years by that update.
 
 ### 7.5 Delete and restore
 
@@ -709,13 +721,12 @@ To restore a document:
 
 Every version and the stored file are removed from storage and cannot be recovered in EMHIP. Server backups still hold copies until they expire after 14 days.
 
-If EMHIP says "Document is retained until [date] and cannot be purged":
+If EMHIP says "Document is retained until [date] and cannot be permanently deleted before then.", the document is still inside its retention period and must stay in the recycle bin until that date.
 
-1. Restore the document (section 7.5).
-2. Select **Edit details** and set **Retain until** to yesterday or earlier, or clear it. Save.
-3. Delete the document again, then permanently delete it.
+- Within 8 years of upload nothing can shorten this.
+- After that, if a longer **Retain until** date was set on purpose and is no longer needed, restore the document (section 7.5), select **Edit details**, set **Retain until** to an earlier date (no earlier than 8 years after upload) or clear it, and save. Then delete it again and permanently delete it.
 
-> **Note:** Record why you shortened the retention period. EMHIP logs the change of details but not your reason.
+> **Note:** Record why you shortened a retention period. EMHIP logs the change of details but not your reason.
 
 ### 7.7 Checked-out documents
 
@@ -747,7 +758,7 @@ Use this when a guest asks for a copy of their data. It needs `guests.export`, h
 4. Download any documents the guest is entitled to from their **Documents** tab. The export lists documents but does not contain the files.
 5. Review the file and remove information about other people before you send it.
 
-The export holds every section of the record. That means the overview, demographics, clinical details, pathway, scheduled contacts and initial conversation. It also holds DIALOG scores, casework notes, care plans, contacts, caseload history, notes, actions, the document list, urgent episodes and the access log. It includes the latest 100 contacts, up to 200 documents and the latest 500 access-log entries.
+The export holds every section of the record. That means the overview, demographics, clinical details, pathway, scheduled contacts and initial conversation. It also holds DIALOG scores, casework notes, care plans, contacts, caseload history, notes, actions, the document list, urgent cases and the access log. It includes the latest 100 contacts, up to 200 documents and the latest 500 access-log entries.
 
 Every export is recorded on the guest's Access Log as "Exported (subject access)" and on **Reports** > **Export History**.
 
@@ -757,7 +768,7 @@ Anonymising removes a guest's identifying details for good. Use it for an erasur
 
 Before you start:
 
-- Resolve any open urgent episode. EMHIP refuses while one is open.
+- Resolve any open urgent case. EMHIP refuses while one is open.
 - Export the record first if you need to keep a copy for the requester.
 - Check that no other legal duty requires the identifying details to be kept.
 
@@ -781,11 +792,11 @@ What changes:
 
 What stays:
 
-- The clinical history: casework notes, assessments, DIALOG scores, contacts, care plans and urgent episodes.
+- The clinical history: casework notes, assessments, DIALOG scores, contacts, care plans and urgent cases.
 - Demographics such as ethnicity, used for anonymous reporting.
 - The audit log, including your reason.
 
-> **Warning:** This cannot be undone. Free text is not scrubbed, so names typed into notes remain. The guest's files stay in the recycle bin until permanently deleted, and their retention dates may block that. Find them on the hub-wide Documents page (section 7.1).
+> **Warning:** This cannot be undone. Free text is not scrubbed, so names typed into notes remain. The guest's files stay in the recycle bin until permanently deleted, which is not possible until at least 8 years after each was uploaded (section 7.4). Find them on the hub-wide Documents page (section 7.1).
 
 ### 8.4 Retention review
 
@@ -842,7 +853,8 @@ Being Inactive is not the same as being due for retention review. Inactive only 
 | "Files of type '.x' are not allowed." | Extension not in **Allowed file types** | Add the extension in **Settings** > **Uploads** |
 | "The uploaded file is empty." | The file has no content | Save the file again and re-upload |
 | A large upload fails with a general error | The server's web proxy may cap request size | Ask the hosting team to check the proxy limit |
-| "Document is retained until [date] and cannot be purged." | Retention date is in the future | Follow section 7.6 |
+| "Document is retained until [date] and cannot be permanently deleted before then." | The document is less than 8 years old, or its **Retain until** date is in the future | Leave it in the recycle bin; see section 7.6 |
+| "Documents must be kept for at least 8 years from upload…" | A **Retain until** date earlier than upload plus 8 years was entered | Choose the date given in the message or later, or leave it blank |
 | "Document is checked out by another user." | Someone else checked it out | Use **Force check-in** (section 7.7) |
 | An option is missing from a drop-down | It was deactivated | Tick **Show inactive items** and select **Activate** |
 | Editing a lookup list changes nothing on screen | The list is not used yet | See the unused lists in section 5.2 |
@@ -850,7 +862,8 @@ Being Inactive is not the same as being due for retention review. Inactive only 
 | "[field] does not offer: [option]." | The option was removed from a custom field | Pick another option, or add it back |
 | **Import** stays greyed out | The last dry run found problems, or the file changed | Fix every problem, including extra columns, and validate again |
 | Duplicate guests after an import | Rows had no `legacy_id` | EMHIP has no delete or merge; anonymise the duplicate (section 8.3). Always use `legacy_id` |
-| "Resolve the guest's open urgent episode before anonymising the record." | The guest has an open urgent flag | Resolve the episode first |
+| "Resolve the guest's open urgent case before anonymising the record." | The guest has an open urgent case | Resolve it on the Urgent Case Record first |
+| **Flag raised by** on an Urgent Case Record says "System Administrator" | The case was raised while signed in as the bootstrap Admin account | Staff must sign in with their own accounts; rename or deactivate the bootstrap account (section 1.1) |
 | A guest turned Inactive unexpectedly | No activity within **Inactivity threshold (days)** | Record a contact; the guest becomes Active again |
 | Clicking a guest or case does nothing just after an update | The open tab has old screens | EMHIP reloads itself once; otherwise refresh the page |
 
@@ -858,11 +871,11 @@ Being Inactive is not the same as being due for retention review. Inactive only 
 
 These were found while checking this guide. Document 08, Known Issues and Recommendations, gives a recommendation for each.
 
-- **Urgent Cases uses a fixed 72 hours.** The episode record and email follow **Urgent response window (hours)**; the Urgent Cases screen does not.
+- **Urgent Cases uses a fixed 72 hours.** The Urgent Case Record and email follow **Urgent response window (hours)**; the Urgent Cases screen does not.
 - **Four settings do nothing yet**: **Date format**, **Default contact interval (days)**, **DIALOG review interval (weeks)** and **Guest list page size**.
 - **Blank Allowed file types** restores the default list instead of allowing every type.
 - **Data Quality's "No contact in the last 90 days"** is fixed at 90 days.
-- **Ten lookup lists are not used** by any screen (section 5.2).
+- **Eight lookup lists are not used** by any screen, and two more are hidden (section 5.2).
 - **No self-service password change.** Staff use **Forgot password?**, although the Account created email asks them to change their password.
 - **The sign-in rate limit may be shared by all staff.** The server may count everyone as one network address, allowing only 10 sign-ins a minute across the hub.
 - **Dry runs do not check DIALOG scores** and count updates as new guests (section 6.5).

@@ -315,8 +315,11 @@ $pager-font-stack: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
 .filter-picker {
   flex-shrink: 0;
 
+  // The design's 163px "Assigned CMHW" chip is the minimum; it grows so a selected
+  // worker's full name is never cut off (customer feedback: names must be visible in full).
   &--cmhw {
-    width: 163px; // "Assigned CMHW" chip width in the design frame
+    min-width: 163px;
+    max-width: 320px;
   }
 }
 

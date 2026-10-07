@@ -12,6 +12,7 @@ public class RiskAssessmentConfiguration : IEntityTypeConfiguration<RiskAssessme
         // Append-only: no updates or deletes issued against this table by application code.
         builder.HasKey(r => r.Id);
         builder.Property(r => r.Notes).HasMaxLength(4000);
+        builder.Property(r => r.OtherRiskDetails).HasMaxLength(500);
         builder.HasIndex(r => new { r.GuestId, r.Version }).IsUnique().HasDatabaseName("IX_RiskAssessments_GuestId_Version");
         builder.Ignore(r => r.DomainEvents);
     }

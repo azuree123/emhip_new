@@ -107,7 +107,12 @@ public sealed class ImportGuestsCommandHandler(IAppDbContext db, ICurrentUser cu
 
             var statusText = Value(row, "status");
             var status = GuestStatus.New;
-            if (!string.IsNullOrWhiteSpace(statusText)
+            // "Inactive" is what staff see for OnHold everywhere, so an exported sheet re-imports cleanly.
+            if (string.Equals(statusText?.Trim(), "Inactive", StringComparison.OrdinalIgnoreCase))
+            {
+                status = GuestStatus.OnHold;
+            }
+            else if (!string.IsNullOrWhiteSpace(statusText)
                 && !Enum.TryParse(statusText.Replace(" ", string.Empty), ignoreCase: true, out status))
             {
                 errors.Add(new ImportRowError(rowNumber, "status", $"Unknown status '{statusText}' — defaulting to New."));

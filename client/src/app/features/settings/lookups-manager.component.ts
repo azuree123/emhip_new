@@ -75,7 +75,17 @@ const CATEGORY_META: Record<string, { name: string; hint: string }> = {
     name: 'AFA advice types',
     hint: 'Types of practical advice or signposting offered when an AFA contact is logged.',
   },
+  [LookupCategories.CpnFollowUpFrequency]: {
+    name: 'CPN contact frequency',
+    hint: 'How often a CPN plans to see the guest.',
+  },
 };
+
+/**
+ * Seeded but no longer offered anywhere: "Escalate to CMHT" was replaced in Oct 2026 by a
+ * hand-written record of the call on the Urgent Case Record. Hidden rather than deleted.
+ */
+const HIDDEN_CATEGORIES = new Set<string>([LookupCategories.EscalationReason, LookupCategories.EscalationUrgency]);
 
 /** Display order of the nav — same order the server seeds them in. */
 const CATEGORY_ORDER: string[] = Object.values(LookupCategories);
@@ -182,13 +192,13 @@ export class LookupsManagerComponent implements OnInit {
 
   readonly canManage = computed(() => this.auth.hasPermission(Permissions.Settings.ManageLookups));
 
-  /** Seeded categories first, then anything unexpected the API returned, so nothing is hidden. */
+  /** Seeded categories first, then anything unexpected the API returned (minus HIDDEN_CATEGORIES). */
   readonly categories = computed<CategoryTab[]>(() => {
     const keys = [...CATEGORY_ORDER];
     for (const item of this.allItems()) {
       if (!keys.includes(item.category)) keys.push(item.category);
     }
-    return keys.map((key) => ({
+    return keys.filter((key) => !HIDDEN_CATEGORIES.has(key)).map((key) => ({
       key,
       name: CATEGORY_META[key]?.name ?? humanise(key),
       hint: CATEGORY_META[key]?.hint ?? 'Configurable options for this category.',

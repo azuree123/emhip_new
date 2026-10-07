@@ -1,28 +1,15 @@
 import { CommonModule, formatDate } from '@angular/common';
-import { Component, OnDestroy, OnInit, computed, effect, inject, signal, viewChild } from '@angular/core';
+import { Component, OnDestroy, OnInit, computed, effect, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { AuthService } from '../../core/auth.service';
-import {
-  AddNoteRequest,
-  EscalateToCmhtRequest,
-  GuestContactSummaryDto,
-  GuestOverviewDto,
-  GuestPathway,
-  ResolveUrgentCaseRequest,
-  UrgentCaseDto,
-  UrgentEpisodeDto,
-} from '../../core/api-models';
-import { GuestsApiService } from '../../core/guests-api.service';
-import { Permissions } from '../../core/permissions';
+import { UrgentCaseDto, UrgentEpisodeDto } from '../../core/api-models';
 import { UrgentCasesApiService } from '../../core/urgent-cases-api.service';
 import { UrgentCasesHubService } from '../../core/urgent-cases-hub.service';
-import { CaseworkNoteDrawerComponent } from '../guest-workspace/casework-note-drawer.component';
-import { UrgentEpisodeRecordComponent } from './urgent-episode-record.component';
+import { UrgentCaseRecordChange, UrgentEpisodeRecordComponent } from './urgent-episode-record.component';
 
 const WINDOW_HOURS = 72;
 
-type RiskFlagKey = 'suicidalIdeation' | 'selfHarm' | 'riskToOthers' | 'severeDeterioration' | 'safeguardingConcern';
+type RiskFlagKey = 'suicidalIdeation' | 'selfHarm' | 'riskToOthers' | 'severeDeterioration' | 'safeguardingConcern' | 'otherRisk';
 
 interface RiskFlagDef {
   key: RiskFlagKey;
@@ -41,47 +28,36 @@ const RISK_FLAGS: RiskFlagDef[] = [
   { key: 'riskToOthers', label: 'Risk to Others', bg: 'rgb(243,232,255)', fg: 'rgb(126,34,206)' },
   { key: 'severeDeterioration', label: 'Severe Deterioration', bg: 'rgb(255,249,228)', fg: 'rgb(157,133,45)' },
   { key: 'safeguardingConcern', label: 'Safeguarding Concern', bg: 'rgb(236,242,255)', fg: 'rgb(52,91,177)' },
+  { key: 'otherRisk', label: 'Other', bg: 'rgb(240,240,240)', fg: 'rgb(70,70,70)' },
 ];
 
 /**
- * "Urgent cases" screen — ported from Desktop57/Desktop58/Desktop65 in
- * project/screens/Components.bundle.js (list + the Desktop58 "Urgent Case Details" drawer).
+ * "Urgent cases" dashboard — ported from Desktop57/Desktop65 in project/screens/Components.bundle.js.
  * Initial load is a plain GET (UrgentCasesApiService.getActive()); after that the list stays
- * live via UrgentCasesHubService (SignalR) per the README's "near-real-time (polling or SignalR)"
- * requirement — the same hub connection the shell already opens for the sidebar badge count.
- * Risk-level / CMHW / overdue filters are applied client-side (the endpoint returns the full
- * active set).
+ * live via UrgentCasesHubService (SignalR) — the same hub connection the shell already opens for
+ * the sidebar badge count. Risk-level / CMHW / overdue filters are applied client-side (the
+ * endpoint returns the full active set).
  *
- * Every active case carries the same two actions: "Open Guest" (the workspace) and "View
- * Crisis Episode" — the full-screen "Urgent Episode Record" (Desktop57,
- * UrgentEpisodeRecordComponent) with the episode tabs, intake notes, timeline, outcome and audit
- * trail. Clicking the card itself still opens the compact Desktop58 "Urgent Case Details" drawer
- * with the countdown and the working actions, including "Add contact" (the shared Add Contact
- * popup — CaseworkNoteDrawerComponent, the same record the workspace header writes). A contact
- * is always recorded through the one popup, so the CPN toggle and the SBAR record are never
- * bypassed.
- *
- * "Escalate to CMHT" (Desktop65 modal) and "Mark episode as resolved" (which now also captures
- * the pathway re-entry decision) are reachable from both the drawer and the record's open-episode
- * banner; they act on `actionGuest`. Resolutions arrive live over SignalR ("urgentCaseResolved")
- * and drop the case from the list; resolved rows' "View Episode" reopens the same record.
+ * Every case row carries two actions: "Open Guest" (the workspace) and "View Urgent Case Record".
+ * Clicking anywhere else on a row opens the same Urgent Case Record — the compact details popup
+ * that used to open here was removed at the customer's request (Oct 2026), so there is one place
+ * to act on a case. The record does its own writes (CMHT contact, Add contact, Mark as resolved)
+ * and tells this page through `changed`; resolutions also arrive live over SignalR
+ * ("urgentCaseResolved") and drop the case from the list.
  */
 @Component({
   selector: 'app-urgent-cases',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, CaseworkNoteDrawerComponent, UrgentEpisodeRecordComponent],
+  imports: [CommonModule, FormsModule, RouterLink, UrgentEpisodeRecordComponent],
   templateUrl: './urgent-cases.component.html',
   styleUrl: './urgent-cases.component.scss',
 })
 export class UrgentCasesComponent implements OnInit, OnDestroy {
   private readonly api = inject(UrgentCasesApiService);
   private readonly hub = inject(UrgentCasesHubService);
-  private readonly guestsApi = inject(GuestsApiService);
-  private readonly auth = inject(AuthService);
 
   readonly riskFlags = RISK_FLAGS;
   readonly now = new Date();
-  readonly userName = this.auth.current().displayName;
 
   readonly cases = signal<UrgentCaseDto[]>([]);
   readonly loading = signal(false);
@@ -118,12 +94,7 @@ export class UrgentCasesComponent implements OnInit, OnDestroy {
 
   readonly exporting = signal(false);
 
-  /** "Add contact" writes a casework note (the shared popup), so it follows the notes-add claim. */
-  readonly canAddContact = this.auth.hasPermission(Permissions.Guests.NotesAdd);
-  /** The guest the Add Contact popup is open for; null when closed. */
-  readonly contactDrawerGuest = signal<{ id: string; name: string } | null>(null);
-
-  // ---- Resolved episodes (Desktop57) ----
+  // ---- Resolved urgent cases ----
   readonly resolvedEpisodes = signal<UrgentEpisodeDto[]>([]);
   readonly resolvedLoading = signal(false);
   readonly resolvedError = signal<string | null>(null);
@@ -137,73 +108,10 @@ export class UrgentCasesComponent implements OnInit, OnDestroy {
   });
 
   /**
-   * The "Urgent Episode Record" modal (Desktop57): the guest whose episodes to show, and which
-   * episode to open first (null = the open one, else the newest).
+   * The Urgent Case Record modal: the guest whose urgent cases to show, and which one to open
+   * first (null = the open one, else the newest).
    */
   readonly recordTarget = signal<{ guestId: string; episodeId: string | null } | null>(null);
-  private readonly recordModal = viewChild(UrgentEpisodeRecordComponent);
-
-  /** The guest the escalate / resolve modals act on — set from the drawer or the record modal. */
-  readonly actionGuest = signal<{ id: string; name: string } | null>(null);
-
-  // ---- "Urgent Case Details" drawer (Desktop58) ----
-  readonly detailsGuestId = signal<string | null>(null);
-  readonly detailsCase = computed(() => this.cases().find((c) => c.guestId === this.detailsGuestId()) ?? null);
-  readonly overview = signal<GuestOverviewDto | null>(null);
-  /** The guest's open urgent episode — CMHT escalation state shown in the drawer. */
-  readonly openEpisode = signal<UrgentEpisodeDto | null>(null);
-  readonly detailsLoading = signal(false);
-  readonly detailsError = signal<string | null>(null);
-
-  /** Contacts recorded since the flag was raised — the drawer's "Follow-ups logged" + timeline entries. */
-  readonly episodeContacts = computed<GuestContactSummaryDto[]>(() => {
-    const dc = this.detailsCase();
-    const ov = this.overview();
-    if (!dc || !ov) return [];
-    const flagAt = new Date(dc.escalatedAt).getTime();
-    return ov.recentContacts
-      .filter((ct) => new Date(ct.occurredAt).getTime() >= flagAt)
-      .sort((a, b) => new Date(a.occurredAt).getTime() - new Date(b.occurredAt).getTime());
-  });
-
-  // Inline "Add Crisis Note" form inside the drawer (saved as a pinned note on the guest).
-  readonly noteFormOpen = signal(false);
-  readonly savingNote = signal(false);
-  readonly noteError = signal<string | null>(null);
-  noteBody = '';
-
-  // "Escalate to CMHT" modal (Desktop65). Reason options are the design's fixed list; the
-  // request carries them as plain text.
-  readonly escalationReasons = [
-    '72 hour window expired - no contact',
-    'Risk level has increased',
-    'Guest unreachable - welfare concern',
-    'Clinical need beyond hub capacity',
-    'Safeguarding concern',
-  ];
-  readonly urgencyLevels = ['Emergency', 'Urgent', 'Routine'];
-  readonly escalateModalOpen = signal(false);
-  readonly savingEscalation = signal(false);
-  readonly escalateError = signal<string | null>(null);
-  escalateForm = { cmhtTeam: '', reason: '', urgency: 'Urgent', notes: '' };
-
-  // "Mark episode as resolved" — resolution note plus the pathway re-entry decision the
-  // episode record shows afterwards (pathway after resolution, next contact, session frequency).
-  readonly resolveModalOpen = signal(false);
-  readonly savingResolve = signal(false);
-  readonly resolveError = signal<string | null>(null);
-  readonly pathwayOptions: { value: GuestPathway; label: string }[] = [
-    { value: 'MentalWellbeing', label: 'Mental Wellbeing' },
-    { value: 'ClinicalSupport', label: 'Clinical Support' },
-    { value: 'CommunityRecovery', label: 'Community Recovery' },
-  ];
-  resolveForm: {
-    note: string;
-    pathway: GuestPathway | '';
-    nextContactDate: string;
-    sessionFrequencyChange: string;
-    inpatientAdmission: boolean;
-  } = { note: '', pathway: '', nextContactDate: '', sessionFrequencyChange: '', inpatientAdmission: false };
 
   private tickHandle?: ReturnType<typeof setInterval>;
 
@@ -219,9 +127,8 @@ export class UrgentCasesComponent implements OnInit, OnDestroy {
       });
     });
 
-    // Live resolutions ("urgentCaseResolved"): drop the case from the active list (the open
-    // drawer disappears with it, since detailsCase() is computed over cases()) and refresh
-    // the resolved-episodes history.
+    // Live resolutions ("urgentCaseResolved"): drop the case from the active list and refresh
+    // the resolved history.
     effect(() => {
       const resolvedGuestId = this.hub.latestResolution();
       if (!resolvedGuestId) return;
@@ -259,7 +166,7 @@ export class UrgentCasesComponent implements OnInit, OnDestroy {
       },
       error: () => {
         this.resolvedLoading.set(false);
-        this.resolvedError.set('Could not load resolved episodes.');
+        this.resolvedError.set('Could not load resolved urgent cases.');
       },
     });
   }
@@ -283,7 +190,7 @@ export class UrgentCasesComponent implements OnInit, OnDestroy {
     return { text: `${Math.round(remaining)}h left`, overdue: false };
   }
 
-  /** Second line under the countdown: "72h window closed" or "Follow-up by 22:00 today". */
+  /** Second line under the countdown: "72h window closed" or "Contact by 22:00 today". */
   deadlineLabel(c: UrgentCaseDto): string {
     if (this.isOverdue(c)) return '72h window closed';
     const deadline = new Date(new Date(c.escalatedAt).getTime() + WINDOW_HOURS * 3_600_000);
@@ -312,6 +219,11 @@ export class UrgentCasesComponent implements OnInit, OnDestroy {
     return this.riskFlags.filter((f) => c[f.key]);
   }
 
+  /** "Other" carries the worker's own description of the risk. */
+  flagLabel(c: UrgentCaseDto, flag: RiskFlagDef): string {
+    return flag.key === 'otherRisk' && c.otherRiskDetails ? `Other: ${c.otherRiskDetails}` : flag.label;
+  }
+
   scrollToOverdue(): void {
     document.querySelector('.row--overdue')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
@@ -321,11 +233,11 @@ export class UrgentCasesComponent implements OnInit, OnDestroy {
     if (!rows.length || this.exporting()) return;
     this.exporting.set(true);
     try {
-      const header = ['Ref', 'Guest', 'Risk flags', 'Assigned CMHW', 'Flag raised', 'Window status'];
+      const header = ['Ref', 'Guest', 'Risk identified', 'Assigned CMHW', 'Flag raised', 'Window status'];
       const lines = rows.map((c) => [
         this.refLabel(c),
         c.guestName,
-        this.activeFlags(c).map((f) => f.label).join('; '),
+        this.activeFlags(c).map((f) => this.flagLabel(c, f)).join('; '),
         c.assignedCmhwName ?? 'Unassigned',
         c.escalatedAt,
         this.windowLabel(c).text,
@@ -343,261 +255,40 @@ export class UrgentCasesComponent implements OnInit, OnDestroy {
     }
   }
 
-  // ---- "Add contact" — the shared Add Contact popup (casework note) ----
+  // ---- Urgent Case Record ----
 
-  /** Drawer button: open the popup for that guest. */
-  openAddContact(c: UrgentCaseDto, event?: Event): void {
-    event?.stopPropagation();
-    if (!this.canAddContact) return;
-    this.contactDrawerGuest.set({ id: c.guestId, name: c.guestName });
-  }
-
-  closeAddContact(): void {
-    this.contactDrawerGuest.set(null);
-  }
-
-  /**
-   * `submitted` is false for a draft save — the popup stays open. A submitted note also wrote a
-   * Contact row, so the open details drawer (if it is this guest's) is refreshed to show it in
-   * the episode timeline.
-   */
-  contactSaved(submitted: boolean): void {
-    if (!submitted) return;
-    const guest = this.contactDrawerGuest();
-    this.contactDrawerGuest.set(null);
-    if (guest && this.detailsGuestId() === guest.id) this.fetchDetails(guest.id);
-  }
-
-  // ---- "Urgent Case Details" drawer (Desktop58) ----
-
-  /** Card click opens the drawer; clicks on the row's own links/buttons are ignored. */
+  /** Clicking a case opens its Urgent Case Record; the row's own links/buttons keep their action. */
   onRowClick(c: UrgentCaseDto, event: Event): void {
     if ((event.target as HTMLElement).closest('a, button')) return;
-    this.openDetails(c);
+    this.openRecord(c);
   }
 
-  openDetails(c: UrgentCaseDto): void {
-    this.detailsGuestId.set(c.guestId);
-    this.overview.set(null);
-    this.openEpisode.set(null);
-    this.noteFormOpen.set(false);
-    this.noteError.set(null);
-    this.noteBody = '';
-    this.fetchDetails(c.guestId);
-    this.fetchOpenEpisode(c.guestId);
-  }
-
-  closeDetails(): void {
-    this.detailsGuestId.set(null);
-  }
-
-  private fetchDetails(guestId: string): void {
-    this.detailsLoading.set(true);
-    this.detailsError.set(null);
-    this.guestsApi.getOverview(guestId).subscribe({
-      next: (ov) => {
-        if (this.detailsGuestId() === guestId) this.overview.set(ov);
-        this.detailsLoading.set(false);
-      },
-      error: () => {
-        this.detailsLoading.set(false);
-        this.detailsError.set('Could not load the guest overview for this case.');
-      },
-    });
-  }
-
-  private fetchOpenEpisode(guestId: string): void {
-    this.api.getOpenEpisode(guestId).subscribe({
-      next: (ep) => {
-        if (this.detailsGuestId() === guestId) this.openEpisode.set(ep);
-      },
-      // 404 means no episode record exists for this guest — the drawer simply shows "NO".
-      error: () => {},
-    });
-  }
-
-  /** "Overdue — 18h 9m past deadline" / "53h 51m until deadline". */
-  countdownText(c: UrgentCaseDto): string {
-    const past = this.hoursSince(c.escalatedAt) - WINDOW_HOURS;
-    return past >= 0
-      ? `Overdue — ${UrgentCasesComponent.formatHm(past)} past deadline`
-      : `${UrgentCasesComponent.formatHm(-past)} until deadline`;
-  }
-
-  countdownPct(c: UrgentCaseDto): number {
-    return Math.min(100, (this.hoursSince(c.escalatedAt) / WINDOW_HOURS) * 100);
-  }
-
-  /** "Deadline: 13 May 2025 · 10:45 AM". */
-  deadlineFull(c: UrgentCaseDto): string {
-    const deadline = new Date(new Date(c.escalatedAt).getTime() + WINDOW_HOURS * 3_600_000);
-    return formatDate(deadline, 'd MMM y · h:mm a', 'en-US');
-  }
-
-  private static formatHm(hours: number): string {
-    const h = Math.floor(hours);
-    const m = Math.round((hours - h) * 60);
-    return `${h}h ${m}m`;
-  }
-
-  /** "PhoneCall" -> "Phone Call", "NoAnswer" -> "No Answer" — for contact type/outcome enum names. */
-  pretty(value: string): string {
-    return value.replace(/([a-z])([A-Z])/g, '$1 $2');
-  }
-
-  // ---- Add Crisis Note (pinned guest note) ----
-
-  cancelCrisisNote(): void {
-    this.noteFormOpen.set(false);
-    this.noteError.set(null);
-    this.noteBody = '';
-  }
-
-  submitCrisisNote(): void {
-    const guestId = this.detailsGuestId();
-    const body = this.noteBody.trim();
-    if (!guestId || !body) {
-      this.noteError.set('Note text is required.');
-      return;
-    }
-    this.savingNote.set(true);
-    this.noteError.set(null);
-    const req: AddNoteRequest = { body, color: 'Orange', isPinned: true };
-    this.guestsApi.addNote(guestId, req).subscribe({
-      next: () => {
-        this.savingNote.set(false);
-        this.cancelCrisisNote();
-        this.fetchDetails(guestId);
-      },
-      error: () => {
-        this.savingNote.set(false);
-        this.noteError.set('Could not save the crisis note.');
-      },
-    });
-  }
-
-  // ---- "Escalate to CMHT" (Desktop65 modal) ----
-
-  /** From the drawer (no argument: the drawer's case) or the record modal's open-episode banner. */
-  openEscalate(guest?: { guestId: string; guestName: string }): void {
-    const target = guest ? { id: guest.guestId, name: guest.guestName } : this.drawerGuest();
-    if (!target) return;
-    this.actionGuest.set(target);
-    this.escalateForm = { cmhtTeam: '', reason: '', urgency: 'Urgent', notes: '' };
-    this.escalateError.set(null);
-    this.escalateModalOpen.set(true);
-  }
-
-  private drawerGuest(): { id: string; name: string } | null {
-    const dc = this.detailsCase();
-    return dc ? { id: dc.guestId, name: dc.guestName } : null;
-  }
-
-  closeEscalate(): void {
-    this.escalateModalOpen.set(false);
-  }
-
-  submitEscalation(): void {
-    const guestId = this.actionGuest()?.id;
-    if (!guestId) return;
-    const f = this.escalateForm;
-    if (!f.cmhtTeam.trim() || !f.reason || !f.urgency || !f.notes.trim()) {
-      this.escalateError.set('CMHT team, reason, urgency level and escalation notes are required.');
-      return;
-    }
-    this.savingEscalation.set(true);
-    this.escalateError.set(null);
-    const req: EscalateToCmhtRequest = {
-      cmhtTeam: f.cmhtTeam.trim(),
-      reason: f.reason,
-      urgency: f.urgency,
-      notes: f.notes.trim(),
-    };
-    this.api.escalateToCmht(guestId, req).subscribe({
-      next: () => {
-        this.savingEscalation.set(false);
-        this.escalateModalOpen.set(false);
-        if (this.detailsGuestId() === guestId) this.fetchOpenEpisode(guestId);
-        if (this.recordTarget()?.guestId === guestId) this.recordModal()?.reload();
-      },
-      error: () => {
-        this.savingEscalation.set(false);
-        this.escalateError.set('Could not send the escalation.');
-      },
-    });
-  }
-
-  // ---- "Mark episode as resolved" ----
-
-  openResolve(guest?: { guestId: string; guestName: string }): void {
-    const target = guest ? { id: guest.guestId, name: guest.guestName } : this.drawerGuest();
-    if (!target) return;
-    this.actionGuest.set(target);
-    this.resolveForm = { note: '', pathway: '', nextContactDate: '', sessionFrequencyChange: '', inpatientAdmission: false };
-    this.resolveError.set(null);
-    this.resolveModalOpen.set(true);
-  }
-
-  closeResolve(): void {
-    this.resolveModalOpen.set(false);
-  }
-
-  submitResolve(): void {
-    const guestId = this.actionGuest()?.id;
-    if (!guestId) return;
-    const f = this.resolveForm;
-    if (f.nextContactDate && new Date(f.nextContactDate).getTime() < Date.now() - 86_400_000) {
-      this.resolveError.set('The next contact date cannot be in the past.');
-      return;
-    }
-    this.savingResolve.set(true);
-    this.resolveError.set(null);
-    const req: ResolveUrgentCaseRequest = {
-      resolutionNote: f.note.trim() || null,
-      pathwayAfterResolution: f.pathway || null,
-      nextContactDate: f.nextContactDate || null,
-      sessionFrequencyChange: f.sessionFrequencyChange.trim() || null,
-      inpatientAdmission: f.inpatientAdmission,
-    };
-    this.api.resolve(guestId, req).subscribe({
-      next: () => {
-        this.savingResolve.set(false);
-        this.resolveModalOpen.set(false);
-        this.closeDetails();
-        // Optimistic removal — the SignalR "urgentCaseResolved" push confirms it for other clients.
-        this.cases.update((cur) => cur.filter((c) => c.guestId !== guestId));
-        this.loadResolved();
-        // The record modal (if it is this guest's) now shows the resolved episode.
-        if (this.recordTarget()?.guestId === guestId) this.recordModal()?.reload();
-      },
-      error: () => {
-        this.savingResolve.set(false);
-        this.resolveError.set('Could not resolve this episode.');
-      },
-    });
-  }
-
-  // ---- "Urgent Episode Record" (Desktop57) ----
-
-  /** Row CTA "View Crisis Episode": the guest's open episode, with the older ones as tabs. */
-  openCrisisEpisode(c: UrgentCaseDto, event?: Event): void {
+  /** "View Urgent Case Record": the guest's open urgent case, with any earlier ones as tabs. */
+  openRecord(c: UrgentCaseDto, event?: Event): void {
     event?.stopPropagation();
     this.recordTarget.set({ guestId: c.guestId, episodeId: null });
   }
 
-  /** A resolved row opens its episode record; the row's own links/buttons keep their action. */
+  /** A resolved row opens that urgent case's record; the row's own links/buttons keep their action. */
   onResolvedRowClick(ep: UrgentEpisodeDto, event: Event): void {
     if ((event.target as HTMLElement).closest('a, button')) return;
     this.openEpisodeRecord(ep);
   }
 
-  /** Resolved row "View Episode": that specific episode. */
-  openEpisodeRecord(ep: UrgentEpisodeDto): void {
+  openEpisodeRecord(ep: UrgentEpisodeDto, event?: Event): void {
+    event?.stopPropagation();
     this.recordTarget.set({ guestId: ep.guestId, episodeId: ep.id });
   }
 
-  closeEpisodeRecord(): void {
+  closeRecord(): void {
     this.recordTarget.set(null);
+  }
+
+  /** The record saved something: a resolution leaves the active list (SignalR confirms it for other clients). */
+  recordChanged(change: UrgentCaseRecordChange): void {
+    if (!change.resolved) return;
+    this.cases.update((cur) => cur.filter((c) => c.guestId !== change.guestId));
+    this.loadResolved();
   }
 
   resolvedWithin72h(ep: UrgentEpisodeDto): boolean {

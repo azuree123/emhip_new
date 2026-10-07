@@ -11,4 +11,6 @@ public sealed record UrgentCaseDto(
     bool SevereDeterioration,
     bool SafeguardingConcern,
     string? AssignedCmhwName,
-    DateTimeOffset EscalatedAt);
+    DateTimeOffset EscalatedAt,
+    bool OtherRisk = false,
+    string? OtherRiskDetails = null);

@@ -40,6 +40,7 @@ SOURCES = [
     HANDOVER / "05-Technical-Handover.md",
     HANDOVER / "06-Deployment-and-Operations-Runbook.md",
     HANDOVER / "07-Release-Notes-2026-09-30.md",
+    HANDOVER / "07b-Release-Notes-2026-10-07.md",
     HANDOVER / "08-Known-Issues-and-Recommendations.md",
     (REPO / "docs/uk-gdpr-compliance.md", "09-UK-GDPR-Compliance"),
 ]
@@ -681,9 +682,12 @@ def build_html(blocks: list[Block], title: str, out: Path, source_dir: Path) -> 
         elif b.kind == "table":
             # Same proportional widths as the Word table, so an empty column (e.g. one left for
             # testers to fill in) keeps a usable width instead of collapsing.
+            # The same 1.6 cm minimum as the Word table, so a short "#" column does not wrap "10".
             weights = column_weights(b.rows)
             total = sum(weights)
-            head = "".join(f"<th style='width:{100 * w / total:.1f}%'>{html_inline(c)}</th>" for c, w in zip(b.rows[0], weights))
+            widths = [max(CONTENT_WIDTH_CM * w / total, 1.6) for w in weights]
+            percents = [100 * w / sum(widths) for w in widths]
+            head = "".join(f"<th style='width:{p:.1f}%'>{html_inline(c)}</th>" for c, p in zip(b.rows[0], percents))
             body = "".join("<tr>" + "".join(f"<td>{html_inline(c)}</td>" for c in r) + "</tr>" for r in b.rows[1:])
             parts.append(f"<table><thead><tr>{head}</tr></thead><tbody>{body}</tbody></table>")
         elif b.kind == "li":

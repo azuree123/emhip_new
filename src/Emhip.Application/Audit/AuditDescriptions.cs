@@ -70,7 +70,8 @@ public static class AuditDescriptions
             if (details.StartsWith("Subject access export", StringComparison.Ordinal)) return "Exported the full guest record";
             if (details.StartsWith("Record anonymised", StringComparison.Ordinal)) return "Anonymised guest record";
             if (details.StartsWith("Downloaded", StringComparison.Ordinal)) return "Downloaded a document";
-            if (details.StartsWith("Urgent episode record exported", StringComparison.Ordinal)) return "Exported urgent case record";
+            if (details.StartsWith("Urgent case record exported", StringComparison.Ordinal)
+                || details.StartsWith("Urgent episode record exported", StringComparison.Ordinal)) return "Exported urgent case record";
         }
 
         var noun = Nouns.GetValueOrDefault(entityName) ?? Humanise(entityName);

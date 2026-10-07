@@ -6,21 +6,29 @@ using MediatR;
 
 namespace Emhip.Application.UrgentCases;
 
-/// <summary>One tab on the Urgent Episode Record screen ("Episode 1", "Episode 2", …).</summary>
+/// <summary>One tab on the Urgent Case Record screen ("Urgent Case 1", "Urgent Case 2", …).</summary>
 public sealed record UrgentEpisodeSummaryDto(Guid Id, int EpisodeNumber, DateTimeOffset RaisedAt, DateTimeOffset? ResolvedAt);
 
-/// <summary>"Crisis action notes at intake" — the risk assessment that opened the episode.</summary>
-public sealed record UrgentEpisodeIntakeDto(
-    Guid? RiskAssessmentId, IReadOnlyList<string> RiskFlags, string? Notes, DateTimeOffset? AssessedAt, string? AssessedByName);
+/// <summary>"CMHT or other NHS team notified" — the staff member's own record of the call.</summary>
+public sealed record UrgentCaseCmhtContactDto(
+    bool Notified, string? Team, string? ContactName, DateTimeOffset? CalledAt, string? Notes,
+    string? CalledByName, DateTimeOffset? RecordedAt);
 
-/// <summary>An entry in the "Full episode timeline". Kind: flag | note | escalation | contact | followup | pathway | resolved.</summary>
-public sealed record UrgentEpisodeTimelineEntryDto(
-    string Kind, string Title, string? Description, string? SecondaryDescription, DateTimeOffset OccurredAt, string? ActorName);
+/// <summary>A contact logged against the guest after the flag was raised (and before resolution).</summary>
+public sealed record UrgentCaseContactDto(
+    Guid Id, DateTimeOffset OccurredAt, string? Category, bool IsCpnContact, string Method, string? RecordedByName);
 
-/// <summary>"System audit trail" line. Tone: red | blue | green | grey (the coloured dot in the design).</summary>
-public sealed record UrgentEpisodeAuditEntryDto(string Tone, string Title, string Detail, DateTimeOffset OccurredAt);
+/// <summary>
+/// "System audit trail" line: action, staff name, date and time.
+/// Kind: raised | risk | contact | cmht | resolved (drives the coloured dot).
+/// </summary>
+public sealed record UrgentCaseAuditEntryDto(string Kind, string Action, string? StaffName, DateTimeOffset OccurredAt, string? Detail);
 
-/// <summary>Everything the Urgent Episode Record screen shows for one episode (design Desktop57).</summary>
+/// <summary>
+/// Everything the Urgent Case Record screen shows for one urgent case, grouped as in the
+/// customer's field specification (Oct 2026): header, status bar, flag details, actions taken,
+/// resolution and the audit trail.
+/// </summary>
 public sealed record UrgentEpisodeRecordDto(
     Guid Id,
     Guid GuestId,
@@ -29,39 +37,32 @@ public sealed record UrgentEpisodeRecordDto(
     int EpisodeNumber,
     IReadOnlyList<UrgentEpisodeSummaryDto> Episodes,
     int ResponseHours,
-    // Episode overview
+    // 1. Header
+    string? AssignedCmhwName,
+    GuestPathway? PathwayAtFlag,
+    // 2. Status bar
     DateTimeOffset RaisedAt,
     DateTimeOffset DeadlineAt,
-    string? RaisedByName,
-    GuestPathway? PathwayAtFlag,
-    string? AssignedCmhwName,
-    DateTimeOffset? EscalatedToCmhtAt,
-    string? EscalatedToCmhtByName,
-    string? CmhtTeam,
-    string? EscalationReason,
-    string? EscalationUrgency,
-    string? EscalationNotes,
-    // Resolution
     bool IsResolved,
+    // 3. Flag details
+    string? RaisedByName,
+    IReadOnlyList<string> RiskFlags,
+    string? UrgentCaseNotes,
+    // 4. Actions taken
+    UrgentCaseCmhtContactDto? CmhtContact,
+    IReadOnlyList<UrgentCaseContactDto> ContactsSinceFlag,
+    // 5. Resolution
     DateTimeOffset? ResolvedAt,
     string? ResolvedByName,
     bool? ResolvedWithinWindow,
-    string? ResolutionNote,
-    // Pathway re-entry decision
-    GuestPathway? PathwayAfterResolution,
-    string? CmhwAfterResolutionName,
-    DateOnly? NextContactDate,
-    string? SessionFrequencyChange,
     bool InpatientAdmission,
-    // Episode outcome
-    int FollowUpsLogged,
-    long DurationMinutes,
-    int RecordAccessCount,
-    UrgentEpisodeIntakeDto Intake,
-    IReadOnlyList<UrgentEpisodeTimelineEntryDto> Timeline,
-    IReadOnlyList<UrgentEpisodeAuditEntryDto> AuditTrail);
+    string? ExternalServicesInvolved,
+    // Only set on cases resolved before the Oct 2026 spec, which no longer asks for one.
+    string? ResolutionNote,
+    // 7. System audit trail, oldest first
+    IReadOnlyList<UrgentCaseAuditEntryDto> AuditTrail);
 
-/// <summary>Every episode for the guest, oldest first — the tab strip on the record screen.</summary>
+/// <summary>Every urgent case for the guest, oldest first — the tab strip on the record screen.</summary>
 public sealed record GetGuestUrgentEpisodesQuery(Guid HubId, Guid GuestId) : IRequest<IReadOnlyList<UrgentEpisodeSummaryDto>>;
 
 public sealed class GetGuestUrgentEpisodesQueryHandler(IUrgentCaseReadService reads)
@@ -72,7 +73,7 @@ public sealed class GetGuestUrgentEpisodesQueryHandler(IUrgentCaseReadService re
 }
 
 /// <summary>
-/// The full record for one episode. Viewing it is a clinical-data read that is not under
+/// The full record for one urgent case. Viewing it is a clinical-data read that is not under
 /// /guests/{id}, so the handler writes the access-log entry itself (UK GDPR accountability).
 /// </summary>
 public sealed record GetUrgentEpisodeRecordQuery(Guid HubId, Guid EpisodeId) : IRequest<UrgentEpisodeRecordDto?>;
@@ -86,13 +87,13 @@ public sealed class GetUrgentEpisodeRecordQueryHandler(IUrgentCaseReadService re
         var record = await reads.GetEpisodeRecordAsync(request.HubId, request.EpisodeId, Math.Max(1, responseHours), cancellationToken);
         if (record is not null)
         {
-            await audit.RecordAsync(record.GuestId, AuditAction.Read, "UrgentEpisode", record.Id.ToString(), "Urgent episode record viewed", cancellationToken);
+            await audit.RecordAsync(record.GuestId, AuditAction.Read, "UrgentEpisode", record.Id.ToString(), "Urgent case record viewed", cancellationToken);
         }
         return record;
     }
 }
 
-/// <summary>"Export Record" — a plain-text copy of the episode record. Logged as an export against the guest.</summary>
+/// <summary>"Export Record" — a plain-text copy of the Urgent Case Record. Logged as an export against the guest.</summary>
 public sealed record ExportUrgentEpisodeRecordQuery(Guid HubId, Guid EpisodeId) : IRequest<UrgentEpisodeExportDto?>;
 
 public sealed record UrgentEpisodeExportDto(string FileName, string Content);
@@ -106,80 +107,85 @@ public sealed class ExportUrgentEpisodeRecordQueryHandler(IUrgentCaseReadService
         var record = await reads.GetEpisodeRecordAsync(request.HubId, request.EpisodeId, Math.Max(1, responseHours), cancellationToken);
         if (record is null) return null;
 
-        await audit.RecordAsync(record.GuestId, AuditAction.Read, "UrgentEpisode", record.Id.ToString(), "Urgent episode record exported", cancellationToken);
+        await audit.RecordAsync(record.GuestId, AuditAction.Read, "UrgentEpisode", record.Id.ToString(), "Urgent case record exported", cancellationToken);
 
         return new UrgentEpisodeExportDto(
-            $"urgent-episode-G-{record.GuestNumber}-episode-{record.EpisodeNumber}.txt",
+            $"urgent-case-G-{record.GuestNumber}-{record.EpisodeNumber}.txt",
             UrgentEpisodeRecordText.Build(record));
     }
 }
 
-/// <summary>Renders the record as the plain-text document behind "Export Record".</summary>
+/// <summary>Renders the record as the plain-text document behind "Export Record", section by section as on screen.</summary>
 public static class UrgentEpisodeRecordText
 {
     public static string Build(UrgentEpisodeRecordDto r)
     {
         var sb = new StringBuilder();
         string When(DateTimeOffset? d) => d is null ? "—" : d.Value.ToString("dd MMM yyyy · HH:mm");
-        string YesNo(bool b) => b ? "YES" : "NO";
-        string Pathway(GuestPathway? p) => Guests.GuestPathwayLabels.For(p);
+        string YesNo(bool b) => b ? "Yes" : "No";
+        void Row(string label, string? value) => sb.AppendLine($"  {label,-34}{(string.IsNullOrWhiteSpace(value) ? "—" : value)}");
 
-        sb.AppendLine("URGENT EPISODE RECORD");
-        sb.AppendLine($"{(r.IsResolved ? "Resolved" : "Open")} · {When(r.ResolvedAt ?? r.RaisedAt)}");
-        sb.AppendLine($"Guest: {r.GuestName} (G-{r.GuestNumber}) · Episode {r.EpisodeNumber} of {r.Episodes.Count}");
+        sb.AppendLine($"URGENT CASE RECORD — URGENT CASE {r.EpisodeNumber} OF {r.Episodes.Count}");
         sb.AppendLine($"Exported: {DateTimeOffset.UtcNow:dd MMM yyyy · HH:mm} UTC");
         sb.AppendLine();
-        sb.AppendLine("EPISODE OVERVIEW");
-        sb.AppendLine($"  Pathway at time of flag:   {Pathway(r.PathwayAtFlag)}");
-        sb.AppendLine($"  Assigned CMHW:             {r.AssignedCmhwName ?? "Unassigned"}");
-        sb.AppendLine($"  Flag raised by:            {r.RaisedByName ?? "—"}");
-        sb.AppendLine($"  Flag raised at:            {When(r.RaisedAt)}");
-        sb.AppendLine($"  {r.ResponseHours}-hour deadline:          {When(r.DeadlineAt)}");
-        sb.AppendLine($"  Resolved at:               {When(r.ResolvedAt)}");
-        sb.AppendLine($"  Resolved by:               {r.ResolvedByName ?? "—"}");
-        sb.AppendLine($"  Resolved within window:    {(r.ResolvedWithinWindow is null ? "—" : YesNo(r.ResolvedWithinWindow.Value))}");
-        sb.AppendLine($"  External service involved: {r.CmhtTeam ?? "None"}");
+        sb.AppendLine("GUEST");
+        Row("Guest name", r.GuestName);
+        Row("Reference ID", $"G-{r.GuestNumber}");
+        Row("Assigned CMHW", r.AssignedCmhwName ?? "Unassigned");
+        Row("Pathway at time of flag", Guests.GuestPathwayLabels.For(r.PathwayAtFlag));
         sb.AppendLine();
-        sb.AppendLine("CRISIS ACTION NOTES AT INTAKE");
-        sb.AppendLine($"  Risk flags: {(r.Intake.RiskFlags.Count == 0 ? "—" : string.Join(", ", r.Intake.RiskFlags))}");
-        sb.AppendLine($"  {r.Intake.Notes ?? "No intake notes recorded."}");
+        sb.AppendLine("STATUS");
+        Row("Case status", r.IsResolved ? "Resolved" : "Open");
+        Row("Flag raised at", When(r.RaisedAt));
+        Row($"{r.ResponseHours}-hour deadline", When(r.DeadlineAt));
         sb.AppendLine();
-        sb.AppendLine("FULL EPISODE TIMELINE");
-        foreach (var t in r.Timeline)
+        sb.AppendLine("FLAG DETAILS");
+        Row("Flag raised by", r.RaisedByName);
+        Row("Flag raised at", When(r.RaisedAt));
+        Row("Risk identified", r.RiskFlags.Count == 0 ? null : string.Join(", ", r.RiskFlags));
+        sb.AppendLine("  Urgent case notes:");
+        sb.AppendLine($"    {r.UrgentCaseNotes ?? "—"}");
+        sb.AppendLine();
+        sb.AppendLine("ACTIONS TAKEN");
+        Row("CMHT or other NHS team notified", r.CmhtContact is null ? "Not recorded" : YesNo(r.CmhtContact.Notified));
+        if (r.CmhtContact is { Notified: true } cmht)
         {
-            sb.AppendLine($"  [{When(t.OccurredAt)}] {t.Title}{(t.ActorName is null ? "" : $" — {t.ActorName}")}");
-            if (!string.IsNullOrWhiteSpace(t.Description)) sb.AppendLine($"      {t.Description}");
-            if (!string.IsNullOrWhiteSpace(t.SecondaryDescription)) sb.AppendLine($"      {t.SecondaryDescription}");
+            Row("Team / service", cmht.Team);
+            Row("Name of person called", cmht.ContactName);
+            Row("Called by", cmht.CalledByName);
+            Row("Date and time of call", When(cmht.CalledAt));
+            Row("What was said", cmht.Notes);
+        }
+        Row("Contacts logged since flag", r.ContactsSinceFlag.Count.ToString());
+        foreach (var c in r.ContactsSinceFlag)
+        {
+            sb.AppendLine($"    [{When(c.OccurredAt)}] {ContactLabel(c)} · {c.Method}{(c.RecordedByName is null ? "" : $" — {c.RecordedByName}")}");
         }
         sb.AppendLine();
-        sb.AppendLine("RESOLUTION NOTE");
-        sb.AppendLine($"  {r.ResolutionNote ?? (r.IsResolved ? "Resolution note not recorded." : "Episode still open.")}");
-        sb.AppendLine();
-        sb.AppendLine("PATHWAY RE-ENTRY DECISION");
-        sb.AppendLine($"  Pathway before crisis:     {Pathway(r.PathwayAtFlag)}");
-        sb.AppendLine($"  Pathway after resolution:  {(r.IsResolved ? Pathway(r.PathwayAfterResolution) : "—")}");
-        sb.AppendLine($"  CMHW after resolution:     {r.CmhwAfterResolutionName ?? "—"}");
-        sb.AppendLine($"  Next contact set:          {(r.NextContactDate is null ? "—" : r.NextContactDate.Value.ToString("dd MMM yyyy"))}");
-        sb.AppendLine($"  Session frequency changed: {r.SessionFrequencyChange ?? "No"}");
-        sb.AppendLine();
-        sb.AppendLine("EPISODE OUTCOME");
-        sb.AppendLine($"  Status:                    {(r.IsResolved ? "Resolved" : "Open")}");
-        sb.AppendLine($"  Within {r.ResponseHours} hours:           {(r.ResolvedWithinWindow is null ? "Pending" : YesNo(r.ResolvedWithinWindow.Value))}");
-        sb.AppendLine($"  Duration:                  {Duration(r.DurationMinutes)}");
-        sb.AppendLine($"  Contacts logged:           {r.FollowUpsLogged}");
-        sb.AppendLine($"  Escalation to CMHT:        {YesNo(r.EscalatedToCmhtAt is not null)}");
-        sb.AppendLine($"  Inpatient admission:       {YesNo(r.InpatientAdmission)}");
+        sb.AppendLine("RESOLUTION");
+        Row("Resolved by", r.ResolvedByName);
+        Row("Resolved at", When(r.ResolvedAt));
+        Row($"Resolved within {r.ResponseHours}h", r.ResolvedWithinWindow is null ? "Pending" : YesNo(r.ResolvedWithinWindow.Value));
+        Row("Inpatient admission", r.IsResolved ? YesNo(r.InpatientAdmission) : null);
+        Row("Any other external service involved", r.IsResolved ? r.ExternalServicesInvolved ?? "None" : null);
+        if (!string.IsNullOrWhiteSpace(r.ResolutionNote)) Row("Resolution note", r.ResolutionNote);
         sb.AppendLine();
         sb.AppendLine("SYSTEM AUDIT TRAIL");
-        foreach (var a in r.AuditTrail) sb.AppendLine($"  {a.Title} — {a.Detail}");
+        foreach (var a in r.AuditTrail)
+        {
+            sb.AppendLine($"  [{When(a.OccurredAt)}] {a.Action}{(a.StaffName is null ? "" : $" — {a.StaffName}")}");
+            if (!string.IsNullOrWhiteSpace(a.Detail)) sb.AppendLine($"      {a.Detail}");
+        }
         return sb.ToString();
     }
 
-    public static string Duration(long minutes)
-    {
-        var days = minutes / (60 * 24);
-        var hours = (minutes % (60 * 24)) / 60;
-        var mins = minutes % 60;
-        return days > 0 ? $"{days}d {hours}h" : hours > 0 ? $"{hours}h {mins}m" : $"{mins}m";
-    }
+    /// <summary>"Casework", "AFA", "CPN contact" — what kind of contact it was; plain "Contact" when no note says.</summary>
+    public static string ContactLabel(UrgentCaseContactDto c) =>
+        c.IsCpnContact ? "CPN contact" : c.Category switch
+        {
+            null => "Contact",
+            "Afa" => "AFA",
+            "DailyLog" => "Daily log",
+            var other => other,
+        };
 }

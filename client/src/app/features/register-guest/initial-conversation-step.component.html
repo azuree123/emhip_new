@@ -337,7 +337,7 @@
           <option [value]="option">{{ option }}</option>
         }
       </select>
-      <span class="risk-row__note">Answering “Yes” automatically raises the urgent flag on this guest.</span>
+      <span class="risk-row__note">Answering “Yes” automatically raises an urgent case for this guest.</span>
     </div>
     @if (invalid('risk.immediateRisk')) {
       <span class="field__error">Answer whether the guest is at immediate risk — this question is mandatory.</span>
@@ -365,7 +365,7 @@
               fill="currentColor"
             />
           </svg>
-          Escalation noted — crisis notes required
+          Escalation noted — urgent case notes required
         </div>
         <textarea
           class="crisis-card__notes"
@@ -373,7 +373,7 @@
           placeholder="Record actions taken, who was notified, and what was agreed with the guest....."
         ></textarea>
         @if (form.get('risk.crisisNotes')?.invalid && form.get('risk.crisisNotes')?.touched) {
-          <span class="field__error">Crisis notes are required when escalation is needed.</span>
+          <span class="field__error">Urgent case notes are required when escalation is needed.</span>
         }
       </div>
     }

@@ -10,6 +10,8 @@ public sealed record RiskAssessmentDto(
     bool SafeguardingConcern,
     string? Notes,
     string AssessedByName,
-    DateTimeOffset AssessedAt);
+    DateTimeOffset AssessedAt,
+    bool OtherRisk = false,
+    string? OtherRiskDetails = null);
 
 public sealed record GuestClinicalDto(Guid GuestId, IReadOnlyList<RiskAssessmentDto> History);

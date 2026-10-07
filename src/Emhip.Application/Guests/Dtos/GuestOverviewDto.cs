@@ -32,4 +32,11 @@ public sealed record GuestOverviewDto(
 
 public sealed record GuestNoteDto(Guid Id, string Body, string Color, bool IsPinned, string AuthorName, DateTimeOffset CreatedAt);
 
-public sealed record GuestContactSummaryDto(Guid Id, string Type, string Outcome, DateTimeOffset OccurredAt, string CreatedByName);
+/// <summary>
+/// One logged contact. <c>Type</c> is the contact method (PhoneCall, InPerson, …); <c>Category</c>
+/// is what kind of contact the worker chose on Add Contact (Casework, Activity, Hospitality, Afa,
+/// …) — null for contacts not written through a casework note.
+/// </summary>
+public sealed record GuestContactSummaryDto(
+    Guid Id, string Type, string Outcome, DateTimeOffset OccurredAt, string CreatedByName,
+    string? Category = null, bool IsCpnContact = false);

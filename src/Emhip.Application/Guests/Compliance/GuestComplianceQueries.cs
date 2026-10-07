@@ -130,7 +130,7 @@ public sealed class AnonymiseGuestCommandHandler(IAppDbContext db, IGuestAnonymi
             ?? throw new KeyNotFoundException($"Guest {request.GuestId} not found.");
 
         if (guest.IsUrgent)
-            throw new InvalidOperationException("Resolve the guest's open urgent episode before anonymising the record.");
+            throw new InvalidOperationException("Resolve the guest's open urgent case before anonymising the record.");
 
         guest.Anonymise();
 

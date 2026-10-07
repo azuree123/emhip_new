@@ -174,57 +174,22 @@
           <section class="card">
             <div class="card__header-row">
               <h2 class="card__title">Risk &amp; complexity</h2>
-              <button type="button" class="btn-link" (click)="toggleRiskForm()">
-                {{ showRiskForm() ? 'Cancel' : '+ Record assessment' }}
-              </button>
             </div>
-
-            @if (showRiskForm()) {
-              <form class="edit-form risk-form" (ngSubmit)="saveRisk()">
-                <div class="risk-flags">
-                  <label class="risk-flag">
-                    <input type="checkbox" name="suicidalIdeation" [(ngModel)]="riskForm.suicidalIdeation" />
-                    <span>Suicidal ideation</span>
-                  </label>
-                  <label class="risk-flag">
-                    <input type="checkbox" name="selfHarm" [(ngModel)]="riskForm.selfHarm" />
-                    <span>Self-harm</span>
-                  </label>
-                  <label class="risk-flag">
-                    <input type="checkbox" name="riskToOthers" [(ngModel)]="riskForm.riskToOthers" />
-                    <span>Risk to others</span>
-                  </label>
-                  <label class="risk-flag">
-                    <input type="checkbox" name="severeDeterioration" [(ngModel)]="riskForm.severeDeterioration" />
-                    <span>Severe deterioration</span>
-                  </label>
-                  <label class="risk-flag">
-                    <input type="checkbox" name="safeguardingConcern" [(ngModel)]="riskForm.safeguardingConcern" />
-                    <span>Safeguarding concern</span>
-                  </label>
-                </div>
-                <label class="edit-form__field edit-form__field--full">
-                  <span>Notes</span>
-                  <textarea name="notes" rows="2" [(ngModel)]="riskForm.notes" placeholder="Assessment notes…"></textarea>
-                </label>
-                @if (riskError()) {
-                  <p class="form-error">{{ riskError() }}</p>
-                }
-                <div class="edit-form__actions">
-                  <button type="submit" class="btn-primary" [disabled]="savingRisk()">{{ savingRisk() ? 'Saving…' : 'Save assessment' }}</button>
-                </div>
-              </form>
-            }
 
             <div class="detail-row">
               <div class="detail-field">
+                <!-- Read-only: set by "Raise Urgent Case" in the header, never edited here. -->
                 <span class="detail-field__label">Immediate risk flag</span>
-                @if (!latestAssessment()) {
-                  <p class="detail-field__value detail-field__value--muted">Not assessed</p>
-                } @else if (latestHasFlags()) {
-                  <p class="detail-field__value detail-field__value--risk">Risk identified</p>
-                } @else {
-                  <p class="detail-field__value detail-field__value--ok">No risk identified</p>
+                @let risk = immediateRisk();
+                <p
+                  class="detail-field__value"
+                  [class.detail-field__value--risk]="risk.tone === 'risk'"
+                  [class.detail-field__value--ok]="risk.tone === 'ok'"
+                  [class.detail-field__value--muted]="risk.tone === 'muted'">
+                  {{ risk.text }}
+                </p>
+                @if (risk.detail) {
+                  <p class="detail-field__hint">{{ risk.detail }}</p>
                 }
               </div>
               <div class="detail-field">
@@ -235,8 +200,8 @@
             <div class="card-divider"></div>
             <div class="detail-row">
               <div class="detail-field">
-                <span class="detail-field__label">Urgent episodes</span>
-                <p class="detail-field__value">{{ urgentEpisodeCount() }}&nbsp;lifetime</p>
+                <span class="detail-field__label">Urgent cases</span>
+                <p class="detail-field__value">{{ urgentCaseCount() }}&nbsp;lifetime</p>
               </div>
             </div>
 

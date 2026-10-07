@@ -33,8 +33,21 @@ public class Document : AggregateRoot
     /// <summary>Latest version number; matches the highest DocumentVersion.VersionNumber.</summary>
     public int CurrentVersionNumber { get; private set; }
 
-    /// <summary>Retention date — the document should not be purged before this date.</summary>
+    /// <summary>
+    /// NHS minimum retention for mental health records (customer requirement, Oct 2026): no
+    /// document can be permanently deleted within 8 years of being uploaded, whatever its
+    /// retention date says.
+    /// </summary>
+    public const int MinimumRetentionYears = 8;
+
+    /// <summary>
+    /// Retention date — the document cannot be purged before this date. Never earlier than
+    /// <see cref="EarliestRetainUntil"/>; a blank date on upload or edit means exactly that minimum.
+    /// </summary>
     public DateOnly? RetainUntil { get; private set; }
+
+    /// <summary>Upload date plus <see cref="MinimumRetentionYears"/>.</summary>
+    public DateOnly EarliestRetainUntil => DateOnly.FromDateTime(CreatedAt.UtcDateTime).AddYears(MinimumRetentionYears);
 
     /// <summary>Check-out lock: while set, only this staff member may upload a new version.</summary>
     public Guid? CheckedOutByStaffId { get; private set; }
@@ -63,12 +76,12 @@ public class Document : AggregateRoot
         Category = category;
         Description = description;
         Tags = tags;
-        RetainUntil = retainUntil;
         Status = DocumentStatus.Active;
         CurrentVersionNumber = 0;
         CreatedByStaffId = createdByStaffId;
         CreatedAt = DateTimeOffset.UtcNow;
         UpdatedAt = CreatedAt;
+        RetainUntil = CheckedRetention(retainUntil);
     }
 
     public void UpdateMetadata(string title, string? description, string category, string? tags, DocumentStatus status, DateOnly? retainUntil)
@@ -78,8 +91,20 @@ public class Document : AggregateRoot
         Category = category;
         Tags = tags;
         Status = status;
-        RetainUntil = retainUntil;
+        RetainUntil = CheckedRetention(retainUntil);
         Touch();
+    }
+
+    private DateOnly CheckedRetention(DateOnly? retainUntil)
+    {
+        var earliest = EarliestRetainUntil;
+        if (retainUntil is null) return earliest;
+        if (retainUntil < earliest)
+        {
+            throw new InvalidOperationException(
+                $"Documents must be kept for at least {MinimumRetentionYears} years from upload (the NHS minimum for mental health records). Choose {earliest:dd MMM yyyy} or later.");
+        }
+        return retainUntil.Value;
     }
 
     public void RegisterVersion(int versionNumber)
@@ -134,8 +159,8 @@ public class Document : AggregateRoot
         Touch();
     }
 
-    /// <summary>Retention blocks a purge until the retain-until date has passed.</summary>
-    public bool IsRetained(DateOnly today) => RetainUntil is not null && RetainUntil >= today;
+    /// <summary>Retention blocks a purge until the retain-until date (and the 8-year minimum) has passed.</summary>
+    public bool IsRetained(DateOnly today) => EarliestRetainUntil >= today || (RetainUntil is not null && RetainUntil >= today);
 
     private void Touch() => UpdatedAt = DateTimeOffset.UtcNow;
 }

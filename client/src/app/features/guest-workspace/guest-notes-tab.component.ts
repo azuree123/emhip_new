@@ -49,6 +49,10 @@ const RISK_CHIPS: Record<CaseworkRiskLevel, StatusChip> = {
  *
  * Everything is gated on the caller's own claims: guests.notes.view to see either card, and
  * guests.notes.add to write.
+ *
+ * With `caseworkOnly` the same component is the workspace's "Casework Notes" tab: only notes
+ * marked Casework (the clinical record), newest first, without the quick-notes card — so staff
+ * can find the clinical record without scrolling past calls, activities and hospitality entries.
  */
 @Component({
   selector: 'app-guest-notes-tab',
@@ -64,6 +68,8 @@ export class GuestNotesTabComponent {
 
   readonly guestId = input.required<string>();
   readonly guestName = input.required<string>();
+  /** "Casework Notes" tab: Casework-category notes only, no quick notes. */
+  readonly caseworkOnly = input(false);
   /** Asks the workspace to reload the overview — pinned notes and contacts both live there. */
   @Output() readonly refresh = new EventEmitter<void>();
 
@@ -88,7 +94,14 @@ export class GuestNotesTabComponent {
   /** The draft the drawer is resuming, or null when writing a new note. */
   readonly drawerNote = signal<CaseworkNoteDto | null>(null);
 
-  readonly drafts = computed(() => (this.caseworkNotes() ?? []).filter((n) => n.status === 'Draft'));
+  /** The notes this tab lists: everything on Notes, Casework-category only on "Casework Notes". */
+  readonly visibleNotes = computed(() => {
+    const notes = this.caseworkNotes();
+    if (!notes || !this.caseworkOnly()) return notes;
+    return notes.filter((n) => n.category === 'Casework' && !n.isCpnContact);
+  });
+
+  readonly drafts = computed(() => (this.visibleNotes() ?? []).filter((n) => n.status === 'Draft'));
 
   // ---- Quick notes ----
   readonly quickNotes = signal<GuestNoteDto[] | null>(null);
@@ -114,7 +127,7 @@ export class GuestNotesTabComponent {
       onCleanup(() => (cancelled = true));
       if (!this.canView) return;
       this.loadCasework(id, () => cancelled);
-      this.loadQuick(id, () => cancelled);
+      if (!this.caseworkOnly()) this.loadQuick(id, () => cancelled);
     });
   }
 

@@ -63,16 +63,22 @@ public sealed class EscalationWorker(IServiceScopeFactory scopeFactory, IOutboxE
             db.UrgentCases.Add(readModel);
         }
 
+        // Raising again on an open urgent case adds to it: the 72-hour window keeps running from
+        // the first raise (as on the Urgent Case Record) and earlier risks stay on the row.
+        var addingToOpenCase = readModel.IsActive && readModel.EscalatedAt != default;
+
         readModel.HubId = guest.HubId;
         readModel.GuestName = $"{guest.FirstName} {guest.LastName}";
-        readModel.SuicidalIdeation = evt.SuicidalIdeation;
-        readModel.SelfHarm = evt.SelfHarm;
-        readModel.RiskToOthers = evt.RiskToOthers;
-        readModel.SevereDeterioration = evt.SevereDeterioration;
-        readModel.SafeguardingConcern = evt.SafeguardingConcern;
+        readModel.SuicidalIdeation = evt.SuicidalIdeation || (addingToOpenCase && readModel.SuicidalIdeation);
+        readModel.SelfHarm = evt.SelfHarm || (addingToOpenCase && readModel.SelfHarm);
+        readModel.RiskToOthers = evt.RiskToOthers || (addingToOpenCase && readModel.RiskToOthers);
+        readModel.SevereDeterioration = evt.SevereDeterioration || (addingToOpenCase && readModel.SevereDeterioration);
+        readModel.SafeguardingConcern = evt.SafeguardingConcern || (addingToOpenCase && readModel.SafeguardingConcern);
+        readModel.OtherRisk = evt.OtherRisk || (addingToOpenCase && readModel.OtherRisk);
+        readModel.OtherRiskDetails = evt.OtherRisk ? evt.OtherRiskDetails : addingToOpenCase ? readModel.OtherRiskDetails : null;
         readModel.AssignedCmhwId = guest.AssignedCmhwId;
         readModel.AssignedCmhwName = assignedCmhwName;
-        readModel.EscalatedAt = evt.OccurredAt;
+        if (!addingToOpenCase) readModel.EscalatedAt = evt.OccurredAt;
         readModel.IsActive = true;
 
         await db.SaveChangesAsync(cancellationToken);
@@ -80,7 +86,7 @@ public sealed class EscalationWorker(IServiceScopeFactory scopeFactory, IOutboxE
         var dto = new UrgentCaseDto(
             readModel.GuestId, readModel.GuestName, guest.GuestNumber, readModel.SuicidalIdeation, readModel.SelfHarm,
             readModel.RiskToOthers, readModel.SevereDeterioration, readModel.SafeguardingConcern,
-            readModel.AssignedCmhwName, readModel.EscalatedAt);
+            readModel.AssignedCmhwName, readModel.EscalatedAt, readModel.OtherRisk, readModel.OtherRiskDetails);
 
         await notifier.NotifyUrgentCaseAsync(readModel.HubId, dto, cancellationToken);
         await SendUrgentEmailAsync(scope, db, guest, readModel, cancellationToken);
@@ -114,6 +120,7 @@ public sealed class EscalationWorker(IServiceScopeFactory scopeFactory, IOutboxE
             if (readModel.RiskToOthers) flags.Add("Risk to others");
             if (readModel.SevereDeterioration) flags.Add("Severe deterioration");
             if (readModel.SafeguardingConcern) flags.Add("Safeguarding concern");
+            if (readModel.OtherRisk) flags.Add(string.IsNullOrWhiteSpace(readModel.OtherRiskDetails) ? "Other" : $"Other: {readModel.OtherRiskDetails}");
 
             var portalUrl = scope.ServiceProvider.GetRequiredService<IConfiguration>()["Frontend:BaseUrl"] ?? string.Empty;
             var emailService = scope.ServiceProvider.GetRequiredService<IEmailService>();
@@ -126,7 +133,7 @@ public sealed class EscalationWorker(IServiceScopeFactory scopeFactory, IOutboxE
                     ["recipientName"] = recipient.DisplayName,
                     ["guestName"] = readModel.GuestName,
                     ["guestReference"] = $"G-{guest.GuestNumber}",
-                    ["riskFlags"] = flags.Count > 0 ? string.Join(", ", flags) : "Risk flag raised",
+                    ["riskFlags"] = flags.Count > 0 ? string.Join(", ", flags) : "Urgent case raised",
                     ["raisedAt"] = readModel.EscalatedAt.ToString("dd MMM yyyy HH:mm"),
                     ["guestUrl"] = $"{portalUrl}/guests/{guest.Id}",
                     ["responseHours"] = (await settings.GetIntAsync(SettingsCatalog.Keys.UrgentResponseHours, 72, cancellationToken)).ToString(),

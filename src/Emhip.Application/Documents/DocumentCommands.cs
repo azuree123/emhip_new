@@ -199,7 +199,8 @@ public sealed class PurgeDocumentCommandHandler(IAppDbContext db, ICurrentUser c
 
         if (document.IsRetained(DateOnly.FromDateTime(DateTime.UtcNow)))
         {
-            throw new InvalidOperationException($"Document is retained until {document.RetainUntil:yyyy-MM-dd} and cannot be purged.");
+            var until = document.RetainUntil is { } r && r > document.EarliestRetainUntil ? r : document.EarliestRetainUntil;
+            throw new InvalidOperationException($"Document is retained until {until:dd MMM yyyy} and cannot be permanently deleted before then.");
         }
 
         var versions = await db.DocumentVersions
@@ -269,10 +270,11 @@ internal static class DocumentUpload
         }
     }
 
+    /// <summary>The hub's default, never below the 8-year minimum (a saved "7" from before Oct 2026 still gives 8).</summary>
     internal static async Task<DateOnly?> DefaultRetentionAsync(IAppSettingsService settings, CancellationToken cancellationToken)
     {
-        var years = await settings.GetIntAsync(SettingsCatalog.Keys.DefaultRetentionYears, 0, cancellationToken);
-        return years > 0 ? DateOnly.FromDateTime(DateTime.UtcNow).AddYears(years) : null;
+        var years = await settings.GetIntAsync(SettingsCatalog.Keys.DefaultRetentionYears, Document.MinimumRetentionYears, cancellationToken);
+        return DateOnly.FromDateTime(DateTime.UtcNow).AddYears(Math.Max(years, Document.MinimumRetentionYears));
     }
 
     internal static async Task<DocumentVersion> StoreVersionAsync(

@@ -72,10 +72,12 @@
 
               <div class="contact__body">
                 <div class="contact__head">
-                  <!-- No outcome tag: every contact the system logs today is a completed one. -->
-                  <span class="contact__type">{{ humanize(contact.type) }}</span>
+                  <!-- What kind of contact it was; no outcome tag, every logged contact is a completed one. -->
+                  <span class="contact__type">{{ typeLabel(contact) }}</span>
                 </div>
                 <div class="contact__meta">
+                  <span class="contact__method">{{ humanize(contact.type) }}</span>
+                  <span class="contact__dot"></span>
                   <span>{{ formatDateTime(contact.occurredAt) }}</span>
                   <span class="contact__dot"></span>
                   <span>Recorded by {{ contact.createdByName || 'Unknown' }}</span>

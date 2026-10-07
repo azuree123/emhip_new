@@ -150,9 +150,15 @@ export class GuestCarePlanTabComponent {
     return GOAL_STATUS_CHIPS[status as CarePlanGoalStatus] ?? GOAL_STATUS_CHIPS.NotStarted;
   }
 
-  /** The design shows every closed plan as "Closed"; the meta line says whether it was superseded. */
-  planChipLabel(plan: CarePlanDto): string {
-    return plan.status === 'Active' ? 'Active' : 'Closed';
+  /**
+   * The design shows every closed plan as "Closed"; the meta line says whether it was superseded.
+   * Coloured like the status pills elsewhere (customer feedback, Oct 2026): Active is the green
+   * of an Active guest; Closed uses the system's blue so it stands out on the grey plan header.
+   */
+  planChip(plan: CarePlanDto): StatusChip {
+    return plan.status === 'Active'
+      ? { label: 'Active', bg: '#eafdee', fg: '#147129' }
+      : { label: 'Closed', bg: '#ecf2ff', fg: '#345bb1' };
   }
 
   /** "Created 13 May 2025 · by Amara Asante", plus when it closed for history rows. */

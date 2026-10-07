@@ -1,6 +1,6 @@
 # EMHIP Technical Handover
 
-_Version 1.0 · 30 September 2026 · For: developers and IT staff taking over EMHIP_
+_Version 1.1 · 7 October 2026 · For: developers and IT staff taking over EMHIP_
 
 This document explains how EMHIP is built so that a new development team can change it safely. It covers the architecture, the code layout, the main design decisions, the data model, the API and front end, security, background workers, configuration, local development, migrations, testing and the known technical debt. Running the live server (deploying, backups, restores, troubleshooting) is covered in document 06, the Deployment and Operations Runbook.
 
@@ -63,7 +63,7 @@ Because the browser only ever talks to one origin, CORS is only relevant for loc
 
 Only the API holds browser connections, but escalations are processed in the workers. The path is:
 
-1. A risk assessment with any flag set raises `RiskFlagRaisedEvent` (`RiskAssessment.cs`). Resolving an urgent case raises `UrgentCaseResolvedEvent` (`Guest.cs`).
+1. A risk assessment with any flag set (one of the five risk types or `OtherRisk`) raises `RiskFlagRaisedEvent` (`RiskAssessment.cs`). Resolving an urgent case raises `UrgentCaseResolvedEvent` (`Guest.cs`).
 2. `OutboxSaveChangesInterceptor` writes each event to `OutboxMessages` in the same transaction as the change.
 3. `OutboxRelayWorker` polls every 2 seconds and publishes new rows onto an in-process channel.
 4. `EscalationWorker` updates the `UrgentCases_ReadModel` table, then calls `POST http://api:8080/internal/urgent-cases/notify` (or `notify-resolved`) with the `X-Internal-Secret` header.
@@ -81,10 +81,10 @@ The hub endpoint is `/hubs/urgent-cases`. Browsers cannot set headers on a WebSo
 | `password-reset` | API, `AuthController` | Forgot password |
 | `account-created` | API, `AdminUsersController` | An admin creates a staff account |
 | `test-email` | API, `SettingsController` | Send test email on the Settings page |
-| `urgent-case-raised` | Workers, `EscalationWorker` | A guest is escalated, if `email.notifyOnUrgentCase` is on |
+| `urgent-case-raised` | Workers, `EscalationWorker` | An urgent case is raised, if `email.notifyOnUrgentCase` is on |
 | `follow-up-overdue` | Workers, `FollowUpSchedulerWorker` | Contacts newly become overdue, if `email.notifyOnOverdueFollowUps` is on |
 
-Templates live in the `EmailTemplates` table, seeded by `EmailTemplateSeeder` (it only inserts missing keys, so admin edits survive deploys).
+Templates live in the `EmailTemplates` table, seeded by `EmailTemplateSeeder` at every API start. It inserts missing keys and, since 7 October 2026, refreshes the subject and body of every template nobody has customised (`EmailTemplate.IsCustomised`, which is `UpdatedByStaffId is not null`) from `EmailTemplateCatalog`, so wording changes reach existing databases; the name always follows the catalog. A template an admin has saved keeps its subject and body. **Restore default** (`ResetEmailTemplateCommand`) writes the catalog wording with no editor recorded, so the template is catalog-managed again and follows later wording changes.
 
 > **Note:** `Program.cs` also registers `IEmailSender` with `LoggingEmailSender` (`Emhip.Api/Auth/IEmailSender.cs`). Nothing uses it; it is left over from before `IEmailService` existed and can be deleted. The repository README still describes it as the reset-email path, which is out of date.
 
@@ -171,7 +171,7 @@ Dashboards and some reports read denormalised tables rather than grouping over a
 
 - `AuditSaveChangesInterceptor` adds an `AuditEvent` for every create, update or delete of 26 audited entity types, in the same transaction. For updates it records which fields changed, never their values, so the log does not duplicate personal data.
 - `AuditReadLoggingMiddleware` adds a `Read` event after every successful (2xx) GET whose path starts `/guests/{guid}` or `/urgent-cases/{guid}`.
-- Reads that cannot be tied to a guest from the URL (episode records by episode id, document downloads, subject-access exports, anonymisation) are written explicitly through `IAuditTrail`.
+- Reads that cannot be tied to a guest from the URL (Urgent Case Records by episode id, document downloads, subject-access exports, anonymisation) are written explicitly through `IAuditTrail`.
 - Background writes are attributed to an empty staff id, shown as "System".
 - `AuditDescriptions.Describe` turns the stored action and entity name into plain English ("Opened guest record", "Recorded a contact") for the Hub Manager's staff activity feed and the guest's Access Log tab. The stored rows are unchanged.
 
@@ -194,16 +194,22 @@ All tables are in the `Emhip` database, created by EF Core migrations. Ids are G
 | --- | --- | --- |
 | Guest core | `Guests`, `GuestDemographics`, `GuestClinicalProfiles`, `InitialConversationRecords` | Demographics, clinical profile and initial conversation are one-to-one with the guest, in their own tables |
 | Contacts and casework | `Contacts`, `CaseworkNotes`, `CaseworkSessions`, `FollowUps`, `GuestActions`, `Notes`, `CarePlans`, `CarePlanGoals` | Casework notes are SBAR, Draft then Submitted; follow-up status is Scheduled, Overdue, Completed or Cancelled |
-| Risk and urgent care | `RiskAssessments`, `UrgentEpisodes` | Risk assessments are versioned and append-only; an urgent episode runs from flag to resolution |
+| Risk and urgent care | `RiskAssessments`, `UrgentEpisodes` | Risk assessments are versioned and append-only; an `UrgentEpisode` row is one urgent case, from flag to resolution |
 | Outcomes and CPN | `DialogAssessments`, `CpnInitialAssessments`, `CpnRiskDomainRatings`, `MdtQueueItems` | MDT items are CPN referrals, initial reviews or discussion requests |
 | Pathways and allocation | `PathwayReferrals`, `PathwayChanges`, `CaseloadAssignments` | Changes and assignments are history rows |
-| Documents | `Documents`, `DocumentVersions` | Soft delete, restore, purge after retention date, check-out and check-in |
+| Documents | `Documents`, `DocumentVersions` | Soft delete, restore, purge only after the retention date and never within 8 years of upload, check-out and check-in |
 | Configuration | `Hubs`, `AppSettings`, `LookupItems`, `EmailTemplates`, `CustomFieldDefinitions`, `CustomFieldValues` | `AppSettings` stores only overrides of catalogue defaults |
 | Identity | `AspNetUsers`, `AspNetRoles`, `AspNetUserRoles`, `AspNetRoleClaims` and the other Identity tables | `AspNetUsers` adds `DisplayName`, `HubId`, `IsActive`; roles add `Description` |
 | Infrastructure | `AuditEvents`, `OutboxMessages`, `ExportRecords` | Nothing ever purges them |
 | Read models | `UrgentCases_ReadModel`, `DashboardSnapshots_ReadModel`, `PathwayReportAggregates_ReadModel` | Written only by workers (and the anonymiser) |
 
 Staff-id columns such as `Guest.AssignedCmhwId` and `Contact.CreatedByStaffId` are plain GUIDs with no foreign key to `AspNetUsers`. `Guests.HubId` has no foreign key to `Hubs` either.
+
+Changes on 7 October 2026 (migrations in section 12):
+
+- **`UrgentEpisodes`** is the table behind the Urgent Case Record; staff see each row as "Urgent Case 1, 2…". "Escalate to CMHT" was replaced by a hand-written record of the call: `CmhtNotified` (null until answered, false for an explicit No), `CmhtTeam`, `CmhtContactName`, `CmhtCalledAt`, `CmhtCallNotes`, `CmhtRecordedByStaffId` ("Called by", always the signed-in user) and `CmhtRecordedAt`, set by `UrgentEpisode.RecordCmhtContact`. `ExternalServicesInvolved` is captured at resolution. `EscalationReason` and `EscalationUrgency` were dropped; existing values were folded into the top of `CmhtCallNotes`. `ResolutionNote` and the pathway re-entry columns are kept for older cases but no screen asks for them now.
+- **`RiskAssessments`** and **`UrgentCases_ReadModel`** gain `OtherRisk` and `OtherRiskDetails` (500 characters) for the "Other" risk type.
+- **`Documents`:** `Document.MinimumRetentionYears` is 8. `RetainUntil` can never be earlier than `EarliestRetainUntil` (upload date plus 8 years); a null date on create or update becomes exactly that, and `IsRetained` blocks a purge until both dates have passed.
 
 ## 6. API overview
 
@@ -218,7 +224,7 @@ Public URLs are prefixed with `/api` (the `client` nginx strips it). Every contr
 | `GuestsController` | `/guests` | Guest list, search, registration, every workspace tab, notes, casework notes, CPN record, care plan, access log, export, anonymise | `guests.view` plus a per-action permission |
 | `ContactsController` | `/contacts` | Hub-wide contact history, per-guest summary, stat tiles | `guests.view` |
 | `FollowUpsController` | `/followups` | Scheduled contacts queue; mark complete | `followups.view`, `followups.manage` |
-| `UrgentCasesController` | `/urgent-cases` | Active and resolved cases, episode records and export, escalate to CMHT, resolve | `urgentcases.view`; `guests.clinical.edit` to escalate or resolve |
+| `UrgentCasesController` | `/urgent-cases` | Active and resolved cases, Urgent Case Records (`episodes/{episodeId}`) and export, the CMHT contact record, resolve | `urgentcases.view`; `guests.clinical.edit` to record the CMHT contact or resolve |
 | `MdtController` | `/mdt` | MDT queue: confirm CPN, decline, mark discussed | `mdt.manage` |
 | `DashboardsController` | `/dashboards` | CMHW dashboard, Hub Manager overview, guests-seen card | `dashboard.cmhw.view`, `dashboard.hubmanager.view` |
 | `ReportsController` | `/reports` | Pathways, DIALOG outcomes and trend, pathway analytics, caseload, data quality, CPN activity, contacts, referral sources, export history, CSV and Excel export | `reports.view`; `reports.export` for exports |
@@ -230,6 +236,13 @@ Public URLs are prefixed with `/api` (the `client` nginx strips it). Every contr
 | `InternalNotificationsController` | `/internal/urgent-cases` | Worker-to-API SignalR relay | `X-Internal-Secret` header only |
 | Minimal API | `/health` | Liveness probe; does not touch the database | None |
 | SignalR hub | `/hubs/urgent-cases` | Live urgent-case events | `urgentcases.view` |
+
+Urgent-case API changes on 7 October 2026:
+
+- `PUT /urgent-cases/episodes/{episodeId}/cmht-contact` (`RecordCmhtContactCommand`) replaces `POST /urgent-cases/{guestId}/escalate-cmht`, which no longer exists. The body is `notified`, `team`, `contactName`, `calledAt` and `notes`; with `notified: true`, `contactName` and `calledAt` are required and `calledAt` cannot be in the future. It can be called again while the case is open; `false` clears the call details. A resolved case returns 400.
+- `POST /urgent-cases/{guestId}/resolve` accepts `inpatientAdmission` and `externalServicesInvolved`. The older `resolutionNote`, `pathwayAfterResolution`, `nextContactDate` and `sessionFrequencyChange` fields still work but the client no longer sends them.
+- `POST /guests/{id}/risk-assessments` (Raise Urgent Case) accepts `otherRisk` and `otherRiskDetails`. A flagged assessment without `notes` is rejected ("Urgent case notes are required."), and so is `otherRisk` without `otherRiskDetails`.
+- `GET /urgent-cases/episodes/{episodeId}` returns the record grouped as on screen: header, status bar (`responseHours`, `deadlineAt`), flag details, `cmhtContact`, `contactsSinceFlag`, resolution and `auditTrail`. The export file is named `urgent-case-G-{number}-{case}.txt`.
 
 Every Reports tab takes the screen's shared reporting period as `from` / `to` (yyyy-MM-dd, inclusive, whole UTC days; `ReportPeriod` in `Emhip.Application/Reports`). On the endpoints that were unscoped before (`dialog-outcomes`, `dialog-trend`, `pathway-analytics`, `caseload`, `data-quality`, `referral-sources`, `exports`) the pair is optional, and leaving it off keeps the old all-records behaviour. Guest counts cover the guests registered in the period (status and pathway as they are now); activity covers what was recorded in it. A caseload is always current; with a period, its overdue contacts are those due in the period and its contacts those recorded in it. Without a period, the Hub Manager dashboard's live view counts every overdue contact and the last 30 days of contacts. `GET /guests` accepts `registeredFrom` / `registeredTo` so report drill-throughs (Guest Report, Data Quality **View guests**) list the same guests as the counts. Report KPIs that count guests link to `/guests` with those params plus the dashboard's `status`, `urgent`, `cmhw`, `clinicalPathway` and demographic params, `referralSource`, or a segment (`report-drill.ts` builds them). Segments ending `InPeriod` (`GuestSegments`) are measured over `periodFrom` / `periodTo` (all time without them); each mirrors the `ReportReadService` count it drills into, so the list's total matches the KPI. `DialogOutcomesReportDto.GuestsAwaitingReassessment` is counted directly rather than as baselines minus reassessments, which mix different guests once a period applies.
 
@@ -251,9 +264,9 @@ All routes except the three sign-in pages sit inside the shell (`AppShellCompone
 | `/dashboard` | CMHW dashboard, or Hub Manager overview if the user has `dashboard.hubmanager.view` | Signed in |
 | `/guests` | Guest list with filters and segment drill-throughs | `guests.view` |
 | `/guests/new` | Register New Guest (demographics, initial conversation, DIALOG, pathway, review) | `guests.register` |
-| `/guests/:guestId` | Guest workspace (12 tabs, plus Access Log with `guests.audit.view`) | `guests.view` |
+| `/guests/:guestId` | Guest workspace (13 tabs, including Casework Notes, plus Access Log with `guests.audit.view`) | `guests.view` |
 | `/followups` | Scheduled contacts queue; linked from the Hub Manager dashboard, not in the menu | `followups.view` |
-| `/urgent-cases` | Urgent Cases list, details drawer and episode record | `urgentcases.view` |
+| `/urgent-cases` | Urgent Cases list and the Urgent Case Record overlay (`urgent-episode-record.component`) | `urgentcases.view` |
 | `/mdt-queue` | MDT queue | `mdt.manage` |
 | `/contact-history` | Hub-wide contact history | `guests.view` |
 | `/reports` | Reports tabs and exports | `reports.view` |
@@ -381,8 +394,8 @@ These are stored in the `AppSettings` table and edited on the Settings page; the
 | `documents.storage.gcp.*` | None | Google Cloud Storage (bucket, service-account JSON) |
 | `documents.upload.maxFileSizeMb` | `25` | Upload checks, client and server |
 | `documents.upload.allowedExtensions` | `pdf,doc,docx,xls,xlsx,png,jpg,jpeg,txt,csv,rtf,odt` | Upload checks, client and server |
-| `documents.retentionYears` | `7` | Default retention date on new documents |
-| `clinical.urgentResponseHours` | `72` | Episode record deadline and urgent email; not the Urgent Cases list |
+| `documents.retentionYears` | `8` | Default retention date on new documents; values below 8 are treated as 8 (`Document.MinimumRetentionYears`) |
+| `clinical.urgentResponseHours` | `72` | Urgent Case Record countdown and deadline, and the urgent email; not the Urgent Cases list |
 | `clinical.inactivityDays` | `90` | `EngagementStatusWorker` (automatic move to Inactive) |
 | `clinical.followUpDefaultDays` | `14` | Nothing (see section 15) |
 | `clinical.dialogReviewWeeks` | `12` | Nothing (see section 15) |
@@ -480,7 +493,10 @@ Options are `--hubs` (default 3), `--staff-per-hub` (8), `--guests` per hub (200
 ## 12. Database and migrations
 
 - EF Core 10 with SQL Server. `EmhipDbContext` derives from `IdentityDbContext<ApplicationUser, ApplicationRole, Guid>`; entity configurations are in `Persistence/Configurations`.
-- There are 14 migrations in `src/Emhip.Infrastructure/Persistence/Migrations`, from `InitialCreate` (13 July 2026) to `AddEpisodeRecordNoteAttachmentsAndAnonymisation` (9 September 2026). On 30 September 2026 `dotnet ef migrations has-pending-model-changes` reported no pending changes.
+- There are 17 migrations in `src/Emhip.Infrastructure/Persistence/Migrations`, from `InitialCreate` (13 July 2026) to `DocumentRetentionMinimum` (7 October 2026). On 7 October 2026 `dotnet ef migrations has-pending-model-changes` reported no pending changes.
+- The two migrations of 7 October 2026:
+    - `20261007182759_UrgentCaseRecordSpec` renames `EscalationNotes`, `EscalatedToCmhtByStaffId` and `EscalatedToCmhtAt` to `CmhtCallNotes`, `CmhtRecordedByStaffId` and `CmhtRecordedAt`, and adds `CmhtNotified`, `CmhtContactName`, `CmhtCalledAt` and `ExternalServicesInvolved` to `UrgentEpisodes`. Every existing escalation becomes `CmhtNotified = 1` with `CmhtCalledAt` set to the escalation time, and the old reason and urgency are written as "Reason: …" and "Urgency: …" lines at the top of `CmhtCallNotes` before `EscalationReason` and `EscalationUrgency` are dropped. It also adds `OtherRisk` and `OtherRiskDetails` to `RiskAssessments` and `UrgentCases_ReadModel`, and the index `IX_CaseworkNotes_ContactId`. `Down` restores the columns but not the separate reason and urgency values.
+    - `20261007184135_DocumentRetentionMinimum` is data only: it sets `RetainUntil` to the upload date plus 8 years wherever it was null or earlier. `Down` does nothing, because the old dates are not kept.
 - `EmhipDbContextFactory` is the design-time factory. It hard-codes a `(local)` trusted connection, which is fine for generating migrations but not for applying them from macOS or Linux: pass `--connection` to `database update`.
 
 ### 12.1 Adding a migration
@@ -507,8 +523,8 @@ Rules for production migrations:
 
 | Suite | What it covers | Size |
 | --- | --- | --- |
-| `tests/Emhip.UnitTests` (xUnit) | Guest engagement status, risk assessments, urgent episodes, casework notes, CPN assessments, documents, custom fields, anonymisation, registration validation, keyset cursors, email template rendering, the report cohort filter, urgent episode record text | 74 tests, all passing on 30 September 2026 |
-| `tests/Emhip.IntegrationTests` | Starts the API with `WebApplicationFactory<Program>` and calls `/health` | 1 test, passing |
+| `tests/Emhip.UnitTests` (xUnit) | Guest engagement status, risk assessments, urgent cases (including the CMHT contact record), casework notes, CPN assessments, documents (including the 8-year minimum), custom fields, anonymisation, registration validation, keyset cursors, email template rendering and catalog defaults, the report cohort filter, Urgent Case Record text | 106 tests, all passing on 7 October 2026 |
+| `tests/Emhip.IntegrationTests` | Starts the API with `WebApplicationFactory<Program>` and calls `/health` | 1 test, passing on 7 October 2026 |
 | `client` (`ng test`, Vitest) | `app.spec.ts` checks the root component is created | 1 spec |
 
 Gaps:
@@ -545,8 +561,9 @@ Every item below was checked in the code on 30 September 2026. Document 08 cover
 ### 15.2 Behaviour and correctness
 
 - **Save Draft on Register New Guest does not persist.** `RegisterGuestComponent.saveDraft()` only records the time for the "Draft saved" label; leaving the page loses the data.
-- **Two urgent-response windows.** The Urgent Cases list and drawer use `WINDOW_HOURS = 72` in `urgent-cases.component.ts`; the episode record and the urgent email use `clinical.urgentResponseHours`. Read the setting on the client too (`SettingsApiService.urgentResponseHours` already exists and is unused).
-- **Escalate to CMHT options are hard-coded.** The reasons and urgency levels are fixed arrays in `urgent-cases.component.ts`, and the CMHT team is a free-text box. `LookupSeeder` already seeds `EscalationReason`, `EscalationUrgency` and `CmhtTeam` option lists (with different wording), which admins can edit but which have no effect. Load the dialog from those lists.
+- **Two urgent-response windows.** The Urgent Cases list uses `WINDOW_HOURS = 72` in `urgent-cases.component.ts`; the Urgent Case Record (which takes `responseHours` from the API) and the urgent email use `clinical.urgentResponseHours`. Read the setting on the list too (`SettingsApiService.urgentResponseHours` already exists and is unused).
+- **Orphaned escalation lookups.** Escalate to CMHT was removed on 7 October 2026, but `LookupSeeder` still seeds `EscalationReason` and `EscalationUrgency`; nothing reads them and `lookups-manager.component.ts` hides them (`HIDDEN_CATEGORIES`). `CmhtTeam` is still seeded and unused, because the record's Team or service is free text. Remove the seeds, or offer `CmhtTeam` as suggestions for Team or service.
+- **Pinned notes are not shown.** `GuestOverviewDto.PinnedNotes` is still returned, but since the Urgent Case Details drawer was removed no component renders it. Show pinned notes on the Overview tab.
 - **The MDT Queue menu badge** is loaded once when the shell starts and does not change after items are confirmed, declined or discussed until the page is reloaded. (The Urgent Cases badge now refreshes on both escalation and resolution events.)
 - **Built-in role edits are undone on restart** (section 4.6). Decide whether that is wanted; if not, seed built-in roles only when they are created.
 - **Outbox delivery is at-most-once after relay.** `OutboxRelayWorker` marks a row processed as soon as it is on the in-memory channel, so an event in flight when the workers stop is lost, and a failed SignalR push is not retried. Rows that fail to relay are retried every 2 seconds with no cap. Processed rows are never purged.

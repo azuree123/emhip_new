@@ -13,7 +13,7 @@
               <h2 class="card__title">Personal details</h2>
               <span class="section-title__hint">captured at registration</span>
             </div>
-            <span class="chip chip--complete">Completed</span>
+            <span class="chip chip--complete">Complete</span>
           </div>
           @if (overview(); as o) {
             <div class="field-grid">
@@ -43,7 +43,7 @@
                 <span class="saved-hint">Saved</span>
               }
               <span class="chip" [class.chip--complete]="sectionComplete('contact')" [class.chip--pending]="!sectionComplete('contact')">
-                {{ sectionComplete('contact') ? 'Completed' : 'Pending' }}
+                {{ sectionComplete('contact') ? 'Complete' : 'Incomplete' }}
               </span>
               @if (canEdit && !isEditing('contact')) {
                 <button type="button" class="btn-link" (click)="startEdit('contact')">Edit</button>
@@ -105,7 +105,7 @@
                 <span class="saved-hint">Saved</span>
               }
               <span class="chip" [class.chip--complete]="sectionComplete('identity')" [class.chip--pending]="!sectionComplete('identity')">
-                {{ sectionComplete('identity') ? 'Completed' : 'Pending' }}
+                {{ sectionComplete('identity') ? 'Complete' : 'Incomplete' }}
               </span>
               @if (canEdit && !isEditing('identity')) {
                 <button type="button" class="btn-link" (click)="startEdit('identity')">Edit</button>
@@ -167,7 +167,7 @@
                 <span class="saved-hint">Saved</span>
               }
               <span class="chip" [class.chip--complete]="sectionComplete('migration')" [class.chip--pending]="!sectionComplete('migration')">
-                {{ sectionComplete('migration') ? 'Completed' : 'Pending' }}
+                {{ sectionComplete('migration') ? 'Complete' : 'Incomplete' }}
               </span>
               @if (canEdit && !isEditing('migration')) {
                 <button type="button" class="btn-link" (click)="startEdit('migration')">Edit</button>
@@ -215,7 +215,7 @@
                 <span class="saved-hint">Saved</span>
               }
               <span class="chip" [class.chip--complete]="sectionComplete('gp')" [class.chip--pending]="!sectionComplete('gp')">
-                {{ sectionComplete('gp') ? 'Completed' : 'Pending' }}
+                {{ sectionComplete('gp') ? 'Complete' : 'Incomplete' }}
               </span>
               @if (canEdit && !isEditing('gp')) {
                 <button type="button" class="btn-link" (click)="startEdit('gp')">Edit</button>
@@ -258,7 +258,7 @@
                 <span class="saved-hint">Saved</span>
               }
               <span class="chip" [class.chip--complete]="sectionComplete('emergency')" [class.chip--pending]="!sectionComplete('emergency')">
-                {{ sectionComplete('emergency') ? 'Completed' : 'Pending' }}
+                {{ sectionComplete('emergency') ? 'Complete' : 'Incomplete' }}
               </span>
               @if (canEdit && !isEditing('emergency')) {
                 <button type="button" class="btn-link" (click)="startEdit('emergency')">Edit</button>
@@ -298,7 +298,7 @@
             <h2 class="card__title">Relationship to other services</h2>
             <span class="card__tools">
               <span class="chip" [class.chip--complete]="otherServicesRecorded()" [class.chip--pending]="!otherServicesRecorded()">
-                {{ otherServicesRecorded() ? 'Recorded' : 'Pending' }}
+                {{ otherServicesRecorded() ? 'Complete' : 'Incomplete' }}
               </span>
               <button type="button" class="btn-link" (click)="goTo('clinical')">Edit in Clinical Details</button>
             </span>
@@ -333,7 +333,7 @@
                   <path transform="translate(3.25,6.25)" d="M 1.28 6.72 C 0.987 6.427 0.513 6.427 0.22 6.72 C -0.073 7.013 -0.073 7.487 0.22 7.78 L 4.72 12.28 C 5.013 12.573 5.487 12.573 5.78 12.28 L 16.78 1.28 C 17.073 0.987 17.073 0.513 16.78 0.22 C 16.487 -0.073 16.013 -0.073 15.72 0.22 L 5.25 10.689 L 1.28 6.72 Z" fill="currentColor" />
                 </svg>
                 <span class="completion__label">Registration details</span>
-                <span class="chip chip--complete">Completed</span>
+                <span class="chip chip--complete">Complete</span>
               </li>
               @for (section of sections(); track section.key) {
                 <li class="completion__item">
@@ -346,10 +346,10 @@
                   }
                   <span class="completion__label">{{ section.label }}</span>
                   @if (canEdit && !section.complete && !isEditing(section.key)) {
-                    <button type="button" class="btn-link completion__edit" (click)="startEdit(section.key)">Complete</button>
+                    <button type="button" class="btn-link completion__edit" (click)="startEdit(section.key)">Complete now</button>
                   } @else {
                     <span class="chip" [class.chip--complete]="section.complete" [class.chip--pending]="!section.complete">
-                      {{ section.complete ? 'Completed' : 'Pending' }}
+                      {{ section.complete ? 'Complete' : 'Incomplete' }}
                     </span>
                   }
                 </li>

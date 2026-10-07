@@ -50,7 +50,10 @@ export class GuestAccessLogTabComponent {
     if (entry.details?.startsWith('Subject access export')) return 'Exported (subject access)';
     if (entry.details?.startsWith('Record anonymised')) return 'Anonymised';
     if (entry.details?.startsWith('Downloaded')) return 'Downloaded document';
-    if (entry.details?.startsWith('Urgent episode record exported')) return 'Exported episode record';
+    // Older rows say "episode"; both read as the Urgent Case Record.
+    if (entry.details?.startsWith('Urgent case record exported') || entry.details?.startsWith('Urgent episode record exported')) {
+      return 'Exported urgent case record';
+    }
     return `${verb} ${entry.entityName.replace(/([a-z])([A-Z])/g, '$1 $2').toLowerCase()}`;
   }
 

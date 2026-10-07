@@ -291,7 +291,8 @@
 // The CMHW filter is the shared <emhip-staff-picker>, which carries its own control chrome
 // rather than the .pill-select styling; it just needs a pill-sized footprint in the filter row.
 .cmhw-picker {
-  width: 176px;
+  min-width: 176px;
+  max-width: 320px;
   flex-shrink: 0;
 }
 

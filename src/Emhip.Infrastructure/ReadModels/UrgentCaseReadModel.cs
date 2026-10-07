@@ -15,6 +15,8 @@ public class UrgentCaseReadModel
     public bool RiskToOthers { get; set; }
     public bool SevereDeterioration { get; set; }
     public bool SafeguardingConcern { get; set; }
+    public bool OtherRisk { get; set; }
+    public string? OtherRiskDetails { get; set; }
     public Guid? AssignedCmhwId { get; set; }
     public string? AssignedCmhwName { get; set; }
     public DateTimeOffset EscalatedAt { get; set; }

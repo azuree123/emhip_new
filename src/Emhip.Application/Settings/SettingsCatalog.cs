@@ -127,7 +127,7 @@ public static class SettingsCatalog
         new(Keys.MaxUploadMb, "Uploads", "Maximum file size (MB)", "Uploads larger than this are rejected.", SettingKind.Number, "25"),
         new(Keys.AllowedExtensions, "Uploads", "Allowed file types", "Comma-separated extensions. Leave blank to allow any type.", SettingKind.Text,
             "pdf,doc,docx,xls,xlsx,png,jpg,jpeg,txt,csv,rtf,odt"),
-        new(Keys.DefaultRetentionYears, "Uploads", "Default retention (years)", "Pre-fills the retention date on new documents; 0 means no default.", SettingKind.Number, "7"),
+        new(Keys.DefaultRetentionYears, "Uploads", "Default retention (years)", "Sets the retention date on new documents. Never less than 8 years — the NHS minimum for mental health records; deleted documents stay in the recycle bin until then.", SettingKind.Number, "8"),
 
         new(Keys.UrgentResponseHours, "Clinical", "Urgent response window (hours)", "Drives the countdown on urgent cases.", SettingKind.Number, "72"),
         new(Keys.InactivityDays, "Clinical", "Inactivity threshold (days)", "Active guests with no activity for this many days are moved to Inactive automatically (checked every 6 hours). Any new contact makes them Active again.", SettingKind.Number, "90"),

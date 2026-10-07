@@ -17,11 +17,14 @@ public class RiskAssessment : Entity, IHasDomainEvents
     public bool RiskToOthers { get; private set; }
     public bool SevereDeterioration { get; private set; }
     public bool SafeguardingConcern { get; private set; }
+    /// <summary>"Other" on the Raise Urgent Case form; <see cref="OtherRiskDetails"/> says what the risk is.</summary>
+    public bool OtherRisk { get; private set; }
+    public string? OtherRiskDetails { get; private set; }
     public string? Notes { get; private set; }
     public Guid AssessedByStaffId { get; private set; }
     public DateTimeOffset AssessedAt { get; private set; }
 
-    public bool HasAnyFlag => SuicidalIdeation || SelfHarm || RiskToOthers || SevereDeterioration || SafeguardingConcern;
+    public bool HasAnyFlag => SuicidalIdeation || SelfHarm || RiskToOthers || SevereDeterioration || SafeguardingConcern || OtherRisk;
 
     private readonly List<IDomainEvent> _events = [];
     public IReadOnlyCollection<IDomainEvent> DomainEvents => _events.AsReadOnly();
@@ -31,7 +34,7 @@ public class RiskAssessment : Entity, IHasDomainEvents
     public RiskAssessment(
         Guid guestId, int version, Guid assessedByStaffId,
         bool suicidalIdeation, bool selfHarm, bool riskToOthers, bool severeDeterioration, bool safeguardingConcern,
-        string? notes)
+        string? notes, bool otherRisk = false, string? otherRiskDetails = null)
     {
         GuestId = guestId;
         Version = version;
@@ -41,12 +44,14 @@ public class RiskAssessment : Entity, IHasDomainEvents
         RiskToOthers = riskToOthers;
         SevereDeterioration = severeDeterioration;
         SafeguardingConcern = safeguardingConcern;
+        OtherRisk = otherRisk;
+        OtherRiskDetails = otherRisk ? otherRiskDetails?.Trim() : null;
         Notes = notes;
         AssessedAt = DateTimeOffset.UtcNow;
 
         if (HasAnyFlag)
         {
-            _events.Add(new RiskFlagRaisedEvent(GuestId, Id, SuicidalIdeation, SelfHarm, RiskToOthers, SevereDeterioration, SafeguardingConcern, AssessedAt));
+            _events.Add(new RiskFlagRaisedEvent(GuestId, Id, SuicidalIdeation, SelfHarm, RiskToOthers, SevereDeterioration, SafeguardingConcern, AssessedAt, OtherRisk, OtherRiskDetails));
         }
     }
 

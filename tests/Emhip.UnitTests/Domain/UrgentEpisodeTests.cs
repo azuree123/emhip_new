@@ -49,7 +49,74 @@ public class UrgentEpisodeTests
         Assert.True(episode.ResolvedWithinWindow(72));
 
         Assert.Throws<InvalidOperationException>(() => episode.Resolve(staff, "again"));
-        Assert.Throws<InvalidOperationException>(() => episode.EscalateToCmht(staff, "CRT", null, null, null));
+        Assert.Throws<InvalidOperationException>(() => episode.RecordCmhtContact(staff, true, "CRT", "Dr Shah", DateTimeOffset.UtcNow, null));
+    }
+
+    [Fact]
+    public void Recording_a_cmht_call_keeps_who_was_called_when_and_what_was_said()
+    {
+        var episode = Open(DateTimeOffset.UtcNow.AddHours(-5));
+        var staff = Guid.NewGuid();
+        var calledAt = DateTimeOffset.UtcNow.AddHours(-1);
+
+        episode.RecordCmhtContact(staff, true, " Crisis Resolution Team ", "Dr Shah", calledAt, "Agreed a home visit today.");
+
+        Assert.True(episode.CmhtNotified);
+        Assert.Equal("Crisis Resolution Team", episode.CmhtTeam);
+        Assert.Equal("Dr Shah", episode.CmhtContactName);
+        Assert.Equal(calledAt, episode.CmhtCalledAt);
+        Assert.Equal("Agreed a home visit today.", episode.CmhtCallNotes);
+        Assert.Equal(staff, episode.CmhtRecordedByStaffId);
+        Assert.NotNull(episode.CmhtRecordedAt);
+    }
+
+    [Fact]
+    public void Answering_no_clears_any_call_details()
+    {
+        var episode = Open(DateTimeOffset.UtcNow.AddHours(-5));
+        episode.RecordCmhtContact(Guid.NewGuid(), true, null, "Dr Shah", DateTimeOffset.UtcNow, "Call");
+
+        episode.RecordCmhtContact(Guid.NewGuid(), false, "ignored", "ignored", DateTimeOffset.UtcNow, "ignored");
+
+        Assert.False(episode.CmhtNotified);
+        Assert.Null(episode.CmhtContactName);
+        Assert.Null(episode.CmhtCalledAt);
+        Assert.Null(episode.CmhtCallNotes);
+    }
+
+    [Fact]
+    public void Correcting_a_recorded_call_keeps_who_made_it()
+    {
+        var episode = Open(DateTimeOffset.UtcNow.AddHours(-5));
+        var caller = Guid.NewGuid();
+        episode.RecordCmhtContact(caller, true, "CRT", "Dr Shah", DateTimeOffset.UtcNow.AddHours(-1), null);
+        var recordedAt = episode.CmhtRecordedAt;
+
+        episode.RecordCmhtContact(Guid.NewGuid(), true, "Crisis Resolution Team", "Dr Shah", DateTimeOffset.UtcNow.AddHours(-1), "Typo fixed");
+
+        Assert.Equal(caller, episode.CmhtRecordedByStaffId);
+        Assert.Equal(recordedAt, episode.CmhtRecordedAt);
+        Assert.Equal("Crisis Resolution Team", episode.CmhtTeam);
+    }
+
+    [Fact]
+    public void A_cmht_call_needs_the_person_and_the_time()
+    {
+        var episode = Open(DateTimeOffset.UtcNow.AddHours(-5));
+
+        Assert.Throws<InvalidOperationException>(() => episode.RecordCmhtContact(Guid.NewGuid(), true, null, " ", DateTimeOffset.UtcNow, null));
+        Assert.Throws<InvalidOperationException>(() => episode.RecordCmhtContact(Guid.NewGuid(), true, null, "Dr Shah", null, null));
+    }
+
+    [Fact]
+    public void Resolving_records_any_other_external_service()
+    {
+        var episode = Open(DateTimeOffset.UtcNow.AddHours(-5));
+
+        episode.Resolve(Guid.NewGuid(), null, null, null, null, null, inpatientAdmission: true, externalServicesInvolved: "Ambulance, A&E");
+
+        Assert.True(episode.InpatientAdmission);
+        Assert.Equal("Ambulance, A&E", episode.ExternalServicesInvolved);
     }
 
     [Fact]

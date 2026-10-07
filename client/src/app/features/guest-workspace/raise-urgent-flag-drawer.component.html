@@ -1,6 +1,6 @@
 <!-- The backdrop only closes the drawer while nothing has been entered, so a stray click never
-     throws away a half-recorded flag; the close button, Cancel and Escape always do. -->
-<div class="drawer-overlay" (click)="selected().size === 0 && !notes.trim() && close()">
+     throws away a half-recorded urgent case; the close button, Cancel and Escape always do. -->
+<div class="drawer-overlay" (click)="pristine() && close()">
   <aside
     class="drawer"
     role="dialog"
@@ -10,7 +10,7 @@
   >
     <header class="drawer__header">
       <div>
-        <h2 class="drawer__title" id="raise-urgent-title">Raise Urgent Flag</h2>
+        <h2 class="drawer__title" id="raise-urgent-title">Raise Urgent Case</h2>
         @if (guestRef()) {
           <span class="drawer__ref">Reference ID:&nbsp;{{ guestRef() }}</span>
         }
@@ -34,13 +34,13 @@
       </svg>
       @if (alreadyUrgent()) {
         <span>
-          This guest has been urgent since {{ urgentSinceLabel() }}. New flags are added to the open
-          episode and recorded as a new risk assessment.
+          This guest has had an open urgent case since {{ urgentSinceLabel() }}. Anything you raise
+          now is added to that urgent case.
         </span>
       } @else {
         <span>
-          Raising a flag puts this guest on the Urgent Cases queue and starts the 72-hour contact
-          window. It is recorded as a new risk assessment on Clinical Details.
+          Raising an urgent case puts this guest on the Urgent Cases dashboard and starts the
+          72-hour contact window.
         </span>
       }
     </div>
@@ -72,13 +72,31 @@
         </div>
       </fieldset>
 
+      @if (otherSelected()) {
+        <label class="field">
+          <span>Describe the other risk&nbsp;*</span>
+          <input
+            type="text"
+            name="otherRiskDetails"
+            maxlength="500"
+            required
+            [ngModel]="otherDetails()"
+            (ngModelChange)="otherDetails.set($event); error.set(null)"
+            placeholder="e.g. Financial crisis, eviction today" />
+        </label>
+      }
+
       <label class="field">
-        <span>Notes</span>
+        <span>Urgent case notes&nbsp;*</span>
         <textarea
           name="notes"
           rows="4"
-          [(ngModel)]="notes"
-          placeholder="What happened, who reported it and any immediate action taken (optional)"></textarea>
+          maxlength="4000"
+          required
+          [ngModel]="notes()"
+          (ngModelChange)="notes.set($event); error.set(null)"
+          placeholder="What happened, who reported it and any immediate action taken"></textarea>
+        <span class="field__hint">Required — an urgent case cannot be raised without notes.</span>
       </label>
 
       @if (error()) {
@@ -87,7 +105,7 @@
 
       <div class="drawer__actions">
         <button type="submit" class="drawer-btn drawer-btn--red" [disabled]="!canSubmit()">
-          {{ saving() ? 'Raising flag…' : 'Raise urgent flag' }}
+          {{ saving() ? 'Raising urgent case…' : 'Raise urgent case' }}
         </button>
         <button type="button" class="drawer-btn drawer-btn--outline" [disabled]="saving()" (click)="close()">Cancel</button>
       </div>

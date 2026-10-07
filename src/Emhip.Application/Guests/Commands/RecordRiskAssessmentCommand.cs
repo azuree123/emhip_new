@@ -18,13 +18,24 @@ public sealed record RecordRiskAssessmentCommand(
     bool RiskToOthers,
     bool SevereDeterioration,
     bool SafeguardingConcern,
-    string? Notes) : IRequest<Guid>;
+    string? Notes,
+    bool OtherRisk = false,
+    string? OtherRiskDetails = null) : IRequest<Guid>;
 
 public sealed class RecordRiskAssessmentCommandValidator : AbstractValidator<RecordRiskAssessmentCommand>
 {
     public RecordRiskAssessmentCommandValidator()
     {
         RuleFor(x => x.GuestId).NotEmpty();
+        RuleFor(x => x.Notes).MaximumLength(4000);
+        // An urgent case with no notes is not acceptable (customer feedback, Oct 2026).
+        RuleFor(x => x.Notes)
+            .NotEmpty()
+            .When(x => x.SuicidalIdeation || x.SelfHarm || x.RiskToOthers || x.SevereDeterioration || x.SafeguardingConcern || x.OtherRisk)
+            .WithMessage("Urgent case notes are required.");
+        RuleFor(x => x.OtherRiskDetails)
+            .NotEmpty().When(x => x.OtherRisk).WithMessage("Describe the risk when 'Other' is selected.")
+            .MaximumLength(500);
     }
 }
 
@@ -42,7 +53,8 @@ public sealed class RecordRiskAssessmentCommandHandler(IAppDbContext db, ICurren
         var assessment = new RiskAssessment(
             request.GuestId, nextVersion + 1, currentUser.StaffId,
             request.SuicidalIdeation, request.SelfHarm, request.RiskToOthers,
-            request.SevereDeterioration, request.SafeguardingConcern, request.Notes);
+            request.SevereDeterioration, request.SafeguardingConcern, request.Notes?.Trim(),
+            request.OtherRisk, request.OtherRiskDetails);
 
         db.RiskAssessments.Add(assessment);
 
@@ -51,10 +63,24 @@ public sealed class RecordRiskAssessmentCommandHandler(IAppDbContext db, ICurren
             var guest = await db.Guests.FirstAsync(g => g.Id == request.GuestId, cancellationToken);
             guest.Escalate();
 
-            // One open episode per guest — repeated flag raises update the same episode window.
-            var hasOpenEpisode = await db.UrgentEpisodes
-                .AnyAsync(e => e.GuestId == request.GuestId && e.ResolvedAt == null, cancellationToken);
-            if (!hasOpenEpisode)
+            // One open urgent case per guest — raising again adds to the same case and window.
+            var openEpisode = await db.UrgentEpisodes
+                .Where(e => e.GuestId == request.GuestId && e.ResolvedAt == null)
+                .OrderByDescending(e => e.RaisedAt)
+                .FirstOrDefaultAsync(cancellationToken);
+            if (openEpisode is not null)
+            {
+                // Registration: the initial conversation's Immediate Risk = Yes opened the case a
+                // moment ago with an automatic assessment; this one carries the worker's actual
+                // risks and notes, so it becomes what the Urgent Case Record shows.
+                var openedAutomatically = openEpisode.RiskAssessmentId is { } openingId
+                    && openEpisode.RaisedAt > DateTimeOffset.UtcNow.AddMinutes(-30)
+                    && await db.RiskAssessments.AnyAsync(
+                        r => r.Id == openingId && r.Notes != null && r.Notes.StartsWith(RecordInitialConversationCommandHandler.ImmediateRiskNote),
+                        cancellationToken);
+                if (openedAutomatically) openEpisode.UseOpeningAssessment(assessment.Id);
+            }
+            else
             {
                 // Snapshot who raised it and where the guest was, so the episode record reads the
                 // same way later even after the guest's live pathway/CMHW have moved on.

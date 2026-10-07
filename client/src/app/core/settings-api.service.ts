@@ -154,4 +154,6 @@ export const LookupCategories = {
   HubActivity: 'HubActivity',
   /** The "Description" (type of advice given) on an AFA contact. */
   AfaAdviceType: 'AfaAdviceType',
+  /** CPN contact frequency options on the CPN record. */
+  CpnFollowUpFrequency: 'CpnFollowUpFrequency',
 } as const;

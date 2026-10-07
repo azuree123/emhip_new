@@ -1,6 +1,6 @@
 # EMHIP Deployment and Operations Runbook
 
-_Version 1.0 · 30 September 2026 · For: whoever runs the EMHIP production server_
+_Version 1.1 · 7 October 2026 · For: whoever runs the EMHIP production server_
 
 This runbook is for the person who looks after the live EMHIP server. It explains how a change reaches production, how to check a deployment, how to roll back, how backups work and how to restore one, and how to deal with the most likely problems. Every command was taken from, or checked against, the scripts in the repository (`deploy/`, `docker-compose.yml`, `docker-compose.prod.yml`) on 30 September 2026. How the code itself works is in document 05, the Technical Handover.
 
@@ -400,7 +400,7 @@ Rotate it whenever someone who had server access leaves, and whenever you need t
 
 1. Replace `INTERNAL_SHARED_SECRET` in `.env`.
 2. Run `$COMPOSE up -d api workers` so both pick it up together.
-3. Raise a test urgent flag on a test guest, or check the workers log for 401 errors after the next escalation.
+3. Raise a test urgent case on a test guest, or check the workers log for 401 errors after the next escalation.
 
 ### 11.3 SQL Server `sa` password
 

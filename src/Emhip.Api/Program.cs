@@ -160,8 +160,9 @@ if (builder.Configuration.GetValue<bool>("ApplyMigrationsOnStartup"))
     var db = migrationScope.ServiceProvider.GetRequiredService<EmhipDbContext>();
     await db.Database.MigrateAsync();
     await IdentitySeeder.SeedAsync(migrationScope.ServiceProvider);
-    // Built-in dropdown options and email templates; both only insert what's missing, so admin
-    // edits survive redeploys.
+    // Built-in dropdown options and email templates. Lookups only insert what's missing; email
+    // templates also refresh the wording of any template no admin has edited. Admin edits survive
+    // redeploys.
     await LookupSeeder.SeedAsync(db);
     await EmailTemplateSeeder.SeedAsync(db);
 }

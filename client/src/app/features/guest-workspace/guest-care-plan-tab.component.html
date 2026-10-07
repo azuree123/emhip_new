@@ -55,7 +55,8 @@
                 <span class="plan__summary">
                   <span class="plan__title-row">
                     <span class="plan__title">Care Plan</span>
-                    <span class="plan__chip">{{ planChipLabel(plan) }}</span>
+                    @let chip = planChip(plan);
+                    <span class="plan__chip" [style.background]="chip.bg" [style.color]="chip.fg">{{ chip.label }}</span>
                     @if (plan.isReviewOverdue) {
                       <span class="plan__chip plan__chip--overdue">MDT review overdue</span>
                     }

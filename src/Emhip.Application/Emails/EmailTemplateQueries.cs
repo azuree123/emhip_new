@@ -77,7 +77,7 @@ public sealed class UpdateEmailTemplateCommandHandler(IAppDbContext db, ICurrent
 /// <summary>Restores a template to the version shipped in the catalog.</summary>
 public sealed record ResetEmailTemplateCommand(string Key) : IRequest;
 
-public sealed class ResetEmailTemplateCommandHandler(IAppDbContext db, ICurrentUser currentUser) : IRequestHandler<ResetEmailTemplateCommand>
+public sealed class ResetEmailTemplateCommandHandler(IAppDbContext db) : IRequestHandler<ResetEmailTemplateCommand>
 {
     public async Task Handle(ResetEmailTemplateCommand request, CancellationToken cancellationToken)
     {
@@ -92,7 +92,9 @@ public sealed class ResetEmailTemplateCommandHandler(IAppDbContext db, ICurrentU
         }
         else
         {
-            template.Update(definition.DefaultSubject, definition.DefaultHtmlBody, null, true, currentUser.StaffId);
+            // No editor recorded: a restored template is catalog-managed again, so later wording
+            // changes in the catalog reach it on the next deploy (EmailTemplateSeeder).
+            template.Update(definition.DefaultSubject, definition.DefaultHtmlBody, null, true, updatedByStaffId: null);
         }
 
         await db.SaveChangesAsync(cancellationToken);

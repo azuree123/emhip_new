@@ -36,6 +36,7 @@ type TabId =
   | 'pathway'
   | 'careplan'
   | 'contacts'
+  | 'casework'
   | 'cpn'
   | 'documents'
   | 'action'
@@ -65,8 +66,8 @@ interface TabDef {
  *
  * The header's "Add Contact" button opens CaseworkNoteDrawerComponent — in the design that
  * button leads to the SBAR casework note (GuestOverviewTab2, bundle 50271-54563), not a bare
- * contact row. "Raise Urgent Flag" opens RaiseUrgentFlagDrawerComponent, a quick right-hand
- * popup that records the flag as a risk assessment without leaving the current tab.
+ * contact row. "Raise Urgent Case" opens RaiseUrgentFlagDrawerComponent, a quick right-hand
+ * popup that records the urgent case as a risk assessment without leaving the current tab.
  *
  * The sidebar/top header bar from the source are intentionally omitted — those are
  * rendered once by AppShellComponent around every routed screen.
@@ -127,6 +128,8 @@ export class GuestWorkspaceComponent {
     { id: 'pathway', label: 'Pathway History' },
     { id: 'careplan', label: 'Care Plan' },
     { id: 'contacts', label: 'Contact History' },
+    // Casework entries only — the clinical record, without calls, activities and hospitality.
+    { id: 'casework', label: 'Casework Notes' },
     { id: 'cpn', label: 'CPN Record' },
     { id: 'documents', label: 'Documents' },
     { id: 'action', label: 'Actions & Reminders' },
@@ -138,9 +141,9 @@ export class GuestWorkspaceComponent {
 
   /** "Add Contact" header button opens the casework note drawer (bundle 50271-54563). */
   readonly noteDrawerOpen = signal(false);
-  /** "Raise Urgent Flag" header button opens the quick flag popup. */
+  /** "Raise Urgent Case" header button opens the quick popup. */
   readonly urgentDrawerOpen = signal(false);
-  /** Bumped after a flag is raised so an open Clinical Details tab re-reads its assessments. */
+  /** Bumped after an urgent case is raised so an open Clinical Details tab re-reads its assessments. */
   readonly clinicalReloadToken = signal(0);
 
   readonly overview = signal<GuestOverviewDto | null>(null);
@@ -217,7 +220,7 @@ export class GuestWorkspaceComponent {
     this.selectTab(step);
   }
 
-  /** Urgent flags are raised by recording a risk assessment — the popup does that in place. */
+  /** Urgent cases are raised by recording a risk assessment — the popup does that in place. */
   raiseUrgentFlag(): void {
     if (!this.canRaiseUrgent) return;
     this.urgentDrawerOpen.set(true);
@@ -227,7 +230,7 @@ export class GuestWorkspaceComponent {
     this.urgentDrawerOpen.set(false);
   }
 
-  /** The flag is on the record: refresh the header badge and any open Clinical Details tab. */
+  /** The urgent case is on the record: refresh the header badge and any open Clinical Details tab. */
   urgentFlagRaised(): void {
     this.urgentDrawerOpen.set(false);
     this.clinicalReloadToken.update((n) => n + 1);

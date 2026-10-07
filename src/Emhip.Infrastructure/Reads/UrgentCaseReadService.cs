@@ -8,10 +8,10 @@ namespace Emhip.Infrastructure.Reads;
 
 /// <summary>
 /// Active queue reads come straight from the UrgentCases_ReadModel table maintained by
-/// EscalationWorker — no joins at request time. The episode record is the exception: it is a
-/// one-episode composition over the write tables (episode, intake risk assessment, contacts,
-/// crisis notes, follow-ups, pathway changes and the audit log), read rarely enough that a
-/// handful of indexed queries is the right trade-off against another projection table.
+/// EscalationWorker — no joins at request time. The Urgent Case Record is the exception: it is a
+/// one-case composition over the write tables (episode, the risk assessments that raised it,
+/// contacts and their casework notes), read rarely enough that a handful of indexed queries is
+/// the right trade-off against another projection table.
 /// </summary>
 public sealed class UrgentCaseReadService(EmhipDbContext db) : IUrgentCaseReadService
 {
@@ -23,43 +23,30 @@ public sealed class UrgentCaseReadService(EmhipDbContext db) : IUrgentCaseReadSe
                 u.GuestId, u.GuestName,
                 db.Guests.Where(g => g.Id == u.GuestId).Select(g => g.GuestNumber).FirstOrDefault(),
                 u.SuicidalIdeation, u.SelfHarm, u.RiskToOthers, u.SevereDeterioration,
-                u.SafeguardingConcern, u.AssignedCmhwName, u.EscalatedAt))
+                u.SafeguardingConcern, u.AssignedCmhwName, u.EscalatedAt, u.OtherRisk, u.OtherRiskDetails))
             .ToListAsync(cancellationToken);
 
     public async Task<UrgentEpisodeDto?> GetOpenEpisodeAsync(Guid guestId, CancellationToken cancellationToken = default) =>
-        await db.UrgentEpisodes.AsNoTracking()
-            .Where(e => e.GuestId == guestId && e.ResolvedAt == null)
-            .OrderByDescending(e => e.RaisedAt)
-            .Select(e => new UrgentEpisodeDto(
-                e.Id, e.GuestId,
-                db.Guests.Where(g => g.Id == e.GuestId).Select(g => g.FirstName + " " + g.LastName).FirstOrDefault() ?? "Unknown",
-                db.Guests.Where(g => g.Id == e.GuestId).Select(g => g.GuestNumber).FirstOrDefault(),
-                e.RaisedAt,
-                e.EscalatedToCmhtAt,
-                db.Users.Where(u => u.Id == e.EscalatedToCmhtByStaffId).Select(u => u.DisplayName).FirstOrDefault(),
-                e.CmhtTeam, e.EscalationReason, e.EscalationUrgency, e.EscalationNotes,
-                e.ResolvedAt,
-                db.Users.Where(u => u.Id == e.ResolvedByStaffId).Select(u => u.DisplayName).FirstOrDefault(),
-                e.ResolutionNote))
+        await ProjectEpisodes(db.UrgentEpisodes.AsNoTracking().Where(e => e.GuestId == guestId && e.ResolvedAt == null).OrderByDescending(e => e.RaisedAt))
             .FirstOrDefaultAsync(cancellationToken);
 
     public async Task<IReadOnlyList<UrgentEpisodeDto>> GetResolvedEpisodesAsync(Guid hubId, CancellationToken cancellationToken = default) =>
-        await db.UrgentEpisodes.AsNoTracking()
-            .Where(e => e.ResolvedAt != null && db.Guests.Any(g => g.Id == e.GuestId && g.HubId == hubId))
-            .OrderByDescending(e => e.ResolvedAt)
-            .Take(100)
-            .Select(e => new UrgentEpisodeDto(
-                e.Id, e.GuestId,
-                db.Guests.Where(g => g.Id == e.GuestId).Select(g => g.FirstName + " " + g.LastName).FirstOrDefault() ?? "Unknown",
-                db.Guests.Where(g => g.Id == e.GuestId).Select(g => g.GuestNumber).FirstOrDefault(),
-                e.RaisedAt,
-                e.EscalatedToCmhtAt,
-                db.Users.Where(u => u.Id == e.EscalatedToCmhtByStaffId).Select(u => u.DisplayName).FirstOrDefault(),
-                e.CmhtTeam, e.EscalationReason, e.EscalationUrgency, e.EscalationNotes,
-                e.ResolvedAt,
-                db.Users.Where(u => u.Id == e.ResolvedByStaffId).Select(u => u.DisplayName).FirstOrDefault(),
-                e.ResolutionNote))
+        await ProjectEpisodes(db.UrgentEpisodes.AsNoTracking()
+                .Where(e => e.ResolvedAt != null && db.Guests.Any(g => g.Id == e.GuestId && g.HubId == hubId))
+                .OrderByDescending(e => e.ResolvedAt)
+                .Take(100))
             .ToListAsync(cancellationToken);
+
+    private IQueryable<UrgentEpisodeDto> ProjectEpisodes(IQueryable<UrgentEpisode> episodes) =>
+        episodes.Select(e => new UrgentEpisodeDto(
+            e.Id, e.GuestId,
+            db.Guests.Where(g => g.Id == e.GuestId).Select(g => g.FirstName + " " + g.LastName).FirstOrDefault() ?? "Unknown",
+            db.Guests.Where(g => g.Id == e.GuestId).Select(g => g.GuestNumber).FirstOrDefault(),
+            e.RaisedAt,
+            e.CmhtNotified, e.CmhtTeam,
+            e.ResolvedAt,
+            db.Users.Where(u => u.Id == e.ResolvedByStaffId).Select(u => u.DisplayName).FirstOrDefault(),
+            e.ResolutionNote, e.ExternalServicesInvolved, e.InpatientAdmission));
 
     public async Task<IReadOnlyList<UrgentEpisodeSummaryDto>> GetEpisodesForGuestAsync(Guid hubId, Guid guestId, CancellationToken cancellationToken = default)
     {
@@ -93,7 +80,7 @@ public sealed class UrgentCaseReadService(EmhipDbContext db) : IUrgentCaseReadSe
         var windowStart = episode.RaisedAt.AddMinutes(-1);
         var windowEnd = (episode.ResolvedAt ?? now).AddMinutes(1);
 
-        // ---- Intake: the risk assessment that opened the episode ----
+        // ---- The risk assessment that raised the case ("Risk identified" + "Urgent case notes") ----
         var intake = episode.RiskAssessmentId is not null
             ? await db.RiskAssessments.AsNoTracking().FirstOrDefaultAsync(r => r.Id == episode.RiskAssessmentId, cancellationToken)
             : null;
@@ -102,59 +89,53 @@ public sealed class UrgentCaseReadService(EmhipDbContext db) : IUrgentCaseReadSe
             .OrderByDescending(r => r.AssessedAt)
             .FirstOrDefaultAsync(cancellationToken);
 
-        // ---- Pathway history, to reconstruct "pathway at flag / after resolution" for older episodes ----
-        var pathwayChanges = await db.PathwayChanges.AsNoTracking()
-            .Where(p => p.GuestId == guest.Id)
-            .OrderBy(p => p.CreatedAt)
-            .Select(p => new { p.FromPathway, p.ToPathway, p.Reason, p.CreatedAt, p.RecordedByStaffId })
+        // Raising again while the case is open adds a risk assessment to the same case. The
+        // initial conversation's automatic assessment is left out once registration's fuller
+        // one has replaced it as the opening record.
+        Guid? intakeId = intake?.Id;
+        const string automaticNote = Emhip.Application.Guests.Commands.RecordInitialConversationCommandHandler.ImmediateRiskNote;
+        var furtherRisks = await db.RiskAssessments.AsNoTracking()
+            .Where(r => r.GuestId == guest.Id && r.AssessedAt >= windowStart && r.AssessedAt <= windowEnd
+                && r.Id != intakeId
+                && !(r.Notes != null && r.Notes.StartsWith(automaticNote))
+                && (r.SuicidalIdeation || r.SelfHarm || r.RiskToOthers || r.SevereDeterioration || r.SafeguardingConcern || r.OtherRisk))
+            .OrderBy(r => r.AssessedAt)
             .ToListAsync(cancellationToken);
 
-        GuestPathway? PathwayAt(DateTimeOffset at)
+        // Older cases did not snapshot the pathway; reconstruct it from the pathway history.
+        GuestPathway? pathwayAtFlag = episode.PathwayAtFlag;
+        if (pathwayAtFlag is null)
         {
-            var before = pathwayChanges.LastOrDefault(p => p.CreatedAt <= at);
-            if (before is not null) return before.ToPathway;
-            var after = pathwayChanges.FirstOrDefault(p => p.CreatedAt > at);
-            return after is not null ? after.FromPathway : guest.Pathway;
+            var changes = await db.PathwayChanges.AsNoTracking()
+                .Where(p => p.GuestId == guest.Id)
+                .OrderBy(p => p.CreatedAt)
+                .Select(p => new { p.FromPathway, p.ToPathway, p.CreatedAt })
+                .ToListAsync(cancellationToken);
+            var before = changes.LastOrDefault(p => p.CreatedAt <= episode.RaisedAt);
+            var after = changes.FirstOrDefault(p => p.CreatedAt > episode.RaisedAt);
+            pathwayAtFlag = before?.ToPathway ?? after?.FromPathway ?? guest.Pathway;
         }
 
-        var pathwayAtFlag = episode.PathwayAtFlag ?? PathwayAt(episode.RaisedAt);
-        var pathwayAfter = episode.IsResolved ? episode.PathwayAfterResolution ?? PathwayAt(episode.ResolvedAt!.Value) : null;
-
-        // ---- Activity inside the window ----
+        // ---- "Contacts logged since flag", with the contact type the worker chose on Add Contact ----
         var contacts = await db.Contacts.AsNoTracking()
             .Where(c => c.GuestId == guest.Id && c.OccurredAt >= windowStart && c.OccurredAt <= windowEnd)
             .OrderBy(c => c.OccurredAt)
             .Select(c => new
             {
-                c.Id, c.Type, c.Outcome, c.OccurredAt, c.Notes, c.CreatedAt,
+                c.Id, c.Type, c.OccurredAt,
                 Author = db.Users.Where(u => u.Id == c.CreatedByStaffId).Select(u => u.DisplayName).FirstOrDefault(),
-                Assessment = db.CaseworkNotes.Where(n => n.ContactId == c.Id).Select(n => n.Assessment).FirstOrDefault(),
-                Recommendation = db.CaseworkNotes.Where(n => n.ContactId == c.Id).Select(n => n.Recommendation).FirstOrDefault(),
+                Category = db.CaseworkNotes.Where(n => n.ContactId == c.Id).Select(n => n.Category).FirstOrDefault(),
+                IsCpn = db.CaseworkNotes.Any(n => n.ContactId == c.Id && n.IsCpnContact),
             })
             .ToListAsync(cancellationToken);
-
-        var crisisNotes = await db.Notes.AsNoTracking()
-            .Where(n => n.GuestId == guest.Id && n.IsPinned && n.CreatedAt >= windowStart && n.CreatedAt <= windowEnd)
-            .OrderBy(n => n.CreatedAt)
-            .Select(n => new { n.Body, n.CreatedAt, Author = db.Users.Where(u => u.Id == n.AuthorStaffId).Select(u => u.DisplayName).FirstOrDefault() })
-            .ToListAsync(cancellationToken);
-
-        var completedFollowUps = await db.FollowUps.AsNoTracking()
-            .Where(f => f.GuestId == guest.Id && f.CompletedAt != null && f.CompletedAt >= windowStart && f.CompletedAt <= windowEnd)
-            .OrderBy(f => f.CompletedAt)
-            .Select(f => new { f.DueDate, f.Notes, f.CompletedAt, Assignee = db.Users.Where(u => u.Id == f.AssigneeStaffId).Select(u => u.DisplayName).FirstOrDefault() })
-            .ToListAsync(cancellationToken);
-
-        var accessCount = await db.AuditEvents.AsNoTracking()
-            .CountAsync(a => a.GuestId == guest.Id && a.Action == AuditAction.Read && a.OccurredAt >= windowStart, cancellationToken);
 
         // ---- Staff names in one round trip ----
         var staffIds = new[]
             {
-                episode.RaisedByStaffId, episode.EscalatedToCmhtByStaffId, episode.ResolvedByStaffId,
-                episode.AssignedCmhwIdAtFlag, episode.CmhwAfterResolutionStaffId, guest.AssignedCmhwId,
-                intake?.AssessedByStaffId,
+                episode.RaisedByStaffId, episode.CmhtRecordedByStaffId, episode.ResolvedByStaffId,
+                episode.AssignedCmhwIdAtFlag, guest.AssignedCmhwId, intake?.AssessedByStaffId,
             }
+            .Concat(furtherRisks.Select(r => (Guid?)r.AssessedByStaffId))
             .Where(id => id.HasValue).Select(id => id!.Value).Distinct().ToList();
         var names = await db.Users.AsNoTracking()
             .Where(u => staffIds.Contains(u.Id))
@@ -164,93 +145,69 @@ public sealed class UrgentCaseReadService(EmhipDbContext db) : IUrgentCaseReadSe
 
         var raisedByName = Name(episode.RaisedByStaffId) ?? Name(intake?.AssessedByStaffId);
         var assignedCmhwName = Name(episode.AssignedCmhwIdAtFlag) ?? Name(guest.AssignedCmhwId);
-
-        // ---- Timeline ----
         var flags = intake is null ? [] : RiskFlagLabels(intake);
-        var timeline = new List<UrgentEpisodeTimelineEntryDto>
+
+        var cmht = episode.CmhtNotified is { } notified
+            ? new UrgentCaseCmhtContactDto(
+                notified, episode.CmhtTeam, episode.CmhtContactName, episode.CmhtCalledAt, episode.CmhtCallNotes,
+                Name(episode.CmhtRecordedByStaffId), episode.CmhtRecordedAt)
+            : null;
+
+        var contactRows = contacts
+            .Select(c => new UrgentCaseContactDto(c.Id, c.OccurredAt, c.Category?.ToString(), c.IsCpn, Pretty(c.Type.ToString()), c.Author))
+            .ToList();
+
+        // ---- System audit trail: flag raised, contacts logged, CMHT notified, case resolved (oldest first) ----
+        var audit = new List<UrgentCaseAuditEntryDto>
         {
-            new("flag", "Urgent flag raised",
-                flags.Count > 0
-                    ? $"Risk identified — {string.Join(", ", flags)}. {responseHours}-hour contact window opened."
-                    : $"{responseHours}-hour contact window opened.",
-                intake?.Notes, episode.RaisedAt, raisedByName),
+            new("raised", "Urgent case raised", raisedByName, episode.RaisedAt, flags.Count > 0 ? string.Join(", ", flags) : null),
         };
-        timeline.AddRange(crisisNotes.Select(n => new UrgentEpisodeTimelineEntryDto("note", "Crisis note added", n.Body, null, n.CreatedAt, n.Author)));
-        if (episode.EscalatedToCmhtAt is { } escalatedAt)
+        audit.AddRange(furtherRisks.Select(r => new UrgentCaseAuditEntryDto(
+            "risk", "Further risk recorded", Name(r.AssessedByStaffId), r.AssessedAt,
+            string.Join(" — ", new[] { string.Join(", ", RiskFlagLabels(r)), r.Notes }.Where(v => !string.IsNullOrWhiteSpace(v))))));
+        audit.AddRange(contactRows.Select(c => new UrgentCaseAuditEntryDto(
+            "contact", "Contact logged", c.RecordedByName, c.OccurredAt, $"{UrgentEpisodeRecordText.ContactLabel(c)} · {c.Method}")));
+        if (cmht is not null && episode.CmhtRecordedAt is { } recordedAt)
         {
-            timeline.Add(new("escalation", "Escalated to CMHT",
-                $"{episode.CmhtTeam ?? "CMHT"}{(episode.EscalationReason is null ? "" : $" — {episode.EscalationReason}")}{(episode.EscalationUrgency is null ? "" : $" ({episode.EscalationUrgency})")}",
-                episode.EscalationNotes, escalatedAt, Name(episode.EscalatedToCmhtByStaffId)));
+            audit.Add(cmht.Notified
+                ? new("cmht", "CMHT notified", cmht.CalledByName, recordedAt,
+                    string.Join(" · ", new[]
+                    {
+                        cmht.ContactName is null ? null : $"Spoke to {cmht.ContactName}",
+                        cmht.Team,
+                        cmht.CalledAt is null ? null : $"call {cmht.CalledAt:dd MMM yyyy HH:mm}",
+                    }.Where(v => v is not null)))
+                : new("cmht", "CMHT not notified", cmht.CalledByName, recordedAt, null));
         }
-        timeline.AddRange(contacts.Select(c => new UrgentEpisodeTimelineEntryDto(
-            "contact", "Contact logged",
-            $"{Pretty(c.Type.ToString())} — {Pretty(c.Outcome.ToString())}",
-            FirstNonBlank(c.Assessment, c.Notes, c.Recommendation), c.OccurredAt, c.Author)));
-        timeline.AddRange(completedFollowUps.Select(f => new UrgentEpisodeTimelineEntryDto(
-            "followup", "Scheduled contact completed", $"Due {f.DueDate:dd MMM yyyy}", f.Notes, f.CompletedAt!.Value, f.Assignee)));
-        timeline.AddRange(pathwayChanges
-            .Where(p => p.CreatedAt >= windowStart && p.CreatedAt <= windowEnd)
-            .Select(p => new UrgentEpisodeTimelineEntryDto(
-                "pathway", "Pathway changed", $"{PathwayLabel(p.FromPathway)} → {PathwayLabel(p.ToPathway)}", p.Reason, p.CreatedAt, Name(p.RecordedByStaffId))));
         if (episode.ResolvedAt is { } resolvedAt)
         {
-            timeline.Add(new("resolved", "Episode resolved — flag closed",
-                episode.ResolutionNote ?? "Resolution note not recorded.",
-                pathwayAfter is null ? null : $"Guest continues on the {PathwayLabel(pathwayAfter)} pathway.",
-                resolvedAt, Name(episode.ResolvedByStaffId)));
+            audit.Add(new("resolved", "Urgent case resolved", Name(episode.ResolvedByStaffId), resolvedAt, null));
         }
-        timeline = timeline.OrderBy(t => t.OccurredAt).ToList();
-
-        // ---- System audit trail (newest first, as in the design) ----
-        var audit = new List<UrgentEpisodeAuditEntryDto>();
-        if (episode.ResolvedAt is { } ra)
-        {
-            audit.Add(new("green", "Episode resolved and locked", $"{ra:dd MMM yyyy · HH:mm}{Suffix(Name(episode.ResolvedByStaffId))}", ra));
-        }
-        if (contacts.Count > 0)
-        {
-            var first = contacts[0].OccurredAt;
-            var last = contacts[^1].OccurredAt;
-            audit.Add(new("blue", $"{contacts.Count} contact{(contacts.Count == 1 ? "" : "s")} logged",
-                contacts.Count == 1 ? $"{first:dd MMM yyyy · HH:mm}{Suffix(contacts[0].Author)}" : $"{first:dd MMM · HH:mm} & {last:dd MMM · HH:mm}", last));
-        }
-        if (episode.EscalatedToCmhtAt is { } ea)
-        {
-            audit.Add(new("blue", "CMHT notified", $"{ea:dd MMM yyyy · HH:mm}{Suffix(Name(episode.EscalatedToCmhtByStaffId))}", ea));
-        }
-        if (accessCount > 0)
-        {
-            audit.Add(new("grey", $"Record accessed {accessCount} time{(accessCount == 1 ? "" : "s")}", "Every view is written to the access log", now));
-        }
-        audit.Add(new("red", "Urgent flag raised", $"{episode.RaisedAt:dd MMM yyyy · HH:mm}{Suffix(raisedByName)}", episode.RaisedAt));
-        audit = audit.OrderByDescending(a => a.OccurredAt).ToList();
-
-        var durationMinutes = (long)((episode.ResolvedAt ?? now) - episode.RaisedAt).TotalMinutes;
+        audit = audit.OrderBy(a => a.OccurredAt).ToList();
 
         return new UrgentEpisodeRecordDto(
             episode.Id, guest.Id, guest.Name, guest.GuestNumber, episodeNumber, allEpisodes, responseHours,
-            episode.RaisedAt, episode.DeadlineAt(responseHours), raisedByName, pathwayAtFlag, assignedCmhwName,
-            episode.EscalatedToCmhtAt, Name(episode.EscalatedToCmhtByStaffId), episode.CmhtTeam,
-            episode.EscalationReason, episode.EscalationUrgency, episode.EscalationNotes,
-            episode.IsResolved, episode.ResolvedAt, Name(episode.ResolvedByStaffId), episode.ResolvedWithinWindow(responseHours), episode.ResolutionNote,
-            pathwayAfter, Name(episode.CmhwAfterResolutionStaffId), episode.NextContactDate, episode.SessionFrequencyChange, episode.InpatientAdmission,
-            contacts.Count, Math.Max(0, durationMinutes), accessCount,
-            new UrgentEpisodeIntakeDto(intake?.Id, flags, intake?.Notes, intake?.AssessedAt, Name(intake?.AssessedByStaffId)),
-            timeline, audit);
+            assignedCmhwName, pathwayAtFlag,
+            episode.RaisedAt, episode.DeadlineAt(responseHours), episode.IsResolved,
+            raisedByName, flags, intake?.Notes,
+            cmht, contactRows,
+            episode.ResolvedAt, Name(episode.ResolvedByStaffId), episode.ResolvedWithinWindow(responseHours),
+            episode.InpatientAdmission, episode.ExternalServicesInvolved, episode.ResolutionNote,
+            audit);
     }
 
     private static List<string> RiskFlagLabels(RiskAssessment r)
     {
-        var list = new List<string>(5);
-        if (r.SuicidalIdeation) list.Add("Suicidal ideation");
-        if (r.SelfHarm) list.Add("Self harm");
-        if (r.RiskToOthers) list.Add("Risk to others");
-        if (r.SevereDeterioration) list.Add("Severe deterioration");
-        if (r.SafeguardingConcern) list.Add("Safeguarding concern");
+        // Same labels as the Raise Urgent Case form and the Urgent Cases list.
+        var list = new List<string>(6);
+        if (r.SuicidalIdeation) list.Add("Suicidal Ideation");
+        if (r.SelfHarm) list.Add("Self Harm");
+        if (r.RiskToOthers) list.Add("Risk to Others");
+        if (r.SevereDeterioration) list.Add("Severe Deterioration");
+        if (r.SafeguardingConcern) list.Add("Safeguarding Concern");
+        if (r.OtherRisk) list.Add(string.IsNullOrWhiteSpace(r.OtherRiskDetails) ? "Other" : $"Other: {r.OtherRiskDetails}");
         return list;
     }
-
-    private static string PathwayLabel(GuestPathway? p) => Emhip.Application.Guests.GuestPathwayLabels.For(p);
 
     /// <summary>"PhoneCall" → "Phone call".</summary>
     private static string Pretty(string value)
@@ -259,7 +216,4 @@ public sealed class UrgentCaseReadService(EmhipDbContext db) : IUrgentCaseReadSe
         return spaced.Length > 1 ? spaced[0] + spaced[1..].ToLowerInvariant() : spaced;
     }
 
-    private static string? FirstNonBlank(params string?[] values) => values.FirstOrDefault(v => !string.IsNullOrWhiteSpace(v));
-
-    private static string Suffix(string? name) => string.IsNullOrWhiteSpace(name) ? string.Empty : $" · {name}";
 }

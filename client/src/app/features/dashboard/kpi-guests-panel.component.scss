@@ -128,7 +128,8 @@
 
 // The shared staff picker brings its own control chrome; it only needs the chip footprint.
 .drill-picker {
-  width: 163px;
+  min-width: 163px;
+  max-width: 320px;
   flex-shrink: 0;
 }
 

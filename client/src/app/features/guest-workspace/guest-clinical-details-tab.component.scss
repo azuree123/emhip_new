@@ -63,6 +63,15 @@
       color: t.$color-text-meta;
     }
   }
+
+  // When the urgent case was raised, under the read-only "Immediate risk flag".
+  &__hint {
+    margin: 0;
+    font-family: t.$font-primary;
+    font-size: 12px;
+    line-height: 18px;
+    color: t.$color-text-meta;
+  }
 }
 
 .card-divider {
@@ -112,26 +121,6 @@
   }
 }
 
-.risk-form {
-  margin-bottom: 20px;
-}
-
-.risk-flags {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
-}
-
-.risk-flag {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-family: t.$font-primary;
-  font-weight: 500;
-  font-size: 14px;
-  color: t.$color-text-primary;
-}
-
 @media (max-width: 960px) {
   .columns {
     grid-template-columns: 1fr;
@@ -139,8 +128,7 @@
 }
 
 @media (max-width: 640px) {
-  .detail-row,
-  .risk-flags {
+  .detail-row {
     grid-template-columns: 1fr;
   }
 }

@@ -7,21 +7,20 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Emhip.Application.UrgentCases;
 
+/// <summary>An urgent case in the resolved list (and the guest's open case, if any).</summary>
 public sealed record UrgentEpisodeDto(
     Guid Id,
     Guid GuestId,
     string GuestName,
     int GuestNumber,
     DateTimeOffset RaisedAt,
-    DateTimeOffset? EscalatedToCmhtAt,
-    string? EscalatedToCmhtByName,
+    bool? CmhtNotified,
     string? CmhtTeam,
-    string? EscalationReason,
-    string? EscalationUrgency,
-    string? EscalationNotes,
     DateTimeOffset? ResolvedAt,
     string? ResolvedByName,
-    string? ResolutionNote);
+    string? ResolutionNote,
+    string? ExternalServicesInvolved,
+    bool InpatientAdmission);
 
 /// <summary>The guest's currently open urgent episode (null when none, or the guest doesn't exist).</summary>
 public sealed record GetOpenUrgentEpisodeQuery(Guid GuestId) : IRequest<UrgentEpisodeDto?>;
@@ -41,30 +40,50 @@ public sealed class GetResolvedUrgentEpisodesQueryHandler(IUrgentCaseReadService
         reads.GetResolvedEpisodesAsync(request.HubId, cancellationToken);
 }
 
-/// <summary>Escalate the guest's open urgent episode to a CMHT (opens an episode if the flag pre-dates episode tracking).</summary>
-public sealed record EscalateToCmhtCommand(Guid GuestId, string CmhtTeam, string? Reason, string? Urgency, string? Notes) : IRequest;
+/// <summary>
+/// "CMHT or other NHS team notified" on the Urgent Case Record. EMHIP has no system link to the
+/// CMHT, so this is the staff member's own record of the call: whether they made one, who they
+/// spoke to, when, and what was said. "Called by" is always the logged-in user.
+/// </summary>
+public sealed record RecordCmhtContactCommand(
+    Guid HubId, Guid EpisodeId, bool Notified, string? Team, string? ContactName, DateTimeOffset? CalledAt, string? Notes) : IRequest;
 
-public sealed class EscalateToCmhtCommandValidator : AbstractValidator<EscalateToCmhtCommand>
+public sealed class RecordCmhtContactCommandValidator : AbstractValidator<RecordCmhtContactCommand>
 {
-    public EscalateToCmhtCommandValidator()
+    public RecordCmhtContactCommandValidator()
     {
-        RuleFor(x => x.GuestId).NotEmpty();
-        RuleFor(x => x.CmhtTeam).NotEmpty().MaximumLength(200);
-        RuleFor(x => x.Reason).MaximumLength(2000);
-        RuleFor(x => x.Urgency).MaximumLength(50);
+        RuleFor(x => x.EpisodeId).NotEmpty();
+        RuleFor(x => x.Team).MaximumLength(200);
+        RuleFor(x => x.ContactName).MaximumLength(200);
         RuleFor(x => x.Notes).MaximumLength(4000);
+        When(x => x.Notified, () =>
+        {
+            RuleFor(x => x.ContactName).NotEmpty().WithMessage("Enter the name of the person you spoke to.");
+            RuleFor(x => x.CalledAt).NotNull().WithMessage("Enter the date and time of the call.");
+            RuleFor(x => x.CalledAt)
+                .LessThanOrEqualTo(_ => DateTimeOffset.UtcNow.AddMinutes(5))
+                .When(x => x.CalledAt is not null)
+                .WithMessage("The call cannot be in the future.");
+        });
     }
 }
 
-public sealed class EscalateToCmhtCommandHandler(IAppDbContext db, ICurrentUser currentUser) : IRequestHandler<EscalateToCmhtCommand>
+public sealed class RecordCmhtContactCommandHandler(IAppDbContext db, ICurrentUser currentUser) : IRequestHandler<RecordCmhtContactCommand>
 {
-    public async Task Handle(EscalateToCmhtCommand request, CancellationToken cancellationToken)
+    public async Task Handle(RecordCmhtContactCommand request, CancellationToken cancellationToken)
     {
-        var episode = await GetOrOpenEpisodeAsync(db, request.GuestId, currentUser.StaffId, cancellationToken);
-        episode.EscalateToCmht(currentUser.StaffId, request.CmhtTeam, request.Reason, request.Urgency, request.Notes);
+        var episode = await db.UrgentEpisodes
+            .FirstOrDefaultAsync(e => e.Id == request.EpisodeId
+                && db.Guests.Any(g => g.Id == e.GuestId && g.HubId == request.HubId), cancellationToken)
+            ?? throw new KeyNotFoundException($"Urgent case {request.EpisodeId} not found.");
+
+        episode.RecordCmhtContact(currentUser.StaffId, request.Notified, request.Team, request.ContactName, request.CalledAt, request.Notes);
         await db.SaveChangesAsync(cancellationToken);
     }
+}
 
+internal static class UrgentEpisodeLookup
+{
     internal static async Task<UrgentEpisode> GetOrOpenEpisodeAsync(IAppDbContext db, Guid guestId, Guid staffId, CancellationToken cancellationToken)
     {
         var episode = await db.UrgentEpisodes
@@ -82,7 +101,7 @@ public sealed class EscalateToCmhtCommandHandler(IAppDbContext db, ICurrentUser 
         // Urgent flags raised before episode tracking existed have no episode row — open one now,
         // dated from the flag itself so the 72-hour window is still measured from the right moment.
         var intake = await db.RiskAssessments.AsNoTracking()
-            .Where(r => r.GuestId == guestId && (r.SuicidalIdeation || r.SelfHarm || r.RiskToOthers || r.SevereDeterioration || r.SafeguardingConcern))
+            .Where(r => r.GuestId == guestId && (r.SuicidalIdeation || r.SelfHarm || r.RiskToOthers || r.SevereDeterioration || r.SafeguardingConcern || r.OtherRisk))
             .OrderByDescending(r => r.AssessedAt)
             .Select(r => new { r.Id, r.AssessedByStaffId })
             .FirstOrDefaultAsync(cancellationToken);
@@ -96,10 +115,17 @@ public sealed class EscalateToCmhtCommandHandler(IAppDbContext db, ICurrentUser 
 }
 
 /// <summary>
-/// Resolve the guest's urgent episode: closes and locks it, returns the guest to their pre-crisis
-/// engagement status, and records the "Pathway re-entry decision" (design: Urgent Episode Record).
-/// A pathway change here is applied to the guest and appended to the pathway history; a next
-/// contact date is scheduled as a follow-up for the guest's CMHW.
+/// "Mark as resolved": closes and locks the guest's open urgent case and returns the guest to
+/// their pre-crisis engagement status. Resolved by / at come from the login and the clock; the
+/// Urgent Case Record spec (Oct 2026) asks only for inpatient admission and any other external
+/// service involved. The older pathway re-entry fields stay optional for API callers: a pathway
+/// change is applied to the guest and appended to the pathway history, and a next contact date is
+/// scheduled for the guest's CMHW.
+///
+/// The Urgent Case Record resolves by <see cref="EpisodeId"/> (scoped to <see cref="HubId"/>), so a
+/// record left open on a second screen gets "already resolved" instead of acting on another case.
+/// Without an episode id the guest's open case is resolved; a case row is only opened for a guest
+/// who is still urgent from before case tracking existed.
 /// </summary>
 public sealed record ResolveUrgentCaseCommand(
     Guid GuestId,
@@ -107,15 +133,19 @@ public sealed record ResolveUrgentCaseCommand(
     GuestPathway? PathwayAfterResolution = null,
     DateOnly? NextContactDate = null,
     string? SessionFrequencyChange = null,
-    bool InpatientAdmission = false) : IRequest;
+    bool InpatientAdmission = false,
+    string? ExternalServicesInvolved = null,
+    Guid? EpisodeId = null,
+    Guid? HubId = null) : IRequest;
 
 public sealed class ResolveUrgentCaseCommandValidator : AbstractValidator<ResolveUrgentCaseCommand>
 {
     public ResolveUrgentCaseCommandValidator()
     {
-        RuleFor(x => x.GuestId).NotEmpty();
+        RuleFor(x => x.GuestId).NotEmpty().When(x => x.EpisodeId is null);
         RuleFor(x => x.ResolutionNote).MaximumLength(4000);
         RuleFor(x => x.SessionFrequencyChange).MaximumLength(200);
+        RuleFor(x => x.ExternalServicesInvolved).MaximumLength(500);
         RuleFor(x => x.NextContactDate)
             .GreaterThanOrEqualTo(_ => DateOnly.FromDateTime(DateTime.UtcNow).AddDays(-1))
             .When(x => x.NextContactDate is not null)
@@ -127,28 +157,46 @@ public sealed class ResolveUrgentCaseCommandHandler(IAppDbContext db, ICurrentUs
 {
     public async Task Handle(ResolveUrgentCaseCommand request, CancellationToken cancellationToken)
     {
-        var guest = await db.Guests.FirstOrDefaultAsync(g => g.Id == request.GuestId, cancellationToken)
-            ?? throw new KeyNotFoundException($"Guest {request.GuestId} not found.");
+        UrgentEpisode episode;
+        Guest guest;
+        if (request.EpisodeId is { } episodeId)
+        {
+            var hubId = request.HubId ?? currentUser.HubId;
+            episode = await db.UrgentEpisodes
+                .FirstOrDefaultAsync(e => e.Id == episodeId && db.Guests.Any(g => g.Id == e.GuestId && g.HubId == hubId), cancellationToken)
+                ?? throw new KeyNotFoundException($"Urgent case {episodeId} not found.");
+            guest = await db.Guests.FirstAsync(g => g.Id == episode.GuestId, cancellationToken);
+        }
+        else
+        {
+            guest = await db.Guests.FirstOrDefaultAsync(g => g.Id == request.GuestId, cancellationToken)
+                ?? throw new KeyNotFoundException($"Guest {request.GuestId} not found.");
+            var open = await db.UrgentEpisodes.AnyAsync(e => e.GuestId == guest.Id && e.ResolvedAt == null, cancellationToken);
+            if (!open && !guest.IsUrgent)
+                throw new InvalidOperationException("This guest has no open urgent case — it may already have been resolved.");
+            episode = await UrgentEpisodeLookup.GetOrOpenEpisodeAsync(db, guest.Id, currentUser.StaffId, cancellationToken);
+        }
 
-        var episode = await EscalateToCmhtCommandHandler.GetOrOpenEpisodeAsync(db, request.GuestId, currentUser.StaffId, cancellationToken);
+        // Checked before anything else changes, so a second "Mark as resolved" leaves no trace.
+        if (episode.IsResolved) throw new InvalidOperationException("This urgent case has already been resolved.");
 
         if (request.PathwayAfterResolution is { } newPathway && guest.Pathway != newPathway)
         {
             var previous = guest.Pathway;
             guest.Allocate(newPathway, guest.AfaSupportNeeded);
             db.PathwayChanges.Add(new PathwayChange(
-                guest.Id, previous, newPathway, "Pathway re-entry decision on resolving the urgent episode",
+                guest.Id, previous, newPathway, "Pathway re-entry decision on resolving the urgent case",
                 currentUser.StaffId, null, DateOnly.FromDateTime(DateTime.UtcNow), currentUser.StaffId));
         }
 
         episode.Resolve(
             currentUser.StaffId, request.ResolutionNote,
             request.PathwayAfterResolution ?? guest.Pathway, guest.AssignedCmhwId,
-            request.NextContactDate, request.SessionFrequencyChange, request.InpatientAdmission);
+            request.NextContactDate, request.SessionFrequencyChange, request.InpatientAdmission, request.ExternalServicesInvolved);
 
         if (request.NextContactDate is { } due)
         {
-            db.FollowUps.Add(new FollowUp(guest.Id, due, guest.AssignedCmhwId ?? currentUser.StaffId, "Next contact agreed on resolving the urgent episode."));
+            db.FollowUps.Add(new FollowUp(guest.Id, due, guest.AssignedCmhwId ?? currentUser.StaffId, "Next contact agreed on resolving the urgent case."));
         }
 
         guest.ResolveUrgent();

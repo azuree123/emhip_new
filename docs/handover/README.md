@@ -1,6 +1,6 @@
 # EMHIP handover pack
 
-The complete handover documentation for EMHIP, issued 30 September 2026. Start with the Handover Overview. Each document is kept here as Markdown (the source, easy to update and review in pull requests), with Word copies in [word/](word/) and PDF copies in [pdf/](pdf/) to send or print.
+The complete handover documentation for EMHIP, issued 30 September 2026 and updated 7 October 2026 for the round 2 feedback. Start with the Handover Overview. Each document is kept here as Markdown (the source, easy to update and review in pull requests), with Word copies in [word/](word/) and PDF copies in [pdf/](pdf/) to send or print.
 
 | # | Document | For | Word | PDF |
 | --- | --- | --- | --- | --- |
@@ -11,6 +11,7 @@ The complete handover documentation for EMHIP, issued 30 September 2026. Start w
 | 05 | [Technical Handover](05-Technical-Handover.md) | Developers, IT | [docx](word/EMHIP-05-Technical-Handover.docx) | [pdf](pdf/EMHIP-05-Technical-Handover.pdf) |
 | 06 | [Deployment and Operations Runbook](06-Deployment-and-Operations-Runbook.md) | Whoever runs the server | [docx](word/EMHIP-06-Deployment-and-Operations-Runbook.docx) | [pdf](pdf/EMHIP-06-Deployment-and-Operations-Runbook.pdf) |
 | 07 | [Release Notes, 30 September 2026](07-Release-Notes-2026-09-30.md) | Project team, administrators | [docx](word/EMHIP-07-Release-Notes-2026-09-30.docx) | [pdf](pdf/EMHIP-07-Release-Notes-2026-09-30.pdf) |
+| 07b | [Release Notes, 7 October 2026](07b-Release-Notes-2026-10-07.md) | Project team, administrators, testers | [docx](word/EMHIP-07b-Release-Notes-2026-10-07.docx) | [pdf](pdf/EMHIP-07b-Release-Notes-2026-10-07.pdf) |
 | 08 | [Known Issues and Recommendations](08-Known-Issues-and-Recommendations.md) | Project team, developers | [docx](word/EMHIP-08-Known-Issues-and-Recommendations.docx) | [pdf](pdf/EMHIP-08-Known-Issues-and-Recommendations.pdf) |
 | 09 | [UK GDPR Compliance Register](../uk-gdpr-compliance.md) | Data protection lead | [docx](word/EMHIP-09-UK-GDPR-Compliance.docx) | [pdf](pdf/EMHIP-09-UK-GDPR-Compliance.pdf) |
 

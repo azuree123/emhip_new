@@ -184,6 +184,7 @@
               <label class="field">
                 <span class="field__label">Retain until</span>
                 <input type="date" class="input" [value]="draftRetainUntil()" (input)="onDraftRetainUntil($event)" [disabled]="saving()" />
+                <span class="field__hint">At least 8 years from upload (NHS minimum for mental health records).</span>
               </label>
             </div>
 

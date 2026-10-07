@@ -73,7 +73,7 @@
                   fill="currentColor"
                 />
               </svg>
-              Raise Urgent Flag
+              Raise Urgent Case
             </button>
           }
           @if (canErase) {
@@ -157,6 +157,8 @@
           <emhip-guest-clinical-details-tab
             [guestId]="guestId()"
             [reloadToken]="clinicalReloadToken()"
+            [isUrgent]="overview()?.isUrgent ?? false"
+            [urgentSince]="overview()?.urgentSince ?? null"
             (refresh)="reloadOverview()"
           />
         }
@@ -171,6 +173,14 @@
         }
         @case ('contacts') {
           <emhip-guest-contact-history-tab [guestId]="guestId()" />
+        }
+        @case ('casework') {
+          <app-guest-notes-tab
+            [guestId]="guestId()"
+            [guestName]="fullName()"
+            [caseworkOnly]="true"
+            (refresh)="reloadOverview()"
+          />
         }
         @case ('cpn') {
           <emhip-guest-cpn-record-tab [guestId]="guestId()" (addContact)="openNoteDrawer()" />
@@ -202,7 +212,7 @@
         tone="danger"
         reasonLabel="Reason (kept on the audit log, e.g. erasure request received 12 May, or retention period ended)"
         typedConfirmation="ANONYMISE"
-        warning="Resolve any open urgent episode first. Staff will no longer be able to find this guest."
+        warning="Resolve any open urgent case first. Staff will no longer be able to find this guest."
         [busy]="anonymising()"
         [error]="anonymiseError()"
         (confirmed)="confirmAnonymise($event)"

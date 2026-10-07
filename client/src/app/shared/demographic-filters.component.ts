@@ -59,6 +59,10 @@ export function demographicFilterCount(value: DemographicFilterValue): number {
 /** Load state of one admin-maintained lookup list backing a drawer dropdown. */
 type LookupState = 'loading' | 'ready' | 'empty' | 'error';
 
+/** Must match .filter-drawer's width in the stylesheet. */
+const PANEL_WIDTH = 280;
+const PANEL_GUTTER = 8;
+
 /**
  * The "Additional Filters" drawer from the Guest Report tab (Desktop66), lifted into a shared
  * control so the Guest page filters on the same demographics — ethnicity, age group, gender and
@@ -86,6 +90,12 @@ export class DemographicFiltersComponent {
 
   readonly ageBands = AGE_BANDS;
   readonly open = signal(false);
+  /**
+   * Which edge of the trigger the panel lines up with. 'end' (the default) grows the panel to the
+   * left; when the filter row wraps and the trigger sits near the left of the page, that pushes it
+   * under the side navigation, where the content area clips it — so it opens to the right instead.
+   */
+  readonly align = signal<'start' | 'end'>('end');
 
   readonly draftEthnicity = signal('');
   readonly draftAgeBand = signal('');
@@ -128,6 +138,7 @@ export class DemographicFiltersComponent {
     this.draftAgeBand.set(v.ageBand);
     this.draftGender.set(v.gender);
     this.draftCountryOfOrigin.set(v.countryOfOrigin);
+    this.align.set(this.pickAlignment());
     this.open.set(true);
     // The app runs zoneless, so wait for the render that adds the panel before focusing it.
     afterNextRender(() => this.drawerPanel()?.nativeElement.querySelector('select')?.focus(), {
@@ -137,6 +148,30 @@ export class DemographicFiltersComponent {
 
   close(): void {
     this.open.set(false);
+  }
+
+  /** Anchor on the side with room for the whole panel inside the nearest clipping container. */
+  private pickAlignment(): 'start' | 'end' {
+    const trigger = this.host.nativeElement.querySelector<HTMLElement>('.filter-menu__trigger');
+    if (!trigger) return 'end';
+    const t = trigger.getBoundingClientRect();
+    const bounds = this.clippingBounds(trigger);
+    const roomLeft = t.right - bounds.left;
+    const roomRight = bounds.right - t.left;
+    if (roomLeft >= PANEL_WIDTH + PANEL_GUTTER) return 'end';
+    return roomRight >= roomLeft ? 'start' : 'end';
+  }
+
+  /** The closest ancestor that clips overflow (the page's scrolling content area), else the viewport. */
+  private clippingBounds(from: HTMLElement): { left: number; right: number } {
+    for (let el = from.parentElement; el && el !== document.body; el = el.parentElement) {
+      const style = getComputedStyle(el);
+      if (style.overflowX !== 'visible' || style.overflow !== 'visible') {
+        const r = el.getBoundingClientRect();
+        return { left: r.left, right: r.right };
+      }
+    }
+    return { left: 0, right: window.innerWidth };
   }
 
   onDraftChange(key: DemographicFilterKey, event: Event): void {

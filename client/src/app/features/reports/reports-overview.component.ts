@@ -208,7 +208,7 @@ export class ReportsOverviewComponent {
       },
       { label: 'Total contacts recorded', value: a.contactsRecorded, link: null },
       { label: 'Scheduled contacts due', value: a.followUpEntries, link: null },
-      { label: 'Urgent flags raised', value: a.urgentFlagsRaised, link: null },
+      { label: 'Urgent cases raised', value: a.urgentFlagsRaised, link: null },
     ];
   });
 

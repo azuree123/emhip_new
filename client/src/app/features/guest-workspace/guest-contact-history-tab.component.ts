@@ -1,12 +1,25 @@
 import { Component, computed, effect, inject, input, signal } from '@angular/core';
-import { GuestContactSummaryDto } from '../../core/api-models';
+import { CaseworkNoteCategory, GuestContactSummaryDto } from '../../core/api-models';
 import { GuestsApiService } from '../../core/guests-api.service';
 import { formatDateTime, humanize } from './guest-workspace.util';
 
 const PAGE_SIZE = 25;
 
+/** Display names for the contact types offered on Add Contact. */
+const CATEGORY_LABELS: Record<CaseworkNoteCategory, string> = {
+  Casework: 'Casework',
+  Activity: 'Activity',
+  Meeting: 'Meeting',
+  DailyLog: 'Daily Log',
+  Hospitality: 'Hospitality',
+  Afa: 'AFA',
+};
+
 /**
- * Contact History tab — every contact recorded against the guest, newest first.
+ * Contact History tab — every contact recorded against the guest, newest first. Each row leads
+ * with the type of contact the worker chose on Add Contact (Casework, Activity, Hospitality, AFA,
+ * or a CPN contact), with how they made contact (phone call, text, …) as the smaller detail.
+ * Contacts not written through a casework note (e.g. older imports) just read "Contact".
  *
  * The endpoint is keyset-paged (GET /guests/{id}/contacts), so the list grows by handing the
  * opaque `nextCursor` straight back to the API rather than by page number. `totalCount` only
@@ -44,6 +57,11 @@ export class GuestContactHistoryTabComponent {
   });
 
   readonly humanize = humanize;
+
+  typeLabel(contact: GuestContactSummaryDto): string {
+    if (contact.isCpnContact) return 'CPN contact';
+    return contact.category ? (CATEGORY_LABELS[contact.category] ?? humanize(contact.category)) : 'Contact';
+  }
   readonly formatDateTime = formatDateTime;
 
   constructor() {

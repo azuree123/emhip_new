@@ -154,7 +154,10 @@
       <label class="field">
         <span class="field__label">Retain until <span class="field__optional">(optional)</span></span>
         <input type="date" class="input" [value]="retainUntil()" (input)="onRetainUntil($event)" [disabled]="formLocked()" />
-        <span class="field__hint">Leave blank to use the hub's default retention period.</span>
+        <span class="field__hint">
+          Leave blank to use the hub's default. Documents are kept for at least 8 years from upload — the NHS
+          minimum for mental health records — and cannot be permanently deleted before then.
+        </span>
       </label>
 
       @if (guestFixed()) {

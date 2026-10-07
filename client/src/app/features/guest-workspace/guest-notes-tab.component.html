@@ -7,7 +7,7 @@
     <!-- Casework notes — the SBAR clinical record written by the "Add contact" drawer. -->
     <section class="card">
       <div class="card__header-row">
-        <h2 class="card__title">Casework notes</h2>
+        <h2 class="card__title">{{ caseworkOnly() ? 'Casework Notes' : 'Casework notes' }}</h2>
         @if (canAdd) {
           <button type="button" class="add-btn" (click)="openDrawer()">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
@@ -33,7 +33,7 @@
           </p>
         }
 
-        @if (caseworkNotes(); as notes) {
+        @if (visibleNotes(); as notes) {
           @if (notes.length) {
             <ul class="note-list">
               @for (note of notes; track note.id) {
@@ -249,7 +249,7 @@
             </ul>
           } @else {
             <p class="empty-state">
-              No casework notes yet.
+              {{ caseworkOnly() ? 'No casework entries yet.' : 'No casework notes yet.' }}
               @if (canAdd) {
                 Use “Add casework note” to record the first SBAR note for this guest.
               }
@@ -260,6 +260,7 @@
     </section>
 
     <!-- Quick notes — the sticky-note store; pinned ones surface on the Overview tab. -->
+    @if (!caseworkOnly()) {
     <section class="card">
       <h2 class="card__title card__title--spaced">Quick notes</h2>
 
@@ -335,6 +336,7 @@
         }
       }
     </section>
+    }
   </div>
 
   @if (drawerOpen()) {

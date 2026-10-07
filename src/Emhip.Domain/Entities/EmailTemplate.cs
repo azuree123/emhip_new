@@ -37,6 +37,29 @@ public class EmailTemplate : Entity
         UpdatedAt = DateTimeOffset.UtcNow;
     }
 
+    /// <summary>True once an admin has saved the template in the Settings editor.</summary>
+    public bool IsCustomised => UpdatedByStaffId is not null;
+
+    /// <summary>
+    /// Brings the catalog's current wording onto the row. The name is not admin-editable, so it
+    /// always follows the catalog; subject and body only while nobody has customised them.
+    /// Returns whether anything changed.
+    /// </summary>
+    public bool ApplyCatalogDefaults(string name, string subject, string htmlBody)
+    {
+        var changed = Name != name;
+        Name = name;
+        if (!IsCustomised && (Subject != subject || HtmlBody != htmlBody))
+        {
+            Subject = subject;
+            HtmlBody = htmlBody;
+            TextBody = null;
+            changed = true;
+        }
+        if (changed) UpdatedAt = DateTimeOffset.UtcNow;
+        return changed;
+    }
+
     public void Update(string subject, string htmlBody, string? textBody, bool isEnabled, Guid? updatedByStaffId)
     {
         Subject = subject;

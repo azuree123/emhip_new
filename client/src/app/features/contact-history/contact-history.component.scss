@@ -197,9 +197,11 @@ $pager-font-stack: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
   }
 }
 
+// Grows past the design's 163px so a selected worker's full name is never cut off.
 .filter-picker {
   flex-shrink: 0;
-  width: 163px;
+  min-width: 163px;
+  max-width: 320px;
 }
 
 // ---- Stat tiles (design: 277x114 r12 white, 10/600 uppercase label, 32/600 value) ----
@@ -408,14 +410,13 @@ $pager-font-stack: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
     text-overflow: ellipsis;
   }
 
+  // "G-n · Pathway · CMHW: Name" wraps rather than cutting the worker's name off.
   &__sub {
     font-weight: 500;
     font-size: 12px;
     line-height: 18px;
     color: rgb(140, 140, 140);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    overflow-wrap: anywhere;
   }
 
   &__counts {

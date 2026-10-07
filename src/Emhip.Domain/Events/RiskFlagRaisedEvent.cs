@@ -15,4 +15,7 @@ public sealed record RiskFlagRaisedEvent(
     bool RiskToOthers,
     bool SevereDeterioration,
     bool SafeguardingConcern,
-    DateTimeOffset OccurredAt) : IDomainEvent;
+    DateTimeOffset OccurredAt,
+    // Appended with defaults so outbox rows written before "Other" existed still deserialise.
+    bool OtherRisk = false,
+    string? OtherRiskDetails = null) : IDomainEvent;

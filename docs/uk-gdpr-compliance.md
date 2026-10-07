@@ -24,9 +24,9 @@ outstanding · **Organisational** = policy/contract/process, outside the code.
 
 | Right | Control in EMHIP | Status |
 |---|---|---|
-| Access (Art. 15) | `GET /guests/{id}/export` builds the complete record (all tabs, documents metadata, urgent episodes, access log) as JSON; "Export Record" in the workspace; logged as a disclosure and in export history. | Implemented |
+| Access (Art. 15) | `GET /guests/{id}/export` builds the complete record (all tabs, documents metadata, urgent cases, access log) as JSON; "Export Record" in the workspace; logged as a disclosure and in export history. | Implemented |
 | Rectification (Art. 16) | Demographics / contact details editable; clinical corrections are new versions, never overwrites. | Implemented |
-| Erasure (Art. 17) | "Anonymise record": strips name, DOB (year kept), contact details, address, NHS number, GP and emergency-contact details; retires documents to the recycle bin; hides the record; reason kept on the audit log; blocked while an urgent episode is open. Health records that must be retained are anonymised rather than destroyed. | Implemented |
+| Erasure (Art. 17) | "Anonymise record": strips name, DOB (year kept), contact details, address, NHS number, GP and emergency-contact details; retires documents to the recycle bin; hides the record; reason kept on the audit log; blocked while an urgent case is open. Health records that must be retained are anonymised rather than destroyed. | Implemented |
 | Restriction (Art. 18) | No dedicated "restrict processing" flag, and status cannot be set by hand — record the request as a pinned note on the guest so every user sees it, and stop further processing by agreement. A guest with no activity becomes Inactive automatically after the inactivity threshold (90 days by default). | Organisational |
 | Portability (Art. 20) | The Art. 15 export is machine-readable JSON. | Implemented |
 | Objection (Art. 21) / Automated decisions (Art. 22) | No automated decision-making: the escalation worker only surfaces flags a clinician raised; humans decide. Objections handled by process. | Organisational |
@@ -51,7 +51,7 @@ outstanding · **Organisational** = policy/contract/process, outside the code.
 |---|---|---|---|
 | Guest | Name, DOB, gender, phone, email, address, postcode, consent, status, pathway | Personal | `compliance.recordRetentionYears` (20 y) then anonymise |
 | Guest demographics | Ethnicity, nationality, language, housing, employment, marital status, country of origin, emergency contact, GP, NHS number | Special category (ethnicity, health context) | As guest |
-| Clinical record | Risk assessments, casework (SBAR) notes, CPN assessments, DIALOG scores, care plans, urgent episodes, MDT queue | Special category (health) | As guest (pseudonymised on anonymisation) |
+| Clinical record | Risk assessments, casework (SBAR) notes, CPN assessments, DIALOG scores, care plans, urgent cases, MDT queue | Special category (health) | As guest (pseudonymised on anonymisation) |
 | Documents | Uploaded files and versions, incl. casework-note attachments | Personal / special category | `documents.retentionYears` (7 y default), purge blocked before |
 | Audit events | Staff id, action, entity, field names changed, timestamps | Personal (staff) | Kept for the life of the record it protects |
 | Staff accounts | Email, display name, roles, password hash, lockout state | Personal (staff) | Deactivated, never deleted |

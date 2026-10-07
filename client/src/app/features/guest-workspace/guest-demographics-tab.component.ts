@@ -47,7 +47,7 @@ interface RecordProgress {
  *
  * "Personal details — captured at registration" is read-only (the reception / check-in step
  * only captures identity, contact details, ethnicity and the referral). The remaining record
- * is the design's five Phase 2 sections, each with its own Completed / Pending chip and its
+ * is the design's five Phase 2 sections, each with its own Complete / Incomplete chip and its
  * own Edit → Save, so "each section saves independently":
  *
  *   Contact & housing · Identity, language & interpreter · Migration & background ·

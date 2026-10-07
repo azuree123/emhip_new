@@ -13,6 +13,8 @@ public class CaseworkNoteConfiguration : IEntityTypeConfiguration<CaseworkNote>
         builder.HasIndex(n => new { n.GuestId, n.OccurredAt }).HasDatabaseName("IX_CaseworkNotes_Guest_Occurred");
         // Drafts are looked up per author so a worker can resume their own unfinished note.
         builder.HasIndex(n => new { n.AuthorStaffId, n.Status });
+        // Contact History, the overview and the Urgent Case Record look a contact's note up by ContactId.
+        builder.HasIndex(n => n.ContactId);
 
         builder.Property(n => n.Category).HasConversion<string>().HasMaxLength(20);
         builder.Property(n => n.Status).HasConversion<string>().HasMaxLength(20);

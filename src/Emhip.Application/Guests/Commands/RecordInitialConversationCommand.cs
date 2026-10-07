@@ -54,6 +54,13 @@ public sealed class RecordInitialConversationCommandValidator : AbstractValidato
 public sealed class RecordInitialConversationCommandHandler(IAppDbContext db, ICurrentUser currentUser)
     : IRequestHandler<RecordInitialConversationCommand, Guid>
 {
+    /// <summary>
+    /// First line of the risk assessment an Immediate Risk = Yes writes. Registration follows the
+    /// conversation with its own, fuller risk step; RecordRiskAssessmentCommand recognises this
+    /// line and makes that fuller assessment the urgent case's opening record.
+    /// </summary>
+    public const string ImmediateRiskNote = "Immediate risk identified at the initial conversation.";
+
     public async Task<Guid> Handle(RecordInitialConversationCommand request, CancellationToken cancellationToken)
     {
         var guest = await db.Guests.FirstOrDefaultAsync(g => g.Id == request.GuestId, cancellationToken)
@@ -111,17 +118,31 @@ public sealed class RecordInitialConversationCommandHandler(IAppDbContext db, IC
                 .OrderByDescending(v => v)
                 .FirstOrDefaultAsync(cancellationToken) ?? 0;
 
-            db.RiskAssessments.Add(new RiskAssessment(
+            // Urgent case notes are compulsory, so carry what the worker wrote in the conversation.
+            var caseNotes = string.Join("\n", new[]
+            {
+                ImmediateRiskNote,
+                string.IsNullOrWhiteSpace(request.PresentingIssues) ? null : $"Presenting issues: {request.PresentingIssues.Trim()}",
+                string.IsNullOrWhiteSpace(request.Notes) ? null : $"Notes: {request.Notes.Trim()}",
+            }.Where(line => line is not null));
+            var assessment = new RiskAssessment(
                 request.GuestId, nextVersion + 1, currentUser.StaffId,
                 suicidalIdeation: false, selfHarm: false, riskToOthers: false,
                 severeDeterioration: true, safeguardingConcern: false,
-                notes: "Immediate risk flagged at initial conversation."));
+                notes: caseNotes.Length > 4000 ? caseNotes[..3999] + "…" : caseNotes);
+            db.RiskAssessments.Add(assessment);
 
             guest.Escalate();
 
+            // Same snapshot as the Raise Urgent Case popup, so the record names whoever raised it.
             var hasOpenEpisode = await db.UrgentEpisodes
                 .AnyAsync(e => e.GuestId == request.GuestId && e.ResolvedAt == null, cancellationToken);
-            if (!hasOpenEpisode) db.UrgentEpisodes.Add(new UrgentEpisode(request.GuestId, DateTimeOffset.UtcNow));
+            if (!hasOpenEpisode)
+            {
+                db.UrgentEpisodes.Add(new UrgentEpisode(
+                    request.GuestId, DateTimeOffset.UtcNow, currentUser.StaffId, assessment.Id,
+                    guest.Pathway, guest.AssignedCmhwId));
+            }
         }
 
         if (request.NextContactDate is not null)

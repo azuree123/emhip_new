@@ -1,15 +1,17 @@
-import { Component, EventEmitter, Output, effect, inject, input, signal } from '@angular/core';
+import { Component, EventEmitter, Output, computed, effect, inject, input, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { forkJoin } from 'rxjs';
+import { forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import {
   ClinicalProfileDto,
   GuestClinicalDto,
-  RecordRiskAssessmentRequest,
   RiskAssessmentDto,
   UpdateClinicalProfileRequest,
+  UrgentEpisodeSummaryDto,
 } from '../../core/api-models';
 import { GuestsApiService } from '../../core/guests-api.service';
-import { formatDate } from './guest-workspace.util';
+import { UrgentCasesApiService } from '../../core/urgent-cases-api.service';
+import { formatDate, formatDateTime } from './guest-workspace.util';
 
 /**
  * Clinical Details tab — pixel-sourced from GuestClinicalDetailsTab in
@@ -17,9 +19,13 @@ import { formatDate } from './guest-workspace.util';
  * "Presenting problem", "Mental health history" and "Medication" on the left;
  * "Current service involvement" and "Risk & complexity" on the right, the latter closing
  * with the green/red "Last risk assessment" banner. Data comes from the versioned clinical
- * profile (getClinicalProfile) plus the risk-assessment history (getClinical); the
- * risk-assessment form lives inside the "Risk & complexity" card. The header's "Raise Urgent
- * Flag" popup records an assessment too, and bumps reloadToken so this tab re-reads it.
+ * profile (getClinicalProfile) plus the risk-assessment history (getClinical).
+ *
+ * Urgent cases are raised only from the header's "Raise Urgent Case" popup, which starts the
+ * 72-hour clock; this tab used to carry its own risk-assessment form, removed in Oct 2026 so
+ * there is one route in. "Immediate risk flag" is read-only here: it shows whether an urgent case
+ * is open and when it was raised (or when the last one was). Raising one bumps reloadToken so
+ * this tab re-reads it.
  */
 @Component({
   selector: 'emhip-guest-clinical-details-tab',
@@ -30,10 +36,14 @@ import { formatDate } from './guest-workspace.util';
 })
 export class GuestClinicalDetailsTabComponent {
   private readonly guestsApi = inject(GuestsApiService);
+  private readonly urgentApi = inject(UrgentCasesApiService);
 
   readonly guestId = input.required<string>();
   /** Bumped by the workspace when the header's "Raise Urgent Flag" popup records an assessment. */
   readonly reloadToken = input(0);
+  /** From the workspace overview: an urgent case is open, and since when. */
+  readonly isUrgent = input(false);
+  readonly urgentSince = input<string | null>(null);
   @Output() readonly refresh = new EventEmitter<void>();
 
   readonly profile = signal<ClinicalProfileDto | null>(null);
@@ -45,14 +55,34 @@ export class GuestClinicalDetailsTabComponent {
   readonly savingProfile = signal(false);
   readonly profileError = signal<string | null>(null);
 
-  readonly showRiskForm = signal(false);
-  readonly savingRisk = signal(false);
-  readonly riskError = signal<string | null>(null);
+  /** The guest's urgent cases; null when they could not be read (e.g. no urgent-cases access). */
+  readonly urgentCases = signal<UrgentEpisodeSummaryDto[] | null>(null);
 
   readonly formatDate = formatDate;
+  readonly formatDateTime = formatDateTime;
 
   profileForm: UpdateClinicalProfileRequest = this.emptyProfileForm();
-  riskForm: RecordRiskAssessmentRequest = this.emptyRiskForm();
+
+  /** "Immediate risk flag" (read-only): the open urgent case, else the most recent one. */
+  readonly immediateRisk = computed<{ tone: 'risk' | 'ok' | 'muted'; text: string; detail: string | null }>(() => {
+    const cases = this.urgentCases() ?? [];
+    const latest = cases.length ? cases[cases.length - 1] : null;
+    if (this.isUrgent()) {
+      const raisedAt = this.urgentSince() ?? latest?.raisedAt ?? null;
+      return { tone: 'risk', text: 'Yes — urgent case open', detail: raisedAt ? `Raised ${formatDateTime(raisedAt)}` : null };
+    }
+    if (latest) {
+      return {
+        tone: 'ok',
+        text: 'No open urgent case',
+        detail: `Last raised ${formatDateTime(latest.raisedAt)}${latest.resolvedAt ? ` · resolved ${formatDate(latest.resolvedAt)}` : ''}`,
+      };
+    }
+    const flagged = this.lastFlaggedAssessment();
+    return flagged
+      ? { tone: 'ok', text: 'No open urgent case', detail: `Last raised ${formatDateTime(flagged.assessedAt)}` }
+      : { tone: 'muted', text: 'No urgent case raised', detail: null };
+  });
 
   constructor() {
     effect((onCleanup) => {
@@ -82,28 +112,20 @@ export class GuestClinicalDetailsTabComponent {
     };
   }
 
-  private emptyRiskForm(): RecordRiskAssessmentRequest {
-    return {
-      suicidalIdeation: false,
-      selfHarm: false,
-      riskToOthers: false,
-      severeDeterioration: false,
-      safeguardingConcern: false,
-      notes: null,
-    };
-  }
-
   private load(guestId: string, isCancelled: () => boolean): void {
     this.loading.set(true);
     this.error.set(null);
     forkJoin({
       profile: this.guestsApi.getClinicalProfile(guestId),
       clinical: this.guestsApi.getClinical(guestId),
+      // Optional: the risk history still answers the question if this read is not allowed.
+      urgentCases: this.urgentApi.getEpisodes(guestId).pipe(catchError(() => of(null))),
     }).subscribe({
-      next: ({ profile, clinical }) => {
+      next: ({ profile, clinical, urgentCases }) => {
         if (isCancelled()) return;
         this.profile.set(profile);
         this.clinical.set(clinical);
+        this.urgentCases.set(urgentCases);
         this.loading.set(false);
       },
       error: () => {
@@ -122,7 +144,12 @@ export class GuestClinicalDetailsTabComponent {
   }
 
   hasAnyFlag(a: RiskAssessmentDto): boolean {
-    return a.suicidalIdeation || a.selfHarm || a.riskToOthers || a.severeDeterioration || a.safeguardingConcern;
+    return a.suicidalIdeation || a.selfHarm || a.riskToOthers || a.severeDeterioration || a.safeguardingConcern || a.otherRisk;
+  }
+
+  private lastFlaggedAssessment(): RiskAssessmentDto | null {
+    const flagged = (this.clinical()?.history ?? []).filter((a) => this.hasAnyFlag(a));
+    return flagged.length ? flagged.reduce((a, b) => (b.version > a.version ? b : a)) : null;
   }
 
   latestHasFlags(): boolean {
@@ -130,9 +157,10 @@ export class GuestClinicalDetailsTabComponent {
     return latest !== null && this.hasAnyFlag(latest);
   }
 
-  /** "Urgent episodes" — lifetime count of assessments that carried at least one flag. */
-  urgentEpisodeCount(): number {
-    return (this.clinical()?.history ?? []).filter((a) => this.hasAnyFlag(a)).length;
+  /** "Urgent cases" — lifetime count; falls back to flagged assessments when the cases can't be read. */
+  urgentCaseCount(): number {
+    const cases = this.urgentCases();
+    return cases ? cases.length : (this.clinical()?.history ?? []).filter((a) => this.hasAnyFlag(a)).length;
   }
 
   toggleEdit(): void {
@@ -174,30 +202,6 @@ export class GuestClinicalDetailsTabComponent {
       error: () => {
         this.savingProfile.set(false);
         this.profileError.set('Could not save the clinical details. Please try again.');
-      },
-    });
-  }
-
-  toggleRiskForm(): void {
-    this.showRiskForm.update((v) => !v);
-    this.riskForm = this.emptyRiskForm();
-    this.riskError.set(null);
-  }
-
-  saveRisk(): void {
-    this.savingRisk.set(true);
-    this.riskError.set(null);
-    this.guestsApi.recordRiskAssessment(this.guestId(), this.riskForm).subscribe({
-      next: () => {
-        this.savingRisk.set(false);
-        this.showRiskForm.set(false);
-        this.riskForm = this.emptyRiskForm();
-        this.load(this.guestId(), () => false);
-        this.refresh.emit();
-      },
-      error: () => {
-        this.savingRisk.set(false);
-        this.riskError.set('Could not record this assessment. Please try again.');
       },
     });
   }

@@ -110,7 +110,7 @@
           class="filter-chip"
           [class.filter-chip--on]="urgentOnly()"
           [attr.aria-pressed]="urgentOnly()"
-          title="Show only guests flagged urgent"
+          title="Show only guests with an open urgent case"
           (click)="toggleUrgentOnly()"
         >
           <span class="filter-chip__dot" aria-hidden="true"></span>
@@ -219,7 +219,7 @@
           <span class="col col--status status-cell">
             <span class="badge" [attr.data-status]="guest.status">{{ statusLabel(guest.status) }}</span>
             @if (guest.isUrgent) {
-              <span class="badge badge--urgent" title="Flagged urgent">Urgent</span>
+              <span class="badge badge--urgent" title="Open urgent case">Urgent</span>
             }
           </span>
 

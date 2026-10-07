@@ -273,7 +273,9 @@
 // The assignee filter is a staff picker (it carries its own control styling); the page only
 // fixes its width so the filter row keeps the original rhythm.
 .filter-picker {
-  width: 168px;
+  flex-shrink: 0;
+  min-width: 168px;
+  max-width: 320px;
 }
 
 .filter-select {

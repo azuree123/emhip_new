@@ -58,16 +58,37 @@ public class DocumentTests
     }
 
     [Fact]
-    public void Retention_blocks_purge_until_the_retain_until_date_has_passed()
+    public void Every_document_is_kept_for_at_least_eight_years_from_upload()
     {
-        var today = new DateOnly(2026, 8, 19);
-        var retained = new Document(Guid.NewGuid(), "Care plan", "care-plan", Guid.NewGuid(), retainUntil: today.AddDays(1));
-        var expired = new Document(Guid.NewGuid(), "Care plan", "care-plan", Guid.NewGuid(), retainUntil: today.AddDays(-1));
-        var unretained = NewDocument();
+        var undated = NewDocument();
+        var earliest = undated.EarliestRetainUntil;
 
-        Assert.True(retained.IsRetained(today));
-        Assert.False(expired.IsRetained(today));
-        Assert.False(unretained.IsRetained(today));
+        Assert.Equal(DateOnly.FromDateTime(DateTime.UtcNow).AddYears(8), earliest);
+        Assert.Equal(earliest, undated.RetainUntil);
+        Assert.True(undated.IsRetained(DateOnly.FromDateTime(DateTime.UtcNow)));
+        Assert.True(undated.IsRetained(earliest));
+        Assert.False(undated.IsRetained(earliest.AddDays(1)));
+    }
+
+    [Fact]
+    public void A_retention_date_inside_the_eight_year_minimum_is_rejected()
+    {
+        var tooSoon = DateOnly.FromDateTime(DateTime.UtcNow).AddYears(7);
+
+        Assert.Throws<InvalidOperationException>(() =>
+            new Document(Guid.NewGuid(), "Care plan", "care-plan", Guid.NewGuid(), retainUntil: tooSoon));
+        Assert.Throws<InvalidOperationException>(() =>
+            NewDocument().UpdateMetadata("Care plan", null, "care-plan", null, DocumentStatus.Active, tooSoon));
+    }
+
+    [Fact]
+    public void A_longer_retention_date_blocks_purge_until_it_has_passed()
+    {
+        var retainUntil = DateOnly.FromDateTime(DateTime.UtcNow).AddYears(10);
+        var document = new Document(Guid.NewGuid(), "Care plan", "care-plan", Guid.NewGuid(), retainUntil: retainUntil);
+
+        Assert.True(document.IsRetained(retainUntil.AddYears(-1)));
+        Assert.False(document.IsRetained(retainUntil.AddDays(1)));
     }
 
     [Fact]
@@ -86,7 +107,7 @@ public class DocumentTests
     public void Metadata_update_applies_status_and_retention()
     {
         var document = NewDocument();
-        var retainUntil = new DateOnly(2030, 1, 1);
+        var retainUntil = new DateOnly(2040, 1, 1);
 
         document.UpdateMetadata("Signed consent", "Scanned copy", "consent-form", "consent,signed", DocumentStatus.Archived, retainUntil);
 

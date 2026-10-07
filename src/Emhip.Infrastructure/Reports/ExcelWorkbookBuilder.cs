@@ -55,7 +55,7 @@ public sealed class ExcelWorkbookBuilder : IExcelWorkbookBuilder
             ("Guests seen", report.Activity.GuestsSeen),
             ("Contacts recorded", report.Activity.ContactsRecorded),
             ("Scheduled contacts due", report.Activity.FollowUpEntries),
-            ("Urgent flags raised", report.Activity.UrgentFlagsRaised),
+            ("Urgent cases raised", report.Activity.UrgentFlagsRaised),
         };
 
         var row = 5;

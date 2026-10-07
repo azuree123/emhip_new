@@ -12,6 +12,7 @@ public class UrgentCaseReadModelConfiguration : IEntityTypeConfiguration<UrgentC
         builder.HasKey(u => u.GuestId);
         builder.Property(u => u.GuestName).HasMaxLength(200);
         builder.Property(u => u.AssignedCmhwName).HasMaxLength(200);
+        builder.Property(u => u.OtherRiskDetails).HasMaxLength(500);
         builder.HasIndex(u => new { u.HubId, u.IsActive }).HasDatabaseName("IX_UrgentCases_HubId_Active");
     }
 }

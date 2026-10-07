@@ -478,10 +478,12 @@ public sealed class GuestsController(IMediator mediator, ICurrentUser currentUse
     }
 
     public sealed record RecordRiskAssessmentRequest(
-        bool SuicidalIdeation, bool SelfHarm, bool RiskToOthers, bool SevereDeterioration, bool SafeguardingConcern, string? Notes)
+        bool SuicidalIdeation, bool SelfHarm, bool RiskToOthers, bool SevereDeterioration, bool SafeguardingConcern, string? Notes,
+        bool OtherRisk = false, string? OtherRiskDetails = null)
     {
         public RecordRiskAssessmentCommand ToCommand(Guid guestId) => new(
-            guestId, SuicidalIdeation, SelfHarm, RiskToOthers, SevereDeterioration, SafeguardingConcern, Notes);
+            guestId, SuicidalIdeation, SelfHarm, RiskToOthers, SevereDeterioration, SafeguardingConcern, Notes,
+            OtherRisk, OtherRiskDetails);
     }
 
     public sealed record CreatePathwayReferralRequest(PathwayCategory Category, string? Detail);
