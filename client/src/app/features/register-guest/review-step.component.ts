@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
 import { FormArray, FormGroup } from '@angular/forms';
-import { CmhwOptionDto, GuestStatus } from '../../core/api-models';
+import { CmhwOptionDto, GuestStatus, HeardAboutUsSource } from '../../core/api-models';
+import { HEARD_ABOUT_US_OPTIONS, heardAboutUsLabel } from '../../core/demographic-options';
 import { DIALOG_DOMAINS } from './dialog-step.component';
 import { PATHWAY_OPTIONS } from './pathway-step.component';
 
@@ -84,6 +85,14 @@ export class ReviewStepComponent {
     if (!type) return '—';
     const subcategory = this.value(this.demographicsForm, 'referral.referralSubcategory');
     return subcategory ? `${type} — ${subcategory}` : type;
+  }
+
+  /** The ticked "How did you hear about us?" boxes, with "Other — <text>"; '—' when none. */
+  protected heardAboutUs(): string {
+    const ticked: Partial<Record<HeardAboutUsSource, boolean>> =
+      this.demographicsForm.get('referral.heardAboutUs')?.value ?? {};
+    const sources = HEARD_ABOUT_US_OPTIONS.filter((o) => ticked[o.value]).map((o) => o.value);
+    return heardAboutUsLabel(sources, this.value(this.demographicsForm, 'referral.heardAboutUsOther'));
   }
 
   protected gender(): string {

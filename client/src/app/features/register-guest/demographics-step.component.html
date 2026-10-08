@@ -211,6 +211,45 @@
           </label>
         </div>
       }
+
+      <!-- "How did you hear about us?" — optional; tick as many as apply. -->
+      <div class="heard-about-us" role="group" aria-labelledby="heard-about-us-label">
+        <span class="field__label" id="heard-about-us-label">How did you hear about us?</span>
+        <div class="heard-about-us__options" formGroupName="heardAboutUs">
+          @for (option of heardAboutUsOptions; track option.value) {
+            <label class="checkbox-field">
+              <input class="checkbox-field__input" type="checkbox" [formControlName]="option.value" />
+              <span class="checkbox-field__box">
+                <svg width="10" height="8" viewBox="0 0 9.231 7" fill="none">
+                  <path
+                    d="M 0.793 2.39 C 0.456 1.953 -0.172 1.871 -0.61 2.207 C -1.047 2.544 -1.129 3.172 -0.793 3.61 L 0 3 L 0.793 2.39 Z M 9.982 0.66 C 10.346 0.245 10.306 -0.386 9.891 -0.751 C 9.476 -1.116 8.844 -1.075 8.48 -0.66 L 9.231 0 L 9.982 0.66 Z M 3.879 6.087 L 4.631 6.747 L 3.879 6.087 Z M 0 3 L -0.793 3.61 L 1.543 6.646 L 2.336 6.037 L 3.128 5.427 L 0.793 2.39 L 0 3 Z M 3.879 6.087 L 4.631 6.747 L 9.982 0.66 L 9.231 0 L 8.48 -0.66 L 3.128 5.427 L 3.879 6.087 Z"
+                    fill="currentColor"
+                  />
+                </svg>
+              </span>
+              <span class="checkbox-field__label">{{ option.label }}</span>
+            </label>
+          }
+        </div>
+
+        @if (heardAboutUsOtherTicked) {
+          <div class="field-row field-row--single">
+            <label class="field">
+              <span class="field__label">Please specify&nbsp;*</span>
+              <input
+                class="field__input"
+                type="text"
+                formControlName="heardAboutUsOther"
+                maxlength="200"
+                placeholder="e.g. a friend, a leaflet, a local charity"
+              />
+              @if (invalid('referral.heardAboutUsOther')) {
+                <span class="field__error">Please specify how the guest heard about us.</span>
+              }
+            </label>
+          </div>
+        }
+      </div>
     </div>
 
     <div class="consent-block" formGroupName="consent">

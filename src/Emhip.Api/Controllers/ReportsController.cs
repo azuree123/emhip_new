@@ -98,6 +98,13 @@ public sealed class ReportsController(
         [FromQuery] DateOnly? from = null, [FromQuery] DateOnly? to = null, CancellationToken cancellationToken = default) =>
         Ok(await mediator.Send(new GetReferralSourcesQuery(currentUser.HubId, ReportPeriod.Create(from, to)), cancellationToken));
 
+    /// <summary>"How guests heard about us" for the guests registered in the period, one count per box ticked.</summary>
+    [HttpGet("heard-about-us")]
+    [Authorize(Policy = Permissions.Reports.View)]
+    public async Task<IActionResult> GetHeardAboutUs(
+        [FromQuery] DateOnly? from = null, [FromQuery] DateOnly? to = null, CancellationToken cancellationToken = default) =>
+        Ok(await mediator.Send(new GetHeardAboutUsQuery(currentUser.HubId, ReportPeriod.Create(from, to)), cancellationToken));
+
     /// <summary>"Export history" tab — the hub's most recent exports taken in the period.</summary>
     [HttpGet("exports")]
     [Authorize(Policy = Permissions.Reports.View)]
@@ -139,10 +146,10 @@ public sealed class ReportsController(
         Response.ContentType = "text/csv";
         Response.Headers.ContentDisposition = $"attachment; filename=\"emhip-guests-{from:yyyy-MM-dd}-{to:yyyy-MM-dd}.csv\"";
 
-        // One row per guest registered in the period, with their clinical pathway, demographics
-        // and referral source.
+        // One row per guest registered in the period, with their clinical pathway, demographics,
+        // referral source and how they heard about us.
         await Response.WriteAsync(
-            "GuestRef,GuestName,Pathway,Status,RegisteredAt,Ethnicity,AgeGroup,Gender,CountryOfOrigin,ReferralSource,ReferralType\n",
+            "GuestRef,GuestName,Pathway,Status,RegisteredAt,Ethnicity,AgeGroup,Gender,CountryOfOrigin,ReferralSource,ReferralType,HeardAboutUs\n",
             cancellationToken);
 
         await foreach (var row in reportReads.StreamExportAsync(currentUser.HubId, from, to, cancellationToken))
@@ -158,7 +165,8 @@ public sealed class ReportsController(
                 .Append(CsvEscape(row.Gender ?? string.Empty)).Append(',')
                 .Append(CsvEscape(row.CountryOfOrigin ?? string.Empty)).Append(',')
                 .Append(CsvEscape(row.ReferralSource ?? string.Empty)).Append(',')
-                .Append(row.ReferralType ?? string.Empty)
+                .Append(row.ReferralType ?? string.Empty).Append(',')
+                .Append(CsvEscape(row.HeardAboutUs ?? string.Empty))
                 .Append('\n');
 
             await Response.WriteAsync(line.ToString(), cancellationToken);

@@ -311,6 +311,15 @@ public sealed class GuestsController(IMediator mediator, ICurrentUser currentUse
         return NoContent();
     }
 
+    /// <summary>
+    /// Logs one Activity or Hospitality contact for several guests at once — a note and contact on
+    /// each guest's record, as if logged one by one. Attendees must be in the caller's hub.
+    /// </summary>
+    [HttpPost("group-contacts")]
+    [Authorize(Policy = Permissions.Guests.NotesAdd)]
+    public async Task<ActionResult<GroupContactResult>> LogGroupContact([FromBody] LogGroupContactCommand command, CancellationToken cancellationToken) =>
+        Ok(await mediator.Send(command, cancellationToken));
+
     /// <summary>Whether the caller's role carries the CPN-contact permission (see Permissions.Guests.CpnContactsLog).</summary>
     private bool CanLogCpnContacts => currentUser.Permissions.Contains(Permissions.Guests.CpnContactsLog);
 

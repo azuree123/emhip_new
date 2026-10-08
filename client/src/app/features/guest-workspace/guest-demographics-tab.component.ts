@@ -11,7 +11,12 @@ import {
   UpdateDemographicsRequest,
 } from '../../core/api-models';
 import { AuthService } from '../../core/auth.service';
-import { EMPLOYMENT_STATUS_OPTIONS, ETHNICITY_OPTIONS, HOUSING_STATUS_OPTIONS } from '../../core/demographic-options';
+import {
+  EMPLOYMENT_STATUS_OPTIONS,
+  ETHNICITY_OPTIONS,
+  heardAboutUsLabel,
+  HOUSING_STATUS_OPTIONS,
+} from '../../core/demographic-options';
 import { GuestsApiService } from '../../core/guests-api.service';
 import { Permissions } from '../../core/permissions';
 import { LookupCategories, SettingsApiService } from '../../core/settings-api.service';
@@ -143,6 +148,8 @@ export class GuestDemographicsTabComponent {
   form: UpdateDemographicsRequest = this.emptyForm();
 
   readonly formatDate = formatDate;
+  /** "How did you hear about us?" from registration, shown read-only in Personal details. */
+  readonly heardAboutUsLabel = heardAboutUsLabel;
 
   /** The five Phase 2 sections, in the design's order, with their completion. */
   readonly sections = computed<CompletionSection[]>(() => {

@@ -276,10 +276,11 @@
           </div>
         } @else {
           <label class="field">
-            <span>Contact type</span>
+            <!-- The method only: the contact type (Casework, Activity, …) is chosen on Add Contact. -->
+            <span>Contact method</span>
             <select [(ngModel)]="contactForm.type">
               @for (t of contactTypes; track t) {
-                <option [value]="t">{{ t }}</option>
+                <option [value]="t">{{ humanize(t) }}</option>
               }
             </select>
           </label>
@@ -287,7 +288,7 @@
             <span>Outcome</span>
             <select [(ngModel)]="contactForm.outcome">
               @for (o of contactOutcomes; track o) {
-                <option [value]="o">{{ o }}</option>
+                <option [value]="o">{{ humanize(o) }}</option>
               }
             </select>
           </label>

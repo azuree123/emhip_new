@@ -62,6 +62,51 @@ public sealed class UrgentCaseReadService(EmhipDbContext db) : IUrgentCaseReadSe
         return episodes.Select((e, i) => new UrgentEpisodeSummaryDto(e.Id, i + 1, e.RaisedAt, e.ResolvedAt)).ToList();
     }
 
+    public async Task<IReadOnlyList<UrgentCaseHistoryRowDto>> GetCaseHistoryForGuestAsync(
+        Guid hubId, Guid guestId, int responseHours, CancellationToken cancellationToken = default)
+    {
+        var inHub = await db.Guests.AsNoTracking().AnyAsync(g => g.Id == guestId && g.HubId == hubId, cancellationToken);
+        if (!inHub) return [];
+
+        var episodes = await db.UrgentEpisodes.AsNoTracking()
+            .Where(e => e.GuestId == guestId)
+            .OrderBy(e => e.RaisedAt)
+            .ToListAsync(cancellationToken);
+        if (episodes.Count == 0) return [];
+
+        // A guest has a handful of flagged assessments at most, so they are matched in memory: the
+        // one that raised the case, else (older cases) the latest flagged one up to the raise.
+        var risks = await db.RiskAssessments.AsNoTracking()
+            .Where(r => r.GuestId == guestId
+                && (r.SuicidalIdeation || r.SelfHarm || r.RiskToOthers || r.SevereDeterioration || r.SafeguardingConcern || r.OtherRisk))
+            .OrderBy(r => r.AssessedAt)
+            .ToListAsync(cancellationToken);
+
+        var staffIds = episodes
+            .SelectMany(e => new[] { e.RaisedByStaffId, e.ResolvedByStaffId })
+            .Concat(risks.Select(r => (Guid?)r.AssessedByStaffId))
+            .Where(id => id.HasValue).Select(id => id!.Value).Distinct().ToList();
+        var names = await db.Users.AsNoTracking()
+            .Where(u => staffIds.Contains(u.Id))
+            .Select(u => new { u.Id, u.DisplayName })
+            .ToDictionaryAsync(u => u.Id, u => u.DisplayName, cancellationToken);
+        string? Name(Guid? id) => id is not null && names.TryGetValue(id.Value, out var n) ? n : null;
+
+        return episodes
+            .Select((e, i) =>
+            {
+                var intake = risks.FirstOrDefault(r => r.Id == e.RiskAssessmentId)
+                    ?? risks.LastOrDefault(r => r.AssessedAt <= e.RaisedAt.AddMinutes(1));
+                return new UrgentCaseHistoryRowDto(
+                    e.Id, i + 1, e.RaisedAt, Name(e.RaisedByStaffId) ?? Name(intake?.AssessedByStaffId),
+                    intake is null ? [] : RiskFlagLabels(intake),
+                    e.DeadlineAt(responseHours), e.IsResolved, e.ResolvedAt, Name(e.ResolvedByStaffId),
+                    e.ResolvedWithinWindow(responseHours), e.CmhtNotified, e.InpatientAdmission, e.ResolutionNote);
+            })
+            .OrderByDescending(r => r.RaisedAt)
+            .ToList();
+    }
+
     public async Task<UrgentEpisodeRecordDto?> GetEpisodeRecordAsync(Guid hubId, Guid episodeId, int responseHours, CancellationToken cancellationToken = default)
     {
         var episode = await db.UrgentEpisodes.AsNoTracking().FirstOrDefaultAsync(e => e.Id == episodeId, cancellationToken);

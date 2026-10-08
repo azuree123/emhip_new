@@ -117,8 +117,8 @@ internal static class UrgentEpisodeLookup
 /// <summary>
 /// "Mark as resolved": closes and locks the guest's open urgent case and returns the guest to
 /// their pre-crisis engagement status. Resolved by / at come from the login and the clock; the
-/// Urgent Case Record spec (Oct 2026) asks only for inpatient admission and any other external
-/// service involved. The older pathway re-entry fields stay optional for API callers: a pathway
+/// Urgent Case Record spec (Oct 2026) asks for inpatient admission and any other external
+/// service involved, and the action taken to resolve (<see cref="ResolutionNote"/>) is required. The older pathway re-entry fields stay optional for API callers: a pathway
 /// change is applied to the guest and appended to the pathway history, and a next contact date is
 /// scheduled for the guest's CMHW.
 ///
@@ -143,7 +143,11 @@ public sealed class ResolveUrgentCaseCommandValidator : AbstractValidator<Resolv
     public ResolveUrgentCaseCommandValidator()
     {
         RuleFor(x => x.GuestId).NotEmpty().When(x => x.EpisodeId is null);
-        RuleFor(x => x.ResolutionNote).MaximumLength(4000);
+        // "Action taken to resolve" (customer feedback, Oct 2026): a case is never closed without
+        // the record saying what was done about it.
+        RuleFor(x => x.ResolutionNote)
+            .NotEmpty().WithMessage("Record the action taken to resolve this urgent case.")
+            .MaximumLength(4000);
         RuleFor(x => x.SessionFrequencyChange).MaximumLength(200);
         RuleFor(x => x.ExternalServicesInvolved).MaximumLength(500);
         RuleFor(x => x.NextContactDate)

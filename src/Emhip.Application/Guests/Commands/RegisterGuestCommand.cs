@@ -22,7 +22,11 @@ public sealed record RegisterGuestCommand(
     /// <summary>Primary or Secondary referral (spec §6.2).</summary>
     ReferralType? ReferralType = null,
     /// <summary>Structured subcategory — required by the spec when the referral is Secondary.</summary>
-    string? ReferralSubcategory = null) : IRequest<Guid>;
+    string? ReferralSubcategory = null,
+    /// <summary>"How did you hear about us?" — the ticked boxes; optional, so empty or null is fine.</summary>
+    IReadOnlyList<HeardAboutUsSource>? HeardAboutUs = null,
+    /// <summary>Required when Other is ticked; ignored otherwise.</summary>
+    string? HeardAboutUsOther = null) : IRequest<Guid>;
 
 public sealed class RegisterGuestCommandValidator : AbstractValidator<RegisterGuestCommand>
 {
@@ -37,6 +41,15 @@ public sealed class RegisterGuestCommandValidator : AbstractValidator<RegisterGu
             .When(x => x.ReferralType == Emhip.Domain.Enums.ReferralType.Secondary)
             .WithMessage("A secondary referral needs a subcategory.");
         RuleFor(x => x.ReferralSubcategory).MaximumLength(150);
+        // "How did you hear about us?" is optional. Only a ticked "Other" needs its text; without
+        // it the text is dropped, so it isn't validated either.
+        RuleForEach(x => x.HeardAboutUs).IsInEnum();
+        When(x => HeardAboutUsSources.Combine(x.HeardAboutUs).HasFlag(HeardAboutUsSource.Other), () =>
+        {
+            RuleFor(x => x.HeardAboutUsOther).NotEmpty()
+                .WithMessage("Please specify how the guest heard about us.");
+            RuleFor(x => x.HeardAboutUsOther).MaximumLength(200);
+        });
     }
 }
 
@@ -65,6 +78,8 @@ public sealed class RegisterGuestCommandHandler(IAppDbContext db, ICurrentUser c
         {
             guest.SetReferral(request.ReferralType, request.ReferralSubcategory, request.ReferralSource);
         }
+
+        guest.SetHeardAboutUs(HeardAboutUsSources.Combine(request.HeardAboutUs), request.HeardAboutUsOther);
 
         db.Guests.Add(guest);
         await db.SaveChangesAsync(cancellationToken);

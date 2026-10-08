@@ -1,0 +1,86 @@
+@let d = drill();
+<div class="drawer" role="dialog" aria-modal="true" aria-labelledby="contact-list-title">
+  <button type="button" class="drawer__backdrop" tabindex="-1" aria-label="Close contact list" (click)="close()"></button>
+
+  <div class="drawer__panel">
+    <div class="drawer__head">
+      <div class="drawer__heading">
+        <h2 class="drawer__title" id="contact-list-title">
+          {{ d.title }}<span class="drawer__window"> · {{ d.window }} · {{ d.scope }}</span>
+        </h2>
+        <p class="drawer__count" aria-live="polite">{{ countLabel() }}</p>
+        @if (d.note) {
+          <p class="drawer__note">{{ d.note }}</p>
+        }
+      </div>
+      <button #closeButton type="button" class="drawer__close" aria-label="Close" (click)="close()">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+          <path d="M 1 1 L 11 11 M 11 1 L 1 11" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+        </svg>
+      </button>
+    </div>
+
+    <div class="drawer__body">
+      @if (error()) {
+        <div class="state-banner state-banner--error">
+          <span>{{ error() }}</span>
+          <button type="button" class="retry-btn" (click)="load()">Retry</button>
+        </div>
+      } @else if (loading()) {
+        <div class="state-banner">Loading contacts…</div>
+      } @else if (rows().length === 0) {
+        <div class="state-banner">No contacts recorded for this period and caseload.</div>
+      } @else {
+        <div class="table-wrap">
+          <table class="list-table">
+            <thead>
+              <tr>
+                <th scope="col">Date</th>
+                <th scope="col">Guest</th>
+                <th scope="col">Type</th>
+                <th scope="col">Detail</th>
+                <th scope="col">Logged by</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of rows(); track row.id) {
+                <tr (click)="openGuest(row)">
+                  <td class="list-table__date">{{ formatDateTime(row.occurredAt) }}</td>
+                  <td>
+                    <a
+                      class="guest-link"
+                      [routerLink]="['/guests', row.guestId]"
+                      [queryParams]="{ tab: 'contacts' }"
+                      (click)="$event.stopPropagation()"
+                      >{{ row.guestName }}</a
+                    >
+                    <span class="guest-ref">G-{{ row.guestNumber }}</span>
+                  </td>
+                  <td>
+                    <span class="type-chip" [attr.data-kind]="tint(row)">{{ row.type }}</span>
+                  </td>
+                  <td class="list-table__detail">{{ detail(row) }}</td>
+                  <td>{{ row.loggedByName }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <div class="list-footer">
+          <span class="list-footer__showing">
+            Showing {{ rows().length }}{{ totalCount() !== null ? ' of ' + totalCount() : '' }}
+          </span>
+          @if (moreError()) {
+            <span class="list-footer__error" role="alert">{{ moreError() }}</span>
+          }
+          @if (nextCursor()) {
+            <button type="button" class="load-more" [disabled]="loadingMore()" (click)="loadMore()">
+              {{ loadingMore() ? 'Loading…' : 'Load more' }}
+            </button>
+          }
+        </div>
+      }
+    </div>
+  </div>
+</div>

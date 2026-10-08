@@ -21,7 +21,11 @@ public class CaseworkNoteConfiguration : IEntityTypeConfiguration<CaseworkNote>
         builder.Property(n => n.ContactMethod).HasConversion<string>().HasMaxLength(30);
         builder.Property(n => n.RiskLevel).HasConversion<string>().HasMaxLength(20);
         builder.Property(n => n.CpnSessionType).HasConversion<string>().HasMaxLength(30);
-        builder.Property(n => n.RiskNotes).HasMaxLength(2000);
+        // Also the crisis action notes that open an urgent case — the same 4000 as its intake notes.
+        builder.Property(n => n.RiskNotes).HasMaxLength(4000);
+        builder.Property(n => n.RiskCheck).HasConversion<string>().HasMaxLength(40);
+        builder.Property(n => n.AfaContactMethod).HasConversion<string>().HasMaxLength(30);
+        builder.Property(n => n.CompletedActionIds).HasMaxLength(4000);
         builder.Property(n => n.Situation).HasMaxLength(4000);
         builder.Property(n => n.Background).HasMaxLength(4000);
         builder.Property(n => n.Assessment).HasMaxLength(4000);

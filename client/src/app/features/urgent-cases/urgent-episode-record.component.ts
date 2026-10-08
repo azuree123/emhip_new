@@ -44,8 +44,8 @@ export interface UrgentCaseRecordChange {
  *  3. Flag details — raised by (from the login), raised at, risks, urgent case notes.
  *  4. Actions taken — "CMHT or other NHS team notified" recorded by hand (EMHIP has no CMHT
  *     integration, so there is no "Escalate" button), contacts logged since the flag, Add contact.
- *  5. Resolution — "Mark as resolved" asks for inpatient admission and any other external service;
- *     resolved by / at come from the login and the clock.
+ *  5. Resolution — "Mark as resolved" asks for inpatient admission, any other external service and
+ *     the action taken to resolve (required); resolved by / at come from the login and the clock.
  *  6. One tab per urgent case ("Urgent Case 1, 2, …"); the open case is the default view.
  *  7. System audit trail at the bottom.
  *
@@ -134,7 +134,12 @@ export class UrgentEpisodeRecordComponent {
   readonly resolveOpen = signal(false);
   readonly savingResolve = signal(false);
   readonly resolveError = signal<string | null>(null);
-  resolveForm: { inpatientAdmission: boolean | null; externalServices: string } = { inpatientAdmission: null, externalServices: '' };
+  /** `notes` — "Action taken to resolve", required so the record says how the case was closed. */
+  resolveForm: { inpatientAdmission: boolean | null; externalServices: string; notes: string } = {
+    inpatientAdmission: null,
+    externalServices: '',
+    notes: '',
+  };
   /** "Resolved at" shown in the confirmation — the moment the dialog opened. */
   readonly resolveAt = signal(new Date());
 
@@ -163,7 +168,7 @@ export class UrgentEpisodeRecordComponent {
     // Escape closes the innermost layer; the Add Contact drawer handles its own.
     if (this.contactDrawerOpen()) return;
     if (this.resolveOpen()) {
-      this.closeResolve();
+      this.dismissResolve();
       return;
     }
     this.closeFromBackdrop();
@@ -331,7 +336,7 @@ export class UrgentEpisodeRecordComponent {
   openResolve(): void {
     const r = this.record();
     if (!r || r.isResolved || !this.canAct) return;
-    this.resolveForm = { inpatientAdmission: null, externalServices: '' };
+    this.resolveForm = { inpatientAdmission: null, externalServices: '', notes: '' };
     this.resolveAt.set(new Date());
     this.resolveError.set(null);
     this.resolveOpen.set(true);
@@ -342,6 +347,12 @@ export class UrgentEpisodeRecordComponent {
     this.resolveOpen.set(false);
   }
 
+  /** Backdrop click / Escape: kept open once the action taken has been typed, like the CMHT form. */
+  dismissResolve(): void {
+    if (this.resolveForm.notes.trim()) return;
+    this.closeResolve();
+  }
+
   submitResolve(): void {
     const r = this.record();
     const f = this.resolveForm;
@@ -350,9 +361,18 @@ export class UrgentEpisodeRecordComponent {
       this.resolveError.set('Say whether this urgent case resulted in an inpatient admission.');
       return;
     }
+    if (!f.notes.trim()) {
+      this.resolveError.set('Record the action taken to resolve this urgent case.');
+      return;
+    }
     this.savingResolve.set(true);
     this.resolveError.set(null);
-    this.api.resolveEpisode(r.id, { inpatientAdmission: f.inpatientAdmission, externalServicesInvolved: f.externalServices.trim() || null }).subscribe({
+    const request = {
+      inpatientAdmission: f.inpatientAdmission,
+      externalServicesInvolved: f.externalServices.trim() || null,
+      resolutionNote: f.notes.trim(),
+    };
+    this.api.resolveEpisode(r.id, request).subscribe({
       next: () => {
         this.savingResolve.set(false);
         this.resolveOpen.set(false);

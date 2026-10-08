@@ -12,6 +12,7 @@ public class GuestAnonymisationTests
             gender: "Female", contactPhone: "07700 900123", contactEmail: "joyce@example.org",
             addressLine1: "1 High Street", addressLine2: "Flat 2", postCode: "SE1 1AA");
         guest.SetLegacyReference("LEGACY-42");
+        guest.SetHeardAboutUs(Emhip.Domain.Enums.HeardAboutUsSource.Other, "My neighbour, Mrs Owusu");
 
         guest.Anonymise();
 
@@ -25,6 +26,8 @@ public class GuestAnonymisationTests
         Assert.Null(guest.AddressLine2);
         Assert.Null(guest.PostCode);
         Assert.Null(guest.LegacyReference);
+        Assert.Null(guest.HeardAboutUsOther);
+        Assert.Equal(Emhip.Domain.Enums.HeardAboutUsSource.Other, guest.HeardAboutUs); // still counted in the reports
         Assert.True(guest.IsAnonymised);
         Assert.NotNull(guest.AnonymisedAt);
         Assert.True(guest.IsDeleted);

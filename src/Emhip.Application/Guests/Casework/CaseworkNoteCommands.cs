@@ -1,4 +1,5 @@
 using Emhip.Application.Abstractions;
+using Emhip.Application.Settings;
 using Emhip.Domain.Entities;
 using Emhip.Domain.Enums;
 using FluentValidation;
@@ -40,7 +41,17 @@ public sealed record CaseworkNoteDto(
     DateTimeOffset CreatedAt,
     DateTimeOffset? SubmittedAt,
     IReadOnlyList<CaseworkNoteActionDto> Actions,
-    IReadOnlyList<CaseworkNoteAttachmentDto> Attachments);
+    IReadOnlyList<CaseworkNoteAttachmentDto> Attachments,
+    // New Casework Note: the single-choice risk check, the AFA section's contact method, the
+    // existing actions ticked off in the session (ids for a resumed draft, rows for the history)
+    // and, when an immediate risk opened or added to an urgent case, its follow-up deadline.
+    CaseworkRiskCheck? RiskCheck = null,
+    ContactType? AfaContactMethod = null,
+    IReadOnlyList<Guid>? CompletedActionIds = null,
+    IReadOnlyList<CaseworkNoteActionDto>? CompletedActions = null,
+    DateTimeOffset? UrgentDeadlineAt = null,
+    // When a draft was last saved — "Last saved" on the New Casework Note's draft banner.
+    DateTimeOffset? UpdatedAt = null);
 
 public sealed record CaseworkNoteActionDto(Guid Id, string Description, DateOnly DueDate, bool IsCompleted, string? AssignedToName);
 
@@ -80,7 +91,12 @@ public sealed record CaseworkNoteInput(
     // Short-form contact types: Activity (activity + occasion) and AFA (type of advice given).
     string? ActivityType = null,
     string? Occasion = null,
-    string? AdviceType = null);
+    string? AdviceType = null,
+    // New Casework Note: the single-choice risk assessment (null from the Add Contact popup), the
+    // AFA section's contact method, and the existing guest actions completed in this session.
+    CaseworkRiskCheck? RiskCheck = null,
+    ContactType? AfaContactMethod = null,
+    IReadOnlyList<Guid>? CompletedActionIds = null);
 
 public sealed record SaveCaseworkNoteCommand(Guid GuestId, Guid? NoteId, CaseworkNoteInput Input, bool Submit) : IRequest<Guid>;
 
@@ -104,7 +120,7 @@ public sealed class SaveCaseworkNoteCommandValidator : AbstractValidator<SaveCas
         RuleFor(x => x.Input.GuestReportedChanges).MaximumLength(2000);
         RuleFor(x => x.Input.ServiceInvolvementChanges).MaximumLength(2000);
         RuleFor(x => x.Input.AdditionalNotes).MaximumLength(4000);
-        RuleFor(x => x.Input.RiskNotes).MaximumLength(2000);
+        RuleFor(x => x.Input.RiskNotes).MaximumLength(4000);
         RuleFor(x => x.Input.ActivityType).MaximumLength(200);
         RuleFor(x => x.Input.Occasion).MaximumLength(500);
         RuleFor(x => x.Input.AdviceType).MaximumLength(200);
@@ -138,7 +154,28 @@ public sealed class SaveCaseworkNoteCommandValidator : AbstractValidator<SaveCas
 
         RuleForEach(x => x.Input.Actions).ChildRules(action =>
             action.RuleFor(a => a.Description).NotEmpty().MaximumLength(500));
+
+        // An immediate risk opens an urgent case, whose intake notes may never be empty; a noted
+        // concern is only worth recording with what the worker will monitor.
+        RuleFor(x => x.Input.RiskNotes).NotEmpty()
+            .When(x => x.Submit && CaseworkNote.IsImmediateRisk(x.Input.RiskCheck))
+            .WithMessage("Crisis action notes are required before submission.");
+        RuleFor(x => x.Input.RiskNotes).NotEmpty()
+            .When(x => x.Submit && x.Input.RiskCheck == CaseworkRiskCheck.NoteConcern)
+            .WithMessage("Describe your concern and what you will monitor.");
+        RuleFor(x => x.Input.RiskCheck).IsInEnum();
+
+        // The AFA section of a casework note files an AFA contact, which needs its own method.
+        RuleFor(x => x.Input.AfaContactMethod).NotNull()
+            .When(x => x.Submit && HasAfaSection(x.Input))
+            .WithMessage("Choose how the AFA advice was given.");
+        RuleFor(x => x.Input.CompletedActionIds).Must(ids => ids is null || ids.Count <= 100)
+            .WithMessage("Too many actions in one note.");
     }
+
+    /// <summary>A Casework note whose optional AFA section was filled in (an advice type chosen).</summary>
+    public static bool HasAfaSection(CaseworkNoteInput input) =>
+        !input.IsCpnContact && input.Category == CaseworkNoteCategory.Casework && !string.IsNullOrWhiteSpace(input.AdviceType);
 
     private static bool IsClinical(SaveCaseworkNoteCommand x) =>
         CaseworkNote.IsClinicalNote(x.Input.IsCpnContact, x.Input.Category);
@@ -170,13 +207,24 @@ public sealed class SaveCaseworkNoteCommandHandler(IAppDbContext db, ICurrentUse
             db.CaseworkNotes.Add(note);
         }
 
+        // Only this guest's actions can be ticked off from their note.
+        var requestedActionIds = input.CompletedActionIds?.Distinct().ToList() ?? [];
+        var completedActionIds = requestedActionIds.Count == 0
+            ? []
+            : await db.GuestActions.AsNoTracking()
+                .Where(a => a.GuestId == request.GuestId && requestedActionIds.Contains(a.Id))
+                .Select(a => a.Id)
+                .ToListAsync(cancellationToken);
+
         note.Update(
             input.Category, input.ContactMethod, input.OccurredAt,
             input.Situation, input.Background, input.Assessment, input.Recommendation,
             input.RiskLevel, input.GuestReportedChanges, input.ServiceInvolvementChanges,
             input.AdditionalNotes, input.NextContactDate, input.MdtDiscussionRequested, input.CpnReferralRequested,
             input.IsCpnContact, input.CpnSessionType, input.RiskNotes, input.NoNextContactRequired,
-            input.ActivityType, input.Occasion, input.AdviceType);
+            input.ActivityType, input.Occasion, input.AdviceType,
+            input.RiskCheck, SaveCaseworkNoteCommandValidator.HasAfaSection(input) ? input.AfaContactMethod : null,
+            completedActionIds);
 
         if (request.Submit)
         {
@@ -210,6 +258,57 @@ public sealed class SaveCaseworkNoteCommandHandler(IAppDbContext db, ICurrentUse
                     request.GuestId, action.Description, action.DueDate, action.AssignedToStaffId ?? currentUser.StaffId));
             }
 
+            // Actions ticked off in the session are completed now, not when the draft was saved.
+            if (completedActionIds.Count > 0)
+            {
+                var toComplete = await db.GuestActions
+                    .Where(a => a.GuestId == request.GuestId && completedActionIds.Contains(a.Id) && !a.IsCompleted)
+                    .ToListAsync(cancellationToken);
+                foreach (var action in toComplete) action.SetCompleted(true);
+            }
+
+            // An immediate risk alerts the Hub Manager exactly as "Raise Urgent Case" does: a
+            // flagged risk assessment carrying the crisis action notes, which opens the guest's
+            // urgent case (or adds to the open one) and starts the follow-up window. It is not
+            // gated on the clinical-edit permission — a disclosed risk must never fail to escalate.
+            if (CaseworkNote.IsImmediateRisk(note.RiskCheck))
+            {
+                var (_, episode) = await Commands.RiskAssessmentRecorder.RecordAsync(
+                    db, request.GuestId, currentUser.StaffId,
+                    suicidalIdeation: note.RiskCheck == CaseworkRiskCheck.SuicidalIdeationOrSelfHarm,
+                    selfHarm: note.RiskCheck == CaseworkRiskCheck.SuicidalIdeationOrSelfHarm,
+                    riskToOthers: note.RiskCheck == CaseworkRiskCheck.RiskOfHarmToOthers,
+                    severeDeterioration: false,
+                    safeguardingConcern: note.RiskCheck == CaseworkRiskCheck.SafeguardingConcern,
+                    notes: note.RiskNotes,
+                    otherRisk: OtherRiskLabel(note.RiskCheck) is not null,
+                    otherRiskDetails: OtherRiskLabel(note.RiskCheck),
+                    cancellationToken);
+                if (episode is not null) note.LinkUrgentEpisode(episode.Id);
+            }
+
+            // "AFA is optional. Worker can select it from separate AFA type or from casework type"
+            // (design): the AFA section files the same AFA contact the AFA form would, so it counts
+            // in Contact History and reports alongside the casework session it was given in.
+            if (SaveCaseworkNoteCommandValidator.HasAfaSection(input))
+            {
+                var afaMethod = input.AfaContactMethod ?? input.ContactMethod;
+                var afaNote = new CaseworkNote(request.GuestId, currentUser.StaffId, CaseworkNoteCategory.Afa, afaMethod, input.OccurredAt);
+                afaNote.Update(
+                    CaseworkNoteCategory.Afa, afaMethod, input.OccurredAt,
+                    situation: null, background: null, assessment: null, recommendation: null,
+                    riskLevel: note.RiskLevel, guestReportedChanges: null, serviceInvolvementChanges: null,
+                    additionalNotes: input.AdditionalNotes, nextContactDate: null,
+                    mdtDiscussionRequested: false, cpnReferralRequested: false,
+                    adviceType: input.AdviceType);
+                var afaContact = new Contact(
+                    request.GuestId, afaMethod, ContactOutcome.Successful, input.OccurredAt, currentUser.StaffId,
+                    $"AFA contact — Advice given: {input.AdviceType} (recorded with a casework note)");
+                db.Contacts.Add(afaContact);
+                db.CaseworkNotes.Add(afaNote);
+                afaNote.Submit(afaContact.Id);
+            }
+
             if (note.NextContactDate is { } nextContact)
             {
                 db.FollowUps.Add(new FollowUp(
@@ -239,8 +338,20 @@ public sealed class SaveCaseworkNoteCommandHandler(IAppDbContext db, ICurrentUse
         return note.Id;
     }
 
+    /// <summary>
+    /// The criteria the risk assessment has no flag of its own for are raised as "Other", with the
+    /// criterion as the description so the urgent case names exactly what the worker ticked.
+    /// </summary>
+    private static string? OtherRiskLabel(CaseworkRiskCheck? check) => check switch
+    {
+        CaseworkRiskCheck.PsychosisNotUnderMhTeam => "Signs of psychosis — not under MH team",
+        CaseworkRiskCheck.ImmediateRiskOfHomelessness => "Immediate risk of homelessness",
+        CaseworkRiskCheck.NoAccessToFood => "No access to food",
+        _ => null,
+    };
+
     /// <summary>The contact's note field carries a readable digest of the SBAR record.</summary>
-    private static string BuildContactSummary(CaseworkNoteInput input)
+    internal static string BuildContactSummary(CaseworkNoteInput input)
     {
         var parts = new List<string>
         {
@@ -286,10 +397,16 @@ public sealed class DeleteCaseworkNoteCommandHandler(IAppDbContext db) : IReques
 
 public sealed record GetCaseworkNotesQuery(Guid GuestId) : IRequest<IReadOnlyList<CaseworkNoteDto>>;
 
-public sealed class GetCaseworkNotesQueryHandler(IGuestReadService reads) : IRequestHandler<GetCaseworkNotesQuery, IReadOnlyList<CaseworkNoteDto>>
+public sealed class GetCaseworkNotesQueryHandler(IGuestReadService reads, IAppSettingsService settings)
+    : IRequestHandler<GetCaseworkNotesQuery, IReadOnlyList<CaseworkNoteDto>>
 {
-    public Task<IReadOnlyList<CaseworkNoteDto>> Handle(GetCaseworkNotesQuery request, CancellationToken cancellationToken) =>
-        reads.GetCaseworkNotesAsync(request.GuestId, cancellationToken);
+    public async Task<IReadOnlyList<CaseworkNoteDto>> Handle(GetCaseworkNotesQuery request, CancellationToken cancellationToken)
+    {
+        // The urgent follow-up deadline shown on a note that raised an urgent case uses the same
+        // configured window as the Urgent Case Record.
+        var responseHours = await settings.GetIntAsync(SettingsCatalog.Keys.UrgentResponseHours, 72, cancellationToken);
+        return await reads.GetCaseworkNotesAsync(request.GuestId, Math.Max(1, responseHours), cancellationToken);
+    }
 }
 
 /// <summary>

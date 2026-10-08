@@ -25,6 +25,7 @@
               <div class="field"><span class="field__label">Address</span><span class="field__value">{{ o.addressLine1 || '—' }}</span></div>
               <div class="field"><span class="field__label">Postcode</span><span class="field__value">{{ o.postCode || '—' }}</span></div>
               <div class="field"><span class="field__label">Referral</span><span class="field__value">{{ o.referralSource || 'Not recorded at registration' }}</span></div>
+              <div class="field"><span class="field__label">How did you hear about us</span><span class="field__value">{{ heardAboutUsLabel(o.heardAboutUs, o.heardAboutUsOther) }}</span></div>
               <div class="field"><span class="field__label">Ethnicity</span><span class="field__value">{{ d.ethnicity || '—' }}</span></div>
             </div>
           } @else {

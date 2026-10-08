@@ -7,6 +7,8 @@ export type GuestStatus = 'New' | 'Active' | 'OnHold';
 
 /** Referral classification (spec §6.2); Secondary referrals carry a subcategory. */
 export type ReferralType = 'Primary' | 'Secondary';
+/** "How did you hear about us?" tickboxes — sent and received as a list of these names. */
+export type HeardAboutUsSource = 'Nhs' | 'OtherStatutoryServices' | 'SocialMedia' | 'Outreach' | 'Other';
 export type ContactType = 'PhoneCall' | 'InPerson' | 'VideoCall' | 'TextMessage' | 'Email';
 export type ContactOutcome = 'Successful' | 'NoAnswer' | 'LeftMessage' | 'Declined' | 'Rescheduled';
 export type NoteColor = 'Yellow' | 'Green' | 'Orange' | 'Purple';
@@ -75,9 +77,32 @@ export interface GuestContactSummaryDto {
   outcome: string;
   occurredAt: string;
   createdByName: string;
-  /** What kind of contact the worker chose on Add Contact; null when no casework note was written. */
+  /** The contact type the worker chose on Add Contact; null for CPN contacts and when no type was recorded. */
   category: CaseworkNoteCategory | null;
   isCpnContact: boolean;
+  /** The activity, the AFA advice given, or "Session N" / "Initial assessment" for a CPN contact. */
+  detail: string | null;
+}
+
+/** One guest at a group Activity / Hospitality session; `highRisk` is their own Activity risk check. */
+export interface GroupContactAttendee {
+  guestId: string;
+  highRisk: boolean;
+}
+
+/** POST /guests/group-contacts — one Activity or Hospitality contact logged for several guests. */
+export interface LogGroupContactRequest {
+  category: 'Activity' | 'Hospitality';
+  occurredAt: string;
+  attendees: GroupContactAttendee[];
+  activityType: string | null;
+  occasion: string | null;
+  notes: string | null;
+}
+
+export interface GroupContactResult {
+  logged: number;
+  noteIds: string[];
 }
 
 /** Top-bar search autocomplete row — GET /guests/suggest?q=. */
@@ -110,6 +135,10 @@ export interface GuestOverviewDto {
   referralSource: string | null;
   referralType: ReferralType | null;
   referralSubcategory: string | null;
+  /** "How did you hear about us?" — the ticked boxes in form order; empty when not recorded. */
+  heardAboutUs: HeardAboutUsSource[] | null;
+  /** The guest's own words when 'Other' is ticked. */
+  heardAboutUsOther: string | null;
   isUrgent: boolean;
   urgentSince: string | null;
   lastActivityAt: string | null;
@@ -279,6 +308,20 @@ export type CaseworkNoteCategory = 'Casework' | 'Activity' | 'Meeting' | 'DailyL
 export type CaseworkNoteStatus = 'Draft' | 'Submitted';
 export type CaseworkRiskLevel = 'NoRiskDetected' | 'Low' | 'Medium' | 'High';
 
+/**
+ * The New Casework Note's single-choice risk assessment. The six criteria are immediate risks —
+ * submitting one opens (or adds to) the guest's urgent case; NoneApply and NoteConcern do not.
+ */
+export type CaseworkRiskCheck =
+  | 'NoneApply'
+  | 'NoteConcern'
+  | 'SuicidalIdeationOrSelfHarm'
+  | 'RiskOfHarmToOthers'
+  | 'PsychosisNotUnderMhTeam'
+  | 'ImmediateRiskOfHomelessness'
+  | 'NoAccessToFood'
+  | 'SafeguardingConcern';
+
 /** Which of the two CPN forms a contact uses — the design's "CPN session type" cards. */
 export type CpnSessionType = 'InitialAssessment' | 'FollowUpSession';
 
@@ -333,6 +376,12 @@ export interface CaseworkNoteInput {
   occasion?: string | null;
   /** AFA contact: the type of practical advice given (AfaAdviceType lookup). */
   adviceType?: string | null;
+  /** New Casework Note: the single-choice risk assessment (the Add Contact popup leaves it null). */
+  riskCheck?: CaseworkRiskCheck | null;
+  /** New Casework Note: how the optional AFA advice was given — submitting files an AFA contact. */
+  afaContactMethod?: ContactType | null;
+  /** New Casework Note: existing guest actions ticked off in this session (completed on submit). */
+  completedActionIds?: string[];
 }
 
 export interface CaseworkNoteDto {
@@ -368,6 +417,16 @@ export interface CaseworkNoteDto {
   actions: CaseworkNoteActionDto[];
   /** Files attached through the Document Management module with this note's id. */
   attachments: CaseworkNoteAttachmentDto[];
+  riskCheck: CaseworkRiskCheck | null;
+  afaContactMethod: ContactType | null;
+  /** Ids of the existing actions ticked off in the session — re-ticked when a draft is resumed. */
+  completedActionIds: string[] | null;
+  /** The same actions as rows, for "Actions updated in this session" in the note history. */
+  completedActions: CaseworkNoteActionDto[] | null;
+  /** When the note's immediate risk opened or added to an urgent case: its follow-up deadline. */
+  urgentDeadlineAt: string | null;
+  /** When the note was last saved (drafts are re-saved; submitted notes never change). */
+  updatedAt: string | null;
 }
 
 export interface CaseworkNoteAttachmentDto {
@@ -599,6 +658,10 @@ export interface RegisterGuestRequest {
   referralType?: ReferralType | null;
   /** Required by the server when referralType is 'Secondary'. */
   referralSubcategory?: string | null;
+  /** "How did you hear about us?" — optional; any number of boxes. */
+  heardAboutUs?: HeardAboutUsSource[];
+  /** Required by the server when heardAboutUs includes 'Other'; dropped otherwise. */
+  heardAboutUsOther?: string | null;
 }
 
 export interface AddContactRequest {
@@ -807,8 +870,9 @@ export interface ResolveUrgentCaseRequest {
   inpatientAdmission: boolean;
   /** "Any other external service involved" — e.g. ambulance, A&E, police. */
   externalServicesInvolved?: string | null;
+  /** "Action taken to resolve" — required by the API. */
+  resolutionNote: string;
   /** Older optional fields the API still accepts; the Urgent Case Record no longer asks for them. */
-  resolutionNote?: string | null;
   pathwayAfterResolution?: GuestPathway | null;
   nextContactDate?: string | null;
   sessionFrequencyChange?: string | null;
@@ -822,6 +886,25 @@ export interface UrgentEpisodeSummaryDto {
   episodeNumber: number;
   raisedAt: string;
   resolvedAt: string | null;
+}
+
+/** One row of the guest profile's "Urgent Case History" tab — GET /urgent-cases/{guestId}/history, newest first. */
+export interface UrgentCaseHistoryRowDto {
+  id: string;
+  episodeNumber: number;
+  raisedAt: string;
+  raisedByName: string | null;
+  riskFlags: string[];
+  deadlineAt: string;
+  isResolved: boolean;
+  resolvedAt: string | null;
+  resolvedByName: string | null;
+  resolvedWithinWindow: boolean | null;
+  /** null until the CMHT question has been answered on the record. */
+  cmhtNotified: boolean | null;
+  inpatientAdmission: boolean;
+  /** "Action taken to resolve". */
+  resolutionNote: string | null;
 }
 
 export interface UrgentCaseCmhtContactDto {
@@ -1469,6 +1552,25 @@ export interface ContactHistorySummaryDto {
   /** Distinct guests with a CPN session or initial assessment in the period. */
   cpnGuests: number;
   guestsWithContacts: number;
+}
+
+/**
+ * One contact behind a Contact History tile (GET /contacts/list). `id` is the row's own record —
+ * the casework note, the CPN assessment, or (in the "Total contacts" list) the contact.
+ */
+export interface ContactListRowDto {
+  id: string;
+  guestId: string;
+  guestNumber: number;
+  guestName: string;
+  /** "Casework", "Activity", "Hospitality", "AFA", "Meeting", "Daily Log", "CPN session", "CPN initial assessment" or "Contact". */
+  type: string;
+  /** Activity attended / occasion, AFA advice given, or "Session N" for a CPN session. */
+  detail: string | null;
+  contactMethod: ContactType;
+  occurredAt: string;
+  loggedByName: string;
+  assignedCmhwName: string | null;
 }
 
 // ---- MDT queue (Hub Manager) and CPN record ----

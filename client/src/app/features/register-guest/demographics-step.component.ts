@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, inject, Input, signal, WritableSign
 import { FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { catchError, of } from 'rxjs';
 import { LookupItemDto, ReferralType } from '../../core/api-models';
-import { ETHNICITY_OPTIONS, GENDER_OPTIONS } from '../../core/demographic-options';
+import { ETHNICITY_OPTIONS, GENDER_OPTIONS, HEARD_ABOUT_US_OPTIONS } from '../../core/demographic-options';
 import { LookupCategories, SettingsApiService } from '../../core/settings-api.service';
 
 /**
@@ -28,6 +28,9 @@ import { LookupCategories, SettingsApiService } from '../../core/settings-api.se
  *    and — for Secondary referrals — the subcategory map to RegisterGuestRequest.referralType
  *    and .referralSubcategory. The subcategory is required client-side for Secondary so the
  *    user sees it before the server's own rule rejects the registration.
+ *  - "How did you hear about us?" is a row of optional tickboxes in the same card, mapped to
+ *    RegisterGuestRequest.heardAboutUs (the ticked names). Ticking "Other" reveals a required
+ *    "Please specify" box — RegisterGuestRequest.heardAboutUsOther.
  *  - The consent checkbox is not drawn on any of the redesigned screens, but
  *    RegisterGuestRequest.consentGiven is required — kept at the bottom of this step.
  */
@@ -98,4 +101,12 @@ export class DemographicsStepComponent {
   ];
   /** Spec §6.2 referral classification — RegisterGuestRequest.referralType. */
   protected readonly referralTypeOptions: ReferralType[] = ['Primary', 'Secondary'];
+
+  /** "How did you hear about us?" tickboxes — RegisterGuestRequest.heardAboutUs. */
+  protected readonly heardAboutUsOptions = HEARD_ABOUT_US_OPTIONS;
+
+  /** True while "Other" is ticked — reveals the "Please specify" box. */
+  protected get heardAboutUsOtherTicked(): boolean {
+    return this.form.get('referral.heardAboutUs.Other')?.value === true;
+  }
 }

@@ -26,6 +26,7 @@ import {
   CmhwOptionDto,
   DialogScores,
   GuestPathway,
+  HeardAboutUsSource,
   InitialConversationActionInput,
   RecordInitialConversationRequest,
   RecordRiskAssessmentRequest,
@@ -34,6 +35,7 @@ import {
   UpdateDemographicsRequest,
 } from '../../core/api-models';
 import { AuthService } from '../../core/auth.service';
+import { HEARD_ABOUT_US_OPTIONS, heardAboutUsLabel } from '../../core/demographic-options';
 import { GuestsApiService } from '../../core/guests-api.service';
 import { CustomFieldsComponent } from '../../shared/custom-fields.component';
 import { DemographicsStepComponent } from './demographics-step.component';
@@ -48,6 +50,9 @@ type ActionRowGroup = FormGroup<{
   dueDate: FormControl<string>;
   assignedToStaffId: FormControl<string>;
 }>;
+
+/** Step 1's "How did you hear about us?" tickboxes, one per source. */
+type HeardAboutUsTicks = Record<HeardAboutUsSource, boolean>;
 
 /** FluentValidation-equivalent rule: date of birth must be in the past. */
 function pastDateValidator(): ValidatorFn {
@@ -91,7 +96,8 @@ function pastDateValidator(): ValidatorFn {
  * gone — repeating them would only duplicate what the server has already done.
  *
  * Step 1's referral card maps straight onto RegisterGuestRequest — referralSource plus the
- * spec §6.2 referralType and (for Secondary referrals) referralSubcategory. After completion
+ * spec §6.2 referralType and (for Secondary referrals) referralSubcategory, and the optional
+ * "How did you hear about us?" tickboxes (heardAboutUs / heardAboutUsOther). After completion
  * getOverview() supplies the "G-{guestNumber}" reference for the success screen.
  * Each call is tracked individually: on failure the wizard reports which call failed and
  * "Retry" resumes from that call without repeating the ones that already succeeded.
@@ -242,6 +248,15 @@ export class RegisterGuestComponent {
        * without one, so the constructor mirrors that rule as a client-side validator.
        */
       referralSubcategory: [''],
+      /**
+       * "How did you hear about us?" — one optional tickbox per source, keyed by the
+       * RegisterGuestRequest.heardAboutUs names; any number may be ticked.
+       */
+      heardAboutUs: this.fb.nonNullable.group(
+        Object.fromEntries(HEARD_ABOUT_US_OPTIONS.map((o) => [o.value, false])) as HeardAboutUsTicks,
+      ),
+      /** RegisterGuestRequest.heardAboutUsOther — required while "Other" is ticked (constructor). */
+      heardAboutUsOther: ['', Validators.maxLength(200)],
     }),
     consent: this.fb.nonNullable.group({
       consentGiven: [false, Validators.requiredTrue],
@@ -408,6 +423,22 @@ export class RegisterGuestComponent {
         subcategory.setValue('', { emitEvent: false });
       }
       subcategory.updateValueAndValidity({ emitEvent: false });
+    });
+
+    // "How did you hear about us?": ticking Other makes its text required (not just spaces —
+    // the server rejects a blank one); unticking clears it, as the server would drop it anyway.
+    const otherRequired = [Validators.required, Validators.pattern(/\S/)];
+    const otherTicked = referral.controls.heardAboutUs.controls.Other;
+    otherTicked.valueChanges.pipe(takeUntilDestroyed()).subscribe((ticked) => {
+      const other = referral.controls.heardAboutUsOther;
+      if (ticked) {
+        other.addValidators(otherRequired);
+      } else {
+        other.removeValidators(otherRequired);
+        other.setValue('', { emitEvent: false });
+        other.markAsUntouched();
+      }
+      other.updateValueAndValidity({ emitEvent: false });
     });
 
     // Spec §4.2: Mental Wellbeing and Clinical Support are one-to-one pathways — the
@@ -708,6 +739,8 @@ export class RegisterGuestComponent {
       // Spec §6.2 — the subcategory only applies to Secondary referrals.
       referralType: referral.referralType,
       referralSubcategory: referral.referralType === 'Secondary' ? referral.referralSubcategory || null : null,
+      heardAboutUs: HEARD_ABOUT_US_OPTIONS.filter((o) => referral.heardAboutUs[o.value]).map((o) => o.value),
+      heardAboutUsOther: referral.heardAboutUs.Other ? referral.heardAboutUsOther.trim() || null : null,
     };
   }
 
@@ -756,10 +789,15 @@ export class RegisterGuestComponent {
 
     const flaggedLabels = MDT_FLAGS.filter((f) => value.risk.flags[f.key]).map((f) => f.label);
     const needHelpLabels = DIALOG_DOMAINS.filter((d) => dialog.needHelp[d.key] === true).map((d) => d.area);
+    const heardAboutUs = HEARD_ABOUT_US_OPTIONS.filter((o) => referral.heardAboutUs[o.value]).map(
+      (o) => o.value,
+    );
 
     const lines: (string | false)[] = [
       `Session date: ${value.session.sessionDate} · Type of contact: ${value.session.contactType}`,
       `Referral source: ${referral.referralSource}`,
+      heardAboutUs.length > 0 &&
+        `How did you hear about us: ${heardAboutUsLabel(heardAboutUs, referral.heardAboutUsOther)}`,
       '',
       !!value.prompts.durationImpact && `Duration, daily impact, recent triggers: ${value.prompts.durationImpact}`,
       !!value.prompts.background && `Background (family, upbringing, early adversity): ${value.prompts.background}`,

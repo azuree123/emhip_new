@@ -57,7 +57,7 @@ public sealed record ExportGuestRecordQuery(Guid HubId, Guid GuestId) : IRequest
 
 public sealed class ExportGuestRecordQueryHandler(
     IAppDbContext db, IGuestReadService guests, IDocumentReadService documents, IUrgentCaseReadService episodes,
-    ICurrentUser currentUser, IAuditTrail audit)
+    ICurrentUser currentUser, IAuditTrail audit, IAppSettingsService settings)
     : IRequestHandler<ExportGuestRecordQuery, GuestRecordExportDto?>
 {
     public async Task<GuestRecordExportDto?> Handle(ExportGuestRecordQuery request, CancellationToken cancellationToken)
@@ -69,6 +69,7 @@ public sealed class ExportGuestRecordQueryHandler(
         if (overview is null) return null;
 
         var contacts = await guests.GetContactHistoryAsync(request.GuestId, null, 100, cancellationToken);
+        var responseHours = Math.Max(1, await settings.GetIntAsync(Settings.SettingsCatalog.Keys.UrgentResponseHours, 72, cancellationToken));
         var docs = await documents.GetListAsync(request.HubId, null, request.GuestId, null, null, null, false, false, null, 200, cancellationToken);
 
         var export = new GuestRecordExportDto(
@@ -82,7 +83,7 @@ public sealed class ExportGuestRecordQueryHandler(
             await guests.GetFollowUpsAsync(request.GuestId, cancellationToken),
             await guests.GetInitialConversationAsync(request.GuestId, cancellationToken),
             await guests.GetDialogAsync(request.GuestId, cancellationToken),
-            await guests.GetCaseworkNotesAsync(request.GuestId, cancellationToken),
+            await guests.GetCaseworkNotesAsync(request.GuestId, responseHours, cancellationToken),
             await guests.GetCarePlansAsync(request.GuestId, cancellationToken),
             contacts.Items,
             await guests.GetCaseloadHistoryAsync(request.GuestId, cancellationToken),

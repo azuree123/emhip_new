@@ -272,6 +272,32 @@
         }
       </section>
 
+      <!-- "How guests heard about us" — the registration tickboxes; a guest can tick several. -->
+      <section class="report-card">
+        <h2 class="report-card__title">How guests heard about us</h2>
+        <p class="report-card__subtitle">
+          Guests registered {{ rangeLabel() }} · more than one may be ticked
+        </p>
+
+        @if (heardAboutUsLoading()) {
+          <div class="report-card__state">Loading answers…</div>
+        } @else if (heardAboutUsRows().length === 0) {
+          <div class="report-card__state">No guests registered in this period.</div>
+        } @else {
+          <div class="referral-rows">
+            @for (row of heardAboutUsRows(); track row.label) {
+              <div class="breakdown-row">
+                <span class="breakdown-row__label">{{ row.label }}</span>
+                <div class="breakdown-row__track">
+                  <div class="breakdown-row__fill" [style.width.%]="row.barPct"></div>
+                </div>
+                <span class="breakdown-row__value">{{ row.percentage }}%</span>
+              </div>
+            }
+          </div>
+        }
+      </section>
+
       <section class="report-card">
         <div class="report-card__head">
           <h2 class="report-card__title">Contact activity</h2>

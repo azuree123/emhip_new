@@ -115,6 +115,10 @@
               <span class="field__label">Contact email</span>
               <span class="field__value">{{ overview().contactEmail || '—' }}</span>
             </div>
+            <div class="field">
+              <span class="field__label">How did you hear about us</span>
+              <span class="field__value">{{ heardAboutUs() }}</span>
+            </div>
           </div>
         </div>
       </section>
@@ -162,8 +166,13 @@
                 </div>
                 <div class="timeline-item__content">
                   <div class="timeline-item__head">
-                    <!-- No outcome tag: every contact the system logs today is a completed one. -->
-                    <span class="timeline-item__type">{{ humanize(contact.type) }}</span>
+                    <!-- The contact type leads (customer feedback), not the method; no outcome tag —
+                         every contact the system logs today is a completed one. -->
+                    @let chip = contactTypeChip(contact);
+                    <span class="timeline-item__type">{{ chip.label }}</span>
+                    @if (contact.detail) {
+                      <span class="timeline-item__detail">{{ contact.detail }}</span>
+                    }
                   </div>
                   <div class="timeline-item__meta">
                     <span>{{ contact.createdByName }}</span>

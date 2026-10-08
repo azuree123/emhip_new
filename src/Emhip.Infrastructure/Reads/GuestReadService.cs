@@ -9,6 +9,7 @@ using Emhip.Application.Guests.Cpn;
 using Emhip.Application.Guests.Dialog;
 using Emhip.Application.Guests.Dtos;
 using Emhip.Application.Guests.Pathways;
+using Emhip.Domain.Entities;
 using Emhip.Domain.Enums;
 using Emhip.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -327,6 +328,7 @@ public sealed class GuestReadService(ISqlConnectionFactory connectionFactory, Em
                 g.AddressLine1, g.PostCode, g.RegisteredAt,
                 g.Pathway, g.AfaSupportNeeded, g.ReferralSource,
                 g.UrgentSince, g.LastActivityAt, g.ReferralType, g.ReferralSubcategory,
+                g.HeardAboutUs, g.HeardAboutUsOther,
                 AssignedCmhwName = db.Users.Where(s => s.Id == g.AssignedCmhwId).Select(s => s.DisplayName).FirstOrDefault(),
             })
             .FirstOrDefaultAsync(cancellationToken);
@@ -350,27 +352,20 @@ public sealed class GuestReadService(ISqlConnectionFactory connectionFactory, Em
                 db.Users.Where(s => s.Id == n.AuthorStaffId).Select(s => s.DisplayName).FirstOrDefault() ?? "Unknown", n.CreatedAt))
             .ToListAsync(cancellationToken);
 
-        var recentContacts = (await db.Contacts.AsNoTracking()
-            .Where(c => c.GuestId == guestId)
-            .OrderByDescending(c => c.OccurredAt)
-            .Take(10)
-            .Select(c => new
-            {
-                c.Id, c.Type, c.Outcome, c.OccurredAt,
-                CreatedByName = db.Users.Where(s => s.Id == c.CreatedByStaffId).Select(s => s.DisplayName).FirstOrDefault() ?? "Unknown",
-                Category = db.CaseworkNotes.Where(n => n.ContactId == c.Id).Select(n => n.Category).FirstOrDefault(),
-                IsCpnContact = db.CaseworkNotes.Any(n => n.ContactId == c.Id && n.IsCpnContact),
-            })
+        var recentContacts = (await ContactRows(db.Contacts.AsNoTracking()
+                .Where(c => c.GuestId == guestId)
+                .OrderByDescending(c => c.OccurredAt)
+                .Take(10))
             .ToListAsync(cancellationToken))
-            .Select(c => new GuestContactSummaryDto(
-                c.Id, c.Type.ToString(), c.Outcome.ToString(), c.OccurredAt, c.CreatedByName, c.Category?.ToString(), c.IsCpnContact))
+            .Select(ToContactSummary)
             .ToList();
 
         return new GuestOverviewDto(
             guest.Id, guest.GuestNumber, guest.FirstName, guest.LastName, guest.DateOfBirth, guest.Status,
             guest.ContactPhone, guest.ContactEmail, guest.AddressLine1, guest.PostCode, guest.AssignedCmhwName, guest.RegisteredAt,
             hasRiskFlags, openFollowUps, guest.Pathway, guest.AfaSupportNeeded, guest.ReferralSource, pinnedNotes, recentContacts,
-            guest.IsUrgent, guest.UrgentSince, guest.LastActivityAt, guest.ReferralType, guest.ReferralSubcategory);
+            guest.IsUrgent, guest.UrgentSince, guest.LastActivityAt, guest.ReferralType, guest.ReferralSubcategory,
+            HeardAboutUsSources.Split(guest.HeardAboutUs), guest.HeardAboutUsOther);
     }
 
     public async Task<GuestDemographicsDto?> GetDemographicsAsync(Guid guestId, CancellationToken cancellationToken = default)
@@ -441,7 +436,7 @@ public sealed class GuestReadService(ISqlConnectionFactory connectionFactory, Em
         return new GuestPathwayDto(guestId, guest.Pathway, guest.AfaSupportNeeded, changes, referrals);
     }
 
-    public async Task<IReadOnlyList<CaseworkNoteDto>> GetCaseworkNotesAsync(Guid guestId, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<CaseworkNoteDto>> GetCaseworkNotesAsync(Guid guestId, int urgentResponseHours, CancellationToken cancellationToken = default)
     {
         var notes = await db.CaseworkNotes.AsNoTracking()
             .Where(n => n.GuestId == guestId)
@@ -455,7 +450,9 @@ public sealed class GuestReadService(ISqlConnectionFactory connectionFactory, Em
                 n.NextContactDate, n.NoNextContactRequired, n.MdtDiscussionRequested, n.CpnReferralRequested,
                 n.ActivityType, n.Occasion, n.AdviceType,
                 AuthorName = db.Users.Where(u => u.Id == n.AuthorStaffId).Select(u => u.DisplayName).FirstOrDefault() ?? "Unknown",
-                n.CreatedAt, n.SubmittedAt,
+                n.CreatedAt, n.SubmittedAt, n.UpdatedAt,
+                n.RiskCheck, n.AfaContactMethod, n.CompletedActionIds,
+                UrgentRaisedAt = db.UrgentEpisodes.Where(e => e.Id == n.UrgentEpisodeId).Select(e => (DateTimeOffset?)e.RaisedAt).FirstOrDefault(),
             })
             .ToListAsync(cancellationToken);
 
@@ -490,22 +487,46 @@ public sealed class GuestReadService(ISqlConnectionFactory connectionFactory, Em
             })
             .ToListAsync(cancellationToken);
 
+        var actionsById = actions.ToDictionary(a => a.Id);
+        CaseworkNoteActionDto ToActionDto(Guid id)
+        {
+            var a = actionsById[id];
+            return new CaseworkNoteActionDto(a.Id, a.Description, a.DueDate, a.IsCompleted, a.AssignedToName);
+        }
+
         return notes
-            .Select(n => new CaseworkNoteDto(
-                n.Id, n.GuestId, n.Category, n.Status, n.ContactMethod, n.OccurredAt,
-                n.Situation, n.Background, n.Assessment, n.Recommendation, n.RiskLevel,
-                n.RiskNotes, n.IsCpnContact, n.CpnSessionType, n.SessionNumber,
-                n.GuestReportedChanges, n.ServiceInvolvementChanges, n.AdditionalNotes,
-                n.NextContactDate, n.NoNextContactRequired, n.MdtDiscussionRequested, n.CpnReferralRequested,
-                n.ActivityType, n.Occasion, n.AdviceType,
-                n.AuthorName, n.CreatedAt, n.SubmittedAt,
-                n.SubmittedAt is null
-                    ? []
-                    : actions
-                        .Where(a => Math.Abs((a.CreatedAt - n.SubmittedAt.Value).TotalMinutes) < 5)
-                        .Select(a => new CaseworkNoteActionDto(a.Id, a.Description, a.DueDate, a.IsCompleted, a.AssignedToName))
-                        .ToList(),
-                attachmentsByNote.TryGetValue(n.Id, out var files) ? files : []))
+            .Select(n =>
+            {
+                // Short forms never create actions; without this an AFA filed alongside a casework
+                // note would also claim that note's actions, being submitted in the same moment.
+                var isShortForm = !n.IsCpnContact && n.Category is CaseworkNoteCategory.Activity or CaseworkNoteCategory.Hospitality or CaseworkNoteCategory.Afa;
+                var completedIds = (n.CompletedActionIds ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries)
+                    .Select(id => Guid.TryParse(id, out var guid) ? guid : Guid.Empty)
+                    .Where(id => id != Guid.Empty)
+                    .ToList();
+                return new CaseworkNoteDto(
+                    n.Id, n.GuestId, n.Category, n.Status, n.ContactMethod, n.OccurredAt,
+                    n.Situation, n.Background, n.Assessment, n.Recommendation, n.RiskLevel,
+                    n.RiskNotes, n.IsCpnContact, n.CpnSessionType, n.SessionNumber,
+                    n.GuestReportedChanges, n.ServiceInvolvementChanges, n.AdditionalNotes,
+                    n.NextContactDate, n.NoNextContactRequired, n.MdtDiscussionRequested, n.CpnReferralRequested,
+                    n.ActivityType, n.Occasion, n.AdviceType,
+                    n.AuthorName, n.CreatedAt, n.SubmittedAt,
+                    n.SubmittedAt is null || isShortForm
+                        ? []
+                        : actions
+                            .Where(a => Math.Abs((a.CreatedAt - n.SubmittedAt.Value).TotalMinutes) < 5)
+                            .Select(a => ToActionDto(a.Id))
+                            .ToList(),
+                    attachmentsByNote.TryGetValue(n.Id, out var files) ? files : [],
+                    n.RiskCheck,
+                    n.AfaContactMethod,
+                    completedIds,
+                    // An action deleted from the Actions tab since drops out rather than showing a blank row.
+                    completedIds.Where(actionsById.ContainsKey).Select(ToActionDto).ToList(),
+                    n.UrgentRaisedAt?.AddHours(urgentResponseHours),
+                    n.UpdatedAt);
+            })
             .ToList();
     }
 
@@ -602,6 +623,47 @@ public sealed class GuestReadService(ISqlConnectionFactory connectionFactory, Em
 
     private sealed record ContactCursor(DateTimeOffset OccurredAt, Guid Id);
 
+    /// <summary>A contact with what the worker classified it as — from its casework note, or the CPN Part 1 it was logged for.</summary>
+    private sealed record ContactRow(
+        Guid Id, ContactType Type, ContactOutcome Outcome, DateTimeOffset OccurredAt, string CreatedByName,
+        CaseworkNoteCategory? Category, bool IsCpnNote, int? SessionNumber, string? ActivityType, string? Occasion, string? AdviceType,
+        bool IsCpnAssessment);
+
+    /// <summary>
+    /// Projects contacts with their contact type. A submitted note links its contact by id; a
+    /// submitted CPN Part 1 writes its contact unlinked, but there is only ever one per guest, so it
+    /// is recognised by guest and time. Anything else (imports, Scheduled contacts → Record contact)
+    /// has a method but no type.
+    /// </summary>
+    private IQueryable<ContactRow> ContactRows(IQueryable<Contact> contacts) =>
+        contacts.Select(c => new ContactRow(
+            c.Id, c.Type, c.Outcome, c.OccurredAt,
+            db.Users.Where(u => u.Id == c.CreatedByStaffId).Select(u => u.DisplayName).FirstOrDefault() ?? "Unknown",
+            db.CaseworkNotes.Where(n => n.ContactId == c.Id).Select(n => n.Category).FirstOrDefault(),
+            db.CaseworkNotes.Any(n => n.ContactId == c.Id && n.IsCpnContact),
+            db.CaseworkNotes.Where(n => n.ContactId == c.Id).Select(n => n.SessionNumber).FirstOrDefault(),
+            db.CaseworkNotes.Where(n => n.ContactId == c.Id).Select(n => n.ActivityType).FirstOrDefault(),
+            db.CaseworkNotes.Where(n => n.ContactId == c.Id).Select(n => n.Occasion).FirstOrDefault(),
+            db.CaseworkNotes.Where(n => n.ContactId == c.Id).Select(n => n.AdviceType).FirstOrDefault(),
+            db.CpnInitialAssessments.Any(a => a.GuestId == c.GuestId && a.Status == CpnAssessmentStatus.Submitted && a.OccurredAt == c.OccurredAt)));
+
+    private static GuestContactSummaryDto ToContactSummary(ContactRow r)
+    {
+        var isCpn = r.IsCpnNote || r.IsCpnAssessment;
+        string? detail = r switch
+        {
+            { IsCpnNote: true } => r.SessionNumber is { } n ? $"Session {n}" : null,
+            { IsCpnAssessment: true, Category: null } => "Initial assessment",
+            { Category: CaseworkNoteCategory.Activity } =>
+                string.Join(" — ", new[] { r.ActivityType, r.Occasion }.Where(v => !string.IsNullOrWhiteSpace(v))) is { Length: > 0 } a ? a : null,
+            { Category: CaseworkNoteCategory.Afa } => r.AdviceType,
+            _ => null,
+        };
+        return new GuestContactSummaryDto(
+            r.Id, r.Type.ToString(), r.Outcome.ToString(), r.OccurredAt, r.CreatedByName,
+            isCpn ? null : r.Category?.ToString(), isCpn, detail);
+    }
+
     public async Task<KeysetPage<GuestContactSummaryDto>> GetContactHistoryAsync(
         Guid guestId, string? cursor, int pageSize, CancellationToken cancellationToken = default)
     {
@@ -614,24 +676,13 @@ public sealed class GuestReadService(ISqlConnectionFactory connectionFactory, Em
                 || (c.OccurredAt == decoded.OccurredAt && c.Id.CompareTo(decoded.Id) < 0));
         }
 
-        var rows = await query
-            .OrderByDescending(c => c.OccurredAt).ThenByDescending(c => c.Id)
-            .Take(pageSize + 1)
-            .Select(c => new
-            {
-                c.Id, c.OccurredAt,
-                Type = c.Type.ToString(),
-                Outcome = c.Outcome.ToString(),
-                CreatedByName = db.Users.Where(u => u.Id == c.CreatedByStaffId).Select(u => u.DisplayName).FirstOrDefault() ?? "Unknown",
-                Category = db.CaseworkNotes.Where(n => n.ContactId == c.Id).Select(n => n.Category).FirstOrDefault(),
-                IsCpnContact = db.CaseworkNotes.Any(n => n.ContactId == c.Id && n.IsCpnContact),
-            })
+        var rows = await ContactRows(query
+                .OrderByDescending(c => c.OccurredAt).ThenByDescending(c => c.Id)
+                .Take(pageSize + 1))
             .ToListAsync(cancellationToken);
 
         var hasMore = rows.Count > pageSize;
-        var page = rows.Take(pageSize)
-            .Select(r => new GuestContactSummaryDto(r.Id, r.Type, r.Outcome, r.OccurredAt, r.CreatedByName, r.Category?.ToString(), r.IsCpnContact))
-            .ToList();
+        var page = rows.Take(pageSize).Select(ToContactSummary).ToList();
 
         return new KeysetPage<GuestContactSummaryDto>
         {

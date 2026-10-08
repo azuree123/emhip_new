@@ -267,6 +267,17 @@
     color: t.$color-text-primary;
   }
 
+  &__detail {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-family: t.$font-primary;
+    font-weight: 500;
+    font-size: 13px;
+    color: t.$color-text-meta;
+  }
+
   &__meta {
     display: flex;
     align-items: center;

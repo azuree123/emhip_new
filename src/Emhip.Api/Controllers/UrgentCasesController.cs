@@ -42,6 +42,11 @@ public sealed class UrgentCasesController(IMediator mediator, ICurrentUser curre
     public async Task<IActionResult> GetEpisodes(Guid guestId, CancellationToken cancellationToken) =>
         Ok(await mediator.Send(new GetGuestUrgentEpisodesQuery(currentUser.HubId, guestId), cancellationToken));
 
+    /// <summary>The guest profile's "Urgent Case History" tab — every urgent case for the guest, newest first.</summary>
+    [HttpGet("{guestId:guid}/history")]
+    public async Task<IActionResult> GetHistory(Guid guestId, CancellationToken cancellationToken) =>
+        Ok(await mediator.Send(new GetGuestUrgentCaseHistoryQuery(currentUser.HubId, guestId), cancellationToken));
+
     /// <summary>The Urgent Case Record for one urgent case. Viewing it is written to the access log.</summary>
     [HttpGet("episodes/{episodeId:guid}")]
     public async Task<ActionResult<UrgentEpisodeRecordDto>> GetEpisodeRecord(Guid episodeId, CancellationToken cancellationToken)

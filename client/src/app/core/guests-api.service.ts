@@ -16,6 +16,8 @@ import {
   GuestCpnAssessmentDto,
   GuestCpnRecordDto,
   CaseworkNoteDto,
+  GroupContactResult,
+  LogGroupContactRequest,
   AddNoteRequest,
   AllocateGuestRequest,
   ClinicalProfileDto,
@@ -222,6 +224,11 @@ export class GuestsApiService {
   saveCaseworkNote(guestId: string, input: CaseworkNoteInput, submit: boolean): Observable<{ id: string }> {
     const params = new HttpParams().set('submit', submit);
     return this.http.post<{ id: string }>(`${this.base}/${guestId}/casework-notes`, input, { params });
+  }
+
+  /** One Activity / Hospitality contact for several guests — a submitted note and contact on each record. */
+  logGroupContact(request: LogGroupContactRequest): Observable<GroupContactResult> {
+    return this.http.post<GroupContactResult>(`${this.base}/group-contacts`, request);
   }
 
   updateCaseworkNote(guestId: string, noteId: string, input: CaseworkNoteInput, submit: boolean): Observable<void> {

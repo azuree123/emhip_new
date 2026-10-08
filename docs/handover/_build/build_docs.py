@@ -41,6 +41,7 @@ SOURCES = [
     HANDOVER / "06-Deployment-and-Operations-Runbook.md",
     HANDOVER / "07-Release-Notes-2026-09-30.md",
     HANDOVER / "07b-Release-Notes-2026-10-07.md",
+    HANDOVER / "07c-Release-Notes-2026-10-08.md",
     HANDOVER / "08-Known-Issues-and-Recommendations.md",
     (REPO / "docs/uk-gdpr-compliance.md", "09-UK-GDPR-Compliance"),
 ]

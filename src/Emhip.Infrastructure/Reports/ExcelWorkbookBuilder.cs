@@ -97,8 +97,11 @@ public sealed class ExcelWorkbookBuilder : IExcelWorkbookBuilder
         if (report.Breakdowns.SecondaryReferralSubcategories.Count > 0)
         {
             // Percentages here are of all guests, like every other section, so the rows read consistently.
-            BreakdownSection(sheet, row, "Secondary referral subcategory", report.Breakdowns.SecondaryReferralSubcategories, report.Breakdowns);
+            row = BreakdownSection(sheet, row, "Secondary referral subcategory", report.Breakdowns.SecondaryReferralSubcategories, report.Breakdowns);
         }
+
+        // Tickboxes — a guest counts under every box ticked, so the shares can add up to more than 100%.
+        BreakdownSection(sheet, row, "How guests heard about us (more than one may be ticked)", report.Breakdowns.HeardAboutUs, report.Breakdowns);
 
         sheet.Columns().AdjustToContents();
     }

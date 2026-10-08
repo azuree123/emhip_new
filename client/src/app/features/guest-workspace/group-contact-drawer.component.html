@@ -1,0 +1,145 @@
+<!-- Like Add Contact, a stray click beside the form does not throw away the guest list. -->
+<div class="drawer-overlay">
+  <div class="drawer" role="dialog" aria-modal="true" aria-labelledby="group-contact-title" (click)="$event.stopPropagation()">
+    <div class="drawer__header">
+      <div class="drawer__heading">
+        <h2 class="drawer__title" id="group-contact-title">Log group contact</h2>
+        <span class="drawer__subtitle">One activity or hospitality contact for every guest who attended</span>
+      </div>
+      <button type="button" class="drawer__close" aria-label="Close" (click)="close()">
+        <svg width="16" height="16" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+          <path d="M1 1l12 12M13 1L1 13" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+        </svg>
+      </button>
+    </div>
+
+    <form class="drawer__form" (ngSubmit)="submit()">
+      <div class="field field--full">
+        <span class="field__label">Select contact type&nbsp;*</span>
+        <div class="choice-row">
+          @for (option of categories; track option.value) {
+            <button
+              type="button"
+              class="choice"
+              [class.choice--on]="category() === option.value"
+              [attr.aria-pressed]="category() === option.value"
+              (click)="setCategory(option.value)"
+            >
+              <span class="choice__radio" aria-hidden="true"></span>
+              <span class="choice__label">{{ option.label }}</span>
+            </button>
+          }
+        </div>
+      </div>
+
+      <div class="drawer__grid">
+        <label class="field">
+          @if (isActivity()) {
+            <span class="field__label">Date&nbsp;*</span>
+            <input type="date" name="occurredOn" [(ngModel)]="occurredOn" required />
+          } @else {
+            <span class="field__label">Date</span>
+            <input type="date" name="occurredOn" [ngModel]="occurredOn" disabled />
+            <span class="field__hint">auto-logged</span>
+          }
+        </label>
+        <label class="field">
+          <span class="field__label">Logged by</span>
+          <input type="text" name="loggedBy" [value]="loggedBy" disabled />
+          <span class="field__hint">Pre-filled from login</span>
+        </label>
+      </div>
+
+      @if (isActivity()) {
+        <label class="field field--full">
+          <span class="field__label">Activity&nbsp;*</span>
+          <select name="activityType" [(ngModel)]="activityType">
+            <option value="">Select activity...</option>
+            @for (item of activities(); track item.id) {
+              <option [value]="item.label">{{ item.label }}</option>
+            }
+          </select>
+          <span class="field__hint">List maintained by admin in Settings — no developer needed to update</span>
+        </label>
+
+        <label class="field field--full">
+          <span class="field__label">Describe the occasion</span>
+          <input type="text" name="occasion" maxlength="500" [(ngModel)]="occasion" placeholder="e.g. Wednesday community lunch" />
+        </label>
+      } @else {
+        <div class="banner">
+          <p class="banner__text">
+            No clinical notes, no risk check, no next contact date required for hospitality contacts.
+          </p>
+        </div>
+      }
+
+      <!-- Attendees -->
+      <div class="field field--full">
+        <span class="field__label">Guests who attended&nbsp;*</span>
+        <emhip-guest-picker placeholder="Search a guest by name or G-number, then pick to add…" (picked)="addGuest($event)" />
+        @if (pickerHint(); as hint) {
+          <span class="field__hint field__hint--warn">{{ hint }}</span>
+        }
+
+        @if (attendees().length) {
+          <ul class="attendees">
+            @for (a of attendees(); track a.guestId) {
+              <li class="attendee" [class.attendee--risk]="isActivity() && a.highRisk">
+                <span class="attendee__name">{{ a.label }}</span>
+                @if (isActivity()) {
+                  <label class="attendee__risk">
+                    <input type="checkbox" [checked]="a.highRisk" (change)="toggleHighRisk(a.guestId)" />
+                    High risk
+                  </label>
+                }
+                <button type="button" class="attendee__remove" [attr.aria-label]="'Remove ' + a.label" (click)="removeGuest(a.guestId)">
+                  ×
+                </button>
+              </li>
+            }
+          </ul>
+          <span class="field__hint">
+            {{ attendees().length }} of up to {{ maxAttendees }} guests.
+            @if (isActivity()) {
+              Risk check: every guest is recorded as “no risk detected” unless you tick “High risk” beside them.
+            }
+          </span>
+        } @else {
+          <p class="attendees-empty">No guests added yet.</p>
+        }
+      </div>
+
+      <label class="field field--full">
+        @if (isActivity()) {
+          <span class="field__label">Observation notes <span class="field__optional">(optional)</span></span>
+        } @else {
+          <span class="field__label">Additional notes <span class="field__optional">(optional)</span></span>
+        }
+        <textarea
+          name="notes"
+          rows="3"
+          maxlength="4000"
+          [(ngModel)]="notes"
+          [placeholder]="isActivity() ? 'How did the group engage? Anything notable about the session?' : 'Anything worth noting about the session'"
+        ></textarea>
+        <span class="field__hint">Saved on every guest's record. Add anything specific to one guest from their own profile.</span>
+      </label>
+
+      <p class="submit-note">
+        Logging writes a separate {{ isActivity() ? 'activity' : 'hospitality' }} contact on each guest's record — it shows in
+        their Contact History and counts in the Contact History screen and reports, exactly as if it had been logged one guest
+        at a time.
+      </p>
+
+      @if (error()) {
+        <p class="form-error">{{ error() }}</p>
+      }
+
+      <div class="drawer__actions">
+        <button type="button" class="btn-draft" [disabled]="saving()" (click)="close()">Cancel</button>
+        <button type="submit" class="btn-submit" [disabled]="saving() || !attendees().length">{{ submitLabel() }}</button>
+      </div>
+    </form>
+  </div>
+</div>

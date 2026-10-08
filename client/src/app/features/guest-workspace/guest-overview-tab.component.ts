@@ -3,15 +3,16 @@ import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { DialogAssessmentDto, GuestDemographicsDto, GuestOverviewDto } from '../../core/api-models';
 import { AuthService } from '../../core/auth.service';
+import { heardAboutUsLabel } from '../../core/demographic-options';
 import { GuestsApiService } from '../../core/guests-api.service';
 import { Permissions } from '../../core/permissions';
 import { CustomFieldsComponent } from '../../shared/custom-fields.component';
 import {
+  contactTypeChip,
   daysSince,
   formatDate,
   formatDateTime,
   guestPathwayLabel,
-  humanize,
 } from './guest-workspace.util';
 
 /**
@@ -24,6 +25,7 @@ import {
  * Honest-data notes (the bundle shows sample data with no API backing):
  * - "Sex" and "Next contact" have no field on any DTO — replaced with real fields (contact
  *   phone/email, AFA support) in the same slots. "Referral type" is real: referralSource.
+ *   "How did you hear about us" (heardAboutUs, from registration) sits beside contact email.
  * - "Total follow-up entries" tile: the API only exposes openFollowUpCount — labelled
  *   "Open follow-up entries". It is a count, not a link: per-guest follow-ups are worked from
  *   the Follow-ups screen, which is why the workspace has no Follow-up Log tab.
@@ -91,7 +93,12 @@ export class GuestOverviewTabComponent {
 
   readonly pathwayLabel = computed(() => guestPathwayLabel(this.overview().pathway));
 
+  /** "How did you hear about us?" from registration — "NHS, Other — <text>", or '—'. */
+  readonly heardAboutUs = computed(() =>
+    heardAboutUsLabel(this.overview().heardAboutUs, this.overview().heardAboutUsOther),
+  );
+
   readonly formatDate = formatDate;
   readonly formatDateTime = formatDateTime;
-  readonly humanize = humanize;
+  readonly contactTypeChip = contactTypeChip;
 }

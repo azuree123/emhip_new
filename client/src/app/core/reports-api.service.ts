@@ -110,6 +110,14 @@ export class ReportsApiService {
     return this.http.get<BreakdownSliceDto[]>(`${this.base}/referral-sources`, { params: periodParams(period) });
   }
 
+  /**
+   * "How guests heard about us" — the registration tickboxes of the guests registered in the
+   * period. A guest counts under every box ticked, so the percentages can add up to over 100.
+   */
+  getHeardAboutUs(period: ReportPeriod): Observable<BreakdownSliceDto[]> {
+    return this.http.get<BreakdownSliceDto[]>(`${this.base}/heard-about-us`, { params: periodParams(period) });
+  }
+
   /** "Export history" tab — the hub's most recent exports taken in the period. */
   getExportHistory(period: ReportPeriod): Observable<ExportHistoryItemDto[]> {
     return this.http.get<ExportHistoryItemDto[]>(`${this.base}/exports`, { params: periodParams(period) });

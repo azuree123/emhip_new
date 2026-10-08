@@ -18,12 +18,14 @@ import { GuestDocumentsTabComponent } from './guest-documents-tab.component';
 import { GuestCarePlanTabComponent } from './guest-care-plan-tab.component';
 import { GuestContactHistoryTabComponent } from './guest-contact-history-tab.component';
 import { GuestCpnRecordTabComponent } from './guest-cpn-record-tab.component';
+import { GuestUrgentHistoryTabComponent } from './guest-urgent-history-tab.component';
 import { GuestActionTabComponent } from './guest-action-tab.component';
 import { GuestNotesTabComponent } from './guest-notes-tab.component';
 import { GuestAccessLogTabComponent } from './guest-access-log-tab.component';
 import { DocumentConfirmDialogComponent } from '../documents/document-confirm-dialog.component';
 import { documentErrorMessage } from '../../core/documents-api.service';
 import { CaseworkNoteDrawerComponent } from './casework-note-drawer.component';
+import { GroupContactDrawerComponent } from './group-contact-drawer.component';
 import { RaiseUrgentFlagDrawerComponent } from './raise-urgent-flag-drawer.component';
 import { formatDate, guestPathwayChip, initials, statusChip, urgentChip } from './guest-workspace.util';
 
@@ -38,6 +40,7 @@ type TabId =
   | 'contacts'
   | 'casework'
   | 'cpn'
+  | 'urgent'
   | 'documents'
   | 'action'
   | 'notes'
@@ -86,9 +89,11 @@ interface TabDef {
     GuestCarePlanTabComponent,
     GuestContactHistoryTabComponent,
     GuestCpnRecordTabComponent,
+    GuestUrgentHistoryTabComponent,
     GuestActionTabComponent,
     GuestNotesTabComponent,
     CaseworkNoteDrawerComponent,
+    GroupContactDrawerComponent,
     RaiseUrgentFlagDrawerComponent,
     GuestAccessLogTabComponent,
     DocumentConfirmDialogComponent,
@@ -131,6 +136,8 @@ export class GuestWorkspaceComponent {
     // Casework entries only — the clinical record, without calls, activities and hospitality.
     { id: 'casework', label: 'Casework Notes' },
     { id: 'cpn', label: 'CPN Record' },
+    // Every urgent case, open and resolved — for anyone who can see urgent cases, CMHWs included.
+    ...(this.auth.hasPermission(Permissions.UrgentCases.View) ? [{ id: 'urgent' as const, label: 'Urgent Case History' }] : []),
     { id: 'documents', label: 'Documents' },
     { id: 'action', label: 'Actions & Reminders' },
     { id: 'notes', label: 'Notes' },
@@ -141,6 +148,8 @@ export class GuestWorkspaceComponent {
 
   /** "Add Contact" header button opens the casework note drawer (bundle 50271-54563). */
   readonly noteDrawerOpen = signal(false);
+  /** "Group Contact" — one activity / hospitality contact for this guest and the others at the session. */
+  readonly groupDrawerOpen = signal(false);
   /** "Raise Urgent Case" header button opens the quick popup. */
   readonly urgentDrawerOpen = signal(false);
   /** Bumped after an urgent case is raised so an open Clinical Details tab re-reads its assessments. */
@@ -244,6 +253,18 @@ export class GuestWorkspaceComponent {
 
   closeNoteDrawer(): void {
     this.noteDrawerOpen.set(false);
+  }
+
+  openGroupDrawer(): void {
+    if (!this.canAddNote) return;
+    this.groupDrawerOpen.set(true);
+  }
+
+  /** The contact is on this guest's record too: show it in Contact History. */
+  groupContactSaved(): void {
+    this.groupDrawerOpen.set(false);
+    this.activeTab.set('contacts');
+    this.reloadOverview();
   }
 
   /**

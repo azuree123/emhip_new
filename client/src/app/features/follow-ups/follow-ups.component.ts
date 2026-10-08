@@ -17,6 +17,7 @@ import { IconComponent } from '../../design-system/icon.component';
 import { CustomFieldsComponent } from '../../shared/custom-fields.component';
 import { GuestPickerComponent } from '../../shared/guest-picker.component';
 import { StaffPickerComponent } from '../../shared/staff-picker.component';
+import { humanize } from '../guest-workspace/guest-workspace.util';
 
 const PAGE_SIZE = 5;
 
@@ -62,6 +63,7 @@ export class FollowUpsComponent implements OnInit {
 
   readonly contactTypes: ContactType[] = ['PhoneCall', 'InPerson', 'VideoCall', 'TextMessage', 'Email'];
   readonly contactOutcomes: ContactOutcome[] = ['Successful', 'NoAnswer', 'LeftMessage', 'Declined', 'Rescheduled'];
+  readonly humanize = humanize;
   readonly statusOptions: FollowUpStatus[] = ['Scheduled', 'Overdue', 'Completed', 'Cancelled'];
 
   readonly items = signal<FollowUpQueueItemDto[]>([]);

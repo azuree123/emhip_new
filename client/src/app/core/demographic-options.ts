@@ -1,4 +1,4 @@
-import { GuestPathway } from './api-models';
+import { GuestPathway, HeardAboutUsSource } from './api-models';
 
 /**
  * Fixed option lists shared by the registration form and the workspace Demographics tab, so a
@@ -61,4 +61,28 @@ export const CLINICAL_PATHWAY_OPTIONS: { value: GuestPathway; label: string }[] 
 export function clinicalPathwayLabel(pathway: string | null | undefined): string {
   if (!pathway) return '—';
   return CLINICAL_PATHWAY_OPTIONS.find((o) => o.value === pathway)?.label ?? pathway;
+}
+
+/**
+ * "How did you hear about us?" tickboxes on the registration form, in form order. Mirrors
+ * Emhip.Application.Guests.HeardAboutUsSources on the server.
+ */
+export const HEARD_ABOUT_US_OPTIONS: { value: HeardAboutUsSource; label: string }[] = [
+  { value: 'Nhs', label: 'NHS' },
+  { value: 'OtherStatutoryServices', label: 'Other statutory services' },
+  { value: 'SocialMedia', label: 'Social media' },
+  { value: 'Outreach', label: 'Outreach' },
+  { value: 'Other', label: 'Other' },
+];
+
+/** "NHS, Social media, Other — <text>"; '—' when nothing was ticked. */
+export function heardAboutUsLabel(
+  sources: readonly HeardAboutUsSource[] | null | undefined,
+  other: string | null | undefined,
+): string {
+  const ticked = HEARD_ABOUT_US_OPTIONS.filter((o) => sources?.includes(o.value));
+  if (ticked.length === 0) return '—';
+  return ticked
+    .map((o) => (o.value === 'Other' && other?.trim() ? `Other — ${other.trim()}` : o.label))
+    .join(', ');
 }

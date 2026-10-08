@@ -112,8 +112,9 @@ function niceAxisMax(max: number): number {
  * distribution, registrations-over-time chart, demographics and contact
  * activity, per Desktop72/73/74 in project/screens/Components.bundle.js.
  *
- * Every card follows the reporting period: the tiles, pathway distribution, demographics and
- * referral sources cover the guests registered in it (the rows of the CSV export), the DIALOG
+ * Every card follows the reporting period: the tiles, pathway distribution, demographics,
+ * referral sources and "How guests heard about us" cover the guests registered in it (the rows
+ * of the CSV export), the DIALOG
  * metrics the assessments recorded in it, and the chart and contact activity what happened in it.
  *
  * Every count of guests opens the guest list filtered to exactly those guests (the dashboard's
@@ -135,6 +136,8 @@ export class ReportsOverviewComponent {
   readonly outcomesLoading = input(false);
   readonly referralSources = input<BreakdownSliceDto[]>([]);
   readonly referralSourcesLoading = input(false);
+  readonly heardAboutUs = input<BreakdownSliceDto[]>([]);
+  readonly heardAboutUsLoading = input(false);
   readonly from = input.required<string>();
   readonly to = input.required<string>();
 
@@ -243,6 +246,18 @@ export class ReportsOverviewComponent {
         this.registered(r.label === NOT_RECORDED ? { segment: GuestSegments.MissingReferralSource } : { referralSource: r.label }),
       ),
     }));
+  });
+
+  /**
+   * "How guests heard about us" rows, in the order the API sends them (largest first, "Not
+   * recorded" last). Tickboxes, so a guest counts under every box ticked and the percentages —
+   * each a share of the guests registered — can add up to more than 100%. There is no guest
+   * list filter for these answers, so the rows don't drill through.
+   */
+  readonly heardAboutUsRows = computed<(BreakdownSliceDto & { barPct: number })[]>(() => {
+    const rows = this.heardAboutUs();
+    const max = Math.max(0, ...rows.map((r) => r.count));
+    return rows.map((r) => ({ ...r, barPct: max > 0 ? (r.count / max) * 100 : 0 }));
   });
 
   /**

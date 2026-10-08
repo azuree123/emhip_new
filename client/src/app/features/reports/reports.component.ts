@@ -135,6 +135,9 @@ export class ReportsComponent implements OnInit {
   readonly referralSources = signal<BreakdownSliceDto[]>([]);
   readonly referralSourcesLoading = signal(false);
 
+  readonly heardAboutUs = signal<BreakdownSliceDto[]>([]);
+  readonly heardAboutUsLoading = signal(false);
+
   /** Caseload "View" drill-down: preselects this CMHW on the Guest Report tab. */
   readonly guestReportCmhw = signal('');
 
@@ -148,11 +151,12 @@ export class ReportsComponent implements OnInit {
 
   readonly exportOpen = signal(false);
 
-  // The Overview's three requests, cancelled when a newer period is applied so a slow response
-  // for the old period can't overwrite the new figures.
+  // The Overview's requests, cancelled when a newer period is applied so a slow response for
+  // the old period can't overwrite the new figures.
   private reportSub?: Subscription;
   private outcomesSub?: Subscription;
   private referralSourcesSub?: Subscription;
+  private heardAboutUsSub?: Subscription;
 
   /** Header "Export Excel" — the multi-sheet workbook for the applied date range. */
   readonly workbookSheets = WORKBOOK_SHEETS;
@@ -182,6 +186,7 @@ export class ReportsComponent implements OnInit {
       this.reportSub?.unsubscribe();
       this.outcomesSub?.unsubscribe();
       this.referralSourcesSub?.unsubscribe();
+      this.heardAboutUsSub?.unsubscribe();
     });
   }
 
@@ -284,6 +289,7 @@ export class ReportsComponent implements OnInit {
     this.loadReport(period);
     this.loadOutcomes(period);
     this.loadReferralSources(period);
+    this.loadHeardAboutUs(period);
   }
 
   private loadReport(period: ReportPeriod): void {
@@ -331,6 +337,21 @@ export class ReportsComponent implements OnInit {
       error: () => {
         this.referralSources.set([]);
         this.referralSourcesLoading.set(false);
+      },
+    });
+  }
+
+  private loadHeardAboutUs(period: ReportPeriod): void {
+    this.heardAboutUsSub?.unsubscribe();
+    this.heardAboutUsLoading.set(true);
+    this.heardAboutUsSub = this.reportsApi.getHeardAboutUs(period).subscribe({
+      next: (slices) => {
+        this.heardAboutUs.set(slices);
+        this.heardAboutUsLoading.set(false);
+      },
+      error: () => {
+        this.heardAboutUs.set([]);
+        this.heardAboutUsLoading.set(false);
       },
     });
   }

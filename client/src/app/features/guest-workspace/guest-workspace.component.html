@@ -63,6 +63,16 @@
               </svg>
               Add Contact
             </button>
+            <!-- An activity or hospitality session with several guests: this guest plus the others. -->
+            <button type="button" class="btn btn--outline" (click)="openGroupDrawer()" title="Log one activity or hospitality contact for several guests">
+              <svg class="btn__icon" width="18" height="18" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                <path
+                  d="M 8 2 A 2.2 2.2 0 1 1 7.99 2 Z M 3.2 4.2 A 1.7 1.7 0 1 1 3.19 4.2 Z M 12.8 4.2 A 1.7 1.7 0 1 1 12.79 4.2 Z M 8 7.2 C 10.3 7.2 12 8.6 12 10.4 L 12 13 L 4 13 L 4 10.4 C 4 8.6 5.7 7.2 8 7.2 Z M 3.2 8.4 C 3.6 8.4 4 8.5 4.3 8.6 C 3.5 9.3 3 10.2 3 11.2 L 3 12.4 L 0.4 12.4 L 0.4 10.6 C 0.4 9.4 1.6 8.4 3.2 8.4 Z M 12.8 8.4 C 14.4 8.4 15.6 9.4 15.6 10.6 L 15.6 12.4 L 13 12.4 L 13 11.2 C 13 10.2 12.5 9.3 11.7 8.6 C 12 8.5 12.4 8.4 12.8 8.4 Z"
+                  fill="currentColor"
+                />
+              </svg>
+              Group Contact
+            </button>
           }
           @if (canRaiseUrgent) {
             <button type="button" class="btn btn--outline" (click)="raiseUrgentFlag()">
@@ -185,6 +195,9 @@
         @case ('cpn') {
           <emhip-guest-cpn-record-tab [guestId]="guestId()" (addContact)="openNoteDrawer()" />
         }
+        @case ('urgent') {
+          <emhip-guest-urgent-history-tab [guestId]="guestId()" (refresh)="reloadOverview()" />
+        }
         @case ('documents') {
           <emhip-guest-documents-tab [guestId]="guestId()" (refresh)="reloadOverview()" />
         }
@@ -229,6 +242,14 @@
         [urgentSince]="guest.urgentSince"
         (closed)="closeUrgentDrawer()"
         (raised)="urgentFlagRaised()"
+      />
+    }
+
+    @if (groupDrawerOpen()) {
+      <emhip-group-contact-drawer
+        [initialGuests]="[{ guestId: guestId(), label: fullName() + ' · G-' + guest.guestNumber }]"
+        (closed)="groupDrawerOpen.set(false)"
+        (saved)="groupContactSaved()"
       />
     }
 

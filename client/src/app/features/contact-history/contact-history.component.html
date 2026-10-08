@@ -8,6 +8,18 @@
       @if (exportError()) {
         <span class="export-error" role="alert">{{ exportError() }}</span>
       }
+      @if (canLogContacts) {
+        <!-- One activity / hospitality contact for every guest at a session. -->
+        <button type="button" class="btn btn--primary" (click)="groupDrawerOpen.set(true)">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path
+              d="M 8 2 A 2.2 2.2 0 1 1 7.99 2 Z M 3.2 4.2 A 1.7 1.7 0 1 1 3.19 4.2 Z M 12.8 4.2 A 1.7 1.7 0 1 1 12.79 4.2 Z M 8 7.2 C 10.3 7.2 12 8.6 12 10.4 L 12 13 L 4 13 L 4 10.4 C 4 8.6 5.7 7.2 8 7.2 Z M 3.2 8.4 C 3.6 8.4 4 8.5 4.3 8.6 C 3.5 9.3 3 10.2 3 11.2 L 3 12.4 L 0.4 12.4 L 0.4 10.6 C 0.4 9.4 1.6 8.4 3.2 8.4 Z M 12.8 8.4 C 14.4 8.4 15.6 9.4 15.6 10.6 L 15.6 12.4 L 13 12.4 L 13 11.2 C 13 10.2 12.5 9.3 11.7 8.6 C 12 8.5 12.4 8.4 12.8 8.4 Z"
+              fill="currentColor"
+            />
+          </svg>
+          Log group contact
+        </button>
+      }
       <button type="button" class="btn btn--secondary" (click)="exportCsv()" [disabled]="exporting()">
         <svg width="13" height="15" viewBox="0 0 12.375 14.625" fill="none" aria-hidden="true">
           <path
@@ -21,68 +33,116 @@
   </header>
 
   @let s = summary();
+  @let c = cpnSummary();
 
-  <!-- Stat tiles (design: Total contacts / Casework / Activity / AFA & Hospitality). -->
+  <!-- Stat tiles (design: Total contacts / Casework / Activity / AFA & Hospitality). Each opens the contacts it counts. -->
   <section class="stat-row">
-    <div class="stat-card">
-      <span class="stat-card__label">Total contacts</span>
+    <button type="button" class="stat-card" aria-haspopup="dialog" (click)="openTile('All', 'All contacts', $event.currentTarget)">
+      <span class="stat-card__label">Total contacts<span class="stat-card__go" aria-hidden="true">›</span></span>
       <span class="stat-card__value">{{ s ? s.totalContacts : '—' }}</span>
       <span class="stat-card__caption">{{ s ? s.guestsWithContacts + ' guest' + (s.guestsWithContacts === 1 ? '' : 's') + ' contacted' : 'Loading…' }}</span>
-    </div>
-    <div class="stat-card">
-      <span class="stat-card__label">Casework</span>
+    </button>
+    <button type="button" class="stat-card" aria-haspopup="dialog" (click)="openTile('Casework', 'Casework contacts', $event.currentTarget)">
+      <span class="stat-card__label">Casework<span class="stat-card__go" aria-hidden="true">›</span></span>
       <span class="stat-card__value">{{ s ? s.casework : '—' }}</span>
       <span class="stat-card__caption">SBAR casework notes</span>
-    </div>
-    <div class="stat-card">
-      <span class="stat-card__label">Activity</span>
+    </button>
+    <button type="button" class="stat-card" aria-haspopup="dialog" (click)="openTile('Activity', 'Activity contacts', $event.currentTarget)">
+      <span class="stat-card__label">Activity<span class="stat-card__go" aria-hidden="true">›</span></span>
       <span class="stat-card__value">{{ s ? s.activity : '—' }}</span>
       <span class="stat-card__caption">Hub activity contacts</span>
-    </div>
-    <div class="stat-card">
-      <span class="stat-card__label">AFA &amp; Hospitality</span>
+    </button>
+    <button
+      type="button"
+      class="stat-card"
+      aria-haspopup="dialog"
+      (click)="openTile('AfaAndHospitality', 'AFA & Hospitality contacts', $event.currentTarget)"
+    >
+      <span class="stat-card__label">AFA &amp; Hospitality<span class="stat-card__go" aria-hidden="true">›</span></span>
       <span class="stat-card__value">{{ s ? s.afaAndHospitality : '—' }}</span>
       <span class="stat-card__caption">{{ s ? s.afa + ' AFA · ' + s.hospitality + ' hospitality' : 'Advice & hospitality' }}</span>
-    </div>
+    </button>
   </section>
 
-  <!-- CPN activity — its own section, never part of the AFA & Hospitality tile (unrelated pathways). -->
+  <!-- CPN activity — its own section, never part of the AFA & Hospitality tile (unrelated pathways),
+       with its own time filter: the figures come from a second summary over this window. -->
   <section class="cpn-card" aria-labelledby="cpn-activity-title">
     <div class="cpn-card__head">
       <div class="cpn-card__heading">
         <h2 class="cpn-card__title" id="cpn-activity-title">CPN activity</h2>
-        <p class="cpn-card__subtitle">Community Psychiatric Nurse contacts · {{ periodLabel() }}</p>
+        <p class="cpn-card__subtitle">Community Psychiatric Nurse contacts · {{ cpnWindowLabel() }}</p>
       </div>
+      <div class="cpn-card__controls">
+        <div class="filter">
+          <select
+            class="filter__select"
+            aria-label="CPN activity period"
+            [value]="cpnWindow()"
+            (change)="onCpnWindowChange($any($event.target).value)"
+          >
+            @for (option of cpnWindowOptions; track option.value) {
+              <option [value]="option.value">{{ option.label }}</option>
+            }
+          </select>
+        </div>
+        @if (cpnWindow() === 'custom') {
+          <label class="date-field">
+            <span class="date-field__label">From</span>
+            <input
+              type="date"
+              class="date-field__input"
+              [value]="cpnFrom()"
+              [attr.max]="cpnTo() || null"
+              (change)="onCpnFromChange($any($event.target).value)"
+            />
+          </label>
+          <label class="date-field">
+            <span class="date-field__label">To</span>
+            <input
+              type="date"
+              class="date-field__input"
+              [value]="cpnTo()"
+              [attr.min]="cpnFrom() || null"
+              (change)="onCpnToChange($any($event.target).value)"
+            />
+          </label>
+        }
+        <button
+          type="button"
+          class="filter-chip"
+          [class.filter-chip--on]="cpnOnly()"
+          [attr.aria-pressed]="cpnOnly()"
+          title="Only guests with CPN contacts"
+          (click)="toggleCpnOnly()"
+        >
+          <span class="filter-chip__dot" aria-hidden="true"></span>
+          {{ cpnOnly() ? 'Showing CPN contacts only' : 'Show CPN contacts only' }}
+        </button>
+      </div>
+    </div>
+    <div class="cpn-card__figures">
+      <button type="button" class="cpn-figure" aria-haspopup="dialog" (click)="openCpn('Cpn', 'CPN contacts', $event.currentTarget)">
+        <span class="cpn-figure__label">CPN contacts</span>
+        <span class="cpn-figure__value">{{ c ? c.cpnSessions + c.cpnAssessments : '—' }}</span>
+      </button>
+      <button type="button" class="cpn-figure" aria-haspopup="dialog" (click)="openCpn('CpnSessions', 'CPN sessions', $event.currentTarget)">
+        <span class="cpn-figure__label">Sessions</span>
+        <span class="cpn-figure__value">{{ c ? c.cpnSessions : '—' }}</span>
+      </button>
       <button
         type="button"
-        class="filter-chip"
-        [class.filter-chip--on]="cpnOnly()"
-        [attr.aria-pressed]="cpnOnly()"
-        title="Only guests with CPN contacts"
-        (click)="toggleCpnOnly()"
+        class="cpn-figure"
+        aria-haspopup="dialog"
+        (click)="openCpn('CpnAssessments', 'CPN initial assessments', $event.currentTarget)"
       >
-        <span class="filter-chip__dot" aria-hidden="true"></span>
-        {{ cpnOnly() ? 'Showing CPN contacts only' : 'Show CPN contacts only' }}
+        <span class="cpn-figure__label">Initial assessments</span>
+        <span class="cpn-figure__value">{{ c ? c.cpnAssessments : '—' }}</span>
+      </button>
+      <button type="button" class="cpn-figure" aria-haspopup="dialog" (click)="openCpnGuests($event.currentTarget)">
+        <span class="cpn-figure__label">Guests seen by CPN</span>
+        <span class="cpn-figure__value">{{ c ? c.cpnGuests : '—' }}</span>
       </button>
     </div>
-    <dl class="cpn-card__figures">
-      <div class="cpn-figure">
-        <dt class="cpn-figure__label">CPN contacts</dt>
-        <dd class="cpn-figure__value">{{ s ? s.cpnSessions + s.cpnAssessments : '—' }}</dd>
-      </div>
-      <div class="cpn-figure">
-        <dt class="cpn-figure__label">Sessions</dt>
-        <dd class="cpn-figure__value">{{ s ? s.cpnSessions : '—' }}</dd>
-      </div>
-      <div class="cpn-figure">
-        <dt class="cpn-figure__label">Initial assessments</dt>
-        <dd class="cpn-figure__value">{{ s ? s.cpnAssessments : '—' }}</dd>
-      </div>
-      <div class="cpn-figure">
-        <dt class="cpn-figure__label">Guests seen by CPN</dt>
-        <dd class="cpn-figure__value">{{ s ? s.cpnGuests : '—' }}</dd>
-      </div>
-    </dl>
   </section>
 
   <section class="card">
@@ -127,7 +187,7 @@
           class="filter-chip"
           [class.filter-chip--on]="myCaseload()"
           [attr.aria-pressed]="myCaseload()"
-          title="Only guests assigned to you"
+          title="Only guests allocated to you, as their CMHW or their CPN"
           (click)="toggleMyCaseload()"
         >
           <span class="filter-chip__dot" aria-hidden="true"></span>
@@ -221,3 +281,15 @@
     }
   </section>
 </div>
+
+@if (drill(); as d) {
+  <app-contact-list-drawer [drill]="d" (closed)="closeDrill()" />
+}
+
+@if (groupDrawerOpen()) {
+  <emhip-group-contact-drawer (closed)="groupDrawerOpen.set(false)" (saved)="groupContactSaved($event)" />
+}
+
+@if (groupSavedMessage(); as message) {
+  <div class="toast" role="status">{{ message }}</div>
+}

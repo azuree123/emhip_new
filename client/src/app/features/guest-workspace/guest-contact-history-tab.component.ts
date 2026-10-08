@@ -1,25 +1,17 @@
 import { Component, computed, effect, inject, input, signal } from '@angular/core';
-import { CaseworkNoteCategory, GuestContactSummaryDto } from '../../core/api-models';
+import { GuestContactSummaryDto } from '../../core/api-models';
 import { GuestsApiService } from '../../core/guests-api.service';
-import { formatDateTime, humanize } from './guest-workspace.util';
+import { contactTypeChip, formatDateTime, humanize } from './guest-workspace.util';
 
 const PAGE_SIZE = 25;
 
-/** Display names for the contact types offered on Add Contact. */
-const CATEGORY_LABELS: Record<CaseworkNoteCategory, string> = {
-  Casework: 'Casework',
-  Activity: 'Activity',
-  Meeting: 'Meeting',
-  DailyLog: 'Daily Log',
-  Hospitality: 'Hospitality',
-  Afa: 'AFA',
-};
-
 /**
  * Contact History tab — every contact recorded against the guest, newest first. Each row leads
- * with the type of contact the worker chose on Add Contact (Casework, Activity, Hospitality, AFA,
- * or a CPN contact), with how they made contact (phone call, text, …) as the smaller detail.
- * Contacts not written through a casework note (e.g. older imports) just read "Contact".
+ * with the contact type the worker chose on Add Contact (Casework, Activity, Hospitality, AFA, or a
+ * CPN contact) and its detail (the activity, the advice given, the CPN session); how contact was
+ * made (phone call, text, …) is the smaller trailing detail, dropped for Activity and Hospitality,
+ * which happen at the hub. Contacts with no type recorded (imports, Scheduled contacts → Record
+ * contact) read "Contact" and say so.
  *
  * The endpoint is keyset-paged (GET /guests/{id}/contacts), so the list grows by handing the
  * opaque `nextCursor` straight back to the API rather than by page number. `totalCount` only
@@ -56,13 +48,31 @@ export class GuestContactHistoryTabComponent {
     return total === null ? `Showing ${shown} contacts` : `Showing ${shown} of ${total}`;
   });
 
-  readonly humanize = humanize;
-
-  typeLabel(contact: GuestContactSummaryDto): string {
-    if (contact.isCpnContact) return 'CPN contact';
-    return contact.category ? (CATEGORY_LABELS[contact.category] ?? humanize(contact.category)) : 'Contact';
-  }
+  readonly contactTypeChip = contactTypeChip;
   readonly formatDateTime = formatDateTime;
+
+  /** Short code inside the row's coloured badge. */
+  badgeText(contact: GuestContactSummaryDto): string {
+    if (contact.isCpnContact) return 'CPN';
+    switch (contact.category) {
+      case 'Casework':
+        return 'CW';
+      case 'Activity':
+        return 'ACT';
+      case 'Hospitality':
+        return 'HOS';
+      case 'Afa':
+        return 'AFA';
+      default:
+        return '—';
+    }
+  }
+
+  /** "Phone call" etc., except for Activity / Hospitality (always in person at the hub). */
+  methodLabel(contact: GuestContactSummaryDto): string | null {
+    if (contact.category === 'Activity' || contact.category === 'Hospitality') return null;
+    return humanize(contact.type);
+  }
 
   constructor() {
     effect((onCleanup) => {

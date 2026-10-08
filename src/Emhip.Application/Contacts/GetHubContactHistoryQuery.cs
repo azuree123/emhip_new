@@ -1,4 +1,5 @@
 using Emhip.Application.Common;
+using FluentValidation;
 using MediatR;
 
 namespace Emhip.Application.Contacts;
@@ -32,4 +33,23 @@ public sealed class GetContactHistorySummaryQueryHandler(IContactReadService rea
 {
     public Task<ContactHistorySummaryDto> Handle(GetContactHistorySummaryQuery request, CancellationToken cancellationToken) =>
         reads.GetContactHistorySummaryAsync(request.HubId, request.Filter, cancellationToken);
+}
+
+/// <summary>Contact History screen — the contacts behind one stat tile, keyset-paged, newest first.</summary>
+public sealed record GetContactListQuery(Guid HubId, ContactListKind Kind, ContactsByGuestFilter Filter, string? Cursor, int PageSize)
+    : IRequest<KeysetPage<ContactListRowDto>>;
+
+public sealed class GetContactListQueryValidator : AbstractValidator<GetContactListQuery>
+{
+    public GetContactListQueryValidator()
+    {
+        RuleFor(x => x.Kind).IsInEnum();
+    }
+}
+
+public sealed class GetContactListQueryHandler(IContactReadService reads)
+    : IRequestHandler<GetContactListQuery, KeysetPage<ContactListRowDto>>
+{
+    public Task<KeysetPage<ContactListRowDto>> Handle(GetContactListQuery request, CancellationToken cancellationToken) =>
+        reads.GetContactListAsync(request.HubId, request.Kind, request.Filter, request.Cursor, request.PageSize, cancellationToken);
 }

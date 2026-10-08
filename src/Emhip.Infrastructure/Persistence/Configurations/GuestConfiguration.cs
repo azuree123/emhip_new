@@ -24,6 +24,10 @@ public class GuestConfiguration : IEntityTypeConfiguration<Guest>
         builder.Property(g => g.ReferralSource).HasMaxLength(100);
         builder.Property(g => g.ReferralType).HasConversion<string>().HasMaxLength(20);
         builder.Property(g => g.ReferralSubcategory).HasMaxLength(150);
+        // Kept as the int bit mask (not a string like the other enums) so the reports can test
+        // each tickbox with a bitwise AND.
+        builder.Property(g => g.HeardAboutUs);
+        builder.Property(g => g.HeardAboutUsOther).HasMaxLength(200);
         builder.Property(g => g.LegacyReference).HasMaxLength(100);
         builder.HasIndex(g => new { g.HubId, g.LegacyReference }).HasDatabaseName("IX_Guests_Hub_LegacyReference");
         // Drives the engagement-status sweep and the urgent-case counts.

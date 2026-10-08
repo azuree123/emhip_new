@@ -1,0 +1,781 @@
+@use './guest-workspace.tokens' as t;
+
+// New Casework Note (EMHIP.fig "New Casework Note"): a centred white popup over a dimmed page;
+// a pale-yellow draft banner; SBAR sections as grey bars with a white hint pill that collapse;
+// a single-choice risk set (six square criteria in two columns, then two full-width radio rows);
+// a white "Save as draft" beside the red "Submit & lock note".
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  // Same layer as the Add Contact drawer, above the workspace's own panels.
+  z-index: 120;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 40px 16px;
+  overflow-y: auto;
+}
+
+.dialog {
+  width: min(760px, 100%);
+  background: #fff;
+  border-radius: t.$radius-card;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+
+  &__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 22px 24px 14px;
+  }
+
+  &__heading {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  &__title {
+    margin: 0;
+    font-family: t.$font-primary;
+    font-weight: 600;
+    font-size: 20px;
+    line-height: 28px;
+    color: t.$color-text-primary;
+  }
+
+  &__subtitle {
+    font-family: t.$font-primary;
+    font-weight: 500;
+    font-size: 13px;
+    line-height: 20px;
+    color: t.$color-text-meta;
+  }
+
+  &__close {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: #212121;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+    box-shadow: inset 0 0 0 1px t.$color-border;
+
+    &:hover:not(:disabled) {
+      background: #f4f4f4;
+    }
+  }
+
+  &__body {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    padding: 4px 24px 24px;
+  }
+
+  &__footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    padding-top: 4px;
+  }
+}
+
+// ---- Draft banner ----
+
+.draft-banner {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 14px 16px;
+  border-radius: 8px;
+  background: #fffbea;
+  box-shadow: inset 0 0 0 1px #f3e4b0;
+
+  &__row {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  &__title {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: t.$font-primary;
+    font-weight: 600;
+    font-size: 13px;
+    color: #7a6418;
+  }
+
+  &__saved {
+    font-family: t.$font-primary;
+    font-weight: 500;
+    font-size: 12px;
+    color: t.$color-text-meta;
+  }
+
+  &__text {
+    margin: 0;
+    font-family: t.$font-primary;
+    font-size: 12px;
+    line-height: 18px;
+    color: t.$color-text-body;
+  }
+
+  &__confirm {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    font-family: t.$font-primary;
+    font-size: 12px;
+    font-weight: 500;
+    color: t.$color-text-primary;
+  }
+}
+
+.close-confirm {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 12px 16px;
+  border-radius: 8px;
+  background: t.$color-chip-red-bg;
+  font-family: t.$font-primary;
+  font-size: 12px;
+  font-weight: 500;
+  color: t.$color-brand-red;
+}
+
+// ---- Fields ----
+
+.grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px 20px;
+
+  @media (max-width: 560px) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+
+  &--narrow {
+    max-width: 260px;
+  }
+
+  select,
+  input,
+  textarea {
+    font-family: t.$font-primary;
+    font-size: 13px;
+    color: t.$color-text-body;
+    width: 100%;
+    height: 38px;
+    padding: 0 12px;
+    border-radius: 8px;
+    border: 1px solid t.$color-divider;
+    background: #fff;
+    box-sizing: border-box;
+
+    &:disabled {
+      background: #f4f4f4;
+      color: t.$color-text-meta;
+    }
+
+    &:focus {
+      outline: 2px solid rgba(225, 38, 40, 0.18);
+      border-color: #e7a3a5;
+    }
+  }
+
+  textarea {
+    height: auto;
+    padding: 10px 12px;
+    line-height: 20px;
+    resize: vertical;
+  }
+
+  &__label {
+    font-family: t.$font-primary;
+    font-weight: 600;
+    font-size: 13px;
+    line-height: 20px;
+    color: t.$color-text-primary;
+  }
+
+  &__optional {
+    font-weight: 400;
+    color: t.$color-text-meta;
+  }
+
+  &__hint {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-family: t.$font-primary;
+    font-size: 11px;
+    line-height: 16px;
+    color: t.$color-text-meta;
+
+    &--italic {
+      font-style: italic;
+    }
+  }
+}
+
+.sbar-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 6px;
+  background: #eef1fb;
+  border-left: 3px solid #5a6fd0;
+  font-family: t.$font-primary;
+  font-size: 12px;
+  font-weight: 500;
+  color: #2f3d7a;
+
+  &__toggle {
+    flex-shrink: 0;
+    border: none;
+    background: none;
+    padding: 0;
+    font: inherit;
+    font-weight: 600;
+    color: #3a4fb0;
+    text-decoration: underline;
+    cursor: pointer;
+  }
+}
+
+// ---- Collapsible SBAR sections ----
+
+.section {
+  display: flex;
+  flex-direction: column;
+  scroll-margin-top: 16px;
+
+  &__bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    min-height: 40px;
+    padding: 6px 12px 6px 14px;
+    border: none;
+    border-radius: 6px;
+    background: #f1f1f1;
+    text-align: left;
+    cursor: pointer;
+
+    &:hover {
+      background: #ebebeb;
+    }
+  }
+
+  &__title {
+    font-family: t.$font-primary;
+    font-weight: 600;
+    font-size: 13px;
+    color: t.$color-text-primary;
+  }
+
+  &__done {
+    display: inline-flex;
+    color: t.$color-success-text;
+  }
+
+  &__pill {
+    margin-left: auto;
+    padding: 3px 10px;
+    border-radius: t.$radius-pill;
+    background: #fff;
+    font-family: t.$font-primary;
+    font-weight: 500;
+    font-size: 11px;
+    line-height: 16px;
+    color: t.$color-text-body;
+    white-space: nowrap;
+
+    &--danger {
+      background: t.$color-chip-red-bg;
+      color: t.$color-brand-red;
+    }
+  }
+
+  &__chevron {
+    flex-shrink: 0;
+    color: t.$color-text-meta;
+    transition: transform 120ms ease;
+
+    &--open {
+      transform: rotate(180deg);
+    }
+  }
+
+  // Pushes the chevron right on a bar without a hint pill.
+  &__spacer {
+    margin-left: auto;
+  }
+
+  &__body {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 16px 2px 4px;
+  }
+}
+
+// ---- Risk assessment ----
+
+.risk {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+  &__grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px 20px;
+    padding-bottom: 6px;
+
+    @media (max-width: 560px) {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+}
+
+.risk-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 2px 0;
+  border: none;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+
+  &__box {
+    width: 16px;
+    height: 16px;
+    border-radius: 4px;
+    box-shadow: inset 0 0 0 1.5px #8a8a8e;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &__label {
+    font-family: t.$font-primary;
+    font-size: 13px;
+    line-height: 20px;
+    color: t.$color-text-body;
+  }
+
+  &--on {
+    .risk-option__box {
+      background: t.$color-brand-red;
+      box-shadow: none;
+    }
+
+    .risk-option__label {
+      color: t.$color-brand-red;
+      font-weight: 600;
+    }
+  }
+}
+
+.risk-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 14px;
+  border: none;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: inset 0 0 0 1px t.$color-border;
+  text-align: left;
+  cursor: pointer;
+
+  &__icon {
+    flex-shrink: 0;
+    color: t.$color-text-meta;
+  }
+
+  &__label {
+    flex: 1;
+    font-family: t.$font-primary;
+    font-weight: 500;
+    font-size: 13px;
+    line-height: 20px;
+    color: t.$color-text-body;
+  }
+
+  &__radio {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    box-shadow: inset 0 0 0 1.5px #8a8a8e;
+    flex-shrink: 0;
+    position: relative;
+  }
+
+  &--on {
+    box-shadow: inset 0 0 0 1px #9fd3ac;
+    background: #f6fdf8;
+
+    .risk-row__icon {
+      color: t.$color-success-text;
+    }
+
+    .risk-row__radio {
+      box-shadow: inset 0 0 0 1.5px t.$color-success-text;
+
+      &::after {
+        content: '';
+        position: absolute;
+        inset: 3.5px;
+        border-radius: 50%;
+        background: t.$color-success-text;
+      }
+    }
+  }
+}
+
+.risk-alert {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: t.$color-chip-red-bg;
+  font-family: t.$font-primary;
+  font-weight: 600;
+  font-size: 13px;
+  color: t.$color-brand-red;
+}
+
+.risk-confirm {
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: t.$color-success-bg;
+  font-family: t.$font-primary;
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 18px;
+  color: t.$color-success-text;
+}
+
+.info-line {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: t.$font-primary;
+  font-size: 12px;
+  color: t.$color-text-meta;
+}
+
+// ---- Actions arising from this note ----
+
+.action-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.action-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  box-shadow: inset 0 0 0 1px t.$color-border;
+  cursor: pointer;
+
+  input[type='checkbox'] {
+    width: 16px;
+    height: 16px;
+    margin: 0;
+    accent-color: t.$color-brand-red;
+    flex-shrink: 0;
+  }
+
+  &--on {
+    background: #fafafa;
+
+    .action-item__desc {
+      text-decoration: line-through;
+      color: t.$color-text-meta;
+    }
+  }
+
+  &--new {
+    cursor: default;
+    background: #fbfbfb;
+  }
+
+  &__text {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  &__desc {
+    font-family: t.$font-primary;
+    font-weight: 500;
+    font-size: 13px;
+    line-height: 20px;
+    color: t.$color-text-primary;
+  }
+
+  &__due {
+    font-family: t.$font-primary;
+    font-size: 11px;
+    line-height: 16px;
+    color: t.$color-text-meta;
+
+    &--overdue {
+      color: t.$color-brand-red;
+    }
+
+    &--today {
+      color: #c2410c;
+    }
+  }
+
+  &__badge {
+    padding: 2px 8px;
+    border-radius: t.$radius-pill;
+    background: t.$color-success-bg;
+    color: t.$color-success-text;
+    font-family: t.$font-primary;
+    font-weight: 600;
+    font-size: 10px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+}
+
+.action-draft {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px 12px;
+  align-items: end;
+  padding: 12px;
+  border-radius: 8px;
+  box-shadow: inset 0 0 0 1px t.$color-border;
+
+  input {
+    font-family: t.$font-primary;
+    font-size: 13px;
+    height: 38px;
+    padding: 0 12px;
+    border-radius: 8px;
+    border: 1px solid t.$color-divider;
+    box-sizing: border-box;
+    width: 100%;
+  }
+
+  &__due {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-family: t.$font-primary;
+    font-size: 11px;
+    font-weight: 600;
+    color: t.$color-text-meta;
+  }
+
+  &__buttons {
+    grid-column: 1 / -1;
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+
+  .form-error {
+    grid-column: 1 / -1;
+  }
+
+  @media (max-width: 560px) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.check-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: t.$font-primary;
+  font-size: 13px;
+  color: t.$color-text-body;
+  cursor: pointer;
+
+  input {
+    width: 16px;
+    height: 16px;
+    margin: 0;
+    accent-color: t.$color-brand-red;
+  }
+}
+
+// ---- Buttons and messages ----
+
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  border: none;
+  border-radius: 6px;
+  background: #fff;
+  box-shadow: inset 0 0 0 1px t.$color-border-strong;
+  font-family: t.$font-primary;
+  font-weight: 500;
+  font-size: 12px;
+  color: t.$color-text-primary;
+  cursor: pointer;
+
+  &--danger {
+    color: t.$color-brand-red;
+    box-shadow: inset 0 0 0 1px #f2b8ba;
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+}
+
+.btn-small {
+  height: 32px;
+  padding: 0 14px;
+  border: none;
+  border-radius: 6px;
+  background: t.$color-text-primary;
+  color: #fff;
+  font-family: t.$font-primary;
+  font-weight: 500;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.link-btn {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  border: none;
+  background: none;
+  font-family: t.$font-primary;
+  font-weight: 600;
+  font-size: 12px;
+  color: t.$color-text-meta;
+  cursor: pointer;
+
+  &--add {
+    color: t.$color-brand-red;
+    font-size: 13px;
+  }
+}
+
+.btn-draft,
+.btn-submit {
+  height: 38px;
+  padding: 0 18px;
+  border-radius: 6px;
+  font-family: t.$font-primary;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+}
+
+.btn-draft {
+  border: none;
+  background: #fff;
+  box-shadow: inset 0 0 0 1px t.$color-border-strong;
+  color: t.$color-text-primary;
+}
+
+.btn-submit {
+  border: none;
+  background: #c94a32;
+  color: #fff;
+
+  &:hover:not(:disabled) {
+    background: #b43f29;
+  }
+}
+
+.lock-note {
+  margin: 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-family: t.$font-primary;
+  font-size: 12px;
+  line-height: 18px;
+  color: t.$color-text-meta;
+
+  svg {
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+}
+
+.muted {
+  margin: 0;
+  font-family: t.$font-primary;
+  font-size: 12px;
+  color: t.$color-text-meta;
+}
+
+.form-error {
+  margin: 0;
+  font-family: t.$font-primary;
+  font-size: 12px;
+  font-weight: 500;
+  color: t.$color-brand-red;
+}

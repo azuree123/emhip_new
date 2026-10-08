@@ -1,5 +1,6 @@
 using Emhip.Application.Common;
 using Emhip.Application.Contacts;
+using Emhip.Domain.Entities;
 using Emhip.Domain.Enums;
 using Emhip.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -132,21 +133,16 @@ public sealed class ContactReadService(EmhipDbContext db) : IContactReadService
         var decoded = KeysetCursor.Decode<RecentCursor>(cursor);
         var (fromTs, toTs) = Range(filter);
 
-        // Only submitted notes count — a draft is not yet a contact (see CaseworkNote). CPN notes
-        // are split out: they never count towards a contact type, even if one was stored on them.
-        var notes = db.CaseworkNotes.AsNoTracking()
-            .Where(n => n.Status == CaseworkNoteStatus.Submitted
-                && (fromTs == null || n.OccurredAt >= fromTs) && (toTs == null || n.OccurredAt <= toTs));
+        // CPN notes are split out: they never count towards a contact type, even if one was stored on them.
+        var notes = SubmittedNotes(fromTs, toTs);
         var typedNotes = notes.Where(n => !n.IsCpnContact);
         var cpnAssessments = SubmittedCpnAssessments(fromTs, toTs);
-        var contacts = db.Contacts.AsNoTracking()
-            .Where(c => (fromTs == null || c.OccurredAt >= fromTs) && (toTs == null || c.OccurredAt <= toTs));
+        var contacts = ContactsInRange(fromTs, toTs);
 
-        var query = db.Guests.AsNoTracking()
-            .Where(g => g.HubId == hubId && !g.IsDeleted)
+        var query = ScopedGuests(hubId, filter)
             .Select(g => new
             {
-                g.Id, g.GuestNumber, g.FirstName, g.LastName, g.Status, g.Pathway, g.AssignedCmhwId,
+                g.Id, g.GuestNumber, g.FirstName, g.LastName, g.Status, g.Pathway,
                 AssignedCmhwName = db.Users.Where(u => u.Id == g.AssignedCmhwId).Select(u => u.DisplayName).FirstOrDefault(),
                 Total = contacts.Count(c => c.GuestId == g.Id),
                 Casework = typedNotes.Count(n => n.GuestId == g.Id && n.Category == CaseworkNoteCategory.Casework),
@@ -163,10 +159,6 @@ public sealed class ContactReadService(EmhipDbContext db) : IContactReadService
             // "All guest contacts across your caseload": a guest with nothing logged has no row.
             .Where(x => x.Total > 0 || x.Casework + x.Activity + x.Hospitality + x.Afa + x.Cpn + x.CpnAssessments > 0);
 
-        if (filter.AssignedCmhwId is not null)
-        {
-            query = query.Where(x => x.AssignedCmhwId == filter.AssignedCmhwId);
-        }
         if (!string.IsNullOrWhiteSpace(filter.SearchText))
         {
             var term = filter.SearchText.Trim();
@@ -219,21 +211,7 @@ public sealed class ContactReadService(EmhipDbContext db) : IContactReadService
     public async Task<ContactHistorySummaryDto> GetContactHistorySummaryAsync(
         Guid hubId, ContactsByGuestFilter filter, CancellationToken cancellationToken = default)
     {
-        var (fromTs, toTs) = Range(filter);
-        var guests = db.Guests.AsNoTracking().Where(g => g.HubId == hubId && !g.IsDeleted);
-        if (filter.AssignedCmhwId is not null)
-        {
-            guests = guests.Where(g => g.AssignedCmhwId == filter.AssignedCmhwId);
-        }
-
-        var notes = db.CaseworkNotes.AsNoTracking()
-            .Where(n => n.Status == CaseworkNoteStatus.Submitted
-                && (fromTs == null || n.OccurredAt >= fromTs) && (toTs == null || n.OccurredAt <= toTs)
-                && guests.Any(g => g.Id == n.GuestId));
-        var cpnAssessments = SubmittedCpnAssessments(fromTs, toTs).Where(a => guests.Any(g => g.Id == a.GuestId));
-        var contacts = db.Contacts.AsNoTracking()
-            .Where(c => (fromTs == null || c.OccurredAt >= fromTs) && (toTs == null || c.OccurredAt <= toTs)
-                && guests.Any(g => g.Id == c.GuestId));
+        var (guests, notes, cpnAssessments, contacts) = TileSources(hubId, filter);
 
         // One round trip for every note tile. The contact types exclude CPN notes, so a CPN session
         // can never inflate the AFA & Hospitality figure — CPN has its own section on the screen.
@@ -267,11 +245,216 @@ public sealed class ContactReadService(EmhipDbContext db) : IContactReadService
             await contacts.Select(c => c.GuestId).Distinct().CountAsync(cancellationToken));
     }
 
+    public async Task<KeysetPage<ContactListRowDto>> GetContactListAsync(
+        Guid hubId, ContactListKind kind, ContactsByGuestFilter filter, string? cursor, int pageSize,
+        CancellationToken cancellationToken = default)
+    {
+        var decoded = KeysetCursor.Decode<ContactCursor>(cursor);
+        var (_, notes, cpnAssessments, contacts) = TileSources(hubId, filter);
+        var typedNotes = notes.Where(n => !n.IsCpnContact);
+        var cpnNotes = notes.Where(n => n.IsCpnContact);
+
+        // Each kind is the exact predicate behind its figure in GetContactHistorySummaryAsync.
+        var entries = kind switch
+        {
+            ContactListKind.All => ContactEntries(contacts),
+            ContactListKind.Casework => NoteEntries(typedNotes.Where(n => n.Category == CaseworkNoteCategory.Casework)),
+            ContactListKind.Activity => NoteEntries(typedNotes.Where(n => n.Category == CaseworkNoteCategory.Activity)),
+            ContactListKind.Hospitality => NoteEntries(typedNotes.Where(n => n.Category == CaseworkNoteCategory.Hospitality)),
+            ContactListKind.Afa => NoteEntries(typedNotes.Where(n => n.Category == CaseworkNoteCategory.Afa)),
+            ContactListKind.AfaAndHospitality => NoteEntries(typedNotes.Where(n =>
+                n.Category == CaseworkNoteCategory.Afa || n.Category == CaseworkNoteCategory.Hospitality)),
+            ContactListKind.CpnSessions => NoteEntries(cpnNotes),
+            ContactListKind.CpnAssessments => AssessmentEntries(cpnAssessments),
+            ContactListKind.Cpn => NoteEntries(cpnNotes).Concat(AssessmentEntries(cpnAssessments)),
+            _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, "Unknown contact list."),
+        };
+
+        var total = decoded is null ? await entries.CountAsync(cancellationToken) : (int?)null;
+
+        if (decoded is not null)
+        {
+            entries = entries.Where(e => e.OccurredAt < decoded.OccurredAt
+                || (e.OccurredAt == decoded.OccurredAt && e.Id.CompareTo(decoded.Id) < 0));
+        }
+
+        var rows = await (
+                from e in entries
+                join g in db.Guests on e.GuestId equals g.Id
+                orderby e.OccurredAt descending, e.Id descending
+                select new
+                {
+                    e.Id, e.GuestId, e.OccurredAt, e.Method, e.HasNote, e.IsCpnContact, e.Category, e.SessionNumber,
+                    e.ActivityType, e.Occasion, e.AdviceType, e.IsAssessment,
+                    g.GuestNumber,
+                    GuestName = g.FirstName + " " + g.LastName,
+                    LoggedByName = db.Users.Where(u => u.Id == e.LoggedByStaffId).Select(u => u.DisplayName).FirstOrDefault() ?? "Unknown",
+                    AssignedCmhwName = db.Users.Where(u => u.Id == g.AssignedCmhwId).Select(u => u.DisplayName).FirstOrDefault(),
+                })
+            .Take(pageSize + 1)
+            .ToListAsync(cancellationToken);
+
+        var hasMore = rows.Count > pageSize;
+        var page = rows.Take(pageSize)
+            .Select(r => new ContactListRowDto(
+                r.Id, r.GuestId, r.GuestNumber, r.GuestName,
+                r.IsAssessment ? ContactListLabels.CpnAssessment
+                    : r.HasNote ? ContactListLabels.NoteType(r.IsCpnContact, r.Category)
+                    : ContactListLabels.Contact,
+                r.HasNote
+                    ? ContactListLabels.NoteDetail(r.IsCpnContact, r.Category, r.SessionNumber, r.ActivityType, r.Occasion, r.AdviceType)
+                    : null,
+                r.Method, r.OccurredAt, r.LoggedByName, r.AssignedCmhwName))
+            .ToList();
+
+        return new KeysetPage<ContactListRowDto>
+        {
+            Items = page,
+            NextCursor = hasMore ? KeysetCursor.Encode(new ContactCursor(page[^1].OccurredAt, page[^1].Id)) : null,
+            HasMore = hasMore,
+            TotalCount = total,
+        };
+    }
+
+    /// <summary>
+    /// A tile list row before the guest and staff names are joined on. Notes, CPN assessments and
+    /// bare contacts all project to this one shape, so the CPN list can union sessions with Part 1s.
+    /// </summary>
+    private sealed class ListEntry
+    {
+        public Guid Id { get; init; }
+        public Guid GuestId { get; init; }
+        public DateTimeOffset OccurredAt { get; init; }
+        public ContactType Method { get; init; }
+        public Guid LoggedByStaffId { get; init; }
+        /// <summary>A submitted casework note backs the row; its CPN flag and category give the type.</summary>
+        public bool HasNote { get; init; }
+        public bool IsCpnContact { get; init; }
+        public CaseworkNoteCategory? Category { get; init; }
+        public int? SessionNumber { get; init; }
+        public string? ActivityType { get; init; }
+        public string? Occasion { get; init; }
+        public string? AdviceType { get; init; }
+        /// <summary>A CPN Part 1 — the assessment itself, or the contact its submission wrote.</summary>
+        public bool IsAssessment { get; init; }
+    }
+
+    private static IQueryable<ListEntry> NoteEntries(IQueryable<CaseworkNote> notes) =>
+        notes.Select(n => new ListEntry
+        {
+            Id = n.Id,
+            GuestId = n.GuestId,
+            OccurredAt = n.OccurredAt,
+            Method = n.ContactMethod,
+            LoggedByStaffId = n.AuthorStaffId,
+            HasNote = true,
+            IsCpnContact = n.IsCpnContact,
+            Category = n.Category,
+            SessionNumber = n.SessionNumber,
+            ActivityType = n.ActivityType,
+            Occasion = n.Occasion,
+            AdviceType = n.AdviceType,
+            IsAssessment = false,
+        });
+
+    private static IQueryable<ListEntry> AssessmentEntries(IQueryable<CpnInitialAssessment> assessments) =>
+        assessments.Select(a => new ListEntry
+        {
+            Id = a.Id,
+            GuestId = a.GuestId,
+            OccurredAt = a.OccurredAt,
+            Method = a.ContactMethod,
+            LoggedByStaffId = a.AuthorStaffId,
+            HasNote = false,
+            IsCpnContact = true,
+            Category = null,
+            SessionNumber = null,
+            ActivityType = null,
+            Occasion = null,
+            AdviceType = null,
+            IsAssessment = true,
+        });
+
+    /// <summary>
+    /// "Total contacts" rows: every contact, typed by the submitted note that wrote it (a plain left
+    /// join — a note is submitted once and links the new contact it wrote, so it never repeats a
+    /// row). A CPN Part 1 does not link its contact by id, so that contact is recognised by guest
+    /// and time instead; a guest has at most one Part 1.
+    /// </summary>
+    private IQueryable<ListEntry> ContactEntries(IQueryable<Contact> contacts) =>
+        from c in contacts
+        from n in db.CaseworkNotes.Where(n => n.ContactId == c.Id).DefaultIfEmpty()
+        select new ListEntry
+        {
+            Id = c.Id,
+            GuestId = c.GuestId,
+            OccurredAt = c.OccurredAt,
+            Method = c.Type,
+            LoggedByStaffId = c.CreatedByStaffId,
+            HasNote = n != null,
+            IsCpnContact = n != null && n.IsCpnContact,
+            Category = n != null ? n.Category : null,
+            SessionNumber = n != null ? n.SessionNumber : null,
+            ActivityType = n != null ? n.ActivityType : null,
+            Occasion = n != null ? n.Occasion : null,
+            AdviceType = n != null ? n.AdviceType : null,
+            IsAssessment = n == null && db.CpnInitialAssessments.Any(a => a.GuestId == c.GuestId
+                && a.Status == CpnAssessmentStatus.Submitted && a.OccurredAt == c.OccurredAt),
+        };
+
+    /// <summary>
+    /// The rows the stat tiles count for one caseload scope and date range. The tiles and their
+    /// contact lists both read from here, so a list always holds exactly what its tile counts.
+    /// </summary>
+    private (IQueryable<Guest> Guests, IQueryable<CaseworkNote> Notes, IQueryable<CpnInitialAssessment> Assessments, IQueryable<Contact> Contacts)
+        TileSources(Guid hubId, ContactsByGuestFilter filter)
+    {
+        var (fromTs, toTs) = Range(filter);
+        var guests = ScopedGuests(hubId, filter);
+        return (
+            guests,
+            SubmittedNotes(fromTs, toTs).Where(n => guests.Any(g => g.Id == n.GuestId)),
+            SubmittedCpnAssessments(fromTs, toTs).Where(a => guests.Any(g => g.Id == a.GuestId)),
+            ContactsInRange(fromTs, toTs).Where(c => guests.Any(g => g.Id == c.GuestId)));
+    }
+
+    /// <summary>
+    /// The hub's guests in the screen's caseload scope: one CMHW's guests, or "My caseload" — the
+    /// guests allocated to a staff member as their CMHW or through a confirmed CPN referral. A CPN
+    /// is allocated by the MDT queue, never as the guest's CMHW, so without the referral a CPN's
+    /// own caseload would read as empty.
+    /// </summary>
+    private IQueryable<Guest> ScopedGuests(Guid hubId, ContactsByGuestFilter filter)
+    {
+        var guests = db.Guests.AsNoTracking().Where(g => g.HubId == hubId && !g.IsDeleted);
+        if (filter.AssignedCmhwId is not null)
+        {
+            guests = guests.Where(g => g.AssignedCmhwId == filter.AssignedCmhwId);
+        }
+        if (filter.CaseloadStaffId is { } staffId)
+        {
+            var cpnAllocations = db.MdtQueueItems.AsNoTracking()
+                .Where(i => i.Kind == MdtQueueKind.CpnReferral && i.Status == MdtQueueStatus.Confirmed && i.AssignedCpnStaffId == staffId);
+            guests = guests.Where(g => g.AssignedCmhwId == staffId || cpnAllocations.Any(i => i.GuestId == g.Id));
+        }
+        return guests;
+    }
+
+    /// <summary>Submitted casework notes in the range — a draft is not yet a contact (see CaseworkNote).</summary>
+    private IQueryable<CaseworkNote> SubmittedNotes(DateTimeOffset? fromTs, DateTimeOffset? toTs) =>
+        db.CaseworkNotes.AsNoTracking()
+            .Where(n => n.Status == CaseworkNoteStatus.Submitted
+                && (fromTs == null || n.OccurredAt >= fromTs) && (toTs == null || n.OccurredAt <= toTs));
+
+    private IQueryable<Contact> ContactsInRange(DateTimeOffset? fromTs, DateTimeOffset? toTs) =>
+        db.Contacts.AsNoTracking()
+            .Where(c => (fromTs == null || c.OccurredAt >= fromTs) && (toTs == null || c.OccurredAt <= toTs));
+
     /// <summary>
     /// Submitted CPN Part 1 assessments in the range. Each one wrote its own Contact on
     /// submission, so it is CPN activity alongside the follow-up session notes.
     /// </summary>
-    private IQueryable<Domain.Entities.CpnInitialAssessment> SubmittedCpnAssessments(DateTimeOffset? fromTs, DateTimeOffset? toTs) =>
+    private IQueryable<CpnInitialAssessment> SubmittedCpnAssessments(DateTimeOffset? fromTs, DateTimeOffset? toTs) =>
         db.CpnInitialAssessments.AsNoTracking()
             .Where(a => a.Status == CpnAssessmentStatus.Submitted
                 && (fromTs == null || a.OccurredAt >= fromTs) && (toTs == null || a.OccurredAt <= toTs));

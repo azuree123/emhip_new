@@ -73,6 +73,46 @@ public sealed class GetGuestUrgentEpisodesQueryHandler(IUrgentCaseReadService re
 }
 
 /// <summary>
+/// One row of the guest's "Urgent Case History" tab — every urgent case, open and resolved, with
+/// enough of the record to scan without opening it (the row opens the full Urgent Case Record).
+/// </summary>
+public sealed record UrgentCaseHistoryRowDto(
+    Guid Id,
+    int EpisodeNumber,
+    DateTimeOffset RaisedAt,
+    string? RaisedByName,
+    IReadOnlyList<string> RiskFlags,
+    DateTimeOffset DeadlineAt,
+    bool IsResolved,
+    DateTimeOffset? ResolvedAt,
+    string? ResolvedByName,
+    bool? ResolvedWithinWindow,
+    bool? CmhtNotified,
+    bool InpatientAdmission,
+    string? ResolutionNote);
+
+/// <summary>
+/// The guest's urgent cases, newest first. Open to every role that can see urgent cases (CMHWs
+/// included); like the record itself it is read outside /guests/{id}, so the view is logged here.
+/// </summary>
+public sealed record GetGuestUrgentCaseHistoryQuery(Guid HubId, Guid GuestId) : IRequest<IReadOnlyList<UrgentCaseHistoryRowDto>>;
+
+public sealed class GetGuestUrgentCaseHistoryQueryHandler(IUrgentCaseReadService reads, IAppSettingsService settings, IAuditTrail audit)
+    : IRequestHandler<GetGuestUrgentCaseHistoryQuery, IReadOnlyList<UrgentCaseHistoryRowDto>>
+{
+    public async Task<IReadOnlyList<UrgentCaseHistoryRowDto>> Handle(GetGuestUrgentCaseHistoryQuery request, CancellationToken cancellationToken)
+    {
+        var responseHours = await settings.GetIntAsync(SettingsCatalog.Keys.UrgentResponseHours, 72, cancellationToken);
+        var rows = await reads.GetCaseHistoryForGuestAsync(request.HubId, request.GuestId, Math.Max(1, responseHours), cancellationToken);
+        if (rows.Count > 0)
+        {
+            await audit.RecordAsync(request.GuestId, AuditAction.Read, "UrgentEpisode", request.GuestId.ToString(), "Urgent case history viewed", cancellationToken);
+        }
+        return rows;
+    }
+}
+
+/// <summary>
 /// The full record for one urgent case. Viewing it is a clinical-data read that is not under
 /// /guests/{id}, so the handler writes the access-log entry itself (UK GDPR accountability).
 /// </summary>
@@ -168,7 +208,7 @@ public static class UrgentEpisodeRecordText
         Row($"Resolved within {r.ResponseHours}h", r.ResolvedWithinWindow is null ? "Pending" : YesNo(r.ResolvedWithinWindow.Value));
         Row("Inpatient admission", r.IsResolved ? YesNo(r.InpatientAdmission) : null);
         Row("Any other external service involved", r.IsResolved ? r.ExternalServicesInvolved ?? "None" : null);
-        if (!string.IsNullOrWhiteSpace(r.ResolutionNote)) Row("Resolution note", r.ResolutionNote);
+        if (!string.IsNullOrWhiteSpace(r.ResolutionNote)) Row("Action taken to resolve", r.ResolutionNote);
         sb.AppendLine();
         sb.AppendLine("SYSTEM AUDIT TRAIL");
         foreach (var a in r.AuditTrail)

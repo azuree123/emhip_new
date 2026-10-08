@@ -264,7 +264,7 @@
             </div>
             @if (r.resolutionNote) {
               <div class="rows__row rows__row--wide rows__row--stack">
-                <dt>Resolution note</dt>
+                <dt>Action taken to resolve</dt>
                 <dd class="note-text">{{ r.resolutionNote }}</dd>
               </div>
             }
@@ -298,7 +298,7 @@
 
 <!-- "Mark as resolved" — resolved by / at come from the login and the clock. -->
 @if (resolveOpen() && record(); as r) {
-  <div class="modal-overlay" (click)="closeResolve()">
+  <div class="modal-overlay" (click)="dismissResolve()">
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="resolve-title" (click)="$event.stopPropagation()">
       <div class="modal__header">
         <h2 id="resolve-title">Mark as resolved</h2>
@@ -330,13 +330,25 @@
           <input type="text" name="externalServices" maxlength="500" [(ngModel)]="resolveForm.externalServices" placeholder="e.g. ambulance, A&amp;E, police — leave blank if none" />
         </label>
 
+        <label class="field">
+          <span>Action taken to resolve&nbsp;*</span>
+          <span class="field__hint">What was done to resolve this urgent case before closing it.</span>
+          <textarea
+            name="resolutionNote"
+            rows="4"
+            maxlength="4000"
+            [(ngModel)]="resolveForm.notes"
+            placeholder="e.g. Spoke with guest and crisis team, safety plan agreed, CMHW follow-up booked for Friday"
+          ></textarea>
+        </label>
+
         @if (resolveError(); as message) {
           <div class="banner banner--error" role="alert">{{ message }}</div>
         }
       </div>
       <div class="modal__footer">
         <button type="button" class="btn btn--outline" [disabled]="savingResolve()" (click)="closeResolve()">Cancel</button>
-        <button type="button" class="btn btn--maroon" [disabled]="savingResolve() || resolveForm.inpatientAdmission === null" (click)="submitResolve()">
+        <button type="button" class="btn btn--maroon" [disabled]="savingResolve() || resolveForm.inpatientAdmission === null || !resolveForm.notes.trim()" (click)="submitResolve()">
           {{ savingResolve() ? 'Resolving…' : 'Mark as resolved' }}
         </button>
       </div>

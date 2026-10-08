@@ -1,4 +1,4 @@
-import { GuestPathway, GuestStatus } from '../../core/api-models';
+import { CaseworkNoteCategory, GuestPathway, GuestStatus } from '../../core/api-models';
 
 /** Display label + chip colors for a GuestStatus, matching the status-pill styling in
  *  GuestOverviewTab (project/screens/Components.bundle.js) — green/gold/grey/red pills. */
@@ -122,4 +122,26 @@ const PATHWAY_STATUS_CHIPS: Record<string, StatusChip> = {
 
 export function pathwayStatusChip(status: string): StatusChip {
   return PATHWAY_STATUS_CHIPS[status] ?? { label: humanize(status), bg: '#f0f0f0', fg: '#646464' };
+}
+
+/**
+ * The contact type a worker chose on Add Contact, as a chip — the same colours as the count chips
+ * on the Contact History screen. The type leads wherever a contact is listed; the method (phone
+ * call, in person, …) is secondary detail. Contacts with no type recorded (imports, Scheduled
+ * contacts → Record contact) read "Contact".
+ */
+const CONTACT_TYPE_CHIPS: Record<CaseworkNoteCategory, StatusChip> = {
+  Casework: { label: 'Casework', bg: 'rgb(231, 238, 255)', fg: 'rgb(52, 91, 177)' },
+  Activity: { label: 'Activity', bg: 'rgb(234, 253, 238)', fg: 'rgb(20, 113, 41)' },
+  Hospitality: { label: 'Hospitality', bg: 'rgb(255, 237, 213)', fg: 'rgb(194, 65, 12)' },
+  Afa: { label: 'AFA', bg: 'rgb(255, 249, 228)', fg: 'rgb(157, 133, 45)' },
+  Meeting: { label: 'Meeting', bg: '#f0f0f0', fg: '#646464' },
+  DailyLog: { label: 'Daily Log', bg: '#f0f0f0', fg: '#646464' },
+};
+const CPN_CONTACT_CHIP: StatusChip = { label: 'CPN contact', bg: 'rgb(255, 240, 241)', fg: 'rgb(148, 28, 60)' };
+const UNTYPED_CONTACT_CHIP: StatusChip = { label: 'Contact', bg: '#f0f0f0', fg: '#646464' };
+
+export function contactTypeChip(contact: { category: CaseworkNoteCategory | null; isCpnContact: boolean }): StatusChip {
+  if (contact.isCpnContact) return CPN_CONTACT_CHIP;
+  return contact.category ? (CONTACT_TYPE_CHIPS[contact.category] ?? UNTYPED_CONTACT_CHIP) : UNTYPED_CONTACT_CHIP;
 }

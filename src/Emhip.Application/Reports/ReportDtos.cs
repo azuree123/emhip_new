@@ -99,7 +99,7 @@ public sealed record ExportHistoryItemDto(
 
 /// <summary>
 /// One row of the streamed CSV export — a guest registered in the period, with their clinical
-/// pathway, status, demographics and referral source.
+/// pathway, status, demographics, referral source and how they heard about us.
 /// </summary>
 public sealed record ReportExportRowDto(
     int GuestNumber,
@@ -113,7 +113,9 @@ public sealed record ReportExportRowDto(
     string? Gender,
     string? CountryOfOrigin,
     string? ReferralSource,
-    string? ReferralType);
+    string? ReferralType,
+    /// <summary>The ticked "How did you hear about us?" boxes as labels, e.g. "NHS, Other — a friend".</summary>
+    string? HeardAboutUs = null);
 
 /// <summary>
 /// Demographic and referral-source breakdowns every Excel export carries (feedback: "required for
@@ -130,7 +132,9 @@ public sealed record ReportBreakdownsDto(
     IReadOnlyList<ReportBreakdownRowDto> ReferralSources,
     IReadOnlyList<ReportBreakdownRowDto> ReferralTypes,
     /// <summary>Subcategories of Secondary referrals only (spec §6.2).</summary>
-    IReadOnlyList<ReportBreakdownRowDto> SecondaryReferralSubcategories);
+    IReadOnlyList<ReportBreakdownRowDto> SecondaryReferralSubcategories,
+    /// <summary>"How did you hear about us?" — every tickbox in form order; a guest counts under each box ticked.</summary>
+    IReadOnlyList<ReportBreakdownRowDto> HeardAboutUs);
 
 public sealed record ReportBreakdownRowDto(string Label, int AllGuests, int RegisteredInPeriod);
 

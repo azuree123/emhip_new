@@ -1,0 +1,538 @@
+<!-- A stray click beside the form must not throw away a clinical note, so the backdrop does not
+     close it; the close button does, saving any change as a draft first. -->
+<div class="overlay">
+  <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="cw-note-title">
+    <div class="dialog__header">
+      <div class="dialog__heading">
+        <h2 class="dialog__title" id="cw-note-title">{{ title() }}</h2>
+        <span class="dialog__subtitle">{{ guestName() }}</span>
+      </div>
+      <button type="button" class="dialog__close" aria-label="Close" [disabled]="saving() !== null" (click)="close()">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+          <path d="M 4.5 4.5 L 15.5 15.5 M 15.5 4.5 L 4.5 15.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+        </svg>
+      </button>
+    </div>
+
+    <form class="dialog__body" (ngSubmit)="submit()">
+      <!-- Draft banner (design): started time, last save, the autosave promise and Discard. -->
+      <div class="draft-banner">
+        <div class="draft-banner__row">
+          <span class="draft-banner__title">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <circle cx="8" cy="8" r="6.25" stroke="currentColor" stroke-width="1.4" />
+              <path d="M 8 4.75 V 8 L 10.25 9.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
+            </svg>
+            Unsaved draft — started {{ startedLabel }}
+          </span>
+          <span class="draft-banner__saved">
+            @if (saving() === 'auto') {
+              Saving…
+            } @else if (lastSavedLabel; as saved) {
+              Last saved {{ saved }}
+            } @else {
+              Not saved yet
+            }
+          </span>
+        </div>
+        <p class="draft-banner__text">
+          @if (canSaveDraft) {
+            Auto-saved every 30 seconds. Your draft will not be lost if you close this tab.
+          } @else {
+            Auto-saved every 30 seconds once a contact method is chosen.
+          }
+        </p>
+        @if (confirmingDiscard()) {
+          <div class="draft-banner__confirm">
+            <span>Discard this draft? Everything written so far will be deleted.</span>
+            <button type="button" class="btn-ghost" [disabled]="discarding()" (click)="confirmingDiscard.set(false)">Keep</button>
+            <button type="button" class="btn-ghost btn-ghost--danger" [disabled]="discarding()" (click)="discardDraft()">
+              {{ discarding() ? 'Discarding…' : 'Discard' }}
+            </button>
+          </div>
+        } @else {
+          <button type="button" class="btn-ghost" [disabled]="saving() !== null" (click)="confirmingDiscard.set(true)">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <path d="M 2.5 4 H 13.5 M 6 4 V 2.5 H 10 V 4 M 4 4 L 4.75 13.5 H 11.25 L 12 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+            Discard draft
+          </button>
+        }
+      </div>
+
+      @if (confirmingClose()) {
+        <div class="close-confirm" role="alert">
+          <span>This note can’t be kept as a draft until a contact method is chosen.</span>
+          <button type="button" class="btn-ghost" (click)="keepWriting()">Keep writing</button>
+          <button type="button" class="btn-ghost btn-ghost--danger" (click)="closeWithoutSaving()">Close without saving</button>
+        </div>
+      }
+
+      <div class="grid-2">
+        <label class="field">
+          <span class="field__label">Date&nbsp;*</span>
+          <input type="date" name="occurredOn" [(ngModel)]="form.occurredOn" required />
+        </label>
+        <label class="field">
+          <span class="field__label">Logged by</span>
+          <input type="text" name="loggedBy" [value]="loggedBy" disabled />
+          <span class="field__hint">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <circle cx="8" cy="8" r="6.25" stroke="currentColor" stroke-width="1.4" />
+              <path d="M 8 7.25 V 11 M 8 5 V 5.1" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
+            </svg>
+            pre-filled from login
+          </span>
+        </label>
+        <label class="field">
+          <span class="field__label">Contact method&nbsp;*</span>
+          <select name="contactMethod" [(ngModel)]="form.contactMethod" required>
+            <option value="" disabled>Select…</option>
+            @for (type of contactTypes; track type) {
+              <option [value]="type">{{ humanize(type) }}</option>
+            }
+          </select>
+        </label>
+      </div>
+
+      <div class="sbar-banner">
+        <span>Use the SBAR framework below — each section guides your clinical note.</span>
+        <button type="button" class="sbar-banner__toggle" (click)="toggleAll()">
+          {{ allOpen ? 'Collapse all' : 'Expand all' }}
+        </button>
+      </div>
+
+      <!-- ================================ Situation ================================ -->
+      <section class="section" id="cw-section-situation">
+        <button type="button" class="section__bar" [attr.aria-expanded]="isOpen('situation')" (click)="toggleSection('situation')">
+          <span class="section__title">Situation&nbsp;*</span>
+          @if (isComplete('situation')) {
+            <span class="section__done" aria-label="Complete">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M 3.5 8.5 L 6.5 11.5 L 12.5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" /></svg>
+            </span>
+          }
+          <span class="section__pill">What is happening right now</span>
+          <svg class="section__chevron" [class.section__chevron--open]="isOpen('situation')" width="12" height="8" viewBox="0 0 12 8" fill="none" aria-hidden="true"><path d="M 1 1.5 L 6 6.5 L 11 1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" /></svg>
+        </button>
+        @if (isOpen('situation')) {
+          <div class="section__body">
+            <label class="field">
+              <span class="field__label">Current presenting concerns&nbsp;*</span>
+              <textarea
+                name="situation"
+                rows="4"
+                maxlength="4000"
+                [(ngModel)]="form.situation"
+                placeholder="How is the guest presenting today? What are they describing as the main issue right now? Use their own words where possible..."
+              ></textarea>
+            </label>
+          </div>
+        }
+      </section>
+
+      <!-- ================================ Background ================================ -->
+      <section class="section" id="cw-section-background">
+        <button type="button" class="section__bar" [attr.aria-expanded]="isOpen('background')" (click)="toggleSection('background')">
+          <span class="section__title">Background</span>
+          @if (isComplete('background')) {
+            <span class="section__done" aria-label="Complete">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M 3.5 8.5 L 6.5 11.5 L 12.5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" /></svg>
+            </span>
+          }
+          <span class="section__pill">Context to understand the situation</span>
+          <svg class="section__chevron" [class.section__chevron--open]="isOpen('background')" width="12" height="8" viewBox="0 0 12 8" fill="none" aria-hidden="true"><path d="M 1 1.5 L 6 6.5 L 11 1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" /></svg>
+        </button>
+        @if (isOpen('background')) {
+          <div class="section__body">
+            <label class="field">
+              <span class="field__label">Relevant history from previous contacts</span>
+              <textarea
+                name="background"
+                rows="3"
+                maxlength="4000"
+                [(ngModel)]="form.background"
+                placeholder="What came up in the last session that is relevant to today?"
+              ></textarea>
+            </label>
+            <label class="field">
+              <span class="field__label">Changes in medication, physical health, or social circumstances since last contact</span>
+              <textarea
+                name="guestReportedChanges"
+                rows="3"
+                maxlength="2000"
+                [(ngModel)]="form.guestReportedChanges"
+                placeholder="Any changes the guest mentioned since you last spoke?"
+              ></textarea>
+            </label>
+            <label class="field">
+              <span class="field__label">Other services involvement — any changes?</span>
+              <textarea
+                name="serviceInvolvementChanges"
+                rows="3"
+                maxlength="2000"
+                [(ngModel)]="form.serviceInvolvementChanges"
+                placeholder="Has anything changed with GP, CMHT, social services, or other support?"
+              ></textarea>
+            </label>
+          </div>
+        }
+      </section>
+
+      <!-- ================================ Assessment ================================ -->
+      <section class="section" id="cw-section-assessment">
+        <button type="button" class="section__bar" [attr.aria-expanded]="isOpen('assessment')" (click)="toggleSection('assessment')">
+          <span class="section__title">Assessment&nbsp;*</span>
+          @if (isComplete('assessment')) {
+            <span class="section__done" aria-label="Complete">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M 3.5 8.5 L 6.5 11.5 L 12.5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" /></svg>
+            </span>
+          }
+          <span class="section__pill">Your clinical judgement</span>
+          <svg class="section__chevron" [class.section__chevron--open]="isOpen('assessment')" width="12" height="8" viewBox="0 0 12 8" fill="none" aria-hidden="true"><path d="M 1 1.5 L 6 6.5 L 11 1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" /></svg>
+        </button>
+        @if (isOpen('assessment')) {
+          <div class="section__body">
+            <label class="field">
+              <span class="field__label">Your assessment of what is going on&nbsp;*</span>
+              <textarea
+                name="assessment"
+                rows="4"
+                maxlength="4000"
+                [(ngModel)]="form.assessment"
+                placeholder="In your clinical judgement — what do you think is driving the guest’s current difficulties? How are they coping? Any concerns?"
+              ></textarea>
+            </label>
+          </div>
+        }
+      </section>
+
+      <!-- ============================== Risk assessment ============================== -->
+      <section class="section" id="cw-section-risk">
+        <button type="button" class="section__bar" [attr.aria-expanded]="isOpen('risk')" (click)="toggleSection('risk')">
+          <span class="section__title">Risk assessment&nbsp;*</span>
+          @if (isComplete('risk')) {
+            <span class="section__done" aria-label="Complete">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M 3.5 8.5 L 6.5 11.5 L 12.5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" /></svg>
+            </span>
+          }
+          @if (isImmediateRisk) {
+            <span class="section__pill section__pill--danger">Urgent case on submit</span>
+          } @else {
+            <span class="section__pill">Select one option</span>
+          }
+          <svg class="section__chevron" [class.section__chevron--open]="isOpen('risk')" width="12" height="8" viewBox="0 0 12 8" fill="none" aria-hidden="true"><path d="M 1 1.5 L 6 6.5 L 11 1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" /></svg>
+        </button>
+        @if (isOpen('risk')) {
+          <div class="section__body">
+            <!-- One answer only (design note), so the whole set is a single radio group. -->
+            <div class="risk" role="radiogroup" aria-label="Risk assessment">
+              <div class="risk__grid">
+                @for (c of riskCriteria; track c.value) {
+                  <button
+                    type="button"
+                    role="radio"
+                    class="risk-option"
+                    [class.risk-option--on]="form.riskCheck === c.value"
+                    [attr.aria-checked]="form.riskCheck === c.value"
+                    (click)="setRiskCheck(c.value)"
+                  >
+                    <span class="risk-option__box" aria-hidden="true">
+                      @if (form.riskCheck === c.value) {
+                        <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M 3.5 8.5 L 6.5 11.5 L 12.5 5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
+                      }
+                    </span>
+                    <span class="risk-option__label">{{ c.label }}</span>
+                  </button>
+                }
+              </div>
+
+              <button
+                type="button"
+                role="radio"
+                class="risk-row"
+                [class.risk-row--on]="form.riskCheck === 'NoneApply'"
+                [attr.aria-checked]="form.riskCheck === 'NoneApply'"
+                (click)="setRiskCheck('NoneApply')"
+              >
+                <svg class="risk-row__icon" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                  <circle cx="8" cy="8" r="6.25" stroke="currentColor" stroke-width="1.4" />
+                  <path d="M 5.25 8.25 L 7.25 10.25 L 10.75 6.25" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+                <span class="risk-row__label">None of the above apply — no immediate risk criteria met in this contact</span>
+                <span class="risk-row__radio" aria-hidden="true"></span>
+              </button>
+              <button
+                type="button"
+                role="radio"
+                class="risk-row"
+                [class.risk-row--on]="form.riskCheck === 'NoteConcern'"
+                [attr.aria-checked]="form.riskCheck === 'NoteConcern'"
+                (click)="setRiskCheck('NoteConcern')"
+              >
+                <svg class="risk-row__icon" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                  <circle cx="8" cy="8" r="6.25" stroke="currentColor" stroke-width="1.4" />
+                  <path d="M 8 7.25 V 11 M 8 5 V 5.1" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
+                </svg>
+                <span class="risk-row__label">Note a concern — does not trigger an immediate alert</span>
+                <span class="risk-row__radio" aria-hidden="true"></span>
+              </button>
+            </div>
+
+            @if (isImmediateRisk) {
+              <div class="risk-alert" role="status">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                  <path d="M 8 1.75 L 14.75 13.75 H 1.25 Z" fill="currentColor" />
+                  <path d="M 8 6.25 V 9.5 M 8 11.4 V 11.5" stroke="#fff" stroke-width="1.5" stroke-linecap="round" />
+                </svg>
+                Hub Manager will be alerted immediately on submission
+              </div>
+              <label class="field">
+                <span class="field__label">Crisis action notes&nbsp;* <span class="field__optional">— required before submission</span></span>
+                <textarea
+                  name="crisisNotes"
+                  rows="5"
+                  maxlength="4000"
+                  [(ngModel)]="form.riskNotes"
+                  placeholder="What did the guest disclose and in what context? What actions did you take immediately? Who was contacted — Hub Manager, family member, emergency services? Was a safety plan agreed? What is the plan before the next contact?"
+                ></textarea>
+                <span class="field__hint field__hint--italic">
+                  These notes will be permanently locked on submission and form the clinical record of this crisis event
+                </span>
+              </label>
+              <p class="info-line">
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                  <circle cx="8" cy="8" r="6.25" stroke="currentColor" stroke-width="1.3" />
+                  <path d="M 8 7.25 V 11 M 8 5 V 5.1" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" />
+                </svg>
+                The {{ responseHours() }}-hour urgent follow-up window begins the moment this note is submitted
+              </p>
+            } @else if (form.riskCheck === 'NoneApply') {
+              <p class="risk-confirm">
+                No immediate risk criteria met in this contact — confirmed at {{ confirmedAtLabel() }}. No Hub Manager alert will be sent.
+              </p>
+            } @else if (form.riskCheck === 'NoteConcern') {
+              <label class="field">
+                <span class="field__label">Concern&nbsp;*</span>
+                <textarea
+                  name="concernNotes"
+                  rows="4"
+                  maxlength="4000"
+                  [(ngModel)]="form.riskNotes"
+                  placeholder="Describe your concern and what you will monitor — visible to Hub Manager on request but does not trigger an immediate alert..."
+                ></textarea>
+                <span class="field__hint field__hint--italic">
+                  This concern note is stored against this contact and is visible in the note history.
+                </span>
+              </label>
+            }
+          </div>
+        }
+      </section>
+
+      <!-- ============================== Recommendation ============================== -->
+      <section class="section" id="cw-section-recommendation">
+        <button type="button" class="section__bar" [attr.aria-expanded]="isOpen('recommendation')" (click)="toggleSection('recommendation')">
+          <span class="section__title">Recommendation</span>
+          @if (isComplete('recommendation')) {
+            <span class="section__done" aria-label="Complete">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M 3.5 8.5 L 6.5 11.5 L 12.5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" /></svg>
+            </span>
+          }
+          <span class="section__pill">What was agreed and next steps</span>
+          <svg class="section__chevron" [class.section__chevron--open]="isOpen('recommendation')" width="12" height="8" viewBox="0 0 12 8" fill="none" aria-hidden="true"><path d="M 1 1.5 L 6 6.5 L 11 1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" /></svg>
+        </button>
+        @if (isOpen('recommendation')) {
+          <div class="section__body">
+            <label class="field">
+              <span class="field__label">Interventions discussed and what was agreed</span>
+              <textarea
+                name="recommendation"
+                rows="4"
+                maxlength="4000"
+                [(ngModel)]="form.recommendation"
+                placeholder="What techniques, resources, or approaches were discussed? What did the guest agree to try before next contact?"
+              ></textarea>
+            </label>
+
+            <div class="field">
+              <span class="field__label">Actions arising from this note</span>
+              <span class="field__hint">Tick an action done in this session — it is marked complete when the note is submitted.</span>
+
+              @if (actionsError(); as message) {
+                <p class="form-error">{{ message }}</p>
+              }
+              @if (openActions() === null) {
+                <p class="muted">Loading this guest’s open actions…</p>
+              } @else {
+                <ul class="action-list">
+                  @for (a of openActions(); track a.id) {
+                    <li>
+                      <label class="action-item" [class.action-item--on]="isTicked(a.id)">
+                        <input type="checkbox" [checked]="isTicked(a.id)" (change)="toggleTicked(a.id)" />
+                        <span class="action-item__text">
+                          <span class="action-item__desc">{{ a.description }}</span>
+                          <span class="action-item__due action-item__due--{{ dueLabel(a).tone }}">{{ dueLabel(a).text }}</span>
+                        </span>
+                      </label>
+                    </li>
+                  }
+                  @for (row of newActions; track row.key) {
+                    <li class="action-item action-item--new">
+                      <span class="action-item__badge">New</span>
+                      <span class="action-item__text">
+                        <span class="action-item__desc">{{ row.description }}</span>
+                        <span class="action-item__due action-item__due--later">Due {{ formatDue(row.dueDate) }}</span>
+                      </span>
+                      <button type="button" class="link-btn" (click)="removeNewAction(row.key)">Remove</button>
+                    </li>
+                  }
+                </ul>
+                @if (!openActions()!.length && !newActions.length && !actionDraft) {
+                  <p class="muted">This guest has no open actions.</p>
+                }
+              }
+
+              @if (actionDraft; as draft) {
+                <div class="action-draft">
+                  <input
+                    type="text"
+                    name="actionDraftDescription"
+                    maxlength="500"
+                    [(ngModel)]="draft.description"
+                    placeholder="Describe the action...."
+                    aria-label="Action description"
+                  />
+                  <label class="action-draft__due">
+                    <span>Due date</span>
+                    <input type="date" name="actionDraftDue" [(ngModel)]="draft.dueDate" />
+                  </label>
+                  <div class="action-draft__buttons">
+                    <button type="button" class="btn-ghost" (click)="cancelActionDraft()">Cancel</button>
+                    <button type="button" class="btn-small" (click)="addActionDraft()">Add action</button>
+                  </div>
+                  @if (actionDraftError(); as message) {
+                    <p class="form-error">{{ message }}</p>
+                  }
+                </div>
+              } @else {
+                <button type="button" class="link-btn link-btn--add" (click)="startActionDraft()">
+                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                    <path d="M 8 3 L 8 13 M 3 8 L 13 8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+                  </svg>
+                  Add new action from this session
+                </button>
+              }
+            </div>
+          </div>
+        }
+      </section>
+
+      <!-- ============================= Next contact date ============================= -->
+      <section class="section" id="cw-section-next">
+        <button type="button" class="section__bar" [attr.aria-expanded]="isOpen('next')" (click)="toggleSection('next')">
+          <span class="section__title">Next contact date&nbsp;*</span>
+          @if (isComplete('next')) {
+            <span class="section__done" aria-label="Complete">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M 3.5 8.5 L 6.5 11.5 L 12.5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" /></svg>
+            </span>
+          }
+          <span class="section__spacer"></span>
+          <svg class="section__chevron" [class.section__chevron--open]="isOpen('next')" width="12" height="8" viewBox="0 0 12 8" fill="none" aria-hidden="true"><path d="M 1 1.5 L 6 6.5 L 11 1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" /></svg>
+        </button>
+        @if (isOpen('next')) {
+          <div class="section__body">
+            <label class="field field--narrow">
+              <span class="field__label">Next contact date</span>
+              <input
+                type="date"
+                name="nextContactDate"
+                [(ngModel)]="form.nextContactDate"
+                [disabled]="form.noNextContactRequired"
+              />
+            </label>
+            <label class="check-row">
+              <input
+                type="checkbox"
+                name="noNextContactRequired"
+                [ngModel]="form.noNextContactRequired"
+                (ngModelChange)="setNoNextContact($event)"
+              />
+              <span>No next contact needed</span>
+            </label>
+          </div>
+        }
+      </section>
+
+      <!-- ==================================== AFA ==================================== -->
+      <section class="section" id="cw-section-afa">
+        <button type="button" class="section__bar" [attr.aria-expanded]="isOpen('afa')" (click)="toggleSection('afa')">
+          <span class="section__title">AFA</span>
+          @if (isComplete('afa')) {
+            <span class="section__done" aria-label="Complete">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M 3.5 8.5 L 6.5 11.5 L 12.5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" /></svg>
+            </span>
+          }
+          <span class="section__pill">Optional</span>
+          <svg class="section__chevron" [class.section__chevron--open]="isOpen('afa')" width="12" height="8" viewBox="0 0 12 8" fill="none" aria-hidden="true"><path d="M 1 1.5 L 6 6.5 L 11 1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" /></svg>
+        </button>
+        @if (isOpen('afa')) {
+          <div class="section__body">
+            <div class="grid-2">
+              <label class="field">
+                <span class="field__label">Type of advice given</span>
+                <select name="adviceType" [(ngModel)]="form.adviceType">
+                  <option value="">Select…</option>
+                  @for (item of adviceTypes(); track item.id) {
+                    <option [value]="item.label">{{ item.label }}</option>
+                  }
+                </select>
+              </label>
+              <label class="field">
+                <span class="field__label">Contact method{{ form.adviceType ? ' *' : '' }}</span>
+                <select name="afaContactMethod" [(ngModel)]="form.afaContactMethod">
+                  <option value="">Select…</option>
+                  @for (type of contactTypes; track type) {
+                    <option [value]="type">{{ humanize(type) }}</option>
+                  }
+                </select>
+              </label>
+            </div>
+            <label class="field">
+              <span class="field__label">Additional notes <span class="field__optional">(optional)</span></span>
+              <textarea
+                name="afaNotes"
+                rows="3"
+                maxlength="4000"
+                [(ngModel)]="form.afaNotes"
+                placeholder="Please specify the details of the other practical advice given..."
+              ></textarea>
+              <span class="field__hint">Choosing a type of advice also logs an AFA contact when this note is submitted.</span>
+            </label>
+          </div>
+        }
+      </section>
+
+      <p class="lock-note">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <rect x="3.25" y="7" width="9.5" height="6.75" rx="1.25" stroke="currentColor" stroke-width="1.3" />
+          <path d="M 5.25 7 V 5 a 2.75 2.75 0 0 1 5.5 0 V 7" stroke="currentColor" stroke-width="1.3" />
+        </svg>
+        Submitting locks this note — it becomes part of the clinical record and can’t be changed. Ticked actions are
+        completed, new ones are added to the guest’s actions, and the next contact is scheduled.
+      </p>
+
+      @if (saveError(); as message) {
+        <p class="form-error" role="alert">{{ message }}</p>
+      }
+
+      <div class="dialog__footer">
+        <button type="button" class="btn-draft" [disabled]="saving() !== null || discarding()" (click)="saveDraft()">
+          {{ saving() === 'draft' ? 'Saving…' : 'Save as draft' }}
+        </button>
+        <button type="submit" class="btn-submit" [disabled]="saving() !== null || discarding()">
+          {{ saving() === 'submit' ? 'Submitting…' : 'Submit & lock note' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

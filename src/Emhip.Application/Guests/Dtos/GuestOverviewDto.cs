@@ -28,15 +28,19 @@ public sealed record GuestOverviewDto(
     DateTimeOffset? UrgentSince = null,
     DateTimeOffset? LastActivityAt = null,
     ReferralType? ReferralType = null,
-    string? ReferralSubcategory = null);
+    string? ReferralSubcategory = null,
+    /// <summary>"How did you hear about us?" — the ticked boxes in form order; empty when unanswered.</summary>
+    IReadOnlyList<HeardAboutUsSource>? HeardAboutUs = null,
+    string? HeardAboutUsOther = null);
 
 public sealed record GuestNoteDto(Guid Id, string Body, string Color, bool IsPinned, string AuthorName, DateTimeOffset CreatedAt);
 
 /// <summary>
 /// One logged contact. <c>Type</c> is the contact method (PhoneCall, InPerson, …); <c>Category</c>
-/// is what kind of contact the worker chose on Add Contact (Casework, Activity, Hospitality, Afa,
-/// …) — null for contacts not written through a casework note.
+/// is the contact type the worker chose on Add Contact (Casework, Activity, Hospitality, Afa, …) —
+/// null for CPN contacts (<c>IsCpnContact</c>) and for contacts with no type recorded.
+/// <c>Detail</c> is the short qualifier: the activity, the AFA advice, or the CPN session.
 /// </summary>
 public sealed record GuestContactSummaryDto(
     Guid Id, string Type, string Outcome, DateTimeOffset OccurredAt, string CreatedByName,
-    string? Category = null, bool IsCpnContact = false);
+    string? Category = null, bool IsCpnContact = false, string? Detail = null);

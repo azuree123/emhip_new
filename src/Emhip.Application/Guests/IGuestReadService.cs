@@ -33,7 +33,8 @@ public interface IGuestReadService
     Task<GuestFollowUpsDto?> GetFollowUpsAsync(Guid guestId, CancellationToken cancellationToken = default);
     Task<GuestInitialConversationDto?> GetInitialConversationAsync(Guid guestId, CancellationToken cancellationToken = default);
     Task<Dialog.GuestDialogDto?> GetDialogAsync(Guid guestId, CancellationToken cancellationToken = default);
-    Task<IReadOnlyList<Casework.CaseworkNoteDto>> GetCaseworkNotesAsync(Guid guestId, CancellationToken cancellationToken = default);
+    /// <param name="urgentResponseHours">The urgent follow-up window, for the deadline on notes that raised an urgent case.</param>
+    Task<IReadOnlyList<Casework.CaseworkNoteDto>> GetCaseworkNotesAsync(Guid guestId, int urgentResponseHours, CancellationToken cancellationToken = default);
     Task<CarePlans.GuestCarePlansDto> GetCarePlansAsync(Guid guestId, CancellationToken cancellationToken = default);
 
     /// <summary>Part 1 of the CPN record, plus whether a new one may be started.</summary>

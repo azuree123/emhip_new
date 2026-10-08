@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, ElementRef, forwardRef, HostListener, effect, inject, input, signal, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, forwardRef, HostListener, effect, inject, input, output, signal, viewChild } from '@angular/core';
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { catchError, debounceTime, distinctUntilChanged, of, switchMap, tap } from 'rxjs';
@@ -210,6 +210,8 @@ export class GuestPickerComponent implements ControlValueAccessor {
   readonly placeholder = input('Search guests by name or reference…');
   /** Shows the guest's name when the form loads with an id already selected. */
   readonly initialLabel = input<string | null>(null);
+  /** The chosen guest in full — for callers building a list of guests rather than binding one id. */
+  readonly picked = output<GuestSuggestionDto>();
 
   readonly value = signal<string | null>(null);
   readonly selectedLabel = signal('');
@@ -301,6 +303,7 @@ export class GuestPickerComponent implements ControlValueAccessor {
     this.open.set(false);
     this.onChange(guest.id);
     this.onTouched();
+    this.picked.emit(guest);
   }
 
   clear(): void {

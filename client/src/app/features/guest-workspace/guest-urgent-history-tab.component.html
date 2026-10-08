@@ -1,0 +1,86 @@
+<div class="tab-panel">
+  @if (loading()) {
+    <div class="state-card">Loading urgent case history…</div>
+  } @else if (error()) {
+    <div class="state-card state-card--error">
+      {{ error() }}
+      <div class="state-card__actions">
+        <button type="button" class="btn-ghost" (click)="retry()">Try again</button>
+      </div>
+    </div>
+  } @else {
+    <section class="card">
+      <div class="card__header-row">
+        <h2 class="card__title">Urgent Case History</h2>
+        @if (countLabel(); as label) {
+          <span class="count-label">{{ label }}</span>
+        }
+      </div>
+
+      @if (cases().length) {
+        <ul class="entry-list">
+          @for (row of cases(); track row.id) {
+            <li>
+              <button type="button" class="entry case" [class.case--open]="!row.isResolved" (click)="openRecord(row)">
+                <span class="entry__head">
+                  <span class="case__title">
+                    <span class="entry__title">Urgent Case {{ row.episodeNumber }}</span>
+                    @if (row.isResolved) {
+                      <span class="chip chip--green">Resolved</span>
+                    } @else {
+                      <span class="chip chip--red">Open</span>
+                    }
+                  </span>
+                  <span class="case__open">View Urgent Case Record →</span>
+                </span>
+
+                <span class="entry__meta case__meta">
+                  <span>Raised {{ formatDateTime(row.raisedAt) }}{{ row.raisedByName ? ' by ' + row.raisedByName : '' }}</span>
+                  @if (row.isResolved) {
+                    <span>Resolved {{ formatDateTime(row.resolvedAt) }}{{ row.resolvedByName ? ' by ' + row.resolvedByName : '' }}</span>
+                  } @else {
+                    <span>Deadline {{ formatDateTime(row.deadlineAt) }}</span>
+                  }
+                </span>
+
+                @if (row.riskFlags.length) {
+                  <span class="entry__flags">
+                    @for (flag of row.riskFlags; track flag) {
+                      <span class="chip chip--risk">{{ flag }}</span>
+                    }
+                  </span>
+                }
+
+                <span class="case__facts">
+                  <span class="case__fact"><span class="case__fact-label">CMHT notified</span>{{ cmhtLabel(row) }}</span>
+                  @if (row.isResolved) {
+                    <span class="case__fact"><span class="case__fact-label">Resolved in time</span>{{ withinWindowLabel(row) }}</span>
+                    <span class="case__fact"><span class="case__fact-label">Inpatient admission</span>{{ row.inpatientAdmission ? 'Yes' : 'No' }}</span>
+                  }
+                </span>
+
+                @if (row.resolutionNote) {
+                  <span class="case__note">
+                    <span class="case__fact-label">Action taken to resolve</span>
+                    <span class="entry__body">{{ row.resolutionNote }}</span>
+                  </span>
+                }
+              </button>
+            </li>
+          }
+        </ul>
+      } @else {
+        <p class="empty-state">No urgent case has been raised for this guest.</p>
+      }
+    </section>
+  }
+</div>
+
+@if (openEpisodeId(); as episodeId) {
+  <emhip-urgent-episode-record
+    [guestId]="guestId()"
+    [episodeId]="episodeId"
+    (closed)="closeRecord()"
+    (changed)="recordChanged($event)"
+  />
+}

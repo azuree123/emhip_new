@@ -49,6 +49,13 @@ public sealed class GetReferralSourcesQueryHandler(IReportReadService reads) : I
         reads.GetReferralSourcesAsync(request.HubId, request.Period, cancellationToken);
 }
 
+public sealed record GetHeardAboutUsQuery(Guid HubId, ReportPeriod? Period = null) : IRequest<IReadOnlyList<BreakdownSliceDto>>;
+public sealed class GetHeardAboutUsQueryHandler(IReportReadService reads) : IRequestHandler<GetHeardAboutUsQuery, IReadOnlyList<BreakdownSliceDto>>
+{
+    public Task<IReadOnlyList<BreakdownSliceDto>> Handle(GetHeardAboutUsQuery request, CancellationToken cancellationToken) =>
+        reads.GetHeardAboutUsAsync(request.HubId, request.Period, cancellationToken);
+}
+
 public sealed record GetExportHistoryQuery(Guid HubId, ReportPeriod? Period = null) : IRequest<IReadOnlyList<ExportHistoryItemDto>>;
 public sealed class GetExportHistoryQueryHandler(IReportReadService reads) : IRequestHandler<GetExportHistoryQuery, IReadOnlyList<ExportHistoryItemDto>>
 {

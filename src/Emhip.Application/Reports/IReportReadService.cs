@@ -36,6 +36,12 @@ public interface IReportReadService
     /// <summary>Referral sources of the guests registered in <paramref name="period"/>.</summary>
     Task<IReadOnlyList<BreakdownSliceDto>> GetReferralSourcesAsync(Guid hubId, ReportPeriod? period = null, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// "How did you hear about us?" answers of the guests registered in <paramref name="period"/>;
+    /// a guest counts under every box they ticked.
+    /// </summary>
+    Task<IReadOnlyList<BreakdownSliceDto>> GetHeardAboutUsAsync(Guid hubId, ReportPeriod? period = null, CancellationToken cancellationToken = default);
+
     /// <summary>Demographic and referral-source breakdowns for the Excel export — all guests, and those registered in the period.</summary>
     Task<ReportBreakdownsDto> GetBreakdownsAsync(Guid hubId, DateOnly from, DateOnly to, CancellationToken cancellationToken = default);
 

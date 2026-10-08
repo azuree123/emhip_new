@@ -50,8 +50,31 @@ public class CaseworkNote : AggregateRoot
     /// <summary>The "Risk update" answer on the follow-up form.</summary>
     public CaseworkRiskLevel RiskLevel { get; private set; }
 
-    /// <summary>"Any specific risk factors to note this session".</summary>
+    /// <summary>
+    /// "Any specific risk factors to note this session" — or, on the New Casework Note, the crisis
+    /// action notes (an immediate risk) or the concern note ("Note a concern").
+    /// </summary>
     public string? RiskNotes { get; private set; }
+
+    /// <summary>The New Casework Note's single-choice risk assessment; null on Add Contact notes.</summary>
+    public CaseworkRiskCheck? RiskCheck { get; private set; }
+
+    /// <summary>The urgent case this note's immediate risk opened or added to on submission.</summary>
+    public Guid? UrgentEpisodeId { get; private set; }
+
+    /// <summary>
+    /// Existing guest actions the worker ticked off in this session ("Actions arising from this
+    /// note"), comma-separated. Kept on the draft so a resumed note re-ticks them; the actions
+    /// themselves are only completed when the note is submitted.
+    /// </summary>
+    public string? CompletedActionIds { get; private set; }
+
+    /// <summary>
+    /// The optional AFA section of a casework note: how the advice was given. The advice type is
+    /// <see cref="AdviceType"/> and its details <see cref="AdditionalNotes"/>; submitting files a
+    /// separate AFA contact, so the advice counts exactly as one logged through the AFA form.
+    /// </summary>
+    public ContactType? AfaContactMethod { get; private set; }
 
     // --- Short-form contact types (Activity, Hospitality, AFA) ---
     /// <summary>"Activity *" — the hub activity the guest attended (HubActivity lookup label).</summary>
@@ -115,6 +138,29 @@ public class CaseworkNote : AggregateRoot
 
     public bool RequiresClinicalNote => IsClinicalNote(IsCpnContact, Category);
 
+    /// <summary>The six criteria that alert the Hub Manager; "None" and "Note a concern" do not.</summary>
+    public static bool IsImmediateRisk(CaseworkRiskCheck? check) =>
+        check is not (null or CaseworkRiskCheck.NoneApply or CaseworkRiskCheck.NoteConcern);
+
+    /// <summary>
+    /// The risk level a risk check implies, so the history chips, Contact History and the MDT
+    /// queue read the same answer: an immediate risk is High, a noted concern Medium.
+    /// </summary>
+    public static CaseworkRiskLevel RiskLevelFor(CaseworkRiskCheck check) => check switch
+    {
+        CaseworkRiskCheck.NoneApply => CaseworkRiskLevel.NoRiskDetected,
+        CaseworkRiskCheck.NoteConcern => CaseworkRiskLevel.Medium,
+        _ => CaseworkRiskLevel.High,
+    };
+
+    public IReadOnlyList<Guid> CompletedActionIdList() =>
+        string.IsNullOrWhiteSpace(CompletedActionIds)
+            ? []
+            : CompletedActionIds.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                .Select(id => Guid.TryParse(id, out var guid) ? guid : Guid.Empty)
+                .Where(id => id != Guid.Empty)
+                .ToList();
+
     public void Update(
         CaseworkNoteCategory? category, ContactType contactMethod, DateTimeOffset occurredAt,
         string? situation, string? background, string? assessment, string? recommendation,
@@ -122,7 +168,9 @@ public class CaseworkNote : AggregateRoot
         string? additionalNotes, DateOnly? nextContactDate, bool mdtDiscussionRequested, bool cpnReferralRequested,
         bool isCpnContact = false, CpnSessionType? cpnSessionType = null, string? riskNotes = null,
         bool noNextContactRequired = false,
-        string? activityType = null, string? occasion = null, string? adviceType = null)
+        string? activityType = null, string? occasion = null, string? adviceType = null,
+        CaseworkRiskCheck? riskCheck = null, ContactType? afaContactMethod = null,
+        IReadOnlyCollection<Guid>? completedActionIds = null)
     {
         if (IsSubmitted)
         {
@@ -136,7 +184,11 @@ public class CaseworkNote : AggregateRoot
         Background = background;
         Assessment = assessment;
         Recommendation = recommendation;
-        RiskLevel = riskLevel;
+        // A risk check answers the risk question outright, so the level follows it.
+        RiskLevel = riskCheck is { } check ? RiskLevelFor(check) : riskLevel;
+        RiskCheck = riskCheck;
+        AfaContactMethod = afaContactMethod;
+        CompletedActionIds = completedActionIds is { Count: > 0 } ids ? string.Join(',', ids.Distinct()) : null;
         GuestReportedChanges = guestReportedChanges;
         ServiceInvolvementChanges = serviceInvolvementChanges;
         AdditionalNotes = additionalNotes;
@@ -160,6 +212,9 @@ public class CaseworkNote : AggregateRoot
     /// </summary>
     public void SetSessionNumber(int sessionNumber) => SessionNumber = sessionNumber;
 
+    /// <summary>Links the urgent case the note's immediate risk opened or added to.</summary>
+    public void LinkUrgentEpisode(Guid urgentEpisodeId) => UrgentEpisodeId = urgentEpisodeId;
+
     /// <summary>Finalises the note. <paramref name="contactId"/> links the Contact it produced.</summary>
     public void Submit(Guid contactId)
     {
@@ -171,6 +226,12 @@ public class CaseworkNote : AggregateRoot
         if (RequiresClinicalNote && string.IsNullOrWhiteSpace(Assessment))
         {
             throw new InvalidOperationException("An assessment is required before a casework note can be submitted.");
+        }
+
+        // The crisis action notes become the urgent case's intake notes, which may never be empty.
+        if (IsImmediateRisk(RiskCheck) && string.IsNullOrWhiteSpace(RiskNotes))
+        {
+            throw new InvalidOperationException("Crisis action notes are required before a note with an immediate risk can be submitted.");
         }
 
         Status = CaseworkNoteStatus.Submitted;

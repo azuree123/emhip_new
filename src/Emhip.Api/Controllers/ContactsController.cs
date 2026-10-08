@@ -29,15 +29,18 @@ public sealed class ContactsController(IMediator mediator, ICurrentUser currentU
         return Ok(result);
     }
 
-    /// <summary>Contact History screen (design Desktop 89): one row per guest with counts per contact type, most recent contact first. Keyset-paged.</summary>
+    /// <summary>
+    /// Contact History screen (design Desktop 89): one row per guest with counts per contact type, most recent contact first. Keyset-paged.
+    /// `caseload` is "My caseload" — guests allocated to that staff member as their CMHW or their confirmed CPN.
+    /// </summary>
     [HttpGet("by-guest")]
     [Authorize(Policy = Permissions.Guests.View)]
     public async Task<IActionResult> GetByGuest(
         [FromQuery] string? q, [FromQuery] Guid? cmhw = null, [FromQuery] ContactHistoryCategory? category = null,
-        [FromQuery] DateOnly? from = null, [FromQuery] DateOnly? to = null,
+        [FromQuery] DateOnly? from = null, [FromQuery] DateOnly? to = null, [FromQuery] Guid? caseload = null,
         [FromQuery] string? cursor = null, [FromQuery] int pageSize = 10, CancellationToken cancellationToken = default)
     {
-        var filter = new ContactsByGuestFilter(q, cmhw, category, from, to);
+        var filter = new ContactsByGuestFilter(q, cmhw, category, from, to, caseload);
         var result = await mediator.Send(
             new GetContactsByGuestQuery(currentUser.HubId, filter, cursor, Math.Clamp(pageSize, 1, 200)), cancellationToken);
         return Ok(result);
@@ -48,9 +51,26 @@ public sealed class ContactsController(IMediator mediator, ICurrentUser currentU
     [Authorize(Policy = Permissions.Guests.View)]
     public async Task<IActionResult> GetSummary(
         [FromQuery] Guid? cmhw = null, [FromQuery] DateOnly? from = null, [FromQuery] DateOnly? to = null,
-        CancellationToken cancellationToken = default)
+        [FromQuery] Guid? caseload = null, CancellationToken cancellationToken = default)
     {
-        var filter = new ContactsByGuestFilter(null, cmhw, null, from, to);
+        var filter = new ContactsByGuestFilter(null, cmhw, null, from, to, caseload);
         return Ok(await mediator.Send(new GetContactHistorySummaryQuery(currentUser.HubId, filter), cancellationToken));
+    }
+
+    /// <summary>
+    /// The contacts behind one stat tile or CPN figure, for the same scope as the summary — newest
+    /// first, keyset-paged; the first page's `totalCount` is the tile's number.
+    /// </summary>
+    [HttpGet("list")]
+    [Authorize(Policy = Permissions.Guests.View)]
+    public async Task<IActionResult> GetList(
+        [FromQuery] ContactListKind kind = ContactListKind.All, [FromQuery] Guid? cmhw = null, [FromQuery] Guid? caseload = null,
+        [FromQuery] DateOnly? from = null, [FromQuery] DateOnly? to = null,
+        [FromQuery] string? cursor = null, [FromQuery] int pageSize = 25, CancellationToken cancellationToken = default)
+    {
+        var filter = new ContactsByGuestFilter(null, cmhw, null, from, to, caseload);
+        var result = await mediator.Send(
+            new GetContactListQuery(currentUser.HubId, kind, filter, cursor, Math.Clamp(pageSize, 1, 200)), cancellationToken);
+        return Ok(result);
     }
 }

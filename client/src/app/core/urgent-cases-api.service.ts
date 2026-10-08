@@ -6,6 +6,7 @@ import {
   RecordCmhtContactRequest,
   ResolveUrgentCaseRequest,
   UrgentCaseDto,
+  UrgentCaseHistoryRowDto,
   UrgentEpisodeDto,
   UrgentEpisodeRecordDto,
   UrgentEpisodeSummaryDto,
@@ -34,6 +35,11 @@ export class UrgentCasesApiService {
   /** Every urgent case for the guest, oldest first — the "Urgent Case 1 / 2 / 3" tabs on the record screen. */
   getEpisodes(guestId: string): Observable<UrgentEpisodeSummaryDto[]> {
     return this.http.get<UrgentEpisodeSummaryDto[]>(`${this.base}/${guestId}/episodes`);
+  }
+
+  /** The guest profile's "Urgent Case History" tab — every urgent case, newest first, with its outcome. */
+  getHistory(guestId: string): Observable<UrgentCaseHistoryRowDto[]> {
+    return this.http.get<UrgentCaseHistoryRowDto[]>(`${this.base}/${guestId}/history`);
   }
 
   /** The full Urgent Case Record for one urgent case (viewing it is written to the guest's access log). */

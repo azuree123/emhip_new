@@ -13,7 +13,15 @@ public interface IContactReadService
     Task<KeysetPage<ContactsByGuestRowDto>> GetContactsByGuestAsync(
         Guid hubId, ContactsByGuestFilter filter, string? cursor, int pageSize, CancellationToken cancellationToken = default);
 
-    /// <summary>The screen's stat tiles for the same caseload scope (CMHW and date range; search and category are ignored).</summary>
+    /// <summary>The screen's stat tiles for the same caseload scope (CMHW / My caseload and date range; search and category are ignored).</summary>
     Task<ContactHistorySummaryDto> GetContactHistorySummaryAsync(
         Guid hubId, ContactsByGuestFilter filter, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// The contacts behind one stat tile, over the same scope as <see cref="GetContactHistorySummaryAsync"/>
+    /// (so the first page's total is the tile's figure). Keyset-paged, newest first.
+    /// </summary>
+    Task<KeysetPage<ContactListRowDto>> GetContactListAsync(
+        Guid hubId, ContactListKind kind, ContactsByGuestFilter filter, string? cursor, int pageSize,
+        CancellationToken cancellationToken = default);
 }

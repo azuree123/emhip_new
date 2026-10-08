@@ -47,6 +47,12 @@ public class Guest : AggregateRoot
     /// <summary>Structured subcategory, required by the spec for Secondary referrals.</summary>
     public string? ReferralSubcategory { get; private set; }
 
+    /// <summary>"How did you hear about us?" — every box ticked at registration; None when unanswered.</summary>
+    public HeardAboutUsSource HeardAboutUs { get; private set; }
+
+    /// <summary>The guest's own words when "Other" is ticked; null otherwise.</summary>
+    public string? HeardAboutUsOther { get; private set; }
+
     /// <summary>
     /// Urgent Support (spec §3.3) — a temporary escalation state that sits alongside pathway and
     /// engagement status rather than replacing either.
@@ -142,6 +148,15 @@ public class Guest : AggregateRoot
         ReferralSource = source;
     }
 
+    /// <summary>The "Other" text is only kept while Other is ticked.</summary>
+    public void SetHeardAboutUs(HeardAboutUsSource sources, string? other)
+    {
+        HeardAboutUs = sources;
+        HeardAboutUsOther = sources.HasFlag(HeardAboutUsSource.Other) && !string.IsNullOrWhiteSpace(other)
+            ? other.Trim()
+            : null;
+    }
+
     /// <summary>Reference from the system this guest was migrated out of, so a re-run updates rather than duplicates (§7).</summary>
     public string? LegacyReference { get; private set; }
 
@@ -179,6 +194,8 @@ public class Guest : AggregateRoot
         AddressLine2 = null;
         PostCode = null;
         LegacyReference = null;
+        // Free text can name people; the ticked sources stay for the reports.
+        HeardAboutUsOther = null;
         IsAnonymised = true;
         AnonymisedAt = DateTimeOffset.UtcNow;
         IsDeleted = true;

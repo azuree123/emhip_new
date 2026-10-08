@@ -471,6 +471,36 @@ public sealed class ReportReadService(EmhipDbContext db, Emhip.Application.Abstr
             .ToList();
     }
 
+    public async Task<IReadOnlyList<BreakdownSliceDto>> GetHeardAboutUsAsync(Guid hubId, ReportPeriod? period = null, CancellationToken cancellationToken = default)
+    {
+        // Grouped by the whole bit mask (a few dozen combinations at most), then counted per box in memory.
+        var masks = await RegisteredGuests(hubId, period)
+            .GroupBy(g => g.HeardAboutUs)
+            .Select(grp => new { Mask = grp.Key, Count = grp.Count() })
+            .ToListAsync(cancellationToken);
+
+        // Tickboxes: a guest counts under every box they ticked, so each share is of the guests
+        // registered in the period and together they can add up to more than 100%.
+        var total = masks.Sum(m => m.Count);
+        double Pct(int count) => total == 0 ? 0 : Math.Round(100.0 * count / total, 1);
+
+        var slices = Emhip.Application.Guests.HeardAboutUsSources.All
+            .Select(source => new
+            {
+                Label = Emhip.Application.Guests.HeardAboutUsSources.Label(source),
+                Count = masks.Where(m => m.Mask.HasFlag(source)).Sum(m => m.Count),
+            })
+            .Where(s => s.Count > 0)
+            .OrderByDescending(s => s.Count)
+            .Select(s => new BreakdownSliceDto(s.Label, s.Count, Pct(s.Count)))
+            .ToList();
+
+        // Unanswered last — every guest registered before the question existed lands here.
+        var notRecorded = masks.Where(m => m.Mask == Domain.Enums.HeardAboutUsSource.None).Sum(m => m.Count);
+        if (notRecorded > 0) slices.Add(new BreakdownSliceDto("Not recorded", notRecorded, Pct(notRecorded)));
+        return slices;
+    }
+
     public async Task<ReportBreakdownsDto> GetBreakdownsAsync(Guid hubId, DateOnly from, DateOnly to, CancellationToken cancellationToken = default)
     {
         var fromTs = new DateTimeOffset(from.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
@@ -487,6 +517,7 @@ public sealed class ReportReadService(EmhipDbContext db, Emhip.Application.Abstr
                 g.ReferralSource,
                 g.ReferralType,
                 g.ReferralSubcategory,
+                g.HeardAboutUs,
                 Ethnicity = db.GuestDemographics.Where(d => d.GuestId == g.Id).Select(d => d.Ethnicity).FirstOrDefault(),
                 Country = db.GuestDemographics.Where(d => d.GuestId == g.Id).Select(d => d.CountryOfOrigin).FirstOrDefault(),
             })
@@ -520,6 +551,19 @@ public sealed class ReportReadService(EmhipDbContext db, Emhip.Application.Abstr
         var secondary = rows.Where(r => r.ReferralType == Domain.Enums.ReferralType.Secondary);
         var secondaryInPeriod = inPeriod.Where(r => r.ReferralType == Domain.Enums.ReferralType.Secondary);
 
+        // Tickboxes: every box in form order (like the age bands), a guest counted under each box
+        // they ticked, then the guests who didn't answer.
+        var heardAboutUs = Emhip.Application.Guests.HeardAboutUsSources.All
+            .Select(source => new ReportBreakdownRowDto(
+                Emhip.Application.Guests.HeardAboutUsSources.Label(source),
+                rows.Count(r => r.HeardAboutUs.HasFlag(source)),
+                inPeriod.Count(r => r.HeardAboutUs.HasFlag(source))))
+            .Append(new ReportBreakdownRowDto(
+                notRecorded,
+                rows.Count(r => r.HeardAboutUs == Domain.Enums.HeardAboutUsSource.None),
+                inPeriod.Count(r => r.HeardAboutUs == Domain.Enums.HeardAboutUsSource.None)))
+            .ToList();
+
         return new ReportBreakdownsDto(
             rows.Count,
             inPeriod.Count,
@@ -529,7 +573,8 @@ public sealed class ReportReadService(EmhipDbContext db, Emhip.Application.Abstr
             Breakdown(rows, inPeriod, r => Label(r.Country)),
             Breakdown(rows, inPeriod, r => Label(r.ReferralSource)),
             Breakdown(rows, inPeriod, r => Label(r.ReferralType?.ToString())),
-            Breakdown(secondary, secondaryInPeriod, r => Label(r.ReferralSubcategory)));
+            Breakdown(secondary, secondaryInPeriod, r => Label(r.ReferralSubcategory)),
+            heardAboutUs);
     }
 
     public async Task<IReadOnlyList<ExportHistoryItemDto>> GetExportHistoryAsync(Guid hubId, ReportPeriod? period = null, CancellationToken cancellationToken = default)
@@ -571,11 +616,14 @@ public sealed class ReportReadService(EmhipDbContext db, Emhip.Application.Abstr
                 g.Status,
                 g.RegisteredAt,
                 // Demographics and referral source ride along on every row (customer feedback #9),
-                // so the CSV can be pivoted by ethnicity, age group, gender, country or source.
+                // so the CSV can be pivoted by ethnicity, age group, gender, country or source;
+                // so does "How did you hear about us?".
                 g.DateOfBirth,
                 g.Gender,
                 g.ReferralSource,
                 g.ReferralType,
+                g.HeardAboutUs,
+                g.HeardAboutUsOther,
                 Ethnicity = db.GuestDemographics.Where(d => d.GuestId == g.Id).Select(d => d.Ethnicity).FirstOrDefault(),
                 CountryOfOrigin = db.GuestDemographics.Where(d => d.GuestId == g.Id).Select(d => d.CountryOfOrigin).FirstOrDefault(),
             })
@@ -589,7 +637,8 @@ public sealed class ReportReadService(EmhipDbContext db, Emhip.Application.Abstr
                 row.GuestNumber, row.GuestName, Emhip.Application.Guests.GuestPathwayLabels.For(row.Pathway),
                 row.Status == Domain.Enums.GuestStatus.OnHold ? "Inactive" : row.Status.ToString(), row.RegisteredAt,
                 row.Ethnicity, ReportAgeBands.LabelFor(row.DateOfBirth, today), row.Gender, row.CountryOfOrigin,
-                row.ReferralSource, row.ReferralType?.ToString());
+                row.ReferralSource, row.ReferralType?.ToString(),
+                Emhip.Application.Guests.HeardAboutUsSources.Describe(row.HeardAboutUs, row.HeardAboutUsOther));
         }
     }
 }

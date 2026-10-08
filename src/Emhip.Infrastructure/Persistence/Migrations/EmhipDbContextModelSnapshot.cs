@@ -264,6 +264,10 @@ namespace Emhip.Infrastructure.Persistence.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
+                    b.Property<string>("AfaContactMethod")
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
                     b.Property<string>("Assessment")
                         .HasMaxLength(4000)
                         .HasColumnType("nvarchar(4000)");
@@ -278,6 +282,10 @@ namespace Emhip.Infrastructure.Persistence.Migrations
                     b.Property<string>("Category")
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("CompletedActionIds")
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
 
                     b.Property<Guid?>("ContactId")
                         .HasColumnType("uniqueidentifier");
@@ -327,14 +335,18 @@ namespace Emhip.Infrastructure.Persistence.Migrations
                         .HasMaxLength(4000)
                         .HasColumnType("nvarchar(4000)");
 
+                    b.Property<string>("RiskCheck")
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
                     b.Property<string>("RiskLevel")
                         .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
 
                     b.Property<string>("RiskNotes")
-                        .HasMaxLength(2000)
-                        .HasColumnType("nvarchar(2000)");
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
 
                     b.Property<byte[]>("RowVersion")
                         .IsConcurrencyToken()
@@ -363,6 +375,9 @@ namespace Emhip.Infrastructure.Persistence.Migrations
 
                     b.Property<DateTimeOffset>("UpdatedAt")
                         .HasColumnType("datetimeoffset");
+
+                    b.Property<Guid?>("UrgentEpisodeId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.HasKey("Id");
 
@@ -1172,6 +1187,13 @@ namespace Emhip.Infrastructure.Persistence.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int")
                         .HasDefaultValueSql("NEXT VALUE FOR dbo.GuestNumbers");
+
+                    b.Property<int>("HeardAboutUs")
+                        .HasColumnType("int");
+
+                    b.Property<string>("HeardAboutUsOther")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
 
                     b.Property<Guid>("HubId")
                         .HasColumnType("uniqueidentifier");
