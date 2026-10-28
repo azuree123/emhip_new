@@ -239,6 +239,20 @@ export class AppShellComponent implements OnInit {
         },
       ],
     },
+    {
+      label: 'HELP',
+      items: [
+        {
+          // Question mark in a circle — filled ring with an opposite-wound inner subpath, matching
+          // the other nav glyphs. Opens the embedded EMHIP Support form; everyone can see it.
+          label: 'Support',
+          route: '/support',
+          iconViewBox: '0 0 16 16',
+          iconPath:
+            'M 8 0 A 8 8 0 1 1 7.99 0 Z M 8 1.2 A 6.8 6.8 0 1 0 8.01 1.2 Z M 8 3.6 C 9.5 3.6 10.6 4.6 10.6 5.9 C 10.6 6.9 10 7.5 9.2 7.9 C 8.8 8.1 8.6 8.4 8.6 8.8 L 8.6 9.4 L 7.4 9.4 L 7.4 8.7 C 7.4 7.9 7.8 7.3 8.5 6.9 C 9.1 6.6 9.4 6.3 9.4 5.9 C 9.4 5.2 8.8 4.8 8 4.8 C 7.2 4.8 6.6 5.3 6.6 6 L 5.4 6 C 5.4 4.6 6.5 3.6 8 3.6 Z M 8 10.6 A 0.85 0.85 0 1 1 7.99 10.6 Z',
+        },
+      ],
+    },
   ];
 
   ngOnInit(): void {

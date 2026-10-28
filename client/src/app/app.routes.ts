@@ -99,6 +99,11 @@ export const routes: Routes = [
         data: { permission: Permissions.Admin.ManageRoles },
         canActivate: [permissionGuard],
       },
+      {
+        // The sharpai support form — open to every signed-in user.
+        path: 'support',
+        loadComponent: () => import('./features/support/support.component').then((m) => m.SupportComponent),
+      },
       { path: '**', redirectTo: 'dashboard' },
     ],
   },
